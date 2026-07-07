@@ -6,10 +6,10 @@
 // transporte y directorio de comercios. Los eventos se filtran a los próximos
 // en cada petición.
 
-import eventosData from '../src/data/eventos.json'
-import transporteData from '../src/data/transporte.json'
-import comerciosData from '../src/data/comercios.json'
-import serviciosLocales from '../src/data/servicios-locales.json'
+import eventosData from '../src/data/eventos.json' with { type: 'json' }
+import transporteData from '../src/data/transporte.json' with { type: 'json' }
+import comerciosData from '../src/data/comercios.json' with { type: 'json' }
+import serviciosLocales from '../src/data/servicios-locales.json' with { type: 'json' }
 import { proximosEventos, formatearFechaLarga } from '../src/lib/eventos.js'
 import { LISTA_CATEGORIAS } from '../src/lib/categorias.js'
 import { tipoComercio } from '../src/lib/cocinas.js'
