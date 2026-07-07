@@ -35,16 +35,23 @@ export default function Inicio() {
         </p>
       </section>
 
-      {/* Hero */}
+      {/* Hero: Plaza de Segovia (foto: D.G. Turismo de la Comunidad de Madrid,
+          CC BY 3.0 ES, vía Wikimedia Commons) */}
       <section className="relative h-56 overflow-hidden rounded-xl shadow-card md:h-[420px]">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-container via-primary to-[#083824]" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(110% 80% at 85% 0%, rgba(146,247,195,0.25), transparent 55%)',
-          }}
+        <img
+          src="/img/plaza-segovia.jpg"
+          alt="Plaza de Segovia de Navalcarnero, con el Ayuntamiento y la iglesia"
+          className="absolute inset-0 h-full w-full object-cover"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+        <a
+          href="https://commons.wikimedia.org/wiki/File:Plaza_de_Segovia_con_Ayuntamiento_e_iglesia_en_Navalcarnero.jpg"
+          target="_blank"
+          rel="noreferrer"
+          className="absolute right-3 top-3 z-10 rounded-full bg-black/30 px-2 py-0.5 text-[10px] text-white/80 backdrop-blur-sm hover:text-white"
+        >
+          Foto: D.G. Turismo CM · CC BY 3.0 ES
+        </a>
         <div className="relative flex h-full flex-col justify-end p-6 text-white md:p-12">
           <h1 className="max-w-2xl font-display text-2xl font-bold leading-tight md:text-5xl">
             Bienvenido a tu plaza digital
