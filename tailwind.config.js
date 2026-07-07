@@ -4,51 +4,82 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Paleta "vino y oro" inspirada en el escudo de Navalcarnero.
-        vino: {
-          DEFAULT: '#6E2A3C',
-          dark: '#4A1C29',
-          light: '#8A3B4A',
+        // Sistema "Civic Hearth" (Material 3) de las referencias de diseño:
+        // verde bosque primario, salvia secundario, fondo pergamino cálido.
+        primary: {
+          DEFAULT: '#0f5238',
+          container: '#2d6a4f',
+          fixed: '#b1f0ce',
+          'fixed-dim': '#95d4b3',
         },
-        oro: {
-          DEFAULT: '#C79A3A',
-          dark: '#8F6B1E',
+        'on-primary': {
+          DEFAULT: '#ffffff',
+          container: '#a8e7c5',
+          fixed: '#002114',
         },
-        azul: {
-          DEFAULT: '#2E6E8E',
-          dark: '#245572',
-          tint: '#EAF0F3',
+        secondary: {
+          DEFAULT: '#006c48',
+          container: '#92f7c3',
+          fixed: '#92f7c3',
         },
-        crema: {
-          DEFAULT: '#F7F1E6',
-          dark: '#EFE6D6',
+        'on-secondary': {
+          DEFAULT: '#ffffff',
+          container: '#00734d',
+          fixed: '#002113',
         },
-        tinta: {
-          DEFAULT: '#2B1D22',
-          muted: '#948477',
+        tertiary: {
+          DEFAULT: '#464843',
+          container: '#5e605a',
         },
-        // Alias de compatibilidad mientras se migra el resto de la app.
-        tierra: {
-          DEFAULT: '#C1633D',
-          dark: '#8A4327',
-          light: '#D98861',
+        'on-tertiary': {
+          DEFAULT: '#ffffff',
+          container: '#d9dad3',
         },
-        dorado: {
-          DEFAULT: '#C79A3A',
-          dark: '#8F6B1E',
+        error: {
+          DEFAULT: '#ba1a1a',
+          container: '#ffdad6',
         },
+        'on-error': {
+          DEFAULT: '#ffffff',
+          container: '#93000a',
+        },
+        background: '#fff8f2',
+        'on-background': '#1d1b18',
+        surface: {
+          DEFAULT: '#fff8f2',
+          dim: '#dfd9d3',
+          variant: '#e8e1db',
+        },
+        'surface-container': {
+          lowest: '#ffffff',
+          low: '#f9f2ec',
+          DEFAULT: '#f3ede7',
+          high: '#ede7e1',
+          highest: '#e8e1db',
+        },
+        'on-surface': {
+          DEFAULT: '#1d1b18',
+          variant: '#404943',
+        },
+        outline: {
+          DEFAULT: '#707973',
+          variant: '#bfc9c1',
+        },
+        'inverse-surface': '#33302c',
+        'inverse-on-surface': '#f6f0ea',
       },
       fontFamily: {
-        display: ['Fraunces', 'Georgia', 'serif'],
+        display: ['Montserrat', 'ui-sans-serif', 'sans-serif'],
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 6px 20px -12px rgba(74, 28, 41, 0.35)',
-        soft: '0 3px 10px -8px rgba(74, 28, 41, 0.4)',
+        card: '0 4px 15px rgba(15, 82, 56, 0.05)',
+        'card-up': '0 -4px 15px rgba(15, 82, 56, 0.05)',
+        'card-lg': '0 10px 30px rgba(15, 82, 56, 0.1)',
       },
       borderRadius: {
-        '2xl': '1rem',
-        '3xl': '1.25rem',
+        lg: '1rem',
+        xl: '1.5rem',
       },
     },
   },

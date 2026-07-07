@@ -2,16 +2,15 @@ import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { CATEGORIAS } from '../../lib/categorias.js'
 
 const CENTRO = [40.2881, -4.0128]
 
-// Marcador propio (divIcon) coloreado por categoría — evita el bug conocido
-// de las rutas de marker-icon.png de Leaflet al empaquetar con Vite.
+// Marcador propio (divIcon) en los verdes del tema "Civic Hearth" — evita el
+// bug conocido de las rutas de marker-icon.png de Leaflet al empaquetar con Vite.
 function iconoDe(categoria, activo) {
-  const color = CATEGORIAS[categoria]?.color || '#4E6A8A'
+  const color = activo ? '#006c48' : '#0f5238'
   const size = activo ? 30 : 22
-  const border = activo ? '#7A2E3E' : '#FBF3E7'
+  const border = activo ? '#92f7c3' : '#fff8f2'
   return L.divIcon({
     className: 'comercio-marker',
     html: `<span style="display:block;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;
@@ -45,7 +44,7 @@ function CentrarSeleccion({ seleccionado }) {
 
 export default function MapaComercios({ comercios, seleccionado, onSeleccionar }) {
   return (
-    <div className="overflow-hidden rounded-3xl shadow-card">
+    <div className="overflow-hidden rounded-xl shadow-card">
       <MapContainer
         center={CENTRO}
         zoom={14}

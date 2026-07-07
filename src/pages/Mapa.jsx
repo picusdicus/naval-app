@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react'
 import comerciosData from '../data/comercios.json'
 import serviciosLocales from '../data/servicios-locales.json'
-import { CATEGORIAS } from '../lib/categorias.js'
 import { etiquetaCocina } from '../lib/cocinas.js'
 import MapaComercios from '../components/directorio/MapaComercios.jsx'
 import FiltrosCategoria from '../components/directorio/FiltrosCategoria.jsx'
 import ComercioCard from '../components/directorio/ComercioCard.jsx'
 import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
-import { IconPlus } from '../components/icons.jsx'
+import MIcon from '../components/MIcon.jsx'
 
 function normalizar(texto) {
   return texto
@@ -59,11 +58,13 @@ export default function Mapa() {
   )
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
-        <h1 className="font-display text-2xl font-semibold text-vino">Mapa y directorio</h1>
-        <p className="mt-1 text-sm text-tinta-muted">
-          Comercios, bares y servicios de Navalcarnero sobre el mapa. Datos de OpenStreetMap.
+        <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
+          Guía local
+        </h1>
+        <p className="mt-1 text-on-surface-variant">
+          Encuentra los mejores rincones de Navalcarnero. Datos de OpenStreetMap.
         </p>
       </header>
 
@@ -75,14 +76,14 @@ export default function Mapa() {
       />
 
       {categoria === 'restauracion' && cocinasDisponibles.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="hide-scrollbar flex gap-2 overflow-x-auto py-1">
           <button
             type="button"
             onClick={() => setCocinaFiltro(null)}
-            className={`nv-chip flex-none transition-colors ${
+            className={`flex-none whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
               cocinaFiltro === null
-                ? 'bg-oro text-white'
-                : 'bg-white text-tinta-muted shadow-soft hover:text-oro-dark'
+                ? 'bg-secondary text-on-secondary shadow-md'
+                : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
             }`}
           >
             Todo tipo
@@ -92,10 +93,10 @@ export default function Mapa() {
               key={c}
               type="button"
               onClick={() => setCocinaFiltro(c)}
-              className={`nv-chip flex-none transition-colors ${
+              className={`flex-none whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                 cocinaFiltro === c
-                  ? 'bg-oro text-white'
-                  : 'bg-white text-tinta-muted shadow-soft hover:text-oro-dark'
+                  ? 'bg-secondary text-on-secondary shadow-md'
+                  : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
               }`}
             >
               {etiquetaCocina(c)}
@@ -115,22 +116,22 @@ export default function Mapa() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-tinta-muted">
+        <p className="text-sm text-on-surface-variant">
           {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}
         </p>
         <button
           type="button"
           onClick={() => setSugiriendo(true)}
-          className="flex items-center gap-1.5 rounded-full bg-vino px-3 py-1.5 text-xs font-medium text-crema"
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
         >
-          <IconPlus className="h-4 w-4" />
+          <MIcon name="add" className="text-[16px]" />
           ¿Falta un comercio?
         </button>
       </div>
 
       {sugiriendo && <SugerirComercio onCerrar={() => setSugiriendo(false)} />}
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {comercios.map((c) => (
           <ComercioCard
             key={c.id}
@@ -140,13 +141,13 @@ export default function Mapa() {
           />
         ))}
         {comercios.length === 0 && (
-          <p className="rounded-3xl border border-dashed border-vino/20 bg-white p-6 text-center text-sm text-tinta-muted">
+          <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-8 text-center text-sm text-on-surface-variant md:col-span-2">
             No hay comercios que coincidan con tu búsqueda.
           </p>
         )}
       </div>
 
-      <p className="text-center text-[11px] text-tinta-muted">
+      <p className="text-center text-[11px] text-on-surface-variant">
         Datos © colaboradores de OpenStreetMap
       </p>
     </div>

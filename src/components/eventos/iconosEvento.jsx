@@ -1,16 +1,16 @@
-import { IconFlag, IconFilm, IconCoffee, IconBasket, IconRun, IconBalloon, IconCalendar } from '../icons.jsx'
+import MIcon from '../MIcon.jsx'
 
-// Icono React por cada categoría de evento (definida en src/lib/eventos.js).
-export const ICONO_EVENTO = {
-  fiestas: IconFlag,
-  cultura: IconFilm,
-  gastronomia: IconCoffee,
-  mercado: IconBasket,
-  deporte: IconRun,
-  infantil: IconBalloon,
+// Símbolo de Material Symbols por cada categoría de evento
+// (definida en src/lib/eventos.js).
+export const SIMBOLO_EVENTO = {
+  fiestas: 'celebration',
+  cultura: 'theater_comedy',
+  gastronomia: 'restaurant',
+  mercado: 'storefront',
+  deporte: 'directions_run',
+  infantil: 'toys',
 }
 
-export function IconoEvento({ categoria, ...props }) {
-  const Icon = ICONO_EVENTO[categoria] || IconCalendar
-  return <Icon {...props} />
+export function IconoEvento({ categoria, className = '', fill = false }) {
+  return <MIcon name={SIMBOLO_EVENTO[categoria] || 'event'} className={className} fill={fill} />
 }

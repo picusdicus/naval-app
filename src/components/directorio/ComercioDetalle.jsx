@@ -1,7 +1,7 @@
 import { CATEGORIAS } from '../../lib/categorias.js'
 import { etiquetasCocina } from '../../lib/cocinas.js'
 import { IconoCategoria } from './iconosCategoria.jsx'
-import { IconClose, IconPin, IconPhone, IconGlobe, IconClock, IconRoute } from '../icons.jsx'
+import MIcon from '../MIcon.jsx'
 
 function normalizarWeb(web) {
   if (!web) return ''
@@ -16,18 +16,17 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
   const web = normalizarWeb(comercio.web)
 
   return (
-    <div className="nv-card p-4">
+    <div className="nv-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span
-            className="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-crema"
-            style={{ backgroundColor: cat?.color || '#4E6A8A' }}
-          >
-            <IconoCategoria categoria={comercio.categoria} className="h-6 w-6" />
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-lg bg-primary-container text-on-primary-container">
+            <IconoCategoria categoria={comercio.categoria} className="text-[24px]" />
           </span>
           <div>
-            <h3 className="font-medium text-tinta">{comercio.nombre}</h3>
-            <p className="text-xs text-tinta-muted">
+            <h3 className="font-display text-base font-semibold text-on-surface">
+              {comercio.nombre}
+            </h3>
+            <p className="text-xs text-on-surface-variant">
               {cat?.nombre}
               {comercio.ejemplo && ' · ejemplo'}
             </p>
@@ -37,9 +36,9 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
           type="button"
           onClick={onCerrar}
           aria-label="Cerrar ficha"
-          className="rounded-full p-1 text-tinta-muted hover:bg-crema-dark"
+          className="rounded-full p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high"
         >
-          <IconClose className="h-5 w-5" />
+          <MIcon name="close" className="text-[20px]" />
         </button>
       </div>
 
@@ -48,7 +47,7 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
           {cocinas.map((c) => (
             <span
               key={c}
-              className="rounded-full bg-vino/10 px-2.5 py-0.5 text-xs font-medium text-vino"
+              className="rounded-full bg-secondary-container px-3 py-1 text-xs font-medium text-on-secondary-container"
             >
               {c}
             </span>
@@ -57,45 +56,48 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
       )}
 
       {comercio.descripcion && (
-        <p className="mt-3 text-sm text-tinta">{comercio.descripcion}</p>
+        <p className="mt-3 text-sm text-on-surface">{comercio.descripcion}</p>
       )}
 
       <dl className="mt-4 space-y-2 text-sm">
         {comercio.direccion && (
-          <div className="flex items-start gap-2 text-tinta">
-            <IconPin className="mt-0.5 h-4 w-4 flex-none text-oro-dark" />
+          <div className="flex items-start gap-2 text-on-surface">
+            <MIcon name="location_on" className="mt-0.5 text-[18px] text-secondary" />
             <span>{comercio.direccion}</span>
           </div>
         )}
         {comercio.telefono && (
-          <div className="flex items-center gap-2 text-tinta">
-            <IconPhone className="h-4 w-4 flex-none text-oro-dark" />
-            <a href={`tel:${comercio.telefono}`} className="text-vino underline-offset-2 hover:underline">
+          <div className="flex items-center gap-2 text-on-surface">
+            <MIcon name="call" className="text-[18px] text-secondary" />
+            <a
+              href={`tel:${comercio.telefono}`}
+              className="text-primary underline-offset-2 hover:underline"
+            >
               {comercio.telefono}
             </a>
           </div>
         )}
         {web && (
-          <div className="flex items-center gap-2 text-tinta">
-            <IconGlobe className="h-4 w-4 flex-none text-oro-dark" />
+          <div className="flex items-center gap-2 text-on-surface">
+            <MIcon name="language" className="text-[18px] text-secondary" />
             <a
               href={web}
               target="_blank"
               rel="noreferrer"
-              className="truncate text-vino underline-offset-2 hover:underline"
+              className="truncate text-primary underline-offset-2 hover:underline"
             >
               {comercio.web}
             </a>
           </div>
         )}
         {comercio.horario && (
-          <div className="flex items-start gap-2 text-tinta">
-            <IconClock className="mt-0.5 h-4 w-4 flex-none text-oro-dark" />
+          <div className="flex items-start gap-2 text-on-surface">
+            <MIcon name="schedule" className="mt-0.5 text-[18px] text-secondary" />
             <span>{comercio.horario}</span>
           </div>
         )}
         {!comercio.direccion && !comercio.telefono && !web && !comercio.horario && (
-          <p className="text-xs text-tinta-muted">
+          <p className="text-xs text-on-surface-variant">
             Sin datos de contacto todavía. ¿Los conoces? Sugiere una corrección.
           </p>
         )}
@@ -106,9 +108,9 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
           href={comoLlegar}
           target="_blank"
           rel="noreferrer"
-          className="mt-4 flex items-center justify-center gap-2 rounded-full bg-vino px-4 py-2 text-sm font-medium text-crema"
+          className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
         >
-          <IconRoute className="h-4 w-4" />
+          <MIcon name="directions" className="text-[18px]" />
           Cómo llegar
         </a>
       )}

@@ -1,167 +1,246 @@
 import { Link } from 'react-router-dom'
 import eventosCurados from '../data/eventos.json'
 import eventosExternos from '../data/eventos-externos.json'
-import {
-  proximosEventos,
-  formatearFechaCorta,
-  CATEGORIAS_EVENTO,
-} from '../lib/eventos.js'
+import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
+import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
-import {
-  IconSun,
-  IconHealthCross,
-  IconAlert,
-  IconArrowRight,
-  IconDroplet,
-} from '../components/icons.jsx'
+import MIcon from '../components/MIcon.jsx'
 
-const proximos = proximosEventos([...eventosCurados, ...eventosExternos])
-const destacado = proximos[0]
-const siguientes = proximos.slice(1, 4)
+const proximos = proximosEventos([...eventosCurados, ...eventosExternos], 4)
 
-const ORIGEN_CHIP = {
-  municipal: 'bg-vino/10 text-vino',
-  cultural: 'bg-oro/15 text-oro-dark',
-  vecinal: 'bg-azul-tint text-azul',
+function saludo() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Buenos días, vecino'
+  if (h < 20) return 'Buenas tardes, vecino'
+  return 'Buenas noches, vecino'
 }
 
-function EventoFila({ e }) {
-  const chip = ORIGEN_CHIP[e.origen] || ORIGEN_CHIP.vecinal
-  return (
-    <Link to="/eventos" className="nv-card flex items-center gap-3 p-3">
-      <div className="w-12 flex-none text-center">
-        <div className="font-display text-lg font-semibold leading-none text-vino">
-          {formatearFechaCorta(e.fecha).split(' ')[0]}
-        </div>
-        <div className="text-[10px] uppercase text-tinta-muted">
-          {formatearFechaCorta(e.fecha).split(' ')[1]}
-        </div>
-      </div>
-      <div className="h-9 w-px flex-none bg-crema-dark" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-tinta">{e.titulo}</p>
-        <p className="truncate text-xs text-tinta-muted">
-          {e.hora ? `${e.hora} · ` : ''}
-          {e.lugar}
-        </p>
-      </div>
-      <span className={`nv-chip ${chip}`}>
-        {e.origen === 'municipal' ? 'Municipal' : e.origen === 'cultural' ? 'Cultura' : 'Vecinal'}
-      </span>
-    </Link>
-  )
+function fechaHoy() {
+  const texto = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date())
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
 export default function Inicio() {
   return (
-    <div className="space-y-5">
-      {/* Hero: saludo + tiempo */}
-      <section className="-mx-4 -mt-4 bg-gradient-to-b from-vino to-vino-dark px-5 pb-6 pt-5 text-crema">
-        <h1 className="font-display text-2xl font-medium text-white">Buenas tardes, vecino</h1>
-        <p className="mt-1 flex items-center gap-1.5 text-[13px] text-crema/70">
-          <IconSun className="h-4 w-4 text-oro" />
-          Martes, 7 de julio · 31° soleado
+    <div className="space-y-8 md:space-y-16">
+      {/* Bienvenida (móvil) */}
+      <section className="nv-card p-6 md:hidden">
+        <h2 className="mb-2 font-display text-xl font-semibold text-primary">{saludo()}</h2>
+        <p className="text-on-surface-variant">
+          {fechaHoy()}. Esto es lo que pasa hoy en Navalcarnero.
         </p>
       </section>
 
-      {/* Accesos rápidos */}
-      <section className="flex gap-2.5">
+      {/* Hero */}
+      <section className="relative h-56 overflow-hidden rounded-xl shadow-card md:h-[420px]">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-container via-primary to-[#083824]" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(110% 80% at 85% 0%, rgba(146,247,195,0.25), transparent 55%)',
+          }}
+        />
+        <div className="relative flex h-full flex-col justify-end p-6 text-white md:p-12">
+          <h1 className="max-w-2xl font-display text-2xl font-bold leading-tight md:text-5xl">
+            Bienvenido a tu plaza digital
+          </h1>
+          <p className="mt-3 hidden max-w-xl text-lg opacity-90 md:block">
+            Conectando Navalcarnero a través de la información local, los eventos y los servicios
+            vecinales.
+          </p>
+          <div className="mt-6 hidden gap-4 md:flex">
+            <Link
+              to="/eventos"
+              className="rounded-lg bg-secondary-container px-8 py-3 text-sm font-semibold text-on-secondary-container transition-all hover:opacity-90"
+            >
+              Ver eventos
+            </Link>
+            <Link
+              to="/mapa"
+              className="rounded-lg bg-white/70 px-8 py-3 text-sm font-semibold text-on-surface backdrop-blur transition-all hover:bg-white"
+            >
+              Guía local
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Accesos rápidos (móvil) */}
+      <section className="grid grid-cols-2 gap-4 md:hidden">
         <Link
-          to="/mapa"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white py-2.5 text-xs font-medium text-vino shadow-soft"
+          to="/asistente"
+          className="nv-card flex flex-col items-center justify-center p-4 text-center"
         >
-          <IconHealthCross className="h-4 w-4" />
-          Farmacia de guardia
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-on-primary-container">
+            <MIcon name="smart_toy" />
+          </div>
+          <span className="text-sm font-semibold text-on-surface">Preguntar al asistente</span>
         </Link>
         <Link
           to="/noticias"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white py-2.5 text-xs font-medium text-vino shadow-soft"
+          className="nv-card flex flex-col items-center justify-center p-4 text-center"
         >
-          <IconAlert className="h-4 w-4" />
-          Avisos
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container">
+            <MIcon name="report" />
+          </div>
+          <span className="text-sm font-semibold text-on-surface">Avisos y noticias</span>
         </Link>
       </section>
 
-      {/* Evento destacado */}
-      {destacado && (
-        <section>
-          <Link to="/eventos" className="nv-card block overflow-hidden">
-            <div className="relative flex h-32 items-end bg-gradient-to-br from-vino-light to-vino-dark">
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'radial-gradient(120% 90% at 80% 10%, rgba(199,154,58,0.35), transparent 55%)',
-                }}
-              />
-              <span className="nv-chip absolute left-3 top-3 bg-crema/90 font-semibold text-vino-dark">
-                {(CATEGORIAS_EVENTO[destacado.categoria]?.nombre || 'Evento').toUpperCase()}
-              </span>
-              <div className="relative flex items-center gap-2 p-3.5 text-oro">
-                <IconoEvento categoria={destacado.categoria} className="h-4 w-4" />
-                <span className="text-[11px] font-semibold uppercase tracking-wide">
-                  {formatearFechaCorta(destacado.fecha)}
-                  {destacado.hora ? ` · ${destacado.hora}` : ''} · {destacado.lugar}
-                </span>
+      {/* Estado del municipio + tiempo */}
+      <section className="grid grid-cols-12 gap-4 md:gap-8">
+        <div className="col-span-12 space-y-4 lg:col-span-8">
+          <div className="flex items-center justify-between">
+            <h2 className="nv-section-title md:text-2xl">Estado del municipio</h2>
+            <span className="rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container">
+              Todo operativo
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-xl border-l-4 border-error bg-surface-container-lowest p-6 shadow-card transition-shadow hover:shadow-card-lg">
+              <div className="flex items-start gap-4">
+                <div className="rounded-lg bg-error-container p-3">
+                  <MIcon name="water_drop" className="text-error" fill />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-semibold text-on-surface">
+                    Corte de agua programado
+                  </h3>
+                  <p className="mt-1 text-sm text-on-surface-variant">
+                    Mantenimiento en el barrio de la Estación. Martes de 8:00 a 14:00.
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="p-4">
-              <h2 className="font-display text-lg font-semibold leading-tight text-tinta">
-                {destacado.titulo}
-              </h2>
-              <p className="mt-1.5 text-sm text-tinta-muted">{destacado.descripcion}</p>
-              <span className="mt-3 flex items-center gap-1.5 text-sm font-medium text-vino">
-                Ver detalles <IconArrowRight className="h-4 w-4" />
-              </span>
+            <div className="rounded-xl border-l-4 border-secondary bg-surface-container-lowest p-6 shadow-card transition-shadow hover:shadow-card-lg">
+              <div className="flex items-start gap-4">
+                <div className="rounded-lg bg-secondary-container p-3">
+                  <MIcon name="handyman" className="text-secondary" fill />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-semibold text-on-surface">
+                    Obras finalizadas
+                  </h3>
+                  <p className="mt-1 text-sm text-on-surface-variant">
+                    Pavimentación de la Av. del Parque completada. Abierta al tráfico.
+                  </p>
+                </div>
+              </div>
             </div>
-          </Link>
-        </section>
-      )}
-
-      {/* Tiempo + basura */}
-      <section className="flex gap-3">
-        <div className="nv-card flex-1 p-4">
-          <p className="text-[11px] uppercase tracking-wide text-tinta-muted">Tiempo hoy</p>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="font-display text-3xl font-semibold text-tinta">31°</span>
-            <IconSun className="h-5 w-5 text-oro" />
           </div>
-          <p className="mt-0.5 text-[11px] text-tinta-muted">Despejado · máx 33°</p>
         </div>
-        <div className="nv-card flex-1 p-4">
-          <p className="text-[11px] uppercase tracking-wide text-tinta-muted">Recogida basura</p>
-          <p className="mt-1.5 font-display text-lg font-semibold text-tinta">Mañana</p>
-          <p className="mt-0.5 text-[11px] text-tinta-muted">Orgánica · 07:00</p>
+
+        {/* Widget de tiempo */}
+        <div className="relative col-span-12 flex flex-col justify-between overflow-hidden rounded-xl bg-primary-container p-8 text-on-primary-container lg:col-span-4">
+          <div className="relative z-10">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-sm font-semibold opacity-70">Navalcarnero</div>
+                <div className="font-display text-4xl font-bold text-white">31°C</div>
+              </div>
+              <MIcon name="clear_day" className="text-4xl" fill />
+            </div>
+            <div className="mt-8 space-y-4 text-sm">
+              <div className="flex items-center justify-between border-b border-white/20 pb-2">
+                <span>Cielo</span>
+                <span className="font-semibold">Despejado</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-white/20 pb-2">
+                <span>Máxima</span>
+                <span className="font-semibold">33°C</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Recogida orgánica</span>
+                <span className="font-semibold">Mañana, 7:00</span>
+              </div>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute -bottom-5 -right-5 opacity-10">
+            <MIcon name="filter_drama" className="text-[160px]" />
+          </div>
         </div>
       </section>
 
       {/* Próximos eventos */}
       <section>
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="nv-section-title">Próximos eventos</h2>
-          <Link to="/eventos" className="text-xs font-medium text-oro-dark">
-            Ver todos
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <h2 className="nv-section-title md:text-2xl">Próximos eventos</h2>
+            <p className="mt-1 hidden text-on-surface-variant md:block">
+              No te pierdas lo que pasa en el pueblo.
+            </p>
+          </div>
+          <Link
+            to="/eventos"
+            className="flex items-center gap-2 text-sm font-semibold text-primary transition-transform hover:translate-x-1"
+          >
+            Ver todos <MIcon name="arrow_forward" className="text-[18px]" />
           </Link>
         </div>
-        <div className="space-y-2.5">
-          {siguientes.map((e) => (
-            <EventoFila key={e.id} e={e} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
+          {proximos.map((e) => (
+            <Link
+              key={e.id}
+              to="/eventos"
+              className="group flex h-36 overflow-hidden rounded-xl bg-surface-container-lowest shadow-card transition-all hover:shadow-card-lg md:h-44"
+            >
+              <div className="flex w-1/3 items-center justify-center bg-gradient-to-br from-primary-container to-primary text-on-primary-container">
+                <IconoEvento categoria={e.categoria} className="text-[40px]" />
+              </div>
+              <div className="flex flex-1 flex-col justify-between p-4 md:p-6">
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-secondary">
+                    {CATEGORIAS_EVENTO[e.categoria]?.nombre || 'Evento'}
+                  </span>
+                  <h3 className="mt-1 font-display text-base font-semibold transition-colors group-hover:text-primary md:text-lg">
+                    {e.titulo}
+                  </h3>
+                  <p className="mt-2 flex items-center gap-2 text-sm text-on-surface-variant">
+                    <MIcon name="calendar_today" className="text-[16px]" />
+                    {formatearFechaCorta(e.fecha)}
+                    {e.hora ? `, ${e.hora}` : ''}
+                  </p>
+                </div>
+                <p className="line-clamp-1 text-sm text-on-surface-variant">{e.lugar}</p>
+              </div>
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* Aviso */}
-      <section>
-        <div
-          className="nv-card flex items-start gap-3 p-3.5"
-          style={{ borderLeft: '4px solid #C79A3A', borderRadius: '14px 20px 20px 14px' }}
-        >
-          <IconDroplet className="mt-0.5 h-5 w-5 flex-none text-vino" />
-          <div>
-            <p className="text-sm font-medium text-tinta">Corte de agua programado</p>
-            <p className="mt-0.5 text-xs text-tinta-muted">
-              Martes 8:00–14:00 · barrio de la Estación.
+      {/* Participación */}
+      <section className="rounded-xl bg-surface-container-low p-8 md:p-12">
+        <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
+          <div className="flex-1">
+            <h2 className="font-display text-xl font-bold text-primary md:text-3xl">
+              Tu voz importa en Navalcarnero
+            </h2>
+            <p className="mt-3 max-w-xl text-on-surface-variant">
+              Esta plaza digital la construimos entre todos. Pregunta al asistente, sugiere
+              comercios que falten y mantente al día de la vida del pueblo.
             </p>
+            <div className="mt-6 flex flex-wrap gap-4">
+              <Link
+                to="/asistente"
+                className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
+              >
+                Preguntar al asistente
+              </Link>
+              <Link
+                to="/mapa"
+                className="rounded-lg border border-outline px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
+              >
+                Sugerir un comercio
+              </Link>
+            </div>
+          </div>
+          <div className="hidden h-40 w-40 items-center justify-center rounded-full border-4 border-dashed border-outline-variant bg-surface-container-lowest md:flex">
+            <MIcon name="groups" className="text-[56px] text-primary" fill />
           </div>
         </div>
       </section>

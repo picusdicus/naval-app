@@ -1,16 +1,16 @@
 import { useRef, useState, useEffect } from 'react'
-import { IconChat } from '../components/icons.jsx'
+import MIcon from '../components/MIcon.jsx'
 
 const saludoInicial = {
   autor: 'asistente',
   texto:
-    '¡Hola! Soy el asistente vecinal de Navalcarnero. Puedo ayudarte con trámites municipales, horarios o información del pueblo. ¿En qué te echo una mano?',
+    '¡Hola! Soy tu asistente local. Puedo ayudarte con horarios del bus, trámites municipales o recomendarte qué hacer hoy en el pueblo.',
 }
 
 const sugerencias = [
-  '¿Qué necesito para empadronarme?',
-  '¿Cómo pido cita en el Ayuntamiento?',
-  '¿Qué hace falta para una reforma en casa?',
+  { icono: 'celebration', texto: '¿Cuándo es la próxima fiesta?' },
+  { icono: 'description', texto: '¿Cómo saco el certificado de empadronamiento?' },
+  { icono: 'schedule', texto: 'Horarios del bus a Madrid' },
 ]
 
 // Convierte el historial visible en mensajes para la API (rol user/assistant),
@@ -87,30 +87,34 @@ export default function Asistente() {
     preguntar(texto)
   }
 
+  const sinConversacion = mensajes.length === 1
+
   return (
-    <div className="flex h-[calc(100vh-140px)] flex-col md:h-[calc(100vh-220px)]">
-      <header className="mb-4">
-        <div className="flex items-center gap-2">
-          <IconChat className="h-6 w-6 text-vino" />
-          <h1 className="font-display text-2xl font-semibold text-vino">Asistente IA</h1>
+    <div className="mx-auto flex h-[calc(100vh-190px)] max-w-3xl flex-col md:h-[calc(100vh-260px)]">
+      {/* Cabecera del asistente */}
+      <header className="mb-4 flex flex-col items-center text-center">
+        <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-xl bg-primary text-on-primary shadow-card">
+          <MIcon name="smart_toy" className="text-[32px]" />
         </div>
-        <p className="mt-1 text-sm text-tinta-muted">
-          Pregunta sobre trámites municipales, horarios o información local del pueblo.
+        <h1 className="font-display text-xl font-bold text-primary">PuebloGPT</h1>
+        <p className="mt-1 max-w-md text-sm text-on-surface-variant">
+          Pregunta sobre trámites, horarios, eventos o comercios de Navalcarnero.
         </p>
       </header>
 
-      <div className="nv-card flex-1 space-y-3 overflow-y-auto p-4">
+      {/* Conversación */}
+      <div className="nv-card hide-scrollbar flex-1 space-y-3 overflow-y-auto p-4">
         {mensajes.map((m, i) => (
           <div key={i} className={`flex ${m.autor === 'usuario' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
+              className={`max-w-[85%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm ${
                 m.autor === 'usuario'
-                  ? 'rounded-br-sm bg-vino text-crema'
-                  : 'rounded-bl-sm bg-crema-dark text-tinta'
+                  ? 'rounded-br-md bg-primary text-on-primary'
+                  : 'rounded-bl-md bg-surface-container text-on-surface'
               }`}
             >
               {m.texto || (
-                <span className="inline-flex gap-1 text-tinta-muted">
+                <span className="inline-flex gap-1 text-on-surface-variant">
                   <span className="animate-pulse">Escribiendo…</span>
                 </span>
               )}
@@ -120,36 +124,48 @@ export default function Asistente() {
         <div ref={finRef} />
       </div>
 
-      {mensajes.length === 1 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {sugerencias.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => preguntar(s)}
-              className="rounded-full bg-white px-3 py-1.5 text-xs text-tinta-muted shadow-soft hover:text-vino"
-            >
-              {s}
-            </button>
-          ))}
+      {/* Sugerencias frecuentes */}
+      {sinConversacion && (
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+            Sugerencias frecuentes
+          </p>
+          <div className="flex flex-col gap-2">
+            {sugerencias.map((s) => (
+              <button
+                key={s.texto}
+                type="button"
+                onClick={() => preguntar(s.texto)}
+                className="flex items-center gap-3 rounded-lg bg-surface-container-lowest px-4 py-3 text-left text-sm text-on-surface shadow-card transition-colors hover:bg-surface-container"
+              >
+                <MIcon name={s.icono} className="text-[18px] text-secondary" />
+                {s.texto}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <form onSubmit={enviar} className="mt-3 flex gap-2">
-        <input
-          type="text"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          placeholder="Escribe tu pregunta…"
-          disabled={enviando}
-          className="flex-1 rounded-full border border-vino/15 bg-white px-4 py-2.5 text-sm text-tinta shadow-soft outline-none focus:border-vino disabled:opacity-60"
-        />
+      {/* Entrada */}
+      <form onSubmit={enviar} className="mt-4 flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 rounded-full bg-surface-container-lowest px-4 py-1.5 shadow-card">
+          <MIcon name="add_circle" className="text-[22px] text-on-surface-variant" />
+          <input
+            type="text"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="Pregunta algo sobre el pueblo…"
+            disabled={enviando}
+            className="w-full bg-transparent py-2 text-sm text-on-surface outline-none placeholder:text-on-surface-variant/70 disabled:opacity-60"
+          />
+        </div>
         <button
           type="submit"
           disabled={enviando}
-          className="rounded-full bg-vino px-5 py-2 text-sm font-medium text-crema disabled:opacity-60"
+          aria-label="Enviar"
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary text-on-primary transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
         >
-          Enviar
+          <MIcon name="send" className="text-[20px]" />
         </button>
       </form>
     </div>

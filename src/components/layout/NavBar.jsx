@@ -1,39 +1,34 @@
 import { NavLink } from 'react-router-dom'
-import { IconHome, IconCalendar, IconMap, IconBus, IconSparkles } from '../icons.jsx'
+import MIcon from '../MIcon.jsx'
 
 const tabs = [
-  { to: '/', label: 'Inicio', Icon: IconHome, end: true },
-  { to: '/eventos', label: 'Eventos', Icon: IconCalendar },
-  { to: '/mapa', label: 'Guía', Icon: IconMap },
-  { to: '/transporte', label: 'Transporte', Icon: IconBus },
-  { to: '/asistente', label: 'Asistente', Icon: IconSparkles },
+  { to: '/', label: 'Inicio', icono: 'home', end: true },
+  { to: '/eventos', label: 'Eventos', icono: 'calendar_today' },
+  { to: '/mapa', label: 'Guía', icono: 'explore' },
+  { to: '/transporte', label: 'Bus', icono: 'directions_bus' },
+  { to: '/asistente', label: 'IA', icono: 'smart_toy' },
 ]
 
+// Barra de navegación inferior (solo móvil), según la referencia: pestaña
+// activa como píldora verde salvia sobre superficie blanca redondeada arriba.
 export default function NavBar() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-crema-dark bg-white/95 backdrop-blur md:hidden">
-      <div className="mx-auto flex max-w-2xl items-center justify-around px-2 pb-3 pt-2">
-        {tabs.map(({ to, label, Icon, end }) => (
-          <NavLink key={to} to={to} end={end} className="flex flex-col items-center gap-1">
-            {({ isActive }) => (
-              <>
-                <span
-                  className={`flex h-8 w-11 items-center justify-center rounded-full transition-colors ${
-                    isActive ? 'bg-vino' : ''
-                  }`}
-                >
-                  <Icon className={`h-[19px] w-[19px] ${isActive ? 'text-oro' : 'text-tinta-muted'}`} />
-                </span>
-                <span
-                  className={`text-[10px] ${isActive ? 'font-semibold text-vino' : 'text-tinta-muted'}`}
-                >
-                  {label}
-                </span>
-              </>
-            )}
-          </NavLink>
-        ))}
-      </div>
+    <nav className="fixed bottom-0 z-40 flex w-full items-center justify-around rounded-t-xl bg-surface-container-lowest px-2 py-3 shadow-card-up md:hidden">
+      {tabs.map(({ to, label, icono, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) =>
+            isActive
+              ? 'flex scale-90 transform flex-col items-center justify-center rounded-full bg-secondary-container px-4 py-1 text-on-secondary-container transition-transform'
+              : 'flex flex-col items-center justify-center px-4 py-1 text-on-surface-variant transition-colors hover:text-primary'
+          }
+        >
+          <MIcon name={icono} />
+          <span className="text-xs font-medium">{label}</span>
+        </NavLink>
+      ))}
     </nav>
   )
 }

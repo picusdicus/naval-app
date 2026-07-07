@@ -1,17 +1,19 @@
-import { IconStore, IconCoffee, IconStethoscope, IconScissors, IconTool, IconPin } from '../icons.jsx'
+import MIcon from '../MIcon.jsx'
 
-// Icono React por cada id de categoría (definido en src/lib/categorias.js).
-export const ICONO_CATEGORIA = {
-  alimentacion: IconStore,
-  restauracion: IconCoffee,
-  salud: IconStethoscope,
-  belleza: IconScissors,
-  hogar: IconTool,
-  servicios: IconPin,
-  servicios_prof: IconTool,
+// Símbolo de Material Symbols por cada categoría del directorio
+// (definida en src/lib/categorias.js).
+export const SIMBOLO_CATEGORIA = {
+  alimentacion: 'storefront',
+  restauracion: 'restaurant',
+  salud: 'medical_services',
+  belleza: 'content_cut',
+  hogar: 'chair',
+  servicios: 'build',
+  servicios_prof: 'handyman',
 }
 
-export function IconoCategoria({ categoria, ...props }) {
-  const Icon = ICONO_CATEGORIA[categoria] || IconPin
-  return <Icon {...props} />
+export function IconoCategoria({ categoria, className = '', fill = false }) {
+  return (
+    <MIcon name={SIMBOLO_CATEGORIA[categoria] || 'location_on'} className={className} fill={fill} />
+  )
 }
