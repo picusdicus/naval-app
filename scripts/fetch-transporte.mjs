@@ -22,6 +22,12 @@ const URL_GTFS =
 // Término municipal de Navalcarnero (casco y urbanizaciones cercanas).
 const BBOX = { latMin: 40.255, latMax: 40.325, lonMin: -4.09, lonMax: -3.96 }
 
+// Líneas solicitadas originalmente para el proyecto. Se comprueban de forma
+// explícita contra las paradas de Navalcarnero: el GTFS demuestra que NO
+// prestan servicio en el municipio (son del corredor A-6: Torrelodones,
+// Galapagar y Las Rozas), por lo que el filtro efectivo es geográfico.
+const LINEAS_SOLICITADAS = ['629', '631', '632']
+
 // --- CSV -------------------------------------------------------------------
 
 // Parser CSV mínimo con soporte de campos entrecomillados.
@@ -228,9 +234,30 @@ async function main() {
   }
   lineas.sort((a, b) => a.numero.localeCompare(b.numero, 'es', { numeric: true }))
 
+  // Filtro explícito de las líneas solicitadas (629/631/632) contra las
+  // paradas de Navalcarnero, con su resultado documentado en la salida.
+  const numerosConServicio = new Set(lineas.map((l) => l.numero))
+  const sinServicio = []
+  console.log('\nComprobación de las líneas solicitadas (629, 631, 632):')
+  for (const numero of LINEAS_SOLICITADAS) {
+    const ruta = [...rutas.values()].find((r) => r.numero === numero)
+    if (numerosConServicio.has(numero)) {
+      console.log(`  ${numero}: SÍ para en Navalcarnero — incluida.`)
+    } else {
+      sinServicio.push(numero)
+      console.log(
+        `  ${numero}: sin paradas en Navalcarnero${ruta ? ` (${ruta.nombre})` : ''} — excluida.`,
+      )
+    }
+  }
+
   const salida = {
     fuente: 'CRTM – GTFS Red de Autobuses Interurbanos (datos.crtm.es)',
     actualizado: new Date().toISOString().slice(0, 10),
+    nota:
+      sinServicio.length > 0
+        ? `Las líneas ${sinServicio.join(', ')} no prestan servicio en Navalcarnero según el GTFS oficial (corredor A-6); se incluyen las ${lineas.length} líneas con parada real en el municipio.`
+        : undefined,
     lineas,
   }
 

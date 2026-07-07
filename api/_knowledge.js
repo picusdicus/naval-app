@@ -80,7 +80,9 @@ const fichas = TRAMITES.map(
 function transporteTexto() {
   const ahora = new Date()
   const tipo = tipoDeDia(ahora)
-  const cabecera = `Hoy se aplica el horario de ${ETIQUETA_TIPO_DIA[tipo]}. Datos oficiales del CRTM actualizados el ${horariosBus.actualizado}.`
+  const cabecera = `Hoy se aplica el horario de ${ETIQUETA_TIPO_DIA[tipo]}. Datos oficiales del CRTM actualizados el ${horariosBus.actualizado}.${
+    horariosBus.nota ? ` ${horariosBus.nota}` : ''
+  }`
   const lineas = horariosBus.lineas
     .map((l) => {
       const sentidos = l.sentidos

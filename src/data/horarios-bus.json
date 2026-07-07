@@ -1,6 +1,7 @@
 {
   "fuente": "CRTM – GTFS Red de Autobuses Interurbanos (datos.crtm.es)",
   "actualizado": "2026-07-07",
+  "nota": "Las líneas 629, 631, 632 no prestan servicio en Navalcarnero según el GTFS oficial (corredor A-6); se incluyen las 15 líneas con parada real en el municipio.",
   "lineas": [
     {
       "numero": "528",
