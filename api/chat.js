@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { SYSTEM_PROMPT } from './_knowledge.js'
+import { buildSystemPrompt } from './_knowledge.js'
 
 // Modelo por defecto: Opus 4.8. Configurable con la variable de entorno
 // ANTHROPIC_MODEL (p. ej. "claude-haiku-4-5" para reducir coste).
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     const stream = client.messages.stream({
       model: MODEL,
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(),
       messages: mensajes,
     })
 

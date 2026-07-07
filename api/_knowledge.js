@@ -1,6 +1,13 @@
 // Base de conocimiento local para el asistente (RAG sencillo: se inyecta en el
 // system prompt). Los archivos de /api que empiezan por "_" no se publican como
 // endpoint en Vercel.
+//
+// Lee los mismos datos que las secciones de la app (fuente única): eventos y
+// transporte. Los eventos se filtran a los próximos en cada petición.
+
+import eventosData from '../src/data/eventos.json'
+import transporteData from '../src/data/transporte.json'
+import { proximosEventos, formatearFechaLarga } from '../src/lib/eventos.js'
 
 const CONTACTO = `Oficina de Turismo / Atención al vecino: Plaza de Segovia, 1.
 Teléfonos: 91 810 11 41 / 91 811 51 91. Horario orientativo: lunes a viernes de 9:00 a 14:00.
@@ -52,22 +59,53 @@ const TRAMITES = [
 ]
 
 const fichas = TRAMITES.map(
-  (t) => `### ${t.titulo}\n- Qué necesitas: ${t.requisitos}\n- Dónde: ${t.donde}`,
-).join('\n\n')
+  (t) => `- ${t.titulo}. Qué necesitas: ${t.requisitos} Dónde: ${t.donde}`,
+).join('\n')
 
-export const SYSTEM_PROMPT = `Eres el asistente vecinal de Navalcarnero (Madrid), un municipio del suroeste de la Comunidad de Madrid. Ayudas a los vecinos con trámites municipales, información local y dudas prácticas sobre el pueblo.
+const transporte = transporteData
+  .map(
+    (l) =>
+      `- Línea ${l.numero}: ${l.ruta}. ${l.frecuencia}. Primer bus ${l.primero}, último ${l.ultimo}.`,
+  )
+  .join('\n')
+
+// Próximos eventos formateados (se recalcula en cada petición para que "hoy"
+// sea siempre la fecha actual).
+function eventosProximosTexto() {
+  const proximos = proximosEventos(eventosData, 8)
+  if (!proximos.length) return 'No hay eventos próximos programados ahora mismo.'
+  return proximos
+    .map((e) => {
+      const hora = e.hora ? ` a las ${e.hora}` : ''
+      const origen = e.origen === 'municipal' ? 'municipal' : 'vecinal'
+      return `- ${formatearFechaLarga(e.fecha)}${hora}: ${e.titulo} (${origen}), en ${e.lugar}. ${e.descripcion || ''}`.trim()
+    })
+    .join('\n')
+}
+
+// Construye el system prompt completo. Se llama en cada petición para que los
+// eventos reflejen siempre las fechas próximas.
+export function buildSystemPrompt() {
+  return `Eres el asistente vecinal de Navalcarnero (Madrid), un municipio del suroeste de la Comunidad de Madrid. Ayudas a los vecinos con trámites municipales, eventos, transporte e información local del pueblo.
 
 Reglas:
 - Responde SIEMPRE en español, de forma clara, cercana y concisa.
 - Escribe en TEXTO PLANO, sin formato Markdown: nada de almohadillas (#), asteriscos (*, **), ni tablas. Usa párrafos cortos y, si necesitas una lista, guiones simples al inicio de línea.
 - Cíñete a Navalcarnero y a la información que se te proporciona más abajo. Si te preguntan por otra cosa, ayuda en lo general pero aclara que no dispones de datos locales concretos.
-- NO inventes teléfonos, direcciones, importes, fechas ni enlaces. Si no tienes el dato exacto, dilo y recomienda verificarlo con el Ayuntamiento.
+- Para eventos y transporte, usa EXCLUSIVAMENTE los datos de más abajo. No añadas eventos ni horarios que no aparezcan. Los horarios de bus son orientativos.
+- NO inventes teléfonos, direcciones, importes, fechas ni enlaces. Si no tienes el dato exacto, dilo y recomienda verificarlo con el Ayuntamiento o el Consorcio de Transportes (CRTM).
 - Para gestiones importantes, recuerda que los requisitos pueden variar y conviene confirmar y pedir cita previa.
 - Sé honesto sobre tus límites: eres una ayuda orientativa, no una fuente oficial.
 
 Datos de contacto de referencia:
 ${CONTACTO}
 
-Fichas de trámites municipales (información orientativa):
+Trámites municipales (información orientativa):
+${fichas}
 
-${fichas}`
+Próximos eventos en Navalcarnero:
+${eventosProximosTexto()}
+
+Líneas de autobús (horarios orientativos):
+${transporte}`
+}
