@@ -79,10 +79,10 @@ export default function Mapa() {
           <button
             type="button"
             onClick={() => setCocinaFiltro(null)}
-            className={`flex-none rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`nv-chip flex-none transition-colors ${
               cocinaFiltro === null
-                ? 'bg-tierra text-crema'
-                : 'border border-tierra/20 bg-white text-tinta-muted hover:border-tierra'
+                ? 'bg-oro text-white'
+                : 'bg-white text-tinta-muted shadow-soft hover:text-oro-dark'
             }`}
           >
             Todo tipo
@@ -92,10 +92,10 @@ export default function Mapa() {
               key={c}
               type="button"
               onClick={() => setCocinaFiltro(c)}
-              className={`flex-none rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`nv-chip flex-none transition-colors ${
                 cocinaFiltro === c
-                  ? 'bg-tierra text-crema'
-                  : 'border border-tierra/20 bg-white text-tinta-muted hover:border-tierra'
+                  ? 'bg-oro text-white'
+                  : 'bg-white text-tinta-muted shadow-soft hover:text-oro-dark'
               }`}
             >
               {etiquetaCocina(c)}
@@ -121,7 +121,7 @@ export default function Mapa() {
         <button
           type="button"
           onClick={() => setSugiriendo(true)}
-          className="flex items-center gap-1.5 rounded-full bg-tierra px-3 py-1.5 text-xs font-medium text-crema"
+          className="flex items-center gap-1.5 rounded-full bg-vino px-3 py-1.5 text-xs font-medium text-crema"
         >
           <IconPlus className="h-4 w-4" />
           ¿Falta un comercio?
@@ -140,7 +140,7 @@ export default function Mapa() {
           />
         ))}
         {comercios.length === 0 && (
-          <p className="rounded-xl border border-dashed border-tierra/30 bg-white p-6 text-center text-sm text-tinta-muted">
+          <p className="rounded-3xl border border-dashed border-vino/20 bg-white p-6 text-center text-sm text-tinta-muted">
             No hay comercios que coincidan con tu búsqueda.
           </p>
         )}

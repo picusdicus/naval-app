@@ -9,3 +9,15 @@ html {
 body {
   @apply bg-crema text-tinta font-sans antialiased;
 }
+
+@layer components {
+  .nv-card {
+    @apply rounded-3xl bg-white shadow-card;
+  }
+  .nv-chip {
+    @apply rounded-full px-3 py-1.5 text-xs font-medium;
+  }
+  .nv-section-title {
+    @apply font-display text-lg font-semibold text-vino;
+  }
+}

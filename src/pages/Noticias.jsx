@@ -39,38 +39,35 @@ export default function Noticias() {
       </header>
 
       <section>
-        <div className="mb-2 flex items-center gap-2">
-          <IconBuilding className="h-5 w-5 text-tierra" />
-          <h2 className="font-display text-lg font-semibold text-vino">Noticias oficiales</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <IconBuilding className="h-5 w-5 text-vino" />
+          <h2 className="nv-section-title">Noticias oficiales</h2>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {oficiales.map((n) => (
-            <article key={n.titulo} className="rounded-2xl border border-tierra/10 bg-white p-4">
+            <article key={n.titulo} className="nv-card p-4">
               <p className="font-medium text-tinta">{n.titulo}</p>
               <p className="mt-1 text-sm text-tinta-muted">{n.resumen}</p>
-              <p className="mt-2 text-xs text-tinta-muted">Ayuntamiento · {n.cuando}</p>
+              <p className="mt-2 text-xs text-oro-dark">Ayuntamiento · {n.cuando}</p>
             </article>
           ))}
         </div>
       </section>
 
       <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-vino">Tablón vecinal</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="nv-section-title">Tablón vecinal</h2>
           <button
             type="button"
-            className="rounded-full bg-tierra px-3 py-1.5 text-xs font-medium text-crema"
+            className="rounded-full bg-vino px-3 py-1.5 text-xs font-medium text-crema"
           >
             Publicar aviso
           </button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {tablon.map((n) => (
-            <div
-              key={n.titulo}
-              className="flex items-start gap-3 rounded-xl border border-tierra/10 bg-white p-3"
-            >
-              <n.Icon className="mt-0.5 h-4 w-4 flex-none text-tierra" />
+            <div key={n.titulo} className="nv-card flex items-start gap-3 p-3.5">
+              <n.Icon className="mt-0.5 h-4 w-4 flex-none text-azul" />
               <div>
                 <p className="text-sm font-medium text-tinta">{n.titulo}</p>
                 <p className="mt-1 text-xs text-tinta-muted">

@@ -12,7 +12,7 @@ export default function FiltrosCategoria({ categoria, onCategoria, busqueda, onB
           value={busqueda}
           onChange={(e) => onBusqueda(e.target.value)}
           placeholder="Buscar comercio…"
-          className="w-full rounded-full border border-tierra/20 bg-white py-2 pl-9 pr-4 text-sm text-tinta outline-none focus:border-tierra"
+          className="w-full rounded-full border border-vino/15 bg-white py-2.5 pl-9 pr-4 text-sm text-tinta shadow-soft outline-none focus:border-vino"
         />
       </div>
 
@@ -20,10 +20,10 @@ export default function FiltrosCategoria({ categoria, onCategoria, busqueda, onB
         <button
           type="button"
           onClick={() => onCategoria(null)}
-          className={`flex-none rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`nv-chip flex-none transition-colors ${
             categoria === null
-              ? 'bg-vino text-crema'
-              : 'border border-tierra/20 bg-white text-tinta-muted hover:border-tierra'
+              ? 'bg-vino text-white'
+              : 'bg-white text-tinta-muted shadow-soft hover:text-vino'
           }`}
         >
           Todos
@@ -33,10 +33,10 @@ export default function FiltrosCategoria({ categoria, onCategoria, busqueda, onB
             key={cat.id}
             type="button"
             onClick={() => onCategoria(cat.id)}
-            className={`flex flex-none items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`nv-chip flex flex-none items-center gap-1.5 transition-colors ${
               categoria === cat.id
-                ? 'bg-vino text-crema'
-                : 'border border-tierra/20 bg-white text-tinta-muted hover:border-tierra'
+                ? 'bg-vino text-white'
+                : 'bg-white text-tinta-muted shadow-soft hover:text-vino'
             }`}
           >
             <IconoCategoria categoria={cat.id} className="h-3.5 w-3.5" />

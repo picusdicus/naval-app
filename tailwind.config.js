@@ -4,32 +4,51 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Paleta "vino y oro" inspirada en el escudo de Navalcarnero.
         vino: {
-          DEFAULT: '#7A2E3E',
-          dark: '#4E1C27',
-          light: '#9A4456',
+          DEFAULT: '#6E2A3C',
+          dark: '#4A1C29',
+          light: '#8A3B4A',
         },
+        oro: {
+          DEFAULT: '#C79A3A',
+          dark: '#8F6B1E',
+        },
+        azul: {
+          DEFAULT: '#2E6E8E',
+          dark: '#245572',
+          tint: '#EAF0F3',
+        },
+        crema: {
+          DEFAULT: '#F7F1E6',
+          dark: '#EFE6D6',
+        },
+        tinta: {
+          DEFAULT: '#2B1D22',
+          muted: '#948477',
+        },
+        // Alias de compatibilidad mientras se migra el resto de la app.
         tierra: {
           DEFAULT: '#C1633D',
           dark: '#8A4327',
           light: '#D98861',
         },
-        crema: {
-          DEFAULT: '#FBF3E7',
-          dark: '#F3E6D3',
-        },
         dorado: {
-          DEFAULT: '#D9A441',
-          dark: '#B5822B',
-        },
-        tinta: {
-          DEFAULT: '#3B2A22',
-          muted: '#8A7768',
+          DEFAULT: '#C79A3A',
+          dark: '#8F6B1E',
         },
       },
       fontFamily: {
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        display: ['Fraunces', 'Georgia', 'serif'],
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        card: '0 6px 20px -12px rgba(74, 28, 41, 0.35)',
+        soft: '0 3px 10px -8px rgba(74, 28, 41, 0.4)',
+      },
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.25rem',
       },
     },
   },

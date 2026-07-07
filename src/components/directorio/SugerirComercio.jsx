@@ -63,7 +63,7 @@ export default function SugerirComercio({ onCerrar }) {
 
   if (estado === 'ok') {
     return (
-      <div className="rounded-2xl border border-tierra/10 bg-white p-5 text-center">
+      <div className="nv-card p-5 text-center">
         <p className="font-medium text-vino">¡Gracias por tu aportación!</p>
         <p className="mt-1 text-sm text-tinta-muted">
           Revisaremos el comercio y lo añadiremos al directorio.
@@ -80,7 +80,7 @@ export default function SugerirComercio({ onCerrar }) {
   }
 
   return (
-    <div className="rounded-2xl border border-tierra/10 bg-white p-4">
+    <div className="nv-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-display text-lg font-semibold text-vino">Sugerir un comercio</h3>
         <button
@@ -101,7 +101,7 @@ export default function SugerirComercio({ onCerrar }) {
             required
             value={datos.nombre}
             onChange={(e) => actualizar('nombre', e.target.value)}
-            className="w-full rounded-lg border border-tierra/20 bg-white px-3 py-2 text-sm outline-none focus:border-tierra"
+            className="w-full rounded-lg border border-vino/15 bg-white px-3 py-2 text-sm outline-none focus:border-vino"
           />
         </div>
         <div>
@@ -109,7 +109,7 @@ export default function SugerirComercio({ onCerrar }) {
           <select
             value={datos.categoria}
             onChange={(e) => actualizar('categoria', e.target.value)}
-            className="w-full rounded-lg border border-tierra/20 bg-white px-3 py-2 text-sm outline-none focus:border-tierra"
+            className="w-full rounded-lg border border-vino/15 bg-white px-3 py-2 text-sm outline-none focus:border-vino"
           >
             {LISTA_CATEGORIAS.map((c) => (
               <option key={c.id} value={c.id}>
@@ -124,7 +124,7 @@ export default function SugerirComercio({ onCerrar }) {
             <select
               value={datos.cocina}
               onChange={(e) => actualizar('cocina', e.target.value)}
-              className="w-full rounded-lg border border-tierra/20 bg-white px-3 py-2 text-sm outline-none focus:border-tierra"
+              className="w-full rounded-lg border border-vino/15 bg-white px-3 py-2 text-sm outline-none focus:border-vino"
             >
               <option value="">Sin especificar</option>
               {OPCIONES_COCINA.map((c) => (
@@ -141,7 +141,7 @@ export default function SugerirComercio({ onCerrar }) {
             type="text"
             value={datos.direccion}
             onChange={(e) => actualizar('direccion', e.target.value)}
-            className="w-full rounded-lg border border-tierra/20 bg-white px-3 py-2 text-sm outline-none focus:border-tierra"
+            className="w-full rounded-lg border border-vino/15 bg-white px-3 py-2 text-sm outline-none focus:border-vino"
           />
         </div>
         <div>
@@ -150,7 +150,7 @@ export default function SugerirComercio({ onCerrar }) {
             type="tel"
             value={datos.telefono}
             onChange={(e) => actualizar('telefono', e.target.value)}
-            className="w-full rounded-lg border border-tierra/20 bg-white px-3 py-2 text-sm outline-none focus:border-tierra"
+            className="w-full rounded-lg border border-vino/15 bg-white px-3 py-2 text-sm outline-none focus:border-vino"
           />
         </div>
         <div>
@@ -159,7 +159,7 @@ export default function SugerirComercio({ onCerrar }) {
             rows={2}
             value={datos.notas}
             onChange={(e) => actualizar('notas', e.target.value)}
-            className="w-full rounded-lg border border-tierra/20 bg-white px-3 py-2 text-sm outline-none focus:border-tierra"
+            className="w-full rounded-lg border border-vino/15 bg-white px-3 py-2 text-sm outline-none focus:border-vino"
           />
         </div>
 

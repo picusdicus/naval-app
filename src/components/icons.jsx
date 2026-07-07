@@ -2,6 +2,82 @@ function base(props) {
   return { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, ...props }
 }
 
+export function IconBell(props) {
+  return (
+    <svg {...base(props)}>
+      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" strokeLinejoin="round" />
+      <path d="M10 19a2 2 0 0 0 4 0" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function IconSun(props) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="4" />
+      <path
+        d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+export function IconSparkles(props) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6Z"
+        strokeLinejoin="round"
+      />
+      <path d="M18 15l.7 1.8L20.5 17.5 18.7 18.2 18 20l-.7-1.8L15.5 17.5 17.3 16.8Z" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function IconDroplet(props) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3Z" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function IconHealthCross(props) {
+  return (
+    <svg {...base(props)}>
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="M12 8.5v7M8.5 12h7" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function IconAlert(props) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 4 21 19H3Z" strokeLinejoin="round" />
+      <path d="M12 10v4M12 16.5v.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function IconArrowRight(props) {
+  return (
+    <svg {...base(props)}>
+      <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function IconHome(props) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 11.5 12 4l8 7.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 10v9h12v-9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function IconCalendar(props) {
   return (
     <svg {...base(props)}>

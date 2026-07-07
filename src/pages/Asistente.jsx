@@ -28,7 +28,7 @@ export default function Asistente() {
   const finRef = useRef(null)
 
   useEffect(() => {
-    finRef.current?.scrollIntoView({ behavior: 'smooth' })
+    finRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [mensajes])
 
   async function preguntar(pregunta) {
@@ -99,13 +99,13 @@ export default function Asistente() {
         </p>
       </header>
 
-      <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl border border-tierra/10 bg-white p-4">
+      <div className="nv-card flex-1 space-y-3 overflow-y-auto p-4">
         {mensajes.map((m, i) => (
           <div key={i} className={`flex ${m.autor === 'usuario' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
                 m.autor === 'usuario'
-                  ? 'rounded-br-sm bg-tierra text-crema'
+                  ? 'rounded-br-sm bg-vino text-crema'
                   : 'rounded-bl-sm bg-crema-dark text-tinta'
               }`}
             >
@@ -127,7 +127,7 @@ export default function Asistente() {
               key={s}
               type="button"
               onClick={() => preguntar(s)}
-              className="rounded-full border border-tierra/20 bg-white px-3 py-1.5 text-xs text-tinta-muted hover:border-tierra"
+              className="rounded-full bg-white px-3 py-1.5 text-xs text-tinta-muted shadow-soft hover:text-vino"
             >
               {s}
             </button>
@@ -142,7 +142,7 @@ export default function Asistente() {
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Escribe tu pregunta…"
           disabled={enviando}
-          className="flex-1 rounded-full border border-tierra/20 bg-white px-4 py-2 text-sm text-tinta outline-none focus:border-tierra disabled:opacity-60"
+          className="flex-1 rounded-full border border-vino/15 bg-white px-4 py-2.5 text-sm text-tinta shadow-soft outline-none focus:border-vino disabled:opacity-60"
         />
         <button
           type="submit"

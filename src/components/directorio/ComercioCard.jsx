@@ -9,13 +9,13 @@ export default function ComercioCard({ comercio, activo, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl border bg-white p-3 text-left transition-colors ${
-        activo ? 'border-vino ring-1 ring-vino' : 'border-tierra/10 hover:border-tierra/40'
+      className={`nv-card flex w-full items-center gap-3 p-3 text-left transition ${
+        activo ? 'ring-2 ring-vino' : ''
       }`}
     >
       <span
-        className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-crema"
-        style={{ backgroundColor: cat?.color || '#4E6A8A' }}
+        className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl text-crema"
+        style={{ backgroundColor: cat?.color || '#2E6E8E' }}
       >
         <IconoCategoria categoria={comercio.categoria} className="h-5 w-5" />
       </span>

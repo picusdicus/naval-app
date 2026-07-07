@@ -45,7 +45,7 @@ function CentrarSeleccion({ seleccionado }) {
 
 export default function MapaComercios({ comercios, seleccionado, onSeleccionar }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-tierra/10">
+    <div className="overflow-hidden rounded-3xl shadow-card">
       <MapContainer
         center={CENTRO}
         zoom={14}

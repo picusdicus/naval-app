@@ -16,7 +16,7 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
   const web = normalizarWeb(comercio.web)
 
   return (
-    <div className="rounded-2xl border border-tierra/10 bg-white p-4">
+    <div className="nv-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
@@ -63,13 +63,13 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
       <dl className="mt-4 space-y-2 text-sm">
         {comercio.direccion && (
           <div className="flex items-start gap-2 text-tinta">
-            <IconPin className="mt-0.5 h-4 w-4 flex-none text-tierra" />
+            <IconPin className="mt-0.5 h-4 w-4 flex-none text-oro-dark" />
             <span>{comercio.direccion}</span>
           </div>
         )}
         {comercio.telefono && (
           <div className="flex items-center gap-2 text-tinta">
-            <IconPhone className="h-4 w-4 flex-none text-tierra" />
+            <IconPhone className="h-4 w-4 flex-none text-oro-dark" />
             <a href={`tel:${comercio.telefono}`} className="text-vino underline-offset-2 hover:underline">
               {comercio.telefono}
             </a>
@@ -77,7 +77,7 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
         )}
         {web && (
           <div className="flex items-center gap-2 text-tinta">
-            <IconGlobe className="h-4 w-4 flex-none text-tierra" />
+            <IconGlobe className="h-4 w-4 flex-none text-oro-dark" />
             <a
               href={web}
               target="_blank"
@@ -90,7 +90,7 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
         )}
         {comercio.horario && (
           <div className="flex items-start gap-2 text-tinta">
-            <IconClock className="mt-0.5 h-4 w-4 flex-none text-tierra" />
+            <IconClock className="mt-0.5 h-4 w-4 flex-none text-oro-dark" />
             <span>{comercio.horario}</span>
           </div>
         )}

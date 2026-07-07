@@ -13,11 +13,8 @@ export default function Transporte() {
 
       <div className="space-y-3">
         {lineas.map((l) => (
-          <article
-            key={l.numero}
-            className="flex gap-4 rounded-2xl border border-tierra/10 bg-white p-4"
-          >
-            <div className="flex h-12 w-14 flex-none items-center justify-center rounded-xl bg-vino text-crema">
+          <article key={l.numero} className="nv-card flex gap-4 p-4">
+            <div className="flex h-12 w-14 flex-none items-center justify-center rounded-2xl bg-azul text-white">
               <span className="font-display text-sm font-semibold">{l.numero}</span>
             </div>
             <div className="min-w-0 flex-1">
@@ -28,12 +25,12 @@ export default function Transporte() {
                 <span>Último: {l.ultimo}</span>
               </div>
             </div>
-            <IconBus className="h-6 w-6 flex-none self-center text-tierra" />
+            <IconBus className="h-6 w-6 flex-none self-center text-azul" />
           </article>
         ))}
       </div>
 
-      <p className="rounded-xl bg-dorado/10 p-3 text-xs text-tinta-muted">
+      <p className="rounded-2xl bg-azul-tint p-3 text-xs text-azul-dark">
         Próximamente: horarios en tiempo real y avisos de retrasos.
       </p>
     </div>
