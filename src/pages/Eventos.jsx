@@ -8,6 +8,7 @@ import {
   formatearFechaCorta,
 } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
+import { imagenEvento, CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 
 function horaTexto(e) {
@@ -90,11 +91,22 @@ export default function Eventos() {
       {/* Evento destacado */}
       {destacado && (
         <section className="relative h-64 w-full overflow-hidden rounded-xl shadow-card md:h-80">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-container via-primary to-[#083824]" />
-          <div className="absolute inset-0 flex items-center justify-center opacity-15">
-            <IconoEvento categoria={destacado.categoria} className="text-[180px] text-white" />
-          </div>
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          {imagenEvento(destacado) ? (
+            <img
+              src={imagenEvento(destacado).src}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ objectPosition: imagenEvento(destacado).pos || '50% 50%' }}
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-container via-primary to-[#083824]" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-15">
+                <IconoEvento categoria={destacado.categoria} className="text-[180px] text-white" />
+              </div>
+            </>
+          )}
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
           <div className="absolute bottom-0 left-0 z-20 w-full p-6">
             <span className="mb-2 inline-block rounded-full bg-secondary-container px-3 py-1 text-xs font-medium text-on-secondary-container">
               {CATEGORIAS_EVENTO[destacado.categoria]?.nombre || 'Evento'}
@@ -124,7 +136,16 @@ export default function Eventos() {
         {resto.map((e) => (
           <article key={e.id} className="nv-card flex gap-4 p-4 transition-shadow hover:shadow-card-lg">
             <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-primary-container to-primary text-on-primary-container sm:h-32 sm:w-32">
-              <IconoEvento categoria={e.categoria} className="text-[36px]" />
+              {imagenEvento(e) ? (
+                <img
+                  src={imagenEvento(e).src}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  style={{ objectPosition: imagenEvento(e).pos || '50% 50%' }}
+                />
+              ) : (
+                <IconoEvento categoria={e.categoria} className="text-[36px]" />
+              )}
             </div>
             <div className="flex flex-grow flex-col justify-between">
               <div>
@@ -190,6 +211,10 @@ export default function Eventos() {
           Proponer un evento
         </a>
       </section>
+
+      <p className="text-center text-[10px] leading-relaxed text-on-surface-variant/70">
+        Imágenes ilustrativas vía Wikimedia Commons: {CREDITOS_FOTOS.join(' · ')}
+      </p>
     </div>
   )
 }

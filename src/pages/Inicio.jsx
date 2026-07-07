@@ -4,6 +4,7 @@ import eventosExternos from '../data/eventos-externos.json'
 import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
+import { imagenEvento } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 
 const proximos = proximosEventos([...eventosCurados, ...eventosExternos], 4)
@@ -196,8 +197,17 @@ export default function Inicio() {
               to="/eventos"
               className="group flex h-36 overflow-hidden rounded-xl bg-surface-container-lowest shadow-card transition-all hover:shadow-card-lg md:h-44"
             >
-              <div className="flex w-1/3 items-center justify-center bg-gradient-to-br from-primary-container to-primary text-on-primary-container">
-                <IconoEvento categoria={e.categoria} className="text-[40px]" />
+              <div className="flex w-1/3 items-center justify-center overflow-hidden bg-gradient-to-br from-primary-container to-primary text-on-primary-container">
+                {imagenEvento(e) ? (
+                  <img
+                    src={imagenEvento(e).src}
+                    alt=""
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    style={{ objectPosition: imagenEvento(e).pos || '50% 50%' }}
+                  />
+                ) : (
+                  <IconoEvento categoria={e.categoria} className="text-[40px]" />
+                )}
               </div>
               <div className="flex flex-1 flex-col justify-between p-4 md:p-6">
                 <div>
