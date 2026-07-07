@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import eventosData from '../data/eventos.json'
+import eventosCurados from '../data/eventos.json'
+import eventosExternos from '../data/eventos-externos.json'
 import {
   CATEGORIAS_EVENTO,
   LISTA_CATEGORIAS_EVENTO,
@@ -13,10 +14,19 @@ function horaTexto(e) {
   return e.horaFin ? `${e.hora} – ${e.horaFin}` : e.hora
 }
 
+const ORIGEN = {
+  municipal: { texto: 'Municipal', clase: 'bg-vino/10 text-vino' },
+  cultural: { texto: 'Cultura', clase: 'bg-dorado/15 text-dorado-dark' },
+  vecinal: { texto: 'Vecinal', clase: 'bg-tierra/10 text-tierra-dark' },
+}
+
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
 
-  const todos = useMemo(() => proximosEventos(eventosData), [])
+  const todos = useMemo(
+    () => proximosEventos([...eventosCurados, ...eventosExternos]),
+    [],
+  )
 
   // Solo se ofrecen como filtro las categorías que tienen eventos próximos.
   const categoriasDisponibles = useMemo(() => {
@@ -97,12 +107,10 @@ export default function Eventos() {
                   </span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      e.origen === 'municipal'
-                        ? 'bg-vino/10 text-vino'
-                        : 'bg-tierra/10 text-tierra-dark'
+                      (ORIGEN[e.origen] || ORIGEN.vecinal).clase
                     }`}
                   >
-                    {e.origen === 'municipal' ? 'Municipal' : 'Vecinal'}
+                    {(ORIGEN[e.origen] || ORIGEN.vecinal).texto}
                   </span>
                   {cat && (
                     <span className="rounded-full bg-crema-dark px-2 py-0.5 text-[10px] font-medium text-tinta">

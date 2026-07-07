@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { IconCalendar, IconMap, IconNews, IconBus, IconBuilding, IconPaw } from '../components/icons.jsx'
-import eventosData from '../data/eventos.json'
+import eventosCurados from '../data/eventos.json'
+import eventosExternos from '../data/eventos-externos.json'
 import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 
@@ -11,7 +12,7 @@ const accesos = [
   { to: '/transporte', label: 'Bus', Icon: IconBus },
 ]
 
-const eventosDestacados = proximosEventos(eventosData, 4)
+const eventosDestacados = proximosEventos([...eventosCurados, ...eventosExternos], 4)
 
 const avisos = [
   {

@@ -6,7 +6,8 @@
 // transporte y directorio de comercios. Los eventos se filtran a los próximos
 // en cada petición.
 
-import eventosData from '../src/data/eventos.json' with { type: 'json' }
+import eventosCurados from '../src/data/eventos.json' with { type: 'json' }
+import eventosExternos from '../src/data/eventos-externos.json' with { type: 'json' }
 import transporteData from '../src/data/transporte.json' with { type: 'json' }
 import comerciosData from '../src/data/comercios.json' with { type: 'json' }
 import serviciosLocales from '../src/data/servicios-locales.json' with { type: 'json' }
@@ -77,7 +78,7 @@ const transporte = transporteData
 // Próximos eventos formateados (se recalcula en cada petición para que "hoy"
 // sea siempre la fecha actual).
 function eventosProximosTexto() {
-  const proximos = proximosEventos(eventosData, 8)
+  const proximos = proximosEventos([...eventosCurados, ...eventosExternos], 8)
   if (!proximos.length) return 'No hay eventos próximos programados ahora mismo.'
   return proximos
     .map((e) => {
