@@ -2,12 +2,17 @@
 // system prompt). Los archivos de /api que empiezan por "_" no se publican como
 // endpoint en Vercel.
 //
-// Lee los mismos datos que las secciones de la app (fuente única): eventos y
-// transporte. Los eventos se filtran a los próximos en cada petición.
+// Lee los mismos datos que las secciones de la app (fuente única): eventos,
+// transporte y directorio de comercios. Los eventos se filtran a los próximos
+// en cada petición.
 
 import eventosData from '../src/data/eventos.json'
 import transporteData from '../src/data/transporte.json'
+import comerciosData from '../src/data/comercios.json'
+import serviciosLocales from '../src/data/servicios-locales.json'
 import { proximosEventos, formatearFechaLarga } from '../src/lib/eventos.js'
+import { LISTA_CATEGORIAS } from '../src/lib/categorias.js'
+import { tipoComercio } from '../src/lib/cocinas.js'
 
 const CONTACTO = `Oficina de Turismo / Atención al vecino: Plaza de Segovia, 1.
 Teléfonos: 91 810 11 41 / 91 811 51 91. Horario orientativo: lunes a viernes de 9:00 a 14:00.
@@ -83,16 +88,36 @@ function eventosProximosTexto() {
     .join('\n')
 }
 
+// Directorio de comercios agrupado por categoría (OSM + servicios curados).
+const comercios = (() => {
+  const todos = [...comerciosData, ...serviciosLocales]
+  return LISTA_CATEGORIAS.map((cat) => {
+    const items = todos.filter((c) => c.categoria === cat.id)
+    if (!items.length) return null
+    const lineas = items
+      .map((c) => {
+        const tipo = tipoComercio(c, '')
+        const detalle = [tipo, c.direccion, c.telefono].filter(Boolean).join(', ')
+        return `  - ${c.nombre}${detalle ? ` (${detalle})` : ''}`
+      })
+      .join('\n')
+    return `${cat.nombre}:\n${lineas}`
+  })
+    .filter(Boolean)
+    .join('\n')
+})()
+
 // Construye el system prompt completo. Se llama en cada petición para que los
 // eventos reflejen siempre las fechas próximas.
 export function buildSystemPrompt() {
-  return `Eres el asistente vecinal de Navalcarnero (Madrid), un municipio del suroeste de la Comunidad de Madrid. Ayudas a los vecinos con trámites municipales, eventos, transporte e información local del pueblo.
+  return `Eres el asistente vecinal de Navalcarnero (Madrid), un municipio del suroeste de la Comunidad de Madrid. Ayudas a los vecinos con trámites municipales, eventos, transporte, comercios e información local del pueblo.
 
 Reglas:
 - Responde SIEMPRE en español, de forma clara, cercana y concisa.
 - Escribe en TEXTO PLANO, sin formato Markdown: nada de almohadillas (#), asteriscos (*, **), ni tablas. Usa párrafos cortos y, si necesitas una lista, guiones simples al inicio de línea.
 - Cíñete a Navalcarnero y a la información que se te proporciona más abajo. Si te preguntan por otra cosa, ayuda en lo general pero aclara que no dispones de datos locales concretos.
-- Para eventos y transporte, usa EXCLUSIVAMENTE los datos de más abajo. No añadas eventos ni horarios que no aparezcan. Los horarios de bus son orientativos.
+- Para eventos, transporte y comercios, usa EXCLUSIVAMENTE los datos de más abajo. No añadas ninguno que no aparezca en las listas. Los horarios de bus son orientativos.
+- El directorio de comercios es limitado (procede de OpenStreetMap y aportaciones vecinales) y puede no incluir todos los negocios del pueblo. Si te piden un tipo de comercio que no aparece, dilo con naturalidad y sugiere consultar la sección Mapa/Directorio de la app. Muchos comercios no tienen teléfono ni horario registrado; en ese caso, sugiere mirarlo en el mapa o acercarse.
 - NO inventes teléfonos, direcciones, importes, fechas ni enlaces. Si no tienes el dato exacto, dilo y recomienda verificarlo con el Ayuntamiento o el Consorcio de Transportes (CRTM).
 - Para gestiones importantes, recuerda que los requisitos pueden variar y conviene confirmar y pedir cita previa.
 - Sé honesto sobre tus límites: eres una ayuda orientativa, no una fuente oficial.
@@ -107,5 +132,8 @@ Próximos eventos en Navalcarnero:
 ${eventosProximosTexto()}
 
 Líneas de autobús (horarios orientativos):
-${transporte}`
+${transporte}
+
+Directorio de comercios y servicios (agrupados por categoría):
+${comercios}`
 }
