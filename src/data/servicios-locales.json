@@ -1,0 +1,74 @@
+[
+  {
+    "id": "local/fontaneria-ejemplo",
+    "nombre": "Fontanería (ejemplo)",
+    "categoria": "servicios_prof",
+    "subtipo": "fontaneria",
+    "direccion": "",
+    "telefono": "",
+    "web": "",
+    "horario": "",
+    "descripcion": "Reparaciones, averías de agua, instalaciones y mantenimiento.",
+    "ejemplo": true
+  },
+  {
+    "id": "local/reformas-ejemplo",
+    "nombre": "Reformas y albañilería (ejemplo)",
+    "categoria": "servicios_prof",
+    "subtipo": "reformas",
+    "direccion": "",
+    "telefono": "",
+    "web": "",
+    "horario": "",
+    "descripcion": "Reformas integrales de cocinas, baños y viviendas.",
+    "ejemplo": true
+  },
+  {
+    "id": "local/piscinas-ejemplo",
+    "nombre": "Mantenimiento de piscinas (ejemplo)",
+    "categoria": "servicios_prof",
+    "subtipo": "piscinas",
+    "direccion": "",
+    "telefono": "",
+    "web": "",
+    "horario": "",
+    "descripcion": "Limpieza, tratamiento del agua y puesta a punto de piscinas.",
+    "ejemplo": true
+  },
+  {
+    "id": "local/electricista-ejemplo",
+    "nombre": "Electricista (ejemplo)",
+    "categoria": "servicios_prof",
+    "subtipo": "electricidad",
+    "direccion": "",
+    "telefono": "",
+    "web": "",
+    "horario": "",
+    "descripcion": "Instalaciones eléctricas, boletines y reparaciones.",
+    "ejemplo": true
+  },
+  {
+    "id": "local/cerrajeria-ejemplo",
+    "nombre": "Cerrajería (ejemplo)",
+    "categoria": "servicios_prof",
+    "subtipo": "cerrajeria",
+    "direccion": "",
+    "telefono": "",
+    "web": "",
+    "horario": "",
+    "descripcion": "Apertura de puertas, cambio de cerraduras y urgencias.",
+    "ejemplo": true
+  },
+  {
+    "id": "local/pintor-ejemplo",
+    "nombre": "Pintura y decoración (ejemplo)",
+    "categoria": "servicios_prof",
+    "subtipo": "pintura",
+    "direccion": "",
+    "telefono": "",
+    "web": "",
+    "horario": "",
+    "descripcion": "Pintura de interiores y exteriores, alisado de paredes.",
+    "ejemplo": true
+  }
+]

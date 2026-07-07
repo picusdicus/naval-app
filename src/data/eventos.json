@@ -1,0 +1,85 @@
+[
+  {
+    "id": "ev-mercado-artesano-jul",
+    "titulo": "Mercadillo artesano",
+    "fecha": "2026-07-11",
+    "hora": "10:00",
+    "horaFin": "14:00",
+    "lugar": "Calle Real",
+    "categoria": "mercado",
+    "origen": "vecinal",
+    "descripcion": "Puestos de artesanía local y productos de la zona, organizado por la asociación de vecinos."
+  },
+  {
+    "id": "ev-cine-verano-jul",
+    "titulo": "Cine de verano al aire libre",
+    "fecha": "2026-07-18",
+    "hora": "22:00",
+    "lugar": "Parque de la Coquesa",
+    "categoria": "cultura",
+    "origen": "municipal",
+    "descripcion": "Proyección gratuita de cine familiar bajo las estrellas. Trae tu silla o manta."
+  },
+  {
+    "id": "ev-conciertos-plaza-jul",
+    "titulo": "Noches de música en la Plaza",
+    "fecha": "2026-07-25",
+    "hora": "21:30",
+    "lugar": "Plaza de Segovia",
+    "categoria": "cultura",
+    "origen": "municipal",
+    "descripcion": "Ciclo de conciertos al aire libre con grupos locales y bandas invitadas."
+  },
+  {
+    "id": "ev-ludoteca-verano-ago",
+    "titulo": "Ludoteca de verano",
+    "fecha": "2026-08-03",
+    "hora": "10:00",
+    "horaFin": "13:00",
+    "lugar": "Centro Joven",
+    "categoria": "infantil",
+    "origen": "municipal",
+    "descripcion": "Actividades y talleres para peques durante las mañanas de verano. Plazas limitadas."
+  },
+  {
+    "id": "ev-fiestas-patronales-sep",
+    "titulo": "Fiestas patronales",
+    "fecha": "2026-09-05",
+    "hora": "20:00",
+    "lugar": "Plaza de Segovia",
+    "categoria": "fiestas",
+    "origen": "municipal",
+    "descripcion": "Pregón, chupinazo y comienzo de las fiestas de Navalcarnero, con actuación de la banda municipal."
+  },
+  {
+    "id": "ev-entrevinos-sep",
+    "titulo": "Entrevinos: feria del vino",
+    "fecha": "2026-09-19",
+    "hora": "12:00",
+    "lugar": "Casco histórico",
+    "categoria": "gastronomia",
+    "origen": "municipal",
+    "descripcion": "Muestra de vinos de la comarca, degustaciones y tapas por el centro del pueblo."
+  },
+  {
+    "id": "ev-mercado-medieval-oct",
+    "titulo": "Mercado de artesanía y antigüedades",
+    "fecha": "2026-10-04",
+    "hora": "10:00",
+    "horaFin": "20:00",
+    "lugar": "Plaza de Segovia",
+    "categoria": "mercado",
+    "origen": "vecinal",
+    "descripcion": "Puestos de artesanía, antigüedades y productos de km 0 durante todo el día."
+  },
+  {
+    "id": "ev-carrera-popular-oct",
+    "titulo": "Carrera popular Navalcarnero",
+    "fecha": "2026-10-12",
+    "hora": "10:00",
+    "lugar": "Salida en el Polideportivo Municipal",
+    "categoria": "deporte",
+    "origen": "municipal",
+    "descripcion": "Carrera solidaria por las calles del municipio, con recorridos para adultos y categorías infantiles."
+  }
+]
