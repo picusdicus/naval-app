@@ -8,10 +8,17 @@
 
 import eventosCurados from '../src/data/eventos.json' with { type: 'json' }
 import eventosExternos from '../src/data/eventos-externos.json' with { type: 'json' }
-import transporteData from '../src/data/transporte.json' with { type: 'json' }
+import horariosBus from '../src/data/horarios-bus.json' with { type: 'json' }
 import comerciosData from '../src/data/comercios.json' with { type: 'json' }
 import serviciosLocales from '../src/data/servicios-locales.json' with { type: 'json' }
 import { proximosEventos, formatearFechaLarga } from '../src/lib/eventos.js'
+import {
+  tipoDeDia,
+  ETIQUETA_TIPO_DIA,
+  proximasSalidas,
+  primeraSalidaManana,
+  rangoDeHoy,
+} from '../src/lib/horariosBus.js'
 import { LISTA_CATEGORIAS } from '../src/lib/categorias.js'
 import { tipoComercio } from '../src/lib/cocinas.js'
 
@@ -68,12 +75,36 @@ const fichas = TRAMITES.map(
   (t) => `- ${t.titulo}. Qué necesitas: ${t.requisitos} Dónde: ${t.donde}`,
 ).join('\n')
 
-const transporte = transporteData
-  .map(
-    (l) =>
-      `- Línea ${l.numero}: ${l.ruta}. ${l.frecuencia}. Primer bus ${l.primero}, último ${l.ultimo}.`,
-  )
-  .join('\n')
+// Horarios de bus oficiales del CRTM, con las próximas salidas calculadas en
+// el momento de la petición (para que "ahora" sea siempre la hora actual).
+function transporteTexto() {
+  const ahora = new Date()
+  const tipo = tipoDeDia(ahora)
+  const cabecera = `Hoy se aplica el horario de ${ETIQUETA_TIPO_DIA[tipo]}. Datos oficiales del CRTM actualizados el ${horariosBus.actualizado}.`
+  const lineas = horariosBus.lineas
+    .map((l) => {
+      const sentidos = l.sentidos
+        .map((s) => {
+          const rango = rangoDeHoy(s.horarios, ahora)
+          if (!rango) return `  - Hacia ${s.destino}: hoy no hay servicio.`
+          const proximas = proximasSalidas(s.horarios, ahora, 3)
+          const proximasTxt = proximas.length
+            ? `próximas salidas: ${proximas
+                .map((p) => `${p.hora} (en ${p.enMin} min)`)
+                .join(', ')}`
+            : `ya no quedan salidas hoy${
+                primeraSalidaManana(s.horarios, ahora)
+                  ? `; mañana la primera es a las ${primeraSalidaManana(s.horarios, ahora)}`
+                  : ''
+              }`
+          return `  - Hacia ${s.destino}, desde la parada ${s.parada}: ${proximasTxt}. Hoy primera ${rango.primera} y última ${rango.ultima}.`
+        })
+        .join('\n')
+      return `- Línea ${l.numero} (${l.nombre}):\n${sentidos}`
+    })
+    .join('\n')
+  return `${cabecera}\n${lineas}`
+}
 
 // Próximos eventos formateados (se recalcula en cada petición para que "hoy"
 // sea siempre la fecha actual).
@@ -117,7 +148,7 @@ Reglas:
 - Responde SIEMPRE en español, de forma clara, cercana y concisa.
 - Escribe en TEXTO PLANO, sin formato Markdown: nada de almohadillas (#), asteriscos (*, **), ni tablas. Usa párrafos cortos y, si necesitas una lista, guiones simples al inicio de línea.
 - Cíñete a Navalcarnero y a la información que se te proporciona más abajo. Si te preguntan por otra cosa, ayuda en lo general pero aclara que no dispones de datos locales concretos.
-- Para eventos, transporte y comercios, usa EXCLUSIVAMENTE los datos de más abajo. No añadas ninguno que no aparezca en las listas. Los horarios de bus son orientativos.
+- Para eventos, transporte y comercios, usa EXCLUSIVAMENTE los datos de más abajo. No añadas ninguno que no aparezca en las listas. Los horarios de bus son los oficiales programados del CRTM: pueden variar por tráfico u obras, y conviene llegar a la parada con unos minutos de margen.
 - El directorio de comercios es limitado (procede de OpenStreetMap y aportaciones vecinales) y puede no incluir todos los negocios del pueblo. Si te piden un tipo de comercio que no aparece, dilo con naturalidad y sugiere consultar la sección Mapa/Directorio de la app. Muchos comercios no tienen teléfono ni horario registrado; en ese caso, sugiere mirarlo en el mapa o acercarse.
 - NO inventes teléfonos, direcciones, importes, fechas ni enlaces. Si no tienes el dato exacto, dilo y recomienda verificarlo con el Ayuntamiento o el Consorcio de Transportes (CRTM).
 - Para gestiones importantes, recuerda que los requisitos pueden variar y conviene confirmar y pedir cita previa.
@@ -132,8 +163,8 @@ ${fichas}
 Próximos eventos en Navalcarnero:
 ${eventosProximosTexto()}
 
-Líneas de autobús (horarios orientativos):
-${transporte}
+Líneas de autobús de Navalcarnero (horarios oficiales del CRTM):
+${transporteTexto()}
 
 Directorio de comercios y servicios (agrupados por categoría):
 ${comercios}`
