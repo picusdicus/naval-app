@@ -12,7 +12,12 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
   const cat = CATEGORIAS[comercio.categoria]
   const tieneCoords = typeof comercio.lat === 'number' && typeof comercio.lng === 'number'
   const cocinas = etiquetasCocina(comercio.cocina || [])
-  const comoLlegar = `https://www.openstreetmap.org/directions?to=${comercio.lat},${comercio.lng}`
+  // API oficial de URLs de Google Maps (gratuita, sin clave): direcciones y
+  // ficha del negocio (fotos, reseñas, horarios) buscando por nombre + municipio.
+  const comoLlegar = `https://www.google.com/maps/dir/?api=1&destination=${comercio.lat},${comercio.lng}`
+  const verEnGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${comercio.nombre}, Navalcarnero`,
+  )}`
   const web = normalizarWeb(comercio.web)
 
   return (
@@ -104,15 +109,26 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
       </dl>
 
       {tieneCoords && (
-        <a
-          href={comoLlegar}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
-        >
-          <MIcon name="directions" className="text-[18px]" />
-          Cómo llegar
-        </a>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <a
+            href={comoLlegar}
+            target="_blank"
+            rel="noreferrer"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
+          >
+            <MIcon name="directions" className="text-[18px]" />
+            Cómo llegar
+          </a>
+          <a
+            href={verEnGoogleMaps}
+            target="_blank"
+            rel="noreferrer"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
+          >
+            <MIcon name="map" className="text-[18px]" />
+            Ver en Google Maps
+          </a>
+        </div>
       )}
     </div>
   )
