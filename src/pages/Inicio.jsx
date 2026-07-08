@@ -196,7 +196,7 @@ export default function Inicio() {
           {proximos.map((e) => (
             <Link
               key={e.id}
-              to="/eventos"
+              to={`/eventos/${e.id}`}
               className="group flex h-36 overflow-hidden rounded-xl bg-surface-container-lowest shadow-card transition-all hover:shadow-card-lg md:h-44"
             >
               <div className="flex w-1/3 items-center justify-center overflow-hidden bg-gradient-to-br from-primary-container to-primary text-on-primary-container">

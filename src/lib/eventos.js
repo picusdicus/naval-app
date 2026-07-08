@@ -38,3 +38,14 @@ export function proximosEventos(eventos, limite) {
     .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''))
   return typeof limite === 'number' ? futuros.slice(0, limite) : futuros
 }
+
+// Eventos ya pasados, ordenados del más reciente al más antiguo (para el
+// histórico de actividades culturales).
+export function eventosPasados(eventos, limite) {
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  const pasados = eventos
+    .filter((e) => aFecha(e.fecha) < hoy)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora || '').localeCompare(a.hora || ''))
+  return typeof limite === 'number' ? pasados.slice(0, limite) : pasados
+}
