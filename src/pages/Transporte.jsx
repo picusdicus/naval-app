@@ -158,10 +158,10 @@ export default function Transport() {
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container">
-            Hoy: horario de {ETIQUETA_TIPO_DIA[tipo]}
+            Hoy: horario de {DAY_TYPE_LABELS[dayType]}
           </span>
           <span className="rounded-full bg-surface-container-highest px-3 py-1 text-xs font-medium text-on-surface-variant">
-            Datos actualizados el {horariosBus.actualizado}
+            Datos actualizados el {scheduleData.actualizado}
           </span>
         </div>
       </header>
