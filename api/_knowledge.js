@@ -13,12 +13,12 @@ import comerciosData from '../src/data/comercios.json' with { type: 'json' }
 import serviciosLocales from '../src/data/servicios-locales.json' with { type: 'json' }
 import { proximosEventos, formatearFechaLarga } from '../src/lib/eventos.js'
 import {
-  tipoDeDia,
-  ETIQUETA_TIPO_DIA,
-  proximasSalidas,
-  primeraSalidaManana,
-  rangoDeHoy,
-} from '../src/lib/horariosBus.js'
+  getDayType,
+  DAY_TYPE_LABELS,
+  getNextDepartures,
+  getFirstDepartureNextDay,
+  getTodayRange,
+} from '../src/lib/busSchedule.js'
 import { LISTA_CATEGORIAS } from '../src/lib/categorias.js'
 import { tipoComercio } from '../src/lib/cocinas.js'
 
@@ -79,27 +79,27 @@ const fichas = TRAMITES.map(
 // el momento de la petición (para que "ahora" sea siempre la hora actual).
 function transporteTexto() {
   const ahora = new Date()
-  const tipo = tipoDeDia(ahora)
-  const cabecera = `Hoy se aplica el horario de ${ETIQUETA_TIPO_DIA[tipo]}. Datos oficiales del CRTM actualizados el ${horariosBus.actualizado}.${
+  const tipo = getDayType(ahora)
+  const cabecera = `Hoy se aplica el horario de ${DAY_TYPE_LABELS[tipo]}. Datos oficiales del CRTM actualizados el ${horariosBus.actualizado}.${
     horariosBus.nota ? ` ${horariosBus.nota}` : ''
   }`
   const lineas = horariosBus.lineas
     .map((l) => {
       const sentidos = l.sentidos
         .map((s) => {
-          const rango = rangoDeHoy(s.horarios, ahora)
+          const rango = getTodayRange(s.horarios, ahora)
           if (!rango) return `  - Hacia ${s.destino}: hoy no hay servicio.`
-          const proximas = proximasSalidas(s.horarios, ahora, 3)
+          const proximas = getNextDepartures(s.horarios, ahora, 3)
           const proximasTxt = proximas.length
             ? `próximas salidas: ${proximas
-                .map((p) => `${p.hora} (en ${p.enMin} min)`)
+                .map((p) => `${p.time} (en ${p.minutesUntil} min)`)
                 .join(', ')}`
             : `ya no quedan salidas hoy${
-                primeraSalidaManana(s.horarios, ahora)
-                  ? `; mañana la primera es a las ${primeraSalidaManana(s.horarios, ahora)}`
+                getFirstDepartureNextDay(s.horarios, ahora)
+                  ? `; mañana la primera es a las ${getFirstDepartureNextDay(s.horarios, ahora)}`
                   : ''
               }`
-          return `  - Hacia ${s.destino}, desde la parada ${s.parada}: ${proximasTxt}. Hoy primera ${rango.primera} y última ${rango.ultima}.`
+          return `  - Hacia ${s.destino}, desde la parada ${s.parada}: ${proximasTxt}. Hoy primera ${rango.first} y última ${rango.last}.`
         })
         .join('\n')
       return `- Línea ${l.numero} (${l.nombre}):\n${sentidos}`
