@@ -123,43 +123,60 @@ function extraerAutor(item) {
 async function extraerContenidoArticulo(url) {
   try {
     const html = await descargarTexto(url)
+
+    // Primero, elimina todo lo que NO es contenido
+    let limpio = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+      .replace(/<form[\s\S]*?<\/form>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+
     let contenido = ''
 
-    // Estrategia 1: Busca el contenido en el cuerpo principal (WordPress típico)
-    // Intenta extraer de divs y sections con clases comunes
-    let m = html.match(/<div[^>]*class="[^"]*(?:post-content|entry-content|content-area|the-content)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|section)>/)
-
-    // Estrategia 2: Busca article completo
-    if (!m) m = html.match(/<article[^>]*class="[^"]*post[^"]*"[^>]*>([\s\S]*?)<\/article>/)
-
-    // Estrategia 3: Busca cualquier elemento con contenido entre header y footer
-    if (!m) {
-      const afterHeader = html.split(/<\/header>|<\/nav>/i).pop() || html
-      const beforeFooter = afterHeader.split(/<footer|<aside/i)[0]
-      // Extrae párrafos y bloques de texto
-      const pContent = beforeFooter.match(/<(?:p|div|section)[^>]*>([\s\S]{100,})<\/(?:p|div|section)>/m)
-      if (pContent) m = pContent
-    }
-
-    // Estrategia 4: Si todo falla, extrae todo el texto entre < >
-    if (!m || limpiarTexto(m[1], 0).length < 50) {
-      const allText = html
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-        .replace(/<footer[\s\S]*?<\/footer>/gi, '')
-        .replace(/<aside[\s\S]*?<\/aside>/gi, '')
-
-      // Busca párrafos
-      const paragraphs = allText.match(/<p[^>]*>([\s\S]*?)<\/p>/g) || []
-      if (paragraphs.length > 0) {
-        contenido = paragraphs.map(p => limpiarTexto(p, 0)).join('\n\n')
-      }
-    } else if (m) {
+    // Estrategia 1: Busca div con class "the-content", "post-content", "entry-content"
+    let m = limpio.match(/<div[^>]*class="[^"]*(?:the-content|post-content|entry-content|content-area)[^"]*"[^>]*>([\s\S]*?)<\/div>/)
+    if (m) {
       contenido = limpiarTexto(m[1], 0)
     }
 
-    return contenido.slice(0, 8000) // Aumenta límite a 8000 caracteres
+    // Estrategia 2: Si no, busca el primer div grande (probablemente contenedor principal)
+    if (!contenido || contenido.length < 100) {
+      const firstBigDiv = limpio.match(/<div[^>]*>([\s\S]{800,}?)<\/div>/)
+      if (firstBigDiv) {
+        const extracted = limpiarTexto(firstBigDiv[1], 0)
+        if (extracted.length > contenido.length) {
+          contenido = extracted
+        }
+      }
+    }
+
+    // Estrategia 3: Busca solo párrafos (más seguro, evita ruido)
+    if (!contenido || contenido.length < 100) {
+      const paragraphs = limpio.match(/<p[^>]*>([\s\S]*?)<\/p>/g) || []
+      if (paragraphs.length > 2) {
+        // Si hay al menos 3 párrafos, usa esos
+        contenido = paragraphs
+          .map(p => limpiarTexto(p, 0))
+          .filter(t => t.length > 20) // Filtra párrafos muy cortos
+          .join('\n\n')
+      }
+    }
+
+    // Limpia el contenido final: elimina líneas con solo números, calendarios, etc.
+    const lineas = contenido.split('\n')
+    const linpiasFiltered = lineas.filter(l => {
+      const t = l.trim()
+      // Rechaza líneas que parecen ser navegación, calendarios, etc.
+      return t.length > 10 && !/^\d{1,2}\s+\d{1,2}\s+\d{1,2}$/.test(t) && !t.match(/^[LMX J V SD]+\s*$/)
+    })
+
+    contenido = linpiasFiltered.join('\n\n').slice(0, 4000)
+
+    return contenido
   } catch (err) {
     console.warn(`  ! No se pudo descargar contenido de ${url}: ${err.message}`)
     return ''
@@ -202,7 +219,12 @@ async function obtenerNoticias() {
     urlsVistas.add(url)
 
     // Descarga el contenido completo del artículo
-    const contenido = await extraerContenidoArticulo(url)
+    let contenido = await extraerContenidoArticulo(url)
+
+    // Si el scraping no funcionó bien (contenido muy corto), usa el resumen como fallback
+    if (contenido.length < 200) {
+      contenido = resumen
+    }
 
     noticias.push({
       id: `noticias-${claveNorm(titulo.slice(0, 30))}`,
