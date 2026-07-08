@@ -90,7 +90,7 @@ export default function Noticias() {
                 </div>
                 <div className="flex-1">
                   <p className="font-display text-base font-semibold text-on-surface">{n.titulo}</p>
-                  <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-on-surface-variant">
+                  <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant">
                     {n.contenido || n.resumen}
                   </p>
                   <div className="mt-3 space-y-1">
