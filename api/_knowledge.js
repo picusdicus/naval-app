@@ -11,6 +11,7 @@ import eventosExternos from '../src/data/eventos-externos.json' with { type: 'js
 import horariosBus from '../src/data/horarios-bus.json' with { type: 'json' }
 import comerciosData from '../src/data/comercios.json' with { type: 'json' }
 import serviciosLocales from '../src/data/servicios-locales.json' with { type: 'json' }
+import noticiasData from '../src/data/noticias.json' with { type: 'json' }
 import { proximosEventos, formatearFechaLarga } from '../src/lib/eventos.js'
 import {
   getDayType,
@@ -122,6 +123,19 @@ function eventosProximosTexto() {
     .join('\n')
 }
 
+// Últimas noticias del Ayuntamiento (para que el asistente esté al tanto).
+function noticiasTexto() {
+  const ultimas = noticiasData.slice(0, 5)
+  if (!ultimas.length) return 'No hay noticias recientes.'
+  return ultimas
+    .map((n) => {
+      const fecha = new Date(n.fecha)
+      const fechaLarga = fecha.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      return `- ${fechaLarga}: ${n.titulo}. ${n.resumen}`
+    })
+    .join('\n')
+}
+
 // Directorio de comercios agrupado por categoría (OSM + servicios curados).
 const comercios = (() => {
   const todos = [...comerciosData, ...serviciosLocales]
@@ -163,6 +177,9 @@ ${CONTACTO}
 
 Trámites municipales (información orientativa):
 ${fichas}
+
+Noticias recientes del Ayuntamiento:
+${noticiasTexto()}
 
 Próximos eventos en Navalcarnero:
 ${eventosProximosTexto()}
