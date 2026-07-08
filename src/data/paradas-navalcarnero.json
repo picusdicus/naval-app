@@ -4,8 +4,8 @@
       "codStop": "8_17491",
       "name": "SAN ROQUE-GALILEO",
       "coordinates": {
-        "latitude": 40.2347,
-        "longitude": -3.8561
+        "latitude": 40.3085,
+        "longitude": -4.0010
       },
       "codLines": ["528", "529", "530"]
     },
@@ -13,8 +13,8 @@
       "codStop": "8_17492",
       "name": "CONSTITUCIÓN-FELIX SERRANO DEL REAL",
       "coordinates": {
-        "latitude": 40.2356,
-        "longitude": -3.8545
+        "latitude": 40.3090,
+        "longitude": -4.0005
       },
       "codLines": ["528", "529", "530"]
     },
@@ -22,8 +22,8 @@
       "codStop": "8_5930",
       "name": "DEHESA MARI MARTÍN-POL.IND.ALPARRACHE I",
       "coordinates": {
-        "latitude": 40.2378,
-        "longitude": -3.8512
+        "latitude": 40.3095,
+        "longitude": -4.0015
       },
       "codLines": ["528", "529"]
     },
@@ -31,8 +31,8 @@
       "codStop": "8_5929",
       "name": "TRILLO-CHARCONES",
       "coordinates": {
-        "latitude": 40.2398,
-        "longitude": -3.8478
+        "latitude": 40.3080,
+        "longitude": -4.0020
       },
       "codLines": ["528"]
     },
@@ -40,8 +40,8 @@
       "codStop": "8_17493",
       "name": "ESTACIÓN-CENTRAL",
       "coordinates": {
-        "latitude": 40.2335,
-        "longitude": -3.8575
+        "latitude": 40.3088,
+        "longitude": -4.0008
       },
       "codLines": ["528", "529", "530", "531", "532"]
     },
@@ -49,8 +49,8 @@
       "codStop": "8_17494",
       "name": "MERCADO MUNICIPAL",
       "coordinates": {
-        "latitude": 40.2328,
-        "longitude": -3.8592
+        "latitude": 40.3092,
+        "longitude": -3.9995
       },
       "codLines": ["529", "530", "531"]
     },
@@ -58,8 +58,8 @@
       "codStop": "8_17495",
       "name": "PLAZA MAYOR",
       "coordinates": {
-        "latitude": 40.2342,
-        "longitude": -3.8605
+        "latitude": 40.3078,
+        "longitude": -4.0025
       },
       "codLines": ["530", "532"]
     }

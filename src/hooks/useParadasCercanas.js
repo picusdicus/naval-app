@@ -18,7 +18,7 @@ export function useParadasCercanas() {
       return
     }
 
-    const paradasFiltered = paradasCercanas(coords, paradasData.paradas, 600)
+    const paradasFiltered = paradasCercanas(coords, paradasData.paradas, 2000)
     setParadas(paradasFiltered)
 
     const fetchTiempos = async () => {
