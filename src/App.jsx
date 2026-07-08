@@ -6,6 +6,7 @@ import Eventos from './pages/Eventos.jsx'
 import EventoDetalle from './pages/EventoDetalle.jsx'
 import Mapa from './pages/Mapa.jsx'
 import Noticias from './pages/Noticias.jsx'
+import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
 import Transporte from './pages/Transporte.jsx'
 import Asistente from './pages/Asistente.jsx'
 
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/eventos/:id" element={<EventoDetalle />} />
           <Route path="/mapa" element={<Mapa />} />
           <Route path="/noticias" element={<Noticias />} />
+          <Route path="/noticias/:id" element={<NoticiaDetalle />} />
           <Route path="/transporte" element={<Transporte />} />
           <Route path="/asistente" element={<Asistente />} />
         </Route>

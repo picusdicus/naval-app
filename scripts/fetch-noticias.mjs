@@ -119,6 +119,42 @@ function extraerAutor(item) {
   return 'Ayuntamiento'
 }
 
+// Extrae el contenido completo de un artículo desde su URL
+async function extraerContenidoArticulo(url) {
+  try {
+    const html = await descargarTexto(url)
+    let contenido = ''
+
+    // Busca patrones comunes en sites de WordPress
+    // Intenta extraer de div con class que contiene "content" o "post"
+    let m = html.match(/<div[^>]*class="[^"]*(?:content|post-content|entry-content|page-content)[^"]*"[^>]*>([\s\S]*?)<\/div>/)
+
+    // Si no, intenta <article>
+    if (!m) m = html.match(/<article[^>]*>([\s\S]*?)<\/article>/)
+
+    // Si no, intenta <main>
+    if (!m) m = html.match(/<main[^>]*>([\s\S]*?)<\/main>/)
+
+    // Si no, busca cualquier div grande después del título
+    if (!m) {
+      const sinHead = html.split('</header>').pop() || html
+      const porcionTexto = sinHead.split('<footer>')[0]
+      const bigDiv = porcionTexto.match(/<div[^>]*>([\s\S]{500,})<\/div>/)
+      if (bigDiv) m = bigDiv
+    }
+
+    if (m) {
+      contenido = limpiarTexto(m[1], 0)
+    }
+
+    // Si aún está vacío, usa la descripción del RSS como fallback
+    return contenido.slice(0, 5000)
+  } catch (err) {
+    console.warn(`  ! No se pudo descargar contenido de ${url}: ${err.message}`)
+    return ''
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Parseo del RSS
 // ---------------------------------------------------------------------------
@@ -153,11 +189,16 @@ async function obtenerNoticias() {
     }
 
     urlsVistas.add(url)
+
+    // Descarga el contenido completo del artículo
+    const contenido = await extraerContenidoArticulo(url)
+
     noticias.push({
       id: `noticias-${claveNorm(titulo.slice(0, 30))}`,
       titulo,
       fecha,
       resumen,
+      contenido,
       url,
       autor,
     })

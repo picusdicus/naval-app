@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
 import noticias from '../data/noticias.json'
 
@@ -17,7 +18,13 @@ function obtenerIcono(titulo) {
   return 'notifications'
 }
 
-// Formatea la fecha para mostrar "hace X días" o la fecha
+// Formatea la fecha para mostrar la fecha larga (día, mes, año)
+function formatearFechaLarga(fechaISO) {
+  const fecha = new Date(fechaISO)
+  return fecha.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+// Formatea para mostrar "hace X días" (relativo)
 function formatearCuando(fechaISO) {
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
@@ -72,20 +79,29 @@ export default function Noticias() {
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {oficiales.map((n) => (
-            <article key={n.titulo} className="nv-card p-5 transition-shadow hover:shadow-card-lg">
-              <div className="flex items-start gap-4">
+            <Link
+              key={n.id}
+              to={`/noticias/${n.id}`}
+              className="nv-card p-5 transition-shadow hover:shadow-card-lg"
+            >
+              <article className="flex items-start gap-4">
                 <div className="rounded-lg bg-primary-container p-3 text-on-primary-container">
                   <MIcon name={n.icono} />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="font-display text-base font-semibold text-on-surface">{n.titulo}</p>
                   <p className="mt-1 text-sm text-on-surface-variant">{n.resumen}</p>
-                  <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-secondary">
-                    Ayuntamiento · {n.cuando}
-                  </p>
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs font-medium text-secondary">
+                      {formatearFechaLarga(n.fecha)}
+                    </p>
+                    <p className="text-xs text-on-surface-variant">
+                      {n.cuando}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
+            </Link>
           ))}
         </div>
       </section>
