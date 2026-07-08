@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
 
 // Pie de página oscuro (solo escritorio), según la referencia de desktop.
-export default function Footer() {
+export default function Footer({ onAbrirChat }) {
   return (
     <footer className="hidden bg-inverse-surface text-inverse-on-surface md:block">
-      <div className="mx-auto grid w-full max-w-[1140px] grid-cols-3 gap-10 px-10 py-12">
+      <div className="mx-auto grid w-full max-w-[1440px] grid-cols-3 gap-10 px-10 py-12">
         <div>
           <p className="font-display text-lg font-bold text-secondary-container">Navalcarnero</p>
           <p className="mt-2 text-sm opacity-80">
@@ -24,9 +24,13 @@ export default function Footer() {
           <Link to="/noticias" className="opacity-80 hover:opacity-100 hover:underline">
             Noticias
           </Link>
-          <Link to="/asistente" className="opacity-80 hover:opacity-100 hover:underline">
+          <button
+            type="button"
+            onClick={onAbrirChat}
+            className="text-left opacity-80 hover:opacity-100 hover:underline"
+          >
             Asistente IA
-          </Link>
+          </button>
         </div>
         <div className="text-sm">
           <p className="font-semibold text-secondary-container">Atención ciudadana</p>

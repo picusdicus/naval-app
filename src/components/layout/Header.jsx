@@ -9,7 +9,7 @@ const enlaces = [
   { to: '/noticias', label: 'Noticias' },
 ]
 
-export default function Header({ onAbrirMenu }) {
+export default function Header({ onAbrirMenu, onAbrirChat }) {
   return (
     <header className="sticky top-0 z-40 bg-background md:bg-surface md:shadow-card">
       {/* Barra móvil */}
@@ -31,7 +31,7 @@ export default function Header({ onAbrirMenu }) {
       </div>
 
       {/* Barra de escritorio */}
-      <div className="mx-auto hidden w-full max-w-[1140px] items-center justify-between px-10 py-4 md:flex">
+      <div className="mx-auto hidden w-full max-w-[1440px] items-center justify-between px-10 py-4 md:flex">
         <Link to="/" className="font-display text-xl font-extrabold text-primary">
           Navalcarnero
         </Link>
@@ -51,12 +51,13 @@ export default function Header({ onAbrirMenu }) {
             </NavLink>
           ))}
         </div>
-        <Link
-          to="/asistente"
+        <button
+          type="button"
+          onClick={onAbrirChat}
           className="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-on-primary transition-all duration-200 ease-in-out hover:bg-primary-container active:scale-95"
         >
           Asistente IA
-        </Link>
+        </button>
       </div>
     </header>
   )

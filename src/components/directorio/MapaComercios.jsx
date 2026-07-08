@@ -44,12 +44,12 @@ function CentrarSeleccion({ seleccionado }) {
 
 export default function MapaComercios({ comercios, seleccionado, onSeleccionar }) {
   return (
-    <div className="overflow-hidden rounded-xl shadow-card">
+    <div className="h-80 overflow-hidden rounded-xl shadow-card md:h-[520px]">
       <MapContainer
         center={CENTRO}
         zoom={14}
         scrollWheelZoom={false}
-        style={{ height: '320px', width: '100%' }}
+        style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

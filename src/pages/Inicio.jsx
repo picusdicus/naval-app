@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import eventosCurados from '../data/eventos.json'
 import eventosExternos from '../data/eventos-externos.json'
 import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
@@ -26,6 +26,8 @@ function fechaHoy() {
 }
 
 export default function Inicio() {
+  const { abrirChat } = useOutletContext()
+
   return (
     <div className="space-y-8 md:space-y-16">
       {/* Bienvenida (móvil) */}
@@ -190,7 +192,7 @@ export default function Inicio() {
             Ver todos <MIcon name="arrow_forward" className="text-[18px]" />
           </Link>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8">
           {proximos.map((e) => (
             <Link
               key={e.id}
@@ -244,10 +246,17 @@ export default function Inicio() {
             <div className="mt-6 flex flex-wrap gap-4">
               <Link
                 to="/asistente"
-                className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
+                className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95 md:hidden"
               >
                 Preguntar al asistente
               </Link>
+              <button
+                type="button"
+                onClick={abrirChat}
+                className="hidden rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95 md:inline-flex"
+              >
+                Preguntar al asistente
+              </button>
               <Link
                 to="/mapa"
                 className="rounded-lg border border-outline px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
