@@ -60,28 +60,39 @@ export default function NoticiaDetalle() {
         )}
       </dl>
 
-      {noticia.contenido && (
-        <div className="whitespace-pre-line text-[15px] leading-relaxed text-on-surface">
-          {noticia.contenido}
-        </div>
-      )}
-
-      {!noticia.contenido && noticia.resumen && (
-        <div className="whitespace-pre-line text-[15px] leading-relaxed text-on-surface">
-          {noticia.resumen}
-        </div>
-      )}
+      <div className="prose prose-invert max-w-none text-[15px] leading-relaxed text-on-surface">
+        {noticia.contenido ? (
+          <div className="space-y-4 whitespace-pre-wrap break-words">
+            {noticia.contenido}
+          </div>
+        ) : noticia.resumen ? (
+          <div className="space-y-4 whitespace-pre-wrap break-words">
+            {noticia.resumen}
+          </div>
+        ) : null}
+      </div>
 
       {noticia.url && (
-        <a
-          href={noticia.url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-outline px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-surface-container-high"
-        >
-          <MIcon name="open_in_new" className="text-[18px]" />
-          Leer en la web del ayuntamiento
-        </a>
+        <div className="flex flex-col gap-3 rounded-lg bg-surface-container p-5">
+          <div className="flex items-start gap-3">
+            <MIcon name="info" className="mt-0.5 text-[18px] text-primary" />
+            <div>
+              <p className="text-sm font-semibold text-on-surface">Fuente original</p>
+              <p className="mt-1 text-xs text-on-surface-variant">
+                Puedes acceder al artículo completo en la web oficial del Ayuntamiento
+              </p>
+            </div>
+          </div>
+          <a
+            href={noticia.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
+          >
+            <MIcon name="open_in_new" className="text-[18px]" />
+            Abrir artículo completo en web del Ayuntamiento
+          </a>
+        </div>
       )}
 
       <div className="border-t border-outline-variant/40 pt-6">

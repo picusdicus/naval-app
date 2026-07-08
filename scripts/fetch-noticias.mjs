@@ -125,30 +125,41 @@ async function extraerContenidoArticulo(url) {
     const html = await descargarTexto(url)
     let contenido = ''
 
-    // Busca patrones comunes en sites de WordPress
-    // Intenta extraer de div con class que contiene "content" o "post"
-    let m = html.match(/<div[^>]*class="[^"]*(?:content|post-content|entry-content|page-content)[^"]*"[^>]*>([\s\S]*?)<\/div>/)
+    // Estrategia 1: Busca el contenido en el cuerpo principal (WordPress típico)
+    // Intenta extraer de divs y sections con clases comunes
+    let m = html.match(/<div[^>]*class="[^"]*(?:post-content|entry-content|content-area|the-content)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|section)>/)
 
-    // Si no, intenta <article>
-    if (!m) m = html.match(/<article[^>]*>([\s\S]*?)<\/article>/)
+    // Estrategia 2: Busca article completo
+    if (!m) m = html.match(/<article[^>]*class="[^"]*post[^"]*"[^>]*>([\s\S]*?)<\/article>/)
 
-    // Si no, intenta <main>
-    if (!m) m = html.match(/<main[^>]*>([\s\S]*?)<\/main>/)
-
-    // Si no, busca cualquier div grande después del título
+    // Estrategia 3: Busca cualquier elemento con contenido entre header y footer
     if (!m) {
-      const sinHead = html.split('</header>').pop() || html
-      const porcionTexto = sinHead.split('<footer>')[0]
-      const bigDiv = porcionTexto.match(/<div[^>]*>([\s\S]{500,})<\/div>/)
-      if (bigDiv) m = bigDiv
+      const afterHeader = html.split(/<\/header>|<\/nav>/i).pop() || html
+      const beforeFooter = afterHeader.split(/<footer|<aside/i)[0]
+      // Extrae párrafos y bloques de texto
+      const pContent = beforeFooter.match(/<(?:p|div|section)[^>]*>([\s\S]{100,})<\/(?:p|div|section)>/m)
+      if (pContent) m = pContent
     }
 
-    if (m) {
+    // Estrategia 4: Si todo falla, extrae todo el texto entre < >
+    if (!m || limpiarTexto(m[1], 0).length < 50) {
+      const allText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+        .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+        .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+
+      // Busca párrafos
+      const paragraphs = allText.match(/<p[^>]*>([\s\S]*?)<\/p>/g) || []
+      if (paragraphs.length > 0) {
+        contenido = paragraphs.map(p => limpiarTexto(p, 0)).join('\n\n')
+      }
+    } else if (m) {
       contenido = limpiarTexto(m[1], 0)
     }
 
-    // Si aún está vacío, usa la descripción del RSS como fallback
-    return contenido.slice(0, 5000)
+    return contenido.slice(0, 8000) // Aumenta límite a 8000 caracteres
   } catch (err) {
     console.warn(`  ! No se pudo descargar contenido de ${url}: ${err.message}`)
     return ''
@@ -181,7 +192,7 @@ async function obtenerNoticias() {
 
     const titulo = tituloLegible(tituloCrudo)
     const fecha = fechaISO(pubDate)
-    const resumen = limpiarTexto(description, 220)
+    const resumen = limpiarTexto(description, 0) // Sin truncar en el fetch, se truncará al mostrar si es necesario
 
     if (!titulo || !fecha) {
       console.warn(`  ! Salteando: titulo o fecha vacíos`)
