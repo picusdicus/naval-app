@@ -23,17 +23,17 @@ export default function Header({ onAbrirMenu, onAbrirChat }) {
           >
             <MIcon name="menu" />
           </button>
-          <h1 className="font-display text-xl font-bold text-primary">Navalcarnero</h1>
+          <h1 className="font-display text-xl font-bold text-primary">Vecinal - Navalcarnero</h1>
         </div>
         <div className="h-10 w-10 overflow-hidden rounded-full border-2 border-primary-fixed bg-surface-container-high">
-          <img src="/logo.png" alt="Escudo de Navalcarnero" className="h-full w-full object-contain p-1" />
+          <img src="/logo.png" alt="Escudo de Vecinal - Navalcarnero" className="h-full w-full object-contain p-1" />
         </div>
       </div>
 
       {/* Barra de escritorio */}
       <div className="mx-auto hidden w-full max-w-[1440px] items-center justify-between px-10 py-4 md:flex">
         <Link to="/" className="font-display text-xl font-extrabold text-primary">
-          Navalcarnero
+          Vecinal - Navalcarnero
         </Link>
         <div className="flex items-center gap-8">
           {enlaces.map((e) => (
