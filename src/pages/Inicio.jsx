@@ -5,6 +5,7 @@ import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
+import { useWeather } from '../hooks/useWeather.js'
 import MIcon from '../components/MIcon.jsx'
 
 const proximos = proximosEventos([...eventosCurados, ...eventosExternos], 4)
@@ -27,6 +28,7 @@ function fechaHoy() {
 
 export default function Inicio() {
   const { abrirChat } = useOutletContext()
+  const weather = useWeather()
 
   return (
     <div className="space-y-8 md:space-y-16">
@@ -151,22 +153,24 @@ export default function Inicio() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-sm font-semibold opacity-70">Navalcarnero</div>
-                <div className="font-display text-4xl font-bold text-white">31°C</div>
+                <div className="font-display text-4xl font-bold text-white">
+                  {weather.loading ? '...' : `${weather.current.temp}°C`}
+                </div>
               </div>
-              <MIcon name="clear_day" className="text-4xl" fill />
+              <MIcon name={weather.current.icon} className="text-4xl" fill />
             </div>
             <div className="mt-8 space-y-4 text-sm">
               <div className="flex items-center justify-between border-b border-white/20 pb-2">
                 <span>Cielo</span>
-                <span className="font-semibold">Despejado</span>
+                <span className="font-semibold">{weather.current.condition}</span>
               </div>
               <div className="flex items-center justify-between border-b border-white/20 pb-2">
                 <span>Máxima</span>
-                <span className="font-semibold">33°C</span>
+                <span className="font-semibold">{weather.loading ? '--' : `${weather.max}°C`}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Recogida orgánica</span>
-                <span className="font-semibold">Mañana, 7:00</span>
+              <div className="flex items-center justify-between text-[10px]">
+                <span>Datos de Open-Meteo</span>
+                <span className="font-semibold">{weather.error ? '⚠️' : '✓'}</span>
               </div>
             </div>
           </div>
