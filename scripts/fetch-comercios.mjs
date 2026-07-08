@@ -2,32 +2,34 @@
  * fetch-comercios-google.mjs
  *
  * Fetches businesses in Navalcarnero from Google Places API (New),
- * normalizes them to the same shape used by the OSM script,
- * merges with the existing comercios.json (deduplication by proximity + name),
- * and writes the result back to src/data/comercios.json.
+ * normalizes them to the app's data shape, and writes the result
+ * to src/data/comercios.json (replaces any existing content).
  *
  * Usage:
  *   node scripts/fetch-comercios-google.mjs
  *
  * Requires:
- *   GOOGLE_PLACES_KEY in .env.local (or already in process.env)
+ *   GOOGLE_PLACES_KEY in .env (or already in process.env)
  *
- * Merge strategy:
- *   - OSM entries are always kept as-is (source of truth for coordinates).
- *   - A Google result is considered a DUPLICATE of an OSM entry when:
- *       distance <= DEDUP_DISTANCE_METERS  AND  nameSimilarity >= DEDUP_NAME_THRESHOLD
- *   - On match: OSM entry is ENRICHED with Google's phone/web/hours (only if empty).
- *   - No match: Google entry is ADDED with id prefix "gpl_".
+ * Shape produced per comercio:
+ *   id, nombre, categoria, subtipo, cocina, lat, lng,
+ *   direccion, telefono, web, horario,
+ *   rating, totalReviews, precioNivel
  */
 
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+
+// ---------------------------------------------------------------------------
+// Bootstrap
+// ---------------------------------------------------------------------------
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 
-function loadEnvLocal() {
+/** Load .env without requiring the dotenv package */
+function loadEnv() {
   const envPath = resolve(ROOT, ".env");
   if (!existsSync(envPath)) return;
   for (const line of readFileSync(envPath, "utf-8").split("\n")) {
@@ -41,23 +43,40 @@ function loadEnvLocal() {
   }
 }
 
-loadEnvLocal();
+loadEnv();
 
 const API_KEY = process.env.GOOGLE_PLACES_KEY;
 if (!API_KEY) {
-  console.error("ERROR: GOOGLE_PLACES_KEY not found. Add it to .env.local");
+  console.error("ERROR: GOOGLE_PLACES_KEY not found. Add it to .env");
   process.exit(1);
 }
 
 const COMERCIOS_PATH = resolve(ROOT, "src/data/comercios.json");
 
-const DEDUP_DISTANCE_METERS = 50;
-const DEDUP_NAME_THRESHOLD = 0.6;
+// ---------------------------------------------------------------------------
+// Tuning constants
+// ---------------------------------------------------------------------------
+
+/** Navalcarnero municipality center */
 const NAVALCARNERO_CENTER = { latitude: 40.2817, longitude: -4.0108 };
+
+/** Search radius that covers the whole municipality */
 const SEARCH_RADIUS_METERS = 4500;
+
+/** Milliseconds between API calls to stay comfortably under quota (60 req/min) */
 const API_THROTTLE_MS = 220;
 
+// ---------------------------------------------------------------------------
+// Category mapping: Google place types → our internal categories
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps an array of Google place types to { categoria, subtipo }.
+ * Order matters: first match wins.
+ * subtipo mirrors OSM values used in categorias.js so the UI needs no changes.
+ */
 const CATEGORY_RULES = [
+  // Alimentacion
   { types: ["supermarket"],             categoria: "alimentacion",   subtipo: "supermarket" },
   { types: ["grocery_store"],           categoria: "alimentacion",   subtipo: "supermarket" },
   { types: ["convenience_store"],       categoria: "alimentacion",   subtipo: "convenience" },
@@ -67,6 +86,8 @@ const CATEGORY_RULES = [
   { types: ["greengrocer"],             categoria: "alimentacion",   subtipo: "greengrocer" },
   { types: ["market"],                  categoria: "alimentacion",   subtipo: "marketplace" },
   { types: ["liquor_store"],            categoria: "alimentacion",   subtipo: "alcohol" },
+
+  // Restauracion
   { types: ["restaurant"],              categoria: "restauracion",   subtipo: "restaurant" },
   { types: ["cafe", "coffee_shop"],     categoria: "restauracion",   subtipo: "cafe" },
   { types: ["bar"],                     categoria: "restauracion",   subtipo: "bar" },
@@ -76,6 +97,8 @@ const CATEGORY_RULES = [
   { types: ["ice_cream_shop"],          categoria: "restauracion",   subtipo: "ice_cream" },
   { types: ["dessert_shop"],            categoria: "restauracion",   subtipo: "pastry" },
   { types: ["meal_takeaway"],           categoria: "restauracion",   subtipo: "fast_food" },
+
+  // Salud
   { types: ["pharmacy"],                categoria: "salud",          subtipo: "pharmacy" },
   { types: ["hospital"],                categoria: "salud",          subtipo: "hospital" },
   { types: ["doctor"],                  categoria: "salud",          subtipo: "doctors" },
@@ -83,17 +106,23 @@ const CATEGORY_RULES = [
   { types: ["physiotherapist"],         categoria: "salud",          subtipo: "physiotherapist" },
   { types: ["optician"],                categoria: "salud",          subtipo: "optician" },
   { types: ["veterinary_care"],         categoria: "salud",          subtipo: "veterinary" },
+
+  // Belleza
   { types: ["hair_salon", "hair_care"], categoria: "belleza",        subtipo: "hairdresser" },
   { types: ["beauty_salon"],            categoria: "belleza",        subtipo: "beauty" },
   { types: ["nail_salon"],              categoria: "belleza",        subtipo: "beauty" },
   { types: ["barber_shop"],             categoria: "belleza",        subtipo: "barber" },
   { types: ["spa"],                     categoria: "belleza",        subtipo: "beauty" },
+
+  // Hogar
   { types: ["furniture_store"],         categoria: "hogar",          subtipo: "furniture" },
   { types: ["hardware_store"],          categoria: "hogar",          subtipo: "doityourself" },
   { types: ["home_goods_store"],        categoria: "hogar",          subtipo: "houseware" },
   { types: ["florist"],                 categoria: "hogar",          subtipo: "florist" },
   { types: ["garden_center"],           categoria: "hogar",          subtipo: "garden_centre" },
   { types: ["pet_store"],               categoria: "hogar",          subtipo: "pet" },
+
+  // Servicios
   { types: ["gym", "fitness_center"],   categoria: "servicios",      subtipo: "gym" },
   { types: ["laundry", "laundromat"],   categoria: "servicios",      subtipo: "laundry" },
   { types: ["car_wash"],                categoria: "servicios",      subtipo: "car_wash" },
@@ -106,6 +135,8 @@ const CATEGORY_RULES = [
   { types: ["travel_agency"],           categoria: "servicios",      subtipo: "travel_agency" },
   { types: ["library"],                 categoria: "servicios",      subtipo: "library" },
   { types: ["dry_cleaning"],            categoria: "servicios",      subtipo: "dry_cleaning" },
+
+  // Servicios profesionales
   { types: ["lawyer"],                  categoria: "servicios_prof", subtipo: "lawyer" },
   { types: ["accounting"],              categoria: "servicios_prof", subtipo: "accountant" },
   { types: ["insurance_agency"],        categoria: "servicios_prof", subtipo: "insurance" },
@@ -130,9 +161,17 @@ function mapGoogleTypes(googleTypes = []) {
   return { categoria: "servicios", subtipo: "service" };
 }
 
+// ---------------------------------------------------------------------------
+// Google Places API (New) wrappers
+// ---------------------------------------------------------------------------
+
 const PLACES_BASE = "https://places.googleapis.com/v1";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * POST /places:searchText
+ * Lightweight fields only — cheapest SKU, used just to collect place IDs.
+ */
 async function searchText(query, pageToken = null) {
   const body = {
     textQuery: query,
@@ -161,13 +200,19 @@ async function searchText(query, pageToken = null) {
   return { places: data.places || [], nextPageToken: data.nextPageToken || null };
 }
 
+/**
+ * GET /places/{id}
+ * Full details per place: contact info, hours, rating, price level.
+ */
 async function getDetails(placeId) {
   const res = await fetch(`${PLACES_BASE}/places/${placeId}`, {
     headers: {
       "X-Goog-Api-Key": API_KEY,
+      // All fields we want — adding rating, userRatingCount, priceLevel
       "X-Goog-FieldMask":
         "id,displayName,types,location,formattedAddress," +
-        "nationalPhoneNumber,websiteUri,regularOpeningHours",
+        "nationalPhoneNumber,websiteUri,regularOpeningHours," +
+        "rating,userRatingCount,priceLevel,primaryTypeDisplayName",
       "Accept-Language": "es",
     },
   });
@@ -175,60 +220,34 @@ async function getDetails(placeId) {
   return res.json();
 }
 
+/**
+ * Converts Google's regularOpeningHours to a readable Spanish string.
+ * Example: "Lunes: 09:00–21:30 | Martes: 09:00–21:30 | ..."
+ */
 function formatHours(regularOpeningHours) {
   if (!regularOpeningHours?.weekdayDescriptions?.length) return "";
   return regularOpeningHours.weekdayDescriptions.join(" | ");
 }
 
-function distanceMeters(a, b) {
-  const R = 6_371_000;
-  const rad = (d) => (d * Math.PI) / 180;
-  const dLat = rad(b.lat - a.lat);
-  const dLng = rad(b.lng - a.lng);
-  const c =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(c), Math.sqrt(1 - c));
+/**
+ * Converts Google's priceLevel enum to a short token.
+ * PRICE_LEVEL_FREE → "FREE", PRICE_LEVEL_MODERATE → "MODERATE", etc.
+ */
+function formatPriceLevel(priceLevel) {
+  if (!priceLevel) return "";
+  // Google returns e.g. "PRICE_LEVEL_MODERATE" — strip the prefix
+  return priceLevel.replace("PRICE_LEVEL_", "");
 }
 
-function nameSimilarity(a, b) {
-  const norm = (s) =>
-    s.toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9 ]/g, "").trim();
-  const s = norm(a);
-  const t = norm(b);
-  if (s === t) return 1;
-  if (!s || !t) return 0;
-  const m = s.length, n = t.length;
-  const dp = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      dp[i][j] = s[i-1] === t[j-1]
-        ? dp[i-1][j-1]
-        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
-  return 1 - dp[m][n] / Math.max(m, n);
-}
+// ---------------------------------------------------------------------------
+// Search queries — broad coverage, low cost
+// ---------------------------------------------------------------------------
 
-function findOsmMatch(googlePlace, osmEntries) {
-  for (const osm of osmEntries) {
-    if (typeof osm.lat !== "number" || typeof osm.lng !== "number") continue;
-    if (distanceMeters(osm, googlePlace) > DEDUP_DISTANCE_METERS) continue;
-    if (nameSimilarity(osm.nombre, googlePlace.nombre) < DEDUP_NAME_THRESHOLD) continue;
-    return osm;
-  }
-  return null;
-}
-
-function enrichFromGoogle(osmEntry, googlePlace) {
-  if (!osmEntry.telefono  && googlePlace.telefono)  osmEntry.telefono  = googlePlace.telefono;
-  if (!osmEntry.web       && googlePlace.web)        osmEntry.web       = googlePlace.web;
-  if (!osmEntry.horario   && googlePlace.horario)    osmEntry.horario   = googlePlace.horario;
-  if (!osmEntry.direccion && googlePlace.direccion)  osmEntry.direccion = googlePlace.direccion;
-}
-
+/**
+ * 8 broad queries cover all commercial categories in Navalcarnero.
+ * Google returns up to 20 results per page; locationBias keeps them local.
+ * Estimated total: ~8 search calls + ~150-200 detail calls (~$3-4 one-time).
+ */
 const SEARCH_QUERIES = [
   "restaurantes bares cafeterias Navalcarnero Madrid",
   "supermercados tiendas alimentacion Navalcarnero Madrid",
@@ -240,27 +259,17 @@ const SEARCH_QUERIES = [
   "abogados gestoras inmobiliarias seguros Navalcarnero Madrid",
 ];
 
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
 async function main() {
-  console.log("Navalcarnero Vecinal — Google Places merge script");
+  console.log("Navalcarnero Vecinal — Google Places fetch script");
   console.log("=".repeat(55));
 
-  let existingEntries = [];
-  if (existsSync(COMERCIOS_PATH)) {
-    existingEntries = JSON.parse(readFileSync(COMERCIOS_PATH, "utf-8"));
-    console.log(`Loaded ${existingEntries.length} existing entries from comercios.json`);
-  } else {
-    console.log("comercios.json not found — will create from scratch");
-  }
-
-  const osmEntries    = existingEntries.filter((c) => !c.id.startsWith("gpl_"));
-  const prevGoogleMap = new Map(
-    existingEntries.filter((c) => c.id.startsWith("gpl_")).map((c) => [c.id, c])
-  );
-  console.log(`  OSM entries:    ${osmEntries.length}`);
-  console.log(`  Google entries: ${prevGoogleMap.size}\n`);
-
-  console.log("Phase 1 — Text search");
-  const rawPlaces = new Map();
+  // ── Phase 1: collect unique place IDs via text search ─────────────────────
+  console.log("\nPhase 1 — Text search");
+  const rawPlaces = new Map(); // googleId => basic place object
   let searchCalls = 0;
 
   for (const query of SEARCH_QUERIES) {
@@ -291,13 +300,15 @@ async function main() {
     await sleep(API_THROTTLE_MS);
   }
 
-  console.log(`\n  Total unique places: ${rawPlaces.size}`);
-  console.log(`  Search calls: ${searchCalls}\n`);
+  console.log(`\n  Total unique places found: ${rawPlaces.size}`);
+  console.log(`  Search calls used: ${searchCalls}\n`);
 
+  // ── Phase 2: fetch full details for every unique place ────────────────────
   console.log("Phase 2 — Place details");
-  const googleComerciosFull = [];
+  const comercios = [];
   let detailCalls = 0;
   let detailErrors = 0;
+  let skipped = 0;
   const ids = Array.from(rawPlaces.keys());
 
   for (let i = 0; i < ids.length; i++) {
@@ -307,21 +318,34 @@ async function main() {
     try {
       const d = await getDetails(googleId);
       detailCalls++;
+
+      const lat = d.location?.latitude  ?? 0;
+      const lng = d.location?.longitude ?? 0;
+
+      // Skip places without valid coordinates — can't be shown on map
+      if (!lat || !lng) { skipped++; continue; }
+
       const { categoria, subtipo } = mapGoogleTypes(d.types || []);
 
-      googleComerciosFull.push({
-        _googleId: googleId,
-        id: `gpl_${googleId}`,
-        nombre:    d.displayName?.text || rawPlaces.get(googleId)?.displayName?.text || "",
+      comercios.push({
+        id:          `gpl_${googleId}`,
+        nombre:      d.displayName?.text || rawPlaces.get(googleId)?.displayName?.text || "",
         categoria,
         subtipo,
-        cocina:    [],
-        lat:       d.location?.latitude  ?? 0,
-        lng:       d.location?.longitude ?? 0,
-        direccion: d.formattedAddress || "",
-        telefono:  d.nationalPhoneNumber || "",
-        web:       d.websiteUri || "",
-        horario:   formatHours(d.regularOpeningHours),
+        cocina:      [],   // Google has no cuisine tags; kept for UI shape compatibility
+        lat,
+        lng,
+        direccion:   d.formattedAddress        || "",
+        telefono:    d.nationalPhoneNumber      || "",
+        web:         d.websiteUri               || "",
+        horario:     formatHours(d.regularOpeningHours),
+        // New fields
+        rating:      d.rating                  ?? null,
+        totalReviews: d.userRatingCount         ?? null,
+        precioNivel: formatPriceLevel(d.priceLevel),
+        // Human-readable type label in Spanish, e.g. "Pizzería", "Supermercado", "Peluquería"
+        // Used for semantic search without needing manual keyword mappings.
+        tipoDisplay: d.primaryTypeDisplayName?.text || "",
       });
 
       await sleep(API_THROTTLE_MS);
@@ -331,54 +355,41 @@ async function main() {
     }
   }
 
-  console.log(`  Detail calls: ${detailCalls}  |  errors: ${detailErrors}\n`);
+  console.log(`  Detail calls: ${detailCalls}  |  errors: ${detailErrors}  |  skipped (no coords): ${skipped}\n`);
 
-  console.log("Phase 3 — Merge");
-  const mergedOsmEntries = osmEntries.map((e) => ({ ...e }));
-  const newGoogleEntries = [];
-  let enrichedCount = 0;
-  let addedCount    = 0;
-  let skippedCount  = 0;
+  // ── Phase 3: sort and write ───────────────────────────────────────────────
+  comercios.sort((a, b) => {
+    if (a.categoria !== b.categoria)
+      return a.categoria.localeCompare(b.categoria, "es");
+    return a.nombre.localeCompare(b.nombre, "es");
+  });
 
-  for (const gp of googleComerciosFull) {
-    if (!gp.lat || !gp.lng) { skippedCount++; continue; }
+  mkdirSync(dirname(COMERCIOS_PATH), { recursive: true });
+  writeFileSync(COMERCIOS_PATH, JSON.stringify(comercios, null, 2) + "\n", "utf-8");
 
-    const osmMatch = findOsmMatch(gp, mergedOsmEntries);
-
-    if (osmMatch) {
-      enrichFromGoogle(osmMatch, gp);
-      enrichedCount++;
-    } else {
-      const existing = prevGoogleMap.get(gp.id);
-      newGoogleEntries.push(existing ? { ...existing, ...gp } : gp);
-      if (!existing) addedCount++;
-    }
-  }
-
-  console.log(`  OSM entries enriched with Google data: ${enrichedCount}`);
-  console.log(`  New Google-only entries added:         ${addedCount}`);
-  console.log(`  Skipped (no coordinates):              ${skippedCount}`);
-
-  const output = [...mergedOsmEntries, ...newGoogleEntries]
-    .map(({ _googleId, ...rest }) => rest)
-    .sort((a, b) => {
-      if (a.categoria !== b.categoria)
-        return a.categoria.localeCompare(b.categoria, "es");
-      return a.nombre.localeCompare(b.nombre, "es");
-    });
-
-  writeFileSync(COMERCIOS_PATH, JSON.stringify(output, null, 2) + "\n", "utf-8");
-
+  // ── Summary ───────────────────────────────────────────────────────────────
   const totalCalls = searchCalls + detailCalls;
-  console.log("\n" + "=".repeat(55));
-  console.log(`Done!  ${output.length} total comercios written to comercios.json`);
+  console.log("=".repeat(55));
+  console.log(`Done!  ${comercios.length} comercios written to src/data/comercios.json`);
   console.log("\nBy category:");
-  const byCat = output.reduce((acc, c) => {
+  const byCat = comercios.reduce((acc, c) => {
     acc[c.categoria] = (acc[c.categoria] || 0) + 1; return acc;
   }, {});
   Object.entries(byCat)
     .sort(([, a], [, b]) => b - a)
     .forEach(([cat, n]) => console.log(`  ${cat.padEnd(22)} ${n}`));
+
+  // Stats on enriched fields
+  const withPhone   = comercios.filter(c => c.telefono).length;
+  const withWeb     = comercios.filter(c => c.web).length;
+  const withHours   = comercios.filter(c => c.horario).length;
+  const withRating  = comercios.filter(c => c.rating).length;
+  console.log("\nField coverage:");
+  console.log(`  telefono     ${withPhone}/${comercios.length}`);
+  console.log(`  web          ${withWeb}/${comercios.length}`);
+  console.log(`  horario      ${withHours}/${comercios.length}`);
+  console.log(`  rating       ${withRating}/${comercios.length}`);
+
   console.log(`\nAPI calls used: ${totalCalls}  (~$${(totalCalls * 0.017).toFixed(2)})`);
   console.log(`  ${searchCalls} search  +  ${detailCalls} detail`);
 }
