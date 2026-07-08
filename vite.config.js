@@ -14,7 +14,7 @@ function devApiPlugin(env) {
       if (env.ANTHROPIC_MODEL) process.env.ANTHROPIC_MODEL = env.ANTHROPIC_MODEL
 
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url || !req.url.startsWith('/api/chat')) return next()
+        if (!req.url || (!req.url.startsWith('/api/chat') && !req.url.startsWith('/api/bus-times'))) return next()
 
         // Parseo del cuerpo JSON (Vite no lo hace por nosotros).
         const chunks = []
@@ -36,8 +36,24 @@ function devApiPlugin(env) {
           res.end(JSON.stringify(obj))
         }
 
+        // Parse URL query parameters (handle full URL with protocol)
+        const urlPath = req.url.split('?')[0]
+        const queryString = req.url.split('?')[1] || ''
+        req.query = {}
+        if (queryString) {
+          queryString.split('&').forEach(pair => {
+            const [key, value] = pair.split('=')
+            req.query[key] = value ? decodeURIComponent(value) : ''
+          })
+        }
+
         try {
-          const mod = await server.ssrLoadModule('/api/chat.js')
+          let mod
+          if (req.url.startsWith('/api/chat')) {
+            mod = await server.ssrLoadModule('/api/chat.js')
+          } else if (req.url.startsWith('/api/bus-times')) {
+            mod = await server.ssrLoadModule('/api/bus-times.js')
+          }
           await mod.default(req, res)
         } catch (err) {
           res.statusCode = 500

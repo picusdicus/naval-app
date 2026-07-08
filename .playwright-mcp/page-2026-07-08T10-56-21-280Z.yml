@@ -1,0 +1,463 @@
+- generic [ref=f9e3]:
+  - banner [ref=f9e4]:
+    - generic [ref=f9e5]:
+      - link "Navalcarnero" [ref=f9e6] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f9e7]:
+        - link "Inicio" [ref=f9e8] [cursor=pointer]:
+          - /url: /
+        - link "Eventos" [ref=f9e9] [cursor=pointer]:
+          - /url: /eventos
+        - link "Guía" [ref=f9e10] [cursor=pointer]:
+          - /url: /mapa
+        - link "Transporte" [ref=f9e11] [cursor=pointer]:
+          - /url: /transporte
+        - link "Noticias" [ref=f9e12] [cursor=pointer]:
+          - /url: /noticias
+      - button "Asistente IA" [ref=f9e13] [cursor=pointer]
+  - main [ref=f9e14]:
+    - generic [ref=f9e15]:
+      - generic [ref=f9e16]:
+        - heading "Red de transporte" [level=1] [ref=f9e17]
+        - paragraph [ref=f9e18]: Próximas salidas según los horarios oficiales del CRTM.
+        - generic [ref=f9e19]:
+          - generic [ref=f9e20]: "Hoy: horario de laborable"
+          - generic [ref=f9e21]: Datos actualizados el 2026-07-07
+      - generic [ref=f9e23]:
+        - button "Cerca de mí" [ref=f9e24] [cursor=pointer]
+        - button "Todas las líneas" [ref=f9e25] [cursor=pointer]
+      - generic [ref=f9e26]:
+        - article [ref=f9e27]:
+          - generic [ref=f9e28]:
+            - generic [ref=f9e30]: "528"
+            - heading "MADRID (Cuatro Vientos)-NAVALCARNERO" [level=2] [ref=f9e31]
+          - generic [ref=f9e32]:
+            - paragraph [ref=f9e33]:
+              - generic [ref=f9e34]: arrow_forward
+              - text: SAN ROQUE-GALILEO
+            - paragraph [ref=f9e35]: Desde TRILLO-CHARCONES
+            - generic [ref=f9e36]:
+              - generic [ref=f9e37]: 13:00 · en 4 min
+              - generic [ref=f9e38]: 13:32
+              - generic [ref=f9e39]: 13:33
+          - generic [ref=f9e40]:
+            - paragraph [ref=f9e41]:
+              - generic [ref=f9e42]: arrow_forward
+              - text: PºEXTREMADURA-CUATRO VIENTOS
+            - paragraph [ref=f9e43]: Desde CONSTITUCIÓN-FELIX SERRANO DEL REAL
+            - generic [ref=f9e44]:
+              - generic [ref=f9e45]: 13:05 · en 9 min
+              - generic [ref=f9e46]: 13:06
+              - generic [ref=f9e47]: 13:35
+        - article [ref=f9e48]:
+          - generic [ref=f9e49]:
+            - generic [ref=f9e51]: "529"
+            - heading "MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-EL ÁLAMO" [level=2] [ref=f9e52]
+          - generic [ref=f9e53]:
+            - paragraph [ref=f9e54]:
+              - generic [ref=f9e55]: arrow_forward
+              - text: LOS OLIVOS-CASARRUBIOS
+            - paragraph [ref=f9e56]: Desde DEHESA MARI MARTÍN-POL.IND.ALPARRACHE I
+            - generic [ref=f9e57]:
+              - generic [ref=f9e58]: 13:18 · en 22 min
+              - generic [ref=f9e59]: 13:48
+              - generic [ref=f9e60]: 14:18
+          - generic [ref=f9e61]:
+            - paragraph [ref=f9e62]:
+              - generic [ref=f9e63]: arrow_forward
+              - text: HOSPITAL REY JUAN CARLOS
+            - paragraph [ref=f9e64]: Desde CTRA.M404-LAS GRANJAS
+            - generic [ref=f9e65]:
+              - generic [ref=f9e66]: 12:56 · ahora
+              - generic [ref=f9e67]: 13:20
+              - generic [ref=f9e68]: 13:56
+        - article [ref=f9e69]:
+          - generic [ref=f9e70]:
+            - generic [ref=f9e72]: 529A
+            - heading "MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-BATRES" [level=2] [ref=f9e73]
+          - generic [ref=f9e74]:
+            - paragraph [ref=f9e75]:
+              - generic [ref=f9e76]: arrow_forward
+              - text: CASTILLO-GTA.OLIVO
+            - paragraph [ref=f9e77]: Desde DEHESA MARI MARTÍN-POL.IND.ALPARRACHE I
+            - generic [ref=f9e78]:
+              - generic [ref=f9e79]: 13:32 · en 36 min
+              - generic [ref=f9e80]: 14:47
+              - generic [ref=f9e81]: 17:15
+          - generic [ref=f9e82]:
+            - paragraph [ref=f9e83]:
+              - generic [ref=f9e84]: arrow_forward
+              - text: HOSPITAL REY JUAN CARLOS
+            - paragraph [ref=f9e85]: Desde CTRA.M404-LAS GRANJAS
+            - generic [ref=f9e86]:
+              - generic [ref=f9e87]: 13:53 · en 57 min
+              - generic [ref=f9e88]: 14:55
+              - generic [ref=f9e89]: 15:50
+        - article [ref=f9e90]:
+          - generic [ref=f9e91]:
+            - generic [ref=f9e93]: 529H
+            - heading "MÓSTOLES (Hospital Rey Juan Carlos) - NAVALCARNERO" [level=2] [ref=f9e94]
+          - generic [ref=f9e95]:
+            - paragraph [ref=f9e96]:
+              - generic [ref=f9e97]: arrow_forward
+              - text: SAN ROQUE-GALILEO
+            - paragraph [ref=f9e98]: Desde ENLACE A5-C.PENITENCIARIO
+            - generic [ref=f9e99]:
+              - generic [ref=f9e100]: 12:59 · en 3 min
+              - generic [ref=f9e101]: 13:02
+              - generic [ref=f9e102]: 13:32
+          - generic [ref=f9e103]:
+            - paragraph [ref=f9e104]:
+              - generic [ref=f9e105]: arrow_forward
+              - text: HOSPITAL REY JUAN CARLOS
+            - paragraph [ref=f9e106]: Desde RONDA DE SAN JUAN-BUENAVISTA
+            - generic [ref=f9e107]:
+              - generic [ref=f9e108]: 13:06 · en 10 min
+              - generic [ref=f9e109]: 13:35
+              - generic [ref=f9e110]: 14:05
+        - article [ref=f9e111]:
+          - generic [ref=f9e112]:
+            - generic [ref=f9e114]: "530"
+            - heading "NAVALCARNERO-VILLANUEVA DE LA CAÑADA" [level=2] [ref=f9e115]
+          - generic [ref=f9e116]:
+            - paragraph [ref=f9e117]:
+              - generic [ref=f9e118]: arrow_forward
+              - text: AV.UNIVERSIDAD-UNIVERSIDAD
+            - paragraph [ref=f9e119]: Desde SAN ROQUE-GALILEO
+            - generic [ref=f9e120]:
+              - generic [ref=f9e121]: 13:10 · en 14 min
+              - generic [ref=f9e122]: 15:20
+              - generic [ref=f9e123]: 17:30
+          - generic [ref=f9e124]:
+            - paragraph [ref=f9e125]:
+              - generic [ref=f9e126]: arrow_forward
+              - text: SAN ROQUE-GALILEO
+            - paragraph [ref=f9e127]: Desde CTRA.M600-CEMENTERIO
+            - generic [ref=f9e128]:
+              - generic [ref=f9e129]: 15:04 · en 128 min
+              - generic [ref=f9e130]: 16:47
+              - generic [ref=f9e131]: 18:59
+        - article [ref=f9e132]:
+          - generic [ref=f9e133]:
+            - generic [ref=f9e135]: "531"
+            - heading "MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-SEVILLA LA NUEVA" [level=2] [ref=f9e136]
+          - generic [ref=f9e137]:
+            - paragraph [ref=f9e138]:
+              - generic [ref=f9e139]: arrow_forward
+              - text: AV.GUADARRAMA-URB.MANANTIALES
+            - paragraph [ref=f9e140]: Desde DEHESA MARI MARTÍN-POL.IND.ALPARRACHE I
+            - generic [ref=f9e141]:
+              - generic [ref=f9e142]: 13:07 · en 11 min
+              - generic [ref=f9e143]: 14:09
+              - generic [ref=f9e144]: 14:32
+          - generic [ref=f9e145]:
+            - paragraph [ref=f9e146]:
+              - generic [ref=f9e147]: arrow_forward
+              - text: HOSPITAL REY JUAN CARLOS
+            - paragraph [ref=f9e148]: Desde CTRA.M600-CEMENTERIO
+            - generic [ref=f9e149]:
+              - generic [ref=f9e150]: 13:37 · en 41 min
+              - generic [ref=f9e151]: 14:25
+              - generic [ref=f9e152]: 15:27
+        - article [ref=f9e153]:
+          - generic [ref=f9e154]:
+            - generic [ref=f9e156]: 531A
+            - heading "MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-VILLAMANTILLA" [level=2] [ref=f9e157]
+          - generic [ref=f9e158]:
+            - paragraph [ref=f9e159]:
+              - generic [ref=f9e160]: arrow_forward
+              - text: CEDROS-PºDE LOS CHOPOS
+            - paragraph [ref=f9e161]: Desde DEHESA MARI MARTÍN-POL.IND.ALPARRACHE I
+            - generic [ref=f9e162]:
+              - generic [ref=f9e163]: 13:00 · en 4 min
+              - generic [ref=f9e164]: 13:27
+              - generic [ref=f9e165]: 14:06
+          - generic [ref=f9e166]:
+            - paragraph [ref=f9e167]:
+              - generic [ref=f9e168]: arrow_forward
+              - text: HOSPITAL REY JUAN CARLOS
+            - paragraph [ref=f9e169]: Desde CTRA.M600-CEMENTERIO
+            - generic [ref=f9e170]:
+              - generic [ref=f9e171]: 13:16 · en 20 min
+              - generic [ref=f9e172]: 13:18
+              - generic [ref=f9e173]: 14:16
+        - article [ref=f9e174]:
+          - generic [ref=f9e175]:
+            - generic [ref=f9e177]: "538"
+            - heading "MADRID (Cuatro Vientos) - NAVALCARNERO (La Dehesa)" [level=2] [ref=f9e178]
+          - generic [ref=f9e179]:
+            - paragraph [ref=f9e180]:
+              - generic [ref=f9e181]: arrow_forward
+              - text: ARCÁNGEL GABRIEL-AV.MARI MARTÍN
+            - paragraph [ref=f9e182]: Desde ENLACE A5-C.PENITENCIARIO
+            - generic [ref=f9e183]:
+              - generic [ref=f9e184]: 12:59 · en 3 min
+              - generic [ref=f9e185]: 13:10
+              - generic [ref=f9e186]: 13:28
+          - generic [ref=f9e187]:
+            - paragraph [ref=f9e188]:
+              - generic [ref=f9e189]: arrow_forward
+              - text: PºEXTREMADURA-CUATRO VIENTOS
+            - paragraph [ref=f9e190]: Desde ARCÁNGEL GABRIEL-AV.MARI MARTÍN
+            - generic [ref=f9e191]:
+              - generic [ref=f9e192]: 13:00 · en 4 min
+              - generic [ref=f9e193]: 13:20
+              - generic [ref=f9e194]: 13:30
+        - article [ref=f9e195]:
+          - generic [ref=f9e196]:
+            - generic [ref=f9e198]: "539"
+            - heading "MADRID (Cuatro Vientos)-EL ÁLAMO" [level=2] [ref=f9e199]
+          - generic [ref=f9e200]:
+            - paragraph [ref=f9e201]:
+              - generic [ref=f9e202]: arrow_forward
+              - text: AV.MADRID-CºMADRID
+            - paragraph [ref=f9e203]: Desde DEHESA MARI MARTÍN-POL.IND.ALPARRACHE I
+            - generic [ref=f9e204]:
+              - generic [ref=f9e205]: 13:56 · en 60 min
+              - generic [ref=f9e206]: 15:00
+              - generic [ref=f9e207]: 15:30
+          - generic [ref=f9e208]:
+            - paragraph [ref=f9e209]:
+              - generic [ref=f9e210]: arrow_forward
+              - text: PºEXTREMADURA-CUATRO VIENTOS
+            - paragraph [ref=f9e211]: Desde CTRA.M404-LAS GRANJAS
+            - generic [ref=f9e212]:
+              - generic [ref=f9e213]: 13:36 · en 40 min
+              - generic [ref=f9e214]: 14:11
+              - generic [ref=f9e215]: 14:36
+        - article [ref=f9e216]:
+          - generic [ref=f9e217]:
+            - generic [ref=f9e219]: "541"
+            - heading "MADRID (Plaza Elíptica)-VILLAMANTA-LA TORRE DE E. HAMBRAN" [level=2] [ref=f9e220]
+          - generic [ref=f9e221]:
+            - paragraph [ref=f9e222]:
+              - generic [ref=f9e223]: arrow_forward
+              - text: LA TORRE DE E.H.-CTRA. MENTRIDA
+            - paragraph [ref=f9e224]: Desde CTRA.NAVACERRADA-URB.LOS MANZANOS
+            - generic [ref=f9e225]:
+              - generic [ref=f9e226]: 18:43 · en 347 min
+              - generic [ref=f9e227]: 20:43
+          - generic [ref=f9e228]:
+            - paragraph [ref=f9e229]:
+              - generic [ref=f9e230]: arrow_forward
+              - text: INTERCAMBIADOR DE PLAZA ELÍPTICA
+            - paragraph [ref=f9e231]: Desde CTRA.M507-URB.LOS OLIVOS
+            - generic [ref=f9e232]:
+              - generic [ref=f9e233]: 15:36 · en 160 min
+              - generic [ref=f9e234]: 16:21
+              - generic [ref=f9e235]: 17:21
+        - article [ref=f9e236]:
+          - generic [ref=f9e237]:
+            - generic [ref=f9e239]: "545"
+            - heading "MADRID (Plaza Elíptica)-CENICIENTOS-SOTILLO DE LA ADRADA" [level=2] [ref=f9e240]
+          - generic [ref=f9e241]:
+            - paragraph [ref=f9e242]:
+              - generic [ref=f9e243]: arrow_forward
+              - text: PLAZA DE LOS CAÑOS-PISCINA MUNICIPAL
+            - paragraph [ref=f9e244]: Desde CTRA.NAVACERRADA-URB.LOS MANZANOS
+            - generic [ref=f9e245]:
+              - generic [ref=f9e246]: 13:06 · en 10 min
+              - generic [ref=f9e247]: 13:36
+              - generic [ref=f9e248]: 13:56
+          - generic [ref=f9e249]:
+            - paragraph [ref=f9e250]:
+              - generic [ref=f9e251]: arrow_forward
+              - text: INTERCAMBIADOR DE PLAZA ELÍPTICA
+            - paragraph [ref=f9e252]: Desde CTRA.M507-URB.LOS OLIVOS
+            - generic [ref=f9e253]:
+              - generic [ref=f9e254]: 13:16 · en 20 min
+              - generic [ref=f9e255]: 13:46
+              - generic [ref=f9e256]: 14:16
+        - article [ref=f9e257]:
+          - generic [ref=f9e258]:
+            - generic [ref=f9e260]: "546"
+            - heading "MADRID (Plaza Elíptica)-ROZAS DE PUERTO REAL-CASILLAS" [level=2] [ref=f9e261]
+          - generic [ref=f9e262]:
+            - paragraph [ref=f9e263]:
+              - generic [ref=f9e264]: arrow_forward
+              - text: CASILLAS-LA RAMA
+            - paragraph [ref=f9e265]: Desde CTRA.NAVACERRADA-URB.LOS MANZANOS
+            - generic [ref=f9e266]:
+              - generic [ref=f9e267]: 13:32 · en 36 min
+              - generic [ref=f9e268]: 14:32
+              - generic [ref=f9e269]: 17:34
+          - generic [ref=f9e270]:
+            - paragraph [ref=f9e271]:
+              - generic [ref=f9e272]: arrow_forward
+              - text: INTERCAMBIADOR DE PLAZA ELÍPTICA
+            - paragraph [ref=f9e273]: Desde CTRA.M507-URB.LOS OLIVOS
+            - generic [ref=f9e274]:
+              - generic [ref=f9e275]: 15:38 · en 162 min
+              - generic [ref=f9e276]: 15:48
+              - generic [ref=f9e277]: 17:49
+        - article [ref=f9e278]:
+          - generic [ref=f9e279]:
+            - generic [ref=f9e281]: "547"
+            - heading "MADRID (Plaza Elíptica)-V.DEL PRADO-ALMOROX-ALDEA EN CABO" [level=2] [ref=f9e282]
+          - generic [ref=f9e283]:
+            - paragraph [ref=f9e284]:
+              - generic [ref=f9e285]: arrow_forward
+              - text: EST.DE AUTOBUSES DE ALMOROX
+            - paragraph [ref=f9e286]: Desde CTRA.NAVACERRADA-URB.LOS MANZANOS
+            - generic [ref=f9e287]:
+              - generic [ref=f9e288]: 13:50 · en 54 min
+              - generic [ref=f9e289]: 14:00
+              - generic [ref=f9e290]: 17:30
+          - generic [ref=f9e291]:
+            - paragraph [ref=f9e292]:
+              - generic [ref=f9e293]: arrow_forward
+              - text: INTERCAMBIADOR DE PLAZA ELÍPTICA
+            - paragraph [ref=f9e294]: Desde CTRA.M507-URB.LOS OLIVOS
+            - generic [ref=f9e295]:
+              - generic [ref=f9e296]: 15:24 · en 148 min
+              - generic [ref=f9e297]: 16:45
+              - generic [ref=f9e298]: 17:05
+        - article [ref=f9e299]:
+          - generic [ref=f9e300]:
+            - generic [ref=f9e302]: "548"
+            - heading "MADRID (Plaza Elíptica)-ALDEA DEL FRESNO-CALALBERCHE" [level=2] [ref=f9e303]
+          - generic [ref=f9e304]:
+            - paragraph [ref=f9e305]:
+              - generic [ref=f9e306]: arrow_forward
+              - text: URB. CALALBERCHE-ATENAS
+            - paragraph [ref=f9e307]: Desde CTRA.NAVACERRADA-URB.LOS MANZANOS
+            - generic [ref=f9e309]: 20:29 · en 453 min
+          - generic [ref=f9e310]:
+            - paragraph [ref=f9e311]:
+              - generic [ref=f9e312]: arrow_forward
+              - text: INTERCAMBIADOR DE PLAZA ELÍPTICA
+            - paragraph [ref=f9e313]: Desde CTRA.M507-URB.LOS OLIVOS
+            - generic [ref=f9e314]:
+              - generic [ref=f9e315]: 16:22 · en 206 min
+              - generic [ref=f9e316]: 16:37
+              - generic [ref=f9e317]: 17:37
+        - article [ref=f9e318]:
+          - generic [ref=f9e319]:
+            - generic [ref=f9e321]: N505
+            - heading "MADRID (Príncipe Pío) - NAVALCARNERO - EL ÁLAMO" [level=2] [ref=f9e322]
+          - generic [ref=f9e323]:
+            - paragraph [ref=f9e324]:
+              - generic [ref=f9e325]: arrow_forward
+              - text: CURATO-ESCUELAS
+            - paragraph [ref=f9e326]: Desde ENLACE A5-C.PENITENCIARIO
+            - paragraph [ref=f9e327]: No quedan salidas hoy · mañana a las 00:32
+          - generic [ref=f9e328]:
+            - paragraph [ref=f9e329]:
+              - generic [ref=f9e330]: arrow_forward
+              - text: VIRGEN DEL PUERTO-CAMPO DEL MORO
+            - paragraph [ref=f9e331]: Desde SAN ROQUE-GALILEO
+            - generic [ref=f9e333]: 23:36 · en 640 min
+      - generic [ref=f9e335]:
+        - generic [ref=f9e337]: info
+        - generic [ref=f9e338]:
+          - heading "Sobre estos horarios" [level=3] [ref=f9e339]
+          - paragraph [ref=f9e340]:
+            - text: Horarios oficiales publicados por el Consorcio Regional de Transportes de Madrid (datos.crtm.es). Las cuentas atrás se calculan con el horario programado; puede haber variaciones por tráfico u obras. Actualiza los datos con
+            - code [ref=f9e341]: npm run fetch:transporte
+            - text: .
+  - contentinfo [ref=f9e342]:
+    - generic [ref=f9e343]:
+      - generic [ref=f9e344]:
+        - paragraph [ref=f9e345]: Navalcarnero
+        - paragraph [ref=f9e346]: Tu conexión directa con los servicios municipales y la vida vecinal.
+      - generic [ref=f9e347]:
+        - link "Eventos" [ref=f9e348] [cursor=pointer]:
+          - /url: /eventos
+        - link "Guía local" [ref=f9e349] [cursor=pointer]:
+          - /url: /mapa
+        - link "Transporte" [ref=f9e350] [cursor=pointer]:
+          - /url: /transporte
+        - link "Noticias" [ref=f9e351] [cursor=pointer]:
+          - /url: /noticias
+        - button "Asistente IA" [ref=f9e352] [cursor=pointer]
+      - generic [ref=f9e353]:
+        - paragraph [ref=f9e354]: Atención ciudadana
+        - paragraph [ref=f9e355]: 91 810 11 41 · 91 811 51 91
+        - paragraph [ref=f9e356]: Plaza de Segovia, 1
+        - paragraph [ref=f9e357]: L–V, 9:00 a 14:00
+    - generic [ref=f9e358]: Proyecto vecinal no oficial · Datos de OpenStreetMap y fuentes locales
+  - generic:
+    - complementary:
+      - generic:
+        - generic:
+          - generic:
+            - heading [level=2]: Navalcarnero
+            - generic: Tu plaza digital
+        - generic:
+          - generic: location_on
+          - generic: Comunidad de Madrid
+      - navigation:
+        - link:
+          - /url: /
+          - generic: home
+          - generic: Inicio
+        - link:
+          - /url: /eventos
+          - generic: calendar_today
+          - generic: Eventos
+        - link:
+          - /url: /mapa
+          - generic: explore
+          - generic: Guía local
+        - link:
+          - /url: /transporte
+          - generic: directions_bus
+          - generic: Transporte
+        - link:
+          - /url: /noticias
+          - generic: newspaper
+          - generic: Noticias
+        - link:
+          - /url: /asistente
+          - generic: smart_toy
+          - generic: Asistente IA
+        - link:
+          - /url: tel:112
+          - generic: emergency
+          - generic: Emergencias (112)
+        - link:
+          - /url: tel:918101141
+          - generic: account_balance
+          - generic: Ayuntamiento
+      - generic:
+        - generic:
+          - generic: Navalcarnero
+          - generic: v0.1.0
+        - link:
+          - /url: tel:918101141
+          - generic: call
+          - text: Llamar al Ayuntamiento
+  - generic:
+    - complementary:
+      - generic:
+        - generic:
+          - generic:
+            - generic: smart_toy
+          - generic:
+            - heading [level=2]: PuebloGPT
+            - paragraph: Asistente vecinal de Navalcarnero
+        - button:
+          - generic: close
+      - generic:
+        - generic:
+          - generic:
+            - generic: ¡Hola! Soy tu asistente local. Puedo ayudarte con horarios del bus, trámites municipales o recomendarte qué hacer hoy en el pueblo.
+        - generic:
+          - paragraph: Sugerencias frecuentes
+          - generic:
+            - button:
+              - generic: celebration
+              - text: ¿Cuándo es la próxima fiesta?
+            - button:
+              - generic: description
+              - text: ¿Cómo saco el certificado de empadronamiento?
+            - button:
+              - generic: schedule
+              - text: Horarios del bus a Madrid
+        - generic:
+          - generic:
+            - generic: add_circle
+            - textbox:
+              - /placeholder: Pregunta algo sobre el pueblo…
+          - button:
+            - generic: send

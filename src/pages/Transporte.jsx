@@ -32,7 +32,7 @@ function Sentido({ sentido, ahora }) {
               >
                 {s.hora} ·{' '}
                 {tiempoReal && tiempoReal.length > 0
-                  ? `${tiempoReal[0]} min (tiempo real 🟢)`
+                  ? `${tiempoReal[0].minutos} min (tiempo real 🟢)`
                   : s.enMin === 0
                     ? 'ahora'
                     : `en ${s.enMin} min`}
@@ -72,7 +72,7 @@ function TabButton({ label, isActive, onClick }) {
 }
 
 function ParadaCercana({ parada, tiemposReales, ahora }) {
-  const minutos = tiemposReales[parada.codStop]
+  const llegadas = tiemposReales[parada.codStop]
   const distanciaFormato = parada.distancia < 1000
     ? `${Math.round(parada.distancia)} m`
     : `${(parada.distancia / 1000).toFixed(1)} km`
@@ -89,18 +89,21 @@ function ParadaCercana({ parada, tiemposReales, ahora }) {
         </div>
       </div>
 
-      {minutos && minutos.length > 0 ? (
+      {llegadas && llegadas.length > 0 ? (
         <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
-            {minutos.slice(0, 3).map((m, i) => (
-              <span
-                key={i}
-                className="rounded-full bg-secondary-container px-3 py-1 text-sm font-semibold text-on-secondary-container"
-              >
-                en {m} min
+          {llegadas.slice(0, 3).map((llegada, i) => (
+            <div key={i} className="flex items-center justify-between rounded-lg bg-surface-container-high p-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 min-w-[24px] flex-none items-center justify-center rounded bg-primary px-1 text-xs font-bold text-on-primary">
+                  {llegada.linea}
+                </div>
+                <div className="flex-1 text-xs text-on-surface-variant">{llegada.destino}</div>
+              </div>
+              <span className="rounded-full bg-secondary-container px-2 py-0.5 text-xs font-semibold text-on-secondary-container">
+                en {llegada.minutos} min
               </span>
-            ))}
-          </div>
+            </div>
+          ))}
           <p className="text-xs text-on-surface-variant">Próximas llegadas en tiempo real</p>
         </div>
       ) : (

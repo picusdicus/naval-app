@@ -24,9 +24,9 @@ export function useParadasCercanas() {
     const fetchTiempos = async () => {
       const tiempos = {}
       for (const parada of paradasFiltered.slice(0, 2)) {
-        const minutos = await fetchTiempoReal(parada.codStop)
-        if (minutos) {
-          tiempos[parada.codStop] = minutos
+        const llegadas = await fetchTiempoReal(parada.codStop)
+        if (llegadas) {
+          tiempos[parada.codStop] = llegadas
         }
       }
       setTiemposReales(tiempos)
