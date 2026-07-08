@@ -77,6 +77,14 @@ function ParadaCercana({ parada, tiemposReales, ahora }) {
     ? `${Math.round(parada.distancia)} m`
     : `${(parada.distancia / 1000).toFixed(1)} km`
 
+  // Fallback si no hay datos en tiempo real: mostrar las líneas que pasan
+  const lineasMostradas = llegadas && llegadas.length > 0 ? llegadas : parada.codLines?.slice(0, 3).map(linea => ({
+    linea,
+    destino: 'Destino próximamente',
+    minutos: '--',
+    esFallback: true
+  }))
+
   return (
     <div className="nv-card space-y-3 p-5">
       <div className="flex items-start justify-between">
@@ -89,9 +97,9 @@ function ParadaCercana({ parada, tiemposReales, ahora }) {
         </div>
       </div>
 
-      {llegadas && llegadas.length > 0 ? (
+      {lineasMostradas && lineasMostradas.length > 0 ? (
         <div className="space-y-2">
-          {llegadas.slice(0, 3).map((llegada, i) => (
+          {lineasMostradas.slice(0, 3).map((llegada, i) => (
             <div key={i} className="flex items-center justify-between rounded-lg bg-surface-container-high p-2">
               <div className="flex items-center gap-2">
                 <div className="flex h-6 min-w-[24px] flex-none items-center justify-center rounded bg-primary px-1 text-xs font-bold text-on-primary">
@@ -100,11 +108,13 @@ function ParadaCercana({ parada, tiemposReales, ahora }) {
                 <div className="flex-1 text-xs text-on-surface-variant">{llegada.destino}</div>
               </div>
               <span className="rounded-full bg-secondary-container px-2 py-0.5 text-xs font-semibold text-on-secondary-container">
-                en {llegada.minutos} min
+                {llegada.esFallback ? 'Cargando' : `en ${llegada.minutos} min`}
               </span>
             </div>
           ))}
-          <p className="text-xs text-on-surface-variant">Próximas llegadas en tiempo real</p>
+          <p className="text-xs text-on-surface-variant">
+            {llegadas && llegadas.length > 0 ? 'Próximas llegadas en tiempo real' : 'Líneas que pasan por esta parada'}
+          </p>
         </div>
       ) : (
         <p className="text-sm text-on-surface-variant">Cargando próximas llegadas...</p>

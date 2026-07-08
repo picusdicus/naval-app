@@ -1,4 +1,4 @@
-export async function fetchTiempoReal(codStop) {
+export async function fetchTiempoReal(codStop, lineasPermitidas = null) {
   if (!codStop) return null
 
   try {
@@ -14,13 +14,17 @@ export async function fetchTiempoReal(codStop) {
     const now = new Date()
     const llegadas = arrivals
       .map((arrival) => {
+        const linea = arrival.line?.shortDescription || 'N/A'
+        if (lineasPermitidas && !lineasPermitidas.includes(linea)) {
+          return null
+        }
         const arrivalTime = new Date(arrival.time)
         const diffMs = arrivalTime - now
         const diffMinutos = Math.ceil(diffMs / 60000)
         return diffMinutos > 0
           ? {
               minutos: diffMinutos,
-              linea: arrival.line?.shortDescription || 'N/A',
+              linea: linea,
               destino: arrival.destination || 'Destino desconocido',
             }
           : null
