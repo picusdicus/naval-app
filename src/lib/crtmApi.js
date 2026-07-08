@@ -1,8 +1,8 @@
-export async function fetchTiempoReal(codStop, lineasPermitidas = null) {
-  if (!codStop) return null
+export async function fetchRealTime(stopCode, allowedLines = null) {
+  if (!stopCode) return null
 
   try {
-    const response = await fetch(`/api/bus-times?codStop=${encodeURIComponent(codStop)}`)
+    const response = await fetch(`/api/bus-times?codStop=${encodeURIComponent(stopCode)}`)
     if (!response.ok) return null
 
     const data = await response.json()
@@ -12,29 +12,29 @@ export async function fetchTiempoReal(codStop, lineasPermitidas = null) {
     if (!Array.isArray(arrivals) || arrivals.length === 0) return null
 
     const now = new Date()
-    const llegadas = arrivals
+    const processedArrivals = arrivals
       .map((arrival) => {
-        const linea = arrival.line?.shortDescription || 'N/A'
-        if (lineasPermitidas && !lineasPermitidas.includes(linea)) {
+        const line = arrival.line?.shortDescription || 'N/A'
+        if (allowedLines && !allowedLines.includes(line)) {
           return null
         }
         const arrivalTime = new Date(arrival.time)
         const diffMs = arrivalTime - now
-        const diffMinutos = Math.ceil(diffMs / 60000)
-        return diffMinutos > 0
+        const minutesUntilArrival = Math.ceil(diffMs / 60000)
+        return minutesUntilArrival > 0
           ? {
-              minutos: diffMinutos,
-              linea: linea,
-              destino: arrival.destination || 'Destino desconocido',
+              minutes: minutesUntilArrival,
+              line: line,
+              destination: arrival.destination || 'Destino desconocido',
             }
           : null
       })
-      .filter((l) => l !== null)
+      .filter((item) => item !== null)
       .slice(0, 3)
 
-    return llegadas.length > 0 ? llegadas : null
+    return processedArrivals.length > 0 ? processedArrivals : null
   } catch (error) {
-    console.error(`Error fetching real-time data for stop ${codStop}:`, error)
+    console.error(`Error fetching real-time data for stop ${stopCode}:`, error)
     return null
   }
 }

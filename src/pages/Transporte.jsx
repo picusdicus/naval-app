@@ -1,55 +1,55 @@
 import { useEffect, useState } from 'react'
-import horariosBus from '../data/horarios-bus.json'
+import scheduleData from '../data/horarios-bus.json'
 import {
-  tipoDeDia,
-  ETIQUETA_TIPO_DIA,
-  proximasSalidas,
-  primeraSalidaManana,
-} from '../lib/horariosBus.js'
-import { useTiempoReal } from '../hooks/useTiempoReal.js'
-import { useParadasCercanas } from '../hooks/useParadasCercanas.js'
+  getDayType,
+  DAY_TYPE_LABELS,
+  getNextDepartures,
+  getFirstDepartureNextDay,
+} from '../lib/busSchedule.js'
+import { useRealTime } from '../hooks/useRealTime.js'
+import { useNearbyStops } from '../hooks/useNearbyStops.js'
 import MIcon from '../components/MIcon.jsx'
 
-function Sentido({ sentido, ahora }) {
-  const proximas = proximasSalidas(sentido.horarios, ahora, 3)
-  const manana = primeraSalidaManana(sentido.horarios, ahora)
-  const tiempoReal = useTiempoReal(sentido.codParada)
+function Direction({ direction, now }) {
+  const nextDepartures = getNextDepartures(direction.horarios, now, 3)
+  const tomorrowFirstDeparture = getFirstDepartureNextDay(direction.horarios, now)
+  const realTime = useRealTime(direction.codParada)
 
   return (
     <div className="border-t border-surface-container-high pt-3">
       <p className="flex items-center gap-1.5 text-sm font-semibold text-on-surface">
         <MIcon name="arrow_forward" className="text-[16px] text-secondary" />
-        {sentido.destino}
+        {direction.destino}
       </p>
-      <p className="mt-0.5 text-xs text-on-surface-variant">Desde {sentido.parada}</p>
-      {proximas.length > 0 ? (
+      <p className="mt-0.5 text-xs text-on-surface-variant">Desde {direction.parada}</p>
+      {nextDepartures.length > 0 ? (
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {proximas.map((s, i) =>
+          {nextDepartures.map((departure, i) =>
             i === 0 ? (
               <span
-                key={s.hora}
+                key={departure.time}
                 className="rounded-full bg-secondary-container px-3 py-1 text-sm font-semibold text-on-secondary-container"
               >
-                {s.hora} ·{' '}
-                {tiempoReal && tiempoReal.length > 0
-                  ? `${tiempoReal[0].minutos} min (tiempo real 🟢)`
-                  : s.enMin === 0
+                {departure.time} ·{' '}
+                {realTime && realTime.length > 0
+                  ? `${realTime[0].minutes} min (tiempo real 🟢)`
+                  : departure.minutesUntil === 0
                     ? 'ahora'
-                    : `en ${s.enMin} min`}
+                    : `en ${departure.minutesUntil} min`}
               </span>
             ) : (
               <span
-                key={s.hora}
+                key={departure.time}
                 className="rounded-full bg-surface-container-high px-3 py-1 text-sm font-medium text-on-surface-variant"
               >
-                {s.hora}
+                {departure.time}
               </span>
             ),
           )}
         </div>
       ) : (
         <p className="mt-2 text-sm text-on-surface-variant">
-          No quedan salidas hoy{manana ? ` · mañana a las ${manana}` : ''}
+          No quedan salidas hoy{tomorrowFirstDeparture ? ` · mañana a las ${tomorrowFirstDeparture}` : ''}
         </p>
       )}
     </div>
@@ -71,49 +71,49 @@ function TabButton({ label, isActive, onClick }) {
   )
 }
 
-function ParadaCercana({ parada, tiemposReales, ahora }) {
-  const llegadas = tiemposReales[parada.codStop]
-  const distanciaFormato = parada.distancia < 1000
-    ? `${Math.round(parada.distancia)} m`
-    : `${(parada.distancia / 1000).toFixed(1)} km`
+function NearbyStop({ stop, realTimes, now }) {
+  const arrivals = realTimes[stop.codStop]
+  const formattedDistance = stop.distance < 1000
+    ? `${Math.round(stop.distance)} m`
+    : `${(stop.distance / 1000).toFixed(1)} km`
 
-  // Fallback si no hay datos en tiempo real: mostrar las líneas que pasan
-  const lineasMostradas = llegadas && llegadas.length > 0 ? llegadas : parada.codLines?.slice(0, 3).map(linea => ({
-    linea,
-    destino: 'Destino próximamente',
-    minutos: '--',
-    esFallback: true
+  // Fallback when no real-time data: show the lines that pass through this stop
+  const displayedLines = arrivals && arrivals.length > 0 ? arrivals : stop.codLines?.slice(0, 3).map(line => ({
+    line,
+    destination: 'Destino próximamente',
+    minutes: '--',
+    isFallback: true
   }))
 
   return (
     <div className="nv-card space-y-3 p-5">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-on-surface">{parada.name}</h3>
-          <p className="mt-0.5 text-xs text-on-surface-variant">{distanciaFormato}</p>
+          <h3 className="font-semibold text-on-surface">{stop.name}</h3>
+          <p className="mt-0.5 text-xs text-on-surface-variant">{formattedDistance}</p>
         </div>
         <div className="flex h-8 min-w-[2rem] flex-none items-center justify-center rounded-lg bg-tertiary-container">
           <MIcon name="location_on" className="text-[16px] text-on-tertiary-container" />
         </div>
       </div>
 
-      {lineasMostradas && lineasMostradas.length > 0 ? (
+      {displayedLines && displayedLines.length > 0 ? (
         <div className="space-y-2">
-          {lineasMostradas.slice(0, 3).map((llegada, i) => (
+          {displayedLines.slice(0, 3).map((arrival, i) => (
             <div key={i} className="flex items-center justify-between rounded-lg bg-surface-container-high p-2">
               <div className="flex items-center gap-2">
                 <div className="flex h-6 min-w-[24px] flex-none items-center justify-center rounded bg-primary px-1 text-xs font-bold text-on-primary">
-                  {llegada.linea}
+                  {arrival.line}
                 </div>
-                <div className="flex-1 text-xs text-on-surface-variant">{llegada.destino}</div>
+                <div className="flex-1 text-xs text-on-surface-variant">{arrival.destination}</div>
               </div>
               <span className="rounded-full bg-secondary-container px-2 py-0.5 text-xs font-semibold text-on-secondary-container">
-                {llegada.esFallback ? 'Cargando' : `en ${llegada.minutos} min`}
+                {arrival.isFallback ? 'Cargando' : `en ${arrival.minutes} min`}
               </span>
             </div>
           ))}
           <p className="text-xs text-on-surface-variant">
-            {llegadas && llegadas.length > 0 ? 'Próximas llegadas en tiempo real' : 'Líneas que pasan por esta parada'}
+            {arrivals && arrivals.length > 0 ? 'Próximas llegadas en tiempo real' : 'Líneas que pasan por esta parada'}
           </p>
         </div>
       ) : (
@@ -123,29 +123,29 @@ function ParadaCercana({ parada, tiemposReales, ahora }) {
   )
 }
 
-export default function Transporte() {
-  const [ahora, setAhora] = useState(() => new Date())
-  const [tab, setTab] = useState('cercanas')
-  const { paradas, tiemposReales, cargando, geoError } = useParadasCercanas()
+export default function Transport() {
+  const [now, setNow] = useState(() => new Date())
+  const [tab, setTab] = useState('nearby')
+  const { stops, realTimes, loading, geoError } = useNearbyStops()
 
-  // Si hay error de geolocalización, cambiar a la pestaña de líneas
+  // If geolocation fails, switch to lines tab
   useEffect(() => {
-    if (geoError && !cargando && tab === 'cercanas') {
-      setTab('lineas')
+    if (geoError && !loading && tab === 'nearby') {
+      setTab('lines')
     }
-  }, [geoError, cargando, tab])
+  }, [geoError, loading, tab])
 
   useEffect(() => {
-    const id = setInterval(() => setAhora(new Date()), 30000)
+    const id = setInterval(() => setNow(new Date()), 30000)
     return () => clearInterval(id)
   }, [])
 
-  const tipo = tipoDeDia(ahora)
+  const dayType = getDayType(now)
 
-  // Determinar qué vista mostrar
-  const debeAceptarGeo = tab === 'cercanas' && !geoError && paradas.length > 0
-  const mostrarVistaCercanas = debeAceptarGeo
-  const mostrarVistaLineas = !debeAceptarGeo
+  // Determine which view to show
+  const shouldShowNearbyStops = tab === 'nearby' && !geoError && stops.length > 0
+  const showNearbyStopsView = shouldShowNearbyStops
+  const showLinesView = !shouldShowNearbyStops
 
   return (
     <div className="space-y-8">
@@ -170,32 +170,32 @@ export default function Transporte() {
         <div className="flex gap-4">
           <TabButton
             label="Cerca de mí"
-            isActive={tab === 'cercanas'}
-            onClick={() => setTab('cercanas')}
+            isActive={tab === 'nearby'}
+            onClick={() => setTab('nearby')}
           />
           <TabButton
             label="Todas las líneas"
-            isActive={tab === 'lineas'}
-            onClick={() => setTab('lineas')}
+            isActive={tab === 'lines'}
+            onClick={() => setTab('lines')}
           />
         </div>
       </div>
 
-      {mostrarVistaCercanas && (
+      {showNearbyStopsView && (
         <section className="space-y-4">
-          {cargando ? (
+          {loading ? (
             <div className="nv-card p-5 text-center">
               <p className="text-sm text-on-surface-variant">Buscando paradas cercanas...</p>
             </div>
-          ) : paradas.length > 0 ? (
+          ) : stops.length > 0 ? (
             <>
               <div className="space-y-3">
-                {paradas.map((parada) => (
-                  <ParadaCercana
-                    key={parada.codStop}
-                    parada={parada}
-                    tiemposReales={tiemposReales}
-                    ahora={ahora}
+                {stops.map((stop) => (
+                  <NearbyStop
+                    key={stop.codStop}
+                    stop={stop}
+                    realTimes={realTimes}
+                    now={now}
                   />
                 ))}
               </div>
@@ -224,16 +224,16 @@ export default function Transporte() {
                 </p>
               </div>
               <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {horariosBus.lineas.map((l) => (
-                  <article key={l.numero} className="nv-card space-y-3 p-5 transition-shadow hover:shadow-card-lg">
+                {scheduleData.lineas.map((line) => (
+                  <article key={line.numero} className="nv-card space-y-3 p-5 transition-shadow hover:shadow-card-lg">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 min-w-[3.5rem] flex-none items-center justify-center rounded-lg bg-primary px-2 text-on-primary">
-                        <span className="font-display text-base font-bold">{l.numero}</span>
+                        <span className="font-display text-base font-bold">{line.numero}</span>
                       </div>
-                      <h2 className="text-sm font-semibold leading-snug text-on-surface">{l.nombre}</h2>
+                      <h2 className="text-sm font-semibold leading-snug text-on-surface">{line.nombre}</h2>
                     </div>
-                    {l.sentidos.map((s) => (
-                      <Sentido key={s.destino} sentido={s} ahora={ahora} />
+                    {line.sentidos.map((direction) => (
+                      <Direction key={direction.destino} direction={direction} now={now} />
                     ))}
                   </article>
                 ))}
@@ -243,25 +243,25 @@ export default function Transporte() {
         </section>
       )}
 
-      {mostrarVistaLineas && (
+      {showLinesView && (
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {horariosBus.lineas.map((l) => (
-            <article key={l.numero} className="nv-card space-y-3 p-5 transition-shadow hover:shadow-card-lg">
+          {scheduleData.lineas.map((line) => (
+            <article key={line.numero} className="nv-card space-y-3 p-5 transition-shadow hover:shadow-card-lg">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 min-w-[3.5rem] flex-none items-center justify-center rounded-lg bg-primary px-2 text-on-primary">
-                  <span className="font-display text-base font-bold">{l.numero}</span>
+                  <span className="font-display text-base font-bold">{line.numero}</span>
                 </div>
-                <h2 className="text-sm font-semibold leading-snug text-on-surface">{l.nombre}</h2>
+                <h2 className="text-sm font-semibold leading-snug text-on-surface">{line.nombre}</h2>
               </div>
-              {l.sentidos.map((s) => (
-                <Sentido key={s.destino} sentido={s} ahora={ahora} />
+              {line.sentidos.map((direction) => (
+                <Direction key={direction.destino} direction={direction} now={now} />
               ))}
             </article>
           ))}
         </section>
       )}
 
-      {!mostrarVistaCercanas && (
+      {!showNearbyStopsView && (
         <section className="nv-card p-5">
           <div className="flex items-start gap-4">
             <div className="rounded-lg bg-secondary-container p-3">

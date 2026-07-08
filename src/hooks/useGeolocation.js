@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 
-export function useGeolocalizacion() {
+export function useGeolocation() {
   const [coords, setCoords] = useState(null)
   const [error, setError] = useState(null)
-  const [cargando, setCargando] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!navigator.geolocation) {
       setError('Geolocalización no disponible en este navegador')
-      setCargando(false)
+      setLoading(false)
       return
     }
 
@@ -19,16 +19,16 @@ export function useGeolocalizacion() {
           longitude: position.coords.longitude,
         })
         setError(null)
-        setCargando(false)
+        setLoading(false)
       },
       (err) => {
         setError(err.message)
         setCoords(null)
-        setCargando(false)
+        setLoading(false)
       },
       { timeout: 10000, enableHighAccuracy: false }
     )
   }, [])
 
-  return { coords, error, cargando }
+  return { coords, error, loading }
 }

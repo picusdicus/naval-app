@@ -1,32 +1,32 @@
-export function distanciaMetros(lat1, lon1, lat2, lon2) {
-  const R = 6371000
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
+export function distanceInMeters(lat1, lon1, lat2, lon2) {
+  const earthRadiusMeters = 6371000
+  const deltaLat = ((lat2 - lat1) * Math.PI) / 180
+  const deltaLon = ((lon2 - lon1) * Math.PI) / 180
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
+      Math.sin(deltaLon / 2) *
+      Math.sin(deltaLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
+  return earthRadiusMeters * c
 }
 
-export function paradasCercanas(coordsUsuario, paradas, radioMetros = 600) {
-  if (!coordsUsuario || !paradas) return []
+export function getNearbyStops(userCoords, stops, radiusMeters = 600) {
+  if (!userCoords || !stops) return []
 
-  const paradasConDistancia = paradas
-    .map((parada) => ({
-      ...parada,
-      distancia: distanciaMetros(
-        coordsUsuario.latitude,
-        coordsUsuario.longitude,
-        parada.coordinates.latitude,
-        parada.coordinates.longitude
+  const stopsWithDistance = stops
+    .map((stop) => ({
+      ...stop,
+      distance: distanceInMeters(
+        userCoords.latitude,
+        userCoords.longitude,
+        stop.coordinates.latitude,
+        stop.coordinates.longitude
       ),
     }))
-    .filter((parada) => parada.distancia <= radioMetros)
-    .sort((a, b) => a.distancia - b.distancia)
+    .filter((stop) => stop.distance <= radiusMeters)
+    .sort((a, b) => a.distance - b.distance)
 
-  return paradasConDistancia
+  return stopsWithDistance
 }
