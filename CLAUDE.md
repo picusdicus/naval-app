@@ -59,10 +59,11 @@ Static JSON is the only data store — no backend database.
 ### Automatic event sync
 
 - `api/sync-events.js` — Vercel Cron Job endpoint that runs **daily at 07:00 UTC** to fetch events from both sources (TYL TYL API + Ayuntamiento RSS).
+  - Accepts both GET (from Vercel Cron) and POST methods.
   - Compares the new events with `eventos-externos.json`.
   - If there are changes, writes the new JSON and makes an automatic commit to GitHub via the GitHub API (requires `GITHUB_TOKEN` and `GITHUB_REPO` env vars).
   - Vercel detects the commit and redeploys automatically.
-  - Returns a summary: `{ agregados, actualizados, eliminados, commitRealizado, errores }`.
+  - Returns a summary: `{ timestamp, agregados, actualizados, eliminados, estadisticas, commitRealizado, errores }`.
   - If the fetch fails for either source, it logs the error but doesn't overwrite the existing JSON.
 - Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
 - Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).

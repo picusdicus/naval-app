@@ -462,8 +462,8 @@ async function hacerCommitSiHayCambios(eventosPrevios, eventosNuevos) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Método no permitido' })
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    res.status(405).json({ error: 'Método no permitido. Usa GET o POST.' })
     return
   }
 
