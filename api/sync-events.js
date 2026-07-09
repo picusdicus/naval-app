@@ -1,20 +1,31 @@
-import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const DATA_DIR = resolve(__dirname, '../src/data')
-const EVENTOS_EXTERNOS_PATH = resolve(DATA_DIR, 'eventos-externos.json')
-
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
 const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
 
-// Leer el JSON actual para comparación
-function leerEventosActuales() {
+// Leer eventos actuales desde GitHub API (evita EROFS en Vercel runtime)
+async function leerEventosDesdeGitHub() {
+  if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPO) {
+    return []
+  }
+
   try {
-    return JSON.parse(readFileSync(EVENTOS_EXTERNOS_PATH, 'utf8'))
-  } catch {
+    const [owner, repo] = process.env.GITHUB_REPO.split('/')
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/src/data/eventos-externos.json`,
+      {
+        headers: {
+          Authorization: `token ${process.env.GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github.v3.raw',
+        },
+      },
+    )
+    if (!res.ok) {
+      if (res.status === 404) return []
+      throw new Error(`GitHub API respondio ${res.status}`)
+    }
+    return JSON.parse(await res.text())
+  } catch (err) {
+    console.warn(`No se pudo leer eventos desde GitHub: ${err.message}`)
     return []
   }
 }
@@ -483,8 +494,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Leer eventos actuales
-    const eventosPrevios = leerEventosActuales()
+    // Leer eventos actuales desde GitHub (no del disco, evita EROFS en Vercel)
+    const eventosPrevios = await leerEventosDesdeGitHub()
 
     // Descargar nuevos eventos de ambas fuentes
     let tyltyl = []
@@ -527,10 +538,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Escribir JSON (siempre, para asegurar que está up-to-date)
-    writeFileSync(EVENTOS_EXTERNOS_PATH, JSON.stringify(eventosNuevos, null, 2) + '\n', 'utf8')
-
-    // Hacer commit a GitHub si hay cambios
+    // Hacer commit a GitHub si hay cambios (NO escribir en el disco)
     const commitRealizado = await hacerCommitSiHayCambios(eventosPrevios, eventosNuevos)
     resultado.commitRealizado = commitRealizado
 
