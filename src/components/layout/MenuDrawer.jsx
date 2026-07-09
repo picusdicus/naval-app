@@ -5,7 +5,6 @@ const rutas = [
   { to: '/', label: 'Inicio', icono: 'home', end: true },
   { to: '/eventos', label: 'Eventos', icono: 'calendar_today' },
   { to: '/mapa', label: 'Guía local', icono: 'explore' },
-  { to: '/transporte', label: 'Transporte', icono: 'directions_bus' },
   { to: '/noticias', label: 'Noticias', icono: 'newspaper' },
   { to: '/asistente', label: 'Asistente IA', icono: 'smart_toy' },
 ]
