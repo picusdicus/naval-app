@@ -5,7 +5,7 @@ const tabs = [
   { to: '/', label: 'Inicio', icono: 'home', end: true },
   { to: '/eventos', label: 'Eventos', icono: 'calendar_today' },
   { to: '/mapa', label: 'Guía', icono: 'explore' },
-  { to: '/transporte', label: 'Bus', icono: 'directions_bus' },
+  { to: '/noticias', label: 'Noticias', icono: 'newspaper' },
   { to: '/asistente', label: 'IA', icono: 'smart_toy' },
 ]
 
