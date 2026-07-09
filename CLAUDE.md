@@ -44,7 +44,7 @@ Static JSON is the only data store — no backend database.
 - `comercios.json` — **generated**, regenerate with `npm run fetch:comercios` (Google Places API scoped to Navalcarnero). Do not hand-edit.
 - `servicios-locales.json` — hand-curated directory entries not covered by Google Places (plumbers, renovation services, etc.).
 - `eventos.json` — hand-curated event agenda (municipal + neighborhood).
-- `eventos-externos.json` — **generated**, regenerate with `npm run fetch:eventos` (pulls from the Teatro TYL TYL WordPress "The Events Calendar" API + Ayuntamiento cultura RSS). The UI and assistant merge this with `eventos.json`.
+- `eventos-externos.json` — **generated**, regenerate with `npm run fetch:eventos` (pulls from the Teatro TYL TYL WordPress "The Events Calendar" API + Ayuntamiento cultura RSS). The UI and assistant merge this with `eventos.json`. Also updated automatically via a Vercel Cron Job (see **Automatic event sync** below).
 - `noticias.json` — **generated**, regenerate with `npm run fetch:noticias` (pulls from Ayuntamiento press RSS feed at `https://navalcarnero.es/navalcarnero/prensa/feed/`). Contains title, date, summary, full content, URL, and author for each news item. Used by Noticias page and assistant's knowledge base.
 - `horarios-bus.json` — **generated**, regenerate with `npm run fetch:transporte` (CRTM GTFS data). Bus line data with schedules.
 
@@ -55,6 +55,17 @@ Static JSON is the only data store — no backend database.
 - `vite.config.js` has a custom dev-only middleware (`devApiPlugin`) that loads `api/chat.js` via `server.ssrLoadModule` and adapts the raw Node request/response to Express/Vercel-style `req.body`/`res.json`, so the assistant works under `npm run dev` without deploying. It also copies `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` from `.env` into `process.env` for that handler.
 - `vercel.json` rewrites all non-`/api/*` paths to `/index.html` (SPA routing) — API routes are handled by Vercel's function runtime directly.
 - Chat history from the frontend is normalized before hitting the API (`prepararMensajes` in `api/chat.js`): must start with a `user` message, empty messages dropped, roles coerced to user/assistant.
+
+### Automatic event sync
+
+- `api/sync-events.js` — Vercel Cron Job endpoint that runs **daily at 07:00 UTC** to fetch events from both sources (TYL TYL API + Ayuntamiento RSS).
+  - Compares the new events with `eventos-externos.json`.
+  - If there are changes, writes the new JSON and makes an automatic commit to GitHub via the GitHub API (requires `GITHUB_TOKEN` and `GITHUB_REPO` env vars).
+  - Vercel detects the commit and redeploys automatically.
+  - Returns a summary: `{ agregados, actualizados, eliminados, commitRealizado, errores }`.
+  - If the fetch fails for either source, it logs the error but doesn't overwrite the existing JSON.
+- Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
+- Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).
 
 ### Design system — mid-migration
 

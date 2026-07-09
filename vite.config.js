@@ -14,7 +14,7 @@ function devApiPlugin(env) {
       if (env.ANTHROPIC_MODEL) process.env.ANTHROPIC_MODEL = env.ANTHROPIC_MODEL
 
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url || (!req.url.startsWith('/api/chat') && !req.url.startsWith('/api/bus-times'))) return next()
+        if (!req.url || (!req.url.startsWith('/api/chat') && !req.url.startsWith('/api/bus-times') && !req.url.startsWith('/api/sync-events'))) return next()
 
         // Parseo del cuerpo JSON (Vite no lo hace por nosotros).
         const chunks = []
@@ -53,6 +53,8 @@ function devApiPlugin(env) {
             mod = await server.ssrLoadModule('/api/chat.js')
           } else if (req.url.startsWith('/api/bus-times')) {
             mod = await server.ssrLoadModule('/api/bus-times.js')
+          } else if (req.url.startsWith('/api/sync-events')) {
+            mod = await server.ssrLoadModule('/api/sync-events.js')
           }
           await mod.default(req, res)
         } catch (err) {
