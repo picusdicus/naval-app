@@ -160,14 +160,6 @@ export default function Mapa() {
           </div>
         )}
 
-        {/* Ficha del comercio seleccionado (teléfono, horario, web, cómo llegar).
-            Se abre justo debajo de la tarjeta seleccionada con smooth scroll. */}
-        {seleccionado && (
-          <div ref={detalleRef}>
-            <ComercioDetalle comercio={seleccionado} onCerrar={() => setSeleccionado(null)} />
-          </div>
-        )}
-
         <div className="flex items-center justify-between">
           <p className="text-sm text-on-surface-variant">
             {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}
@@ -193,12 +185,18 @@ export default function Mapa() {
 
         <div className="grid grid-cols-1 gap-3">
           {comercios.map((c) => (
-            <ComercioCard
-              key={c.id}
-              comercio={c}
-              activo={seleccionado?.id === c.id}
-              onClick={() => setSeleccionado(c)}
-            />
+            <div key={c.id}>
+              <ComercioCard
+                comercio={c}
+                activo={seleccionado?.id === c.id}
+                onClick={() => setSeleccionado(c)}
+              />
+              {seleccionado?.id === c.id && (
+                <div ref={detalleRef} className="mt-3">
+                  <ComercioDetalle comercio={c} onCerrar={() => setSeleccionado(null)} />
+                </div>
+              )}
+            </div>
           ))}
           {comercios.length === 0 && (
             <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-8 text-center text-sm text-on-surface-variant">
