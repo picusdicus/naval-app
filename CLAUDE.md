@@ -78,6 +78,16 @@ Static JSON is the only data store — no backend database.
 - Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
 - Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).
 
+### Progressive Web App (PWA)
+
+- `public/manifest.json` — PWA metadata: name, description, display mode, theme colors, icons, and app shortcuts for Eventos, Guía, Noticias. Uses `logo.png` for app icon.
+- `public/service-worker.js` — Service worker with network-first strategy for HTML (to keep content fresh) and cache-first for static assets. Falls back to offline.html when disconnected.
+- `public/offline.html` — User-friendly offline page shown when device has no connection.
+- `public/app-logo.svg` — SVG logo reference (can be deleted; not used by PWA).
+- `src/components/InstallPrompt.jsx` — Browser install banner that appears once per session on first visit; uses beforeinstallprompt event; dismissed via sessionStorage.
+- `src/components/OfflineIndicator.jsx` — Banner shown at top of page when offline, with message about cached content availability.
+- `src/main.jsx` registers the service worker on page load.
+
 ### Design system — mid-migration
 
 The current committed design system ("Civic Hearth", a Material 3–derived green/parchment palette) lives in `tailwind.config.js` and `src/index.css`, and is documented in `reference/*/DESIGN.md` (with accompanying `screen.png` mockups) — check those before making visual changes to match intended layout/spacing/typography. The repo is on branch `feature-new-ui` and is actively transitioning to a new "wine and gold" (vino y oro) look; some files (e.g. `src/pages/Asistente.jsx`) still reference older color-utility classes (`text-vino`, `bg-crema-dark`, etc.) that are **not** defined in the current `tailwind.config.js` — check whether a page's classes actually resolve in the current palette before assuming its styling works.

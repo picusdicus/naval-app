@@ -33,6 +33,7 @@ export default function Mapa() {
   const [seleccionado, setSeleccionado] = useState(null)
   const [sugiriendo, setSugiriendo] = useState(false)
   const detalleRef = useRef(null)
+  const columnRef = useRef(null)
 
   // El mapa (columna derecha) solo existe en escritorio (>= 1024px).
   const esDesktop = useMediaQuery('(min-width: 1024px)')
@@ -79,17 +80,40 @@ export default function Mapa() {
     [comercios],
   )
 
-  // Al seleccionar un comercio, dejar visible su ficha (dentro del scroll de la
-  // columna izquierda en desktop o del propio flujo en móvil).
+  // Al seleccionar un comercio, scroll la ficha a la vista dentro del contenedor de la
+  // columna izquierda. En desktop el scroll es dentro del contenedor (lg:overflow-y-auto),
+  // en móvil se usa scrollIntoView normal.
   useEffect(() => {
-    if (seleccionado) detalleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }, [seleccionado])
+    if (seleccionado && detalleRef.current) {
+      const container = columnRef.current
+      if (container && esDesktop) {
+        const detalle = detalleRef.current
+        const detalleRect = detalle.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+
+        // Posición del detalle relativa al contenedor
+        const detalleTopRelative = detalleRect.top - containerRect.top + container.scrollTop
+        const containerHeight = container.clientHeight
+        const detalleHeight = detalle.clientHeight
+
+        // Scroll para que el detalle aparezca justo debajo, con 16px de padding
+        const newScrollTop = detalleTopRelative - 16
+
+        container.scrollTo({ top: newScrollTop, behavior: 'smooth' })
+      } else {
+        detalleRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
+  }, [seleccionado, esDesktop])
 
   return (
     <div className="lg:flex lg:h-[calc(100vh-7rem)] lg:gap-6">
       {/* Columna izquierda: buscador + chips + lista (scroll independiente en
           desktop; flujo normal de la página en móvil). */}
-      <div className="hide-scrollbar flex flex-col gap-6 lg:h-full lg:w-2/5 lg:min-w-0 lg:overflow-y-auto lg:pr-2">
+      <div
+        ref={columnRef}
+        className="hide-scrollbar flex flex-col gap-6 lg:h-full lg:w-2/5 lg:min-w-0 lg:overflow-y-auto lg:pr-2"
+      >
         <header>
           <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
             Guía local
@@ -136,7 +160,8 @@ export default function Mapa() {
           </div>
         )}
 
-        {/* Ficha del comercio seleccionado (teléfono, horario, web, cómo llegar) */}
+        {/* Ficha del comercio seleccionado (teléfono, horario, web, cómo llegar).
+            Se abre justo debajo de la tarjeta seleccionada con smooth scroll. */}
         {seleccionado && (
           <div ref={detalleRef}>
             <ComercioDetalle comercio={seleccionado} onCerrar={() => setSeleccionado(null)} />
