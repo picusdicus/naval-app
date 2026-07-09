@@ -494,10 +494,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Leer eventos actuales desde GitHub (no del disco, evita EROFS en Vercel)
-    const eventosPrevios = await leerEventosDesdeGitHub()
-
-    // Descargar nuevos eventos de ambas fuentes
+    // Paso 1: Descargar nuevos eventos de ambas fuentes externas
     let tyltyl = []
     let cultura = []
 
@@ -515,13 +512,16 @@ export default async function handler(req, res) {
       resultado.errores.push(`Cultura Ayto: ${err.message}`)
     }
 
-    // Combinar sin duplicados
+    // Paso 2: Combinar sin duplicados
     const eventosNuevos = combinarSinDuplicados(tyltyl, cultura)
     eventosNuevos.sort(
       (a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''),
     )
 
-    // Calcular cambios
+    // Paso 3: Leer eventos actuales desde GitHub (comparar con lo recién fetcheado)
+    const eventosPrevios = await leerEventosDesdeGitHub()
+
+    // Paso 4: Calcular cambios
     const idsAnteriores = new Set(eventosPrevios.map((e) => e.id))
     const idsNuevos = new Set(eventosNuevos.map((e) => e.id))
 

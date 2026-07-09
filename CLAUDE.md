@@ -58,14 +58,18 @@ Static JSON is the only data store — no backend database.
 
 ### Automatic event sync
 
-- `api/sync-events.js` — Vercel Cron Job endpoint that runs **daily at 07:00 UTC** to fetch events from both sources (TYL TYL API + Ayuntamiento RSS).
+- `api/sync-events.js` — Vercel Cron Job endpoint that runs **daily at 07:00 UTC** to fetch and sync events from both external sources.
+  - **Execution order** (ensures fresh data, no caching shortcuts):
+    1. Fetch all events from external sources: TYL TYL API + Ayuntamiento RSS
+    2. Combine events without duplicates and sort by date
+    3. Read current `eventos-externos.json` from GitHub API
+    4. Compare fetched events with the current version
+    5. If changes detected, commit to GitHub via GitHub API
   - Accepts both GET (from Vercel Cron) and POST methods.
-  - Reads current `eventos-externos.json` **directly from GitHub API** (avoids EROFS read-only filesystem in Vercel runtime).
-  - Compares the new events with the current version from GitHub.
-  - If there are changes, makes an automatic commit to GitHub via the GitHub API (requires `GITHUB_TOKEN` and `GITHUB_REPO` env vars).
-  - **Does not write to the local filesystem** — Vercel detects the commit and redeploys automatically, at which point the new JSON is available on disk.
+  - **Does not write to the local filesystem** — reads from GitHub API instead (avoids EROFS read-only filesystem in Vercel runtime).
+  - If the fetch fails for either source, logs the error but still commits (preserves any partial updates).
   - Returns a summary: `{ timestamp, agregados, actualizados, eliminados, estadisticas, commitRealizado, errores }`.
-  - If the fetch fails for either source, logs the error but doesn't commit (safe fallback).
+  - Vercel detects the commit and redeploys automatically, at which point the new JSON becomes available on disk.
 - Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
 - Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).
 
