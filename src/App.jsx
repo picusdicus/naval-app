@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
 import ScrollManager from './components/ScrollManager.jsx'
 import Layout from './components/layout/Layout.jsx'
+import InstallPrompt from './components/InstallPrompt.jsx'
+import OfflineIndicator from './components/OfflineIndicator.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Eventos from './pages/Eventos.jsx'
 import EventoDetalle from './pages/EventoDetalle.jsx'
@@ -14,6 +16,8 @@ export default function App() {
   return (
     <>
       <ScrollManager />
+      <OfflineIndicator />
+      <InstallPrompt />
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Inicio />} />
