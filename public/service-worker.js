@@ -2,6 +2,7 @@ const CACHE_NAME = 'vecinal-v1'
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/offline.html',
   '/src/main.jsx',
   '/src/index.css',
   '/logo.png',
@@ -63,13 +64,15 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Si falla, intentar cache
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
+          return caches
+            .match(request)
+            .then((cachedResponse) => {
               return cachedResponse
-            }
-            // Si no está en cache, mostrar offline page
-            return caches.match('/offline.html') || new Response('Sin conexión', { status: 503 })
-          })
+            })
+            .catch(() => {
+              // Si no está en cache, mostrar offline page
+              return caches.match('/offline.html')
+            })
         }),
     )
     return
