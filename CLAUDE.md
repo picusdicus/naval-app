@@ -75,10 +75,10 @@ Static JSON is the only data store — no backend database.
 
 ### Progressive Web App (PWA)
 
-- `public/manifest.json` — PWA metadata: name, description, display mode, theme colors, icons, and app shortcuts for Eventos, Guía, Noticias.
+- `public/manifest.json` — PWA metadata: name, description, display mode, theme colors, icons, and app shortcuts for Eventos, Guía, Noticias. Uses `logo.png` for app icon.
 - `public/service-worker.js` — Service worker with network-first strategy for HTML (to keep content fresh) and cache-first for static assets. Falls back to offline.html when disconnected.
 - `public/offline.html` — User-friendly offline page shown when device has no connection.
-- `public/app-logo.svg` — SVG logo placeholder for PWA icons; **to be replaced with actual logo at 192×192 and 512×512 PNG**.
+- `public/app-logo.svg` — SVG logo reference (can be deleted; not used by PWA).
 - `src/components/InstallPrompt.jsx` — Browser install banner that appears once per session on first visit; uses beforeinstallprompt event; dismissed via sessionStorage.
 - `src/components/OfflineIndicator.jsx` — Banner shown at top of page when offline, with message about cached content availability.
 - `src/main.jsx` registers the service worker on page load.
