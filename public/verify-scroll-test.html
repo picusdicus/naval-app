@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación de Scroll - Comercios</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .column-left {
+            width: 40%;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #ddd;
+        }
+
+        .column-right {
+            width: 60%;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #999;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .comercio-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .comercio-card:hover {
+            background: #f0f0f0;
+            border-color: #006c48;
+            box-shadow: 0 2px 8px rgba(0, 108, 72, 0.1);
+        }
+
+        .comercio-card.active {
+            background: #e8f5e9;
+            border-color: #006c48;
+            border-width: 2px;
+        }
+
+        .comercio-card h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .comercio-card p {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .detalle {
+            background: #e8f5e9;
+            border: 2px solid #006c48;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 12px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .detalle h4 {
+            color: #006c48;
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .detalle-content {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .map-placeholder {
+            color: #999;
+            text-align: center;
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="column-left" id="columnLeft">
+            <h1>Guía Local</h1>
+            <div class="instructions">
+                ✓ Click en cualquier comercio para ver el detalle debajo
+            </div>
+            <div id="comercios"></div>
+        </div>
+        <div class="column-right">
+            <div class="map-placeholder">🗺️ Mapa (columna derecha)</div>
+        </div>
+    </div>
+
+    <div class="scroll-indicator" id="scrollIndicator">Scroll: 0px</div>
+
+    <script>
+        const comercios = [
+            { id: 1, nombre: 'Panadería Central', categoria: 'Alimentación', direccion: 'Calle Mayor 45', telefono: '911234567' },
+            { id: 2, nombre: 'Cafetería Moderna', categoria: 'Restauración', direccion: 'Plaza del Pueblo 12', telefono: '911234568' },
+            { id: 3, nombre: 'Librería Don Quijote', categoria: 'Libros', direccion: 'Avenida Paseo 78', telefono: '911234569' },
+            { id: 4, nombre: 'Peluquería Isabel', categoria: 'Servicios', direccion: 'Calle Carmen 23', telefono: '911234570' },
+            { id: 5, nombre: 'Farmacia López', categoria: 'Salud', direccion: 'Avenida Madrid 55', telefono: '911234571' },
+            { id: 6, nombre: 'Restaurante Casa María', categoria: 'Restauración', direccion: 'Calle Principal 89', telefono: '911234572' },
+            { id: 7, nombre: 'Tienda Ropa Clásica', categoria: 'Moda', direccion: 'Centro Comercial 34', telefono: '911234573' },
+            { id: 8, nombre: 'Taller Mecánico Expres', categoria: 'Servicios', direccion: 'Calle Industria 12', telefono: '911234574' },
+        ];
+
+        const columnLeft = document.getElementById('columnLeft');
+        const comerciosContainer = document.getElementById('comercios');
+        let seleccionadoId = null;
+
+        function renderComercios() {
+            comerciosContainer.innerHTML = '';
+            comercios.forEach(comercio => {
+                const div = document.createElement('div');
+                div.className = `comercio-card ${seleccionadoId === comercio.id ? 'active' : ''}`;
+                div.innerHTML = `
+                    <h3>${comercio.nombre}</h3>
+                    <p><strong>${comercio.categoria}</strong> • ${comercio.direccion}</p>
+                `;
+                div.addEventListener('click', () => seleccionarComercio(comercio));
+                comerciosContainer.appendChild(div);
+
+                if (seleccionadoId === comercio.id) {
+                    const detalle = document.createElement('div');
+                    detalle.className = 'detalle';
+                    detalle.id = `detalle-${comercio.id}`;
+                    detalle.innerHTML = `
+                        <h4>📋 Detalles del comercio</h4>
+                        <div class="detalle-content">
+                            <p><strong>Nombre:</strong> ${comercio.nombre}</p>
+                            <p><strong>Categoría:</strong> ${comercio.categoria}</p>
+                            <p><strong>Dirección:</strong> ${comercio.direccion}</p>
+                            <p><strong>Teléfono:</strong> ${comercio.telefono}</p>
+                            <p style="margin-top: 10px; font-size: 12px; color: #777;">
+                                Horario: L-V 9:00-14:00 y 17:00-20:00 | Sábados 9:00-14:00
+                            </p>
+                        </div>
+                    `;
+                    comerciosContainer.appendChild(detalle);
+
+                    // Hacer scroll suave para que el detalle sea visible
+                    setTimeout(() => scrollDetallAVisible(detalle), 50);
+                }
+            });
+        }
+
+        function seleccionarComercio(comercio) {
+            seleccionadoId = seleccionadoId === comercio.id ? null : comercio.id;
+            renderComercios();
+        }
+
+        function scrollDetallAVisible(detalleEl) {
+            const container = columnLeft;
+            const detalleRect = detalleEl.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+
+            // Posición del detalle relativa al contenedor
+            const detalleTopRelative = detalleRect.top - containerRect.top + container.scrollTop;
+            const containerHeight = container.clientHeight;
+            const detalleHeight = detalleEl.clientHeight;
+
+            // Scroll para que el detalle aparezca justo debajo, con 16px de padding
+            const newScrollTop = detalleTopRelative - 16;
+
+            container.scrollTo({ top: newScrollTop, behavior: 'smooth' });
+        }
+
+        // Actualizar indicador de scroll
+        columnLeft.addEventListener('scroll', () => {
+            document.getElementById('scrollIndicator').textContent = `Scroll: ${columnLeft.scrollTop}px`;
+        });
+
+        // Renderizar inicial
+        renderComercios();
+    </script>
+</body>
+</html>
