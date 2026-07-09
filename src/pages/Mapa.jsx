@@ -88,15 +88,16 @@ export default function Mapa() {
       const container = columnRef.current
       if (container && esDesktop) {
         const detalle = detalleRef.current
-        const containerTop = container.scrollTop
+        const detalleRect = detalle.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+
+        // Posición del detalle relativa al contenedor
+        const detalleTopRelative = detalleRect.top - containerRect.top + container.scrollTop
         const containerHeight = container.clientHeight
-        const detalleTop = detalle.offsetTop
         const detalleHeight = detalle.clientHeight
 
-        const newScrollTop =
-          detalleTop + detalleHeight - containerHeight + 16 > containerTop
-            ? detalleTop - 16
-            : containerTop
+        // Scroll para que el detalle aparezca justo debajo, con 16px de padding
+        const newScrollTop = detalleTopRelative - 16
 
         container.scrollTo({ top: newScrollTop, behavior: 'smooth' })
       } else {
