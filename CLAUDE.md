@@ -24,9 +24,14 @@ There is no test suite in this repo. `npm run lint` is configured in package.jso
 
 ## Architecture
 
+### Access control
+
+- `src/components/AccessScreen.jsx` — password-protected login screen that blocks the entire app until the correct password is entered. Requires `VITE_APP_PASSWORD` environment variable (never hardcoded). Session is saved in localStorage under `ncv_access` key and persists across browser sessions until cleared or logout is triggered.
+- Logout buttons in Header (desktop & mobile) and MenuDrawer footer clear the session and return to the access screen.
+
 ### Frontend (Vite + React 18 + React Router + Tailwind v3)
 
-- `src/App.jsx` — route table; all pages render inside `src/components/layout/Layout.jsx` (Header, Footer, bottom NavBar, MenuDrawer).
+- `src/App.jsx` — route table and access control guard; all pages render inside `src/components/layout/Layout.jsx` (Header, Footer, bottom NavBar, MenuDrawer).
 - `src/pages/*` — one component per route: Inicio, Eventos, Mapa, Noticias (+ NoticiaDetalle), Transporte, Asistente.
 - `src/components/directorio/` — business directory + Leaflet map (`MapaComercios.jsx`), category filters, detail card, "suggest a business" form.
 - `src/components/eventos/` — event list icons/helpers.
