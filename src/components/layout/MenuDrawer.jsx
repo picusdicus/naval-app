@@ -12,7 +12,7 @@ const rutas = [
 
 // Menú lateral deslizable (referencia: reference/menu). Se muestra sobre un
 // scrim y se cierra al pulsar fuera o al navegar.
-export default function MenuDrawer({ abierto, onCerrar }) {
+export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
   return (
     <div
       className={`fixed inset-0 z-50 flex transition-opacity duration-300 ${
@@ -102,6 +102,14 @@ export default function MenuDrawer({ abierto, onCerrar }) {
             <MIcon name="call" className="text-[18px]" />
             Llamar al Ayuntamiento
           </a>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-error/10 p-3 text-sm font-semibold text-error transition-colors hover:bg-error/20 active:scale-95"
+          >
+            <MIcon name="logout" className="text-[18px]" />
+            Cerrar sesión
+          </button>
         </div>
       </aside>
     </div>
