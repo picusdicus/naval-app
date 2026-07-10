@@ -129,6 +129,37 @@ export function usuarioDeEntorno() {
   }
 }
 
+/**
+ * Verifica credenciales de superadmin contra env vars.
+ * Devuelve true si ambas coinciden, false si no.
+ */
+export function credencialesSuperAdminValidas(email, password) {
+  const emailEsperado = process.env.SUPER_ADMIN_EMAIL
+  const passwordEsperada = process.env.SUPER_ADMIN_PASSWORD
+  if (!emailEsperado || !passwordEsperada) return false
+
+  const emailOk = igualSeguro(String(email ?? '').trim().toLowerCase(), emailEsperado.trim().toLowerCase())
+  const passwordOk = igualSeguro(String(password ?? ''), passwordEsperada)
+  return emailOk && passwordOk
+}
+
+/**
+ * Guarda a usuario hash SHA-256 de una contraseña (sin salt).
+ * Retorna el hash en hex.
+ */
+export function hashPassword(password) {
+  return createHash('sha256').update(String(password || '')).digest('hex')
+}
+
+/**
+ * Compara una contraseña contra un hash almacenado en tiempo constante.
+ */
+export function passwordCorrecto(password, hash) {
+  const calculado = hashPassword(password)
+  if (calculado.length !== hash.length) return false
+  return timingSafeEqual(Buffer.from(calculado), Buffer.from(hash))
+}
+
 /** Devuelve el payload de la sesión activa, o null si no hay cookie válida. */
 export function obtenerSesion(req) {
   return verificarToken(leerCookie(req, COOKIE_SESION))
@@ -142,6 +173,23 @@ export function requerirSesion(req, res) {
   const sesion = obtenerSesion(req)
   if (!sesion) {
     res.status(401).json({ error: 'No autenticado' })
+    return null
+  }
+  return sesion
+}
+
+/**
+ * Guardia para endpoints de superadmin: si no hay sesión o el rol no es
+ * superadmin, responde 403 y devuelve null. El llamante debe abortar si es null.
+ */
+export function requerirSuperAdmin(req, res) {
+  const sesion = obtenerSesion(req)
+  if (!sesion) {
+    res.status(401).json({ error: 'No autenticado' })
+    return null
+  }
+  if (sesion.rol !== 'superadmin') {
+    res.status(403).json({ error: 'Acceso denegado. Solo superadmin.' })
     return null
   }
   return sesion

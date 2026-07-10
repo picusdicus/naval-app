@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill -9 node)",
+      "Bash(curl -s -X POST http://localhost:5178/api/admin/login -H 'Content-Type: application/json' -d '{\"email\":\"superadmin@navalcarnero.local\",\"password\":\"SuperAdmin2026!\"}' -c /tmp/cookies.txt)",
+      "Bash(curl -s -b /tmp/cookies.txt http://localhost:5178/api/admin/sesion)",
+      "Bash(curl -s -X POST http://localhost:5178/api/admin/registro -H 'Content-Type: application/json' -d '{\"codigo\":\"INVALID-CODE\",\"email\":\"test@test.org\",\"nombre\":\"Test\",\"password\":\"TestPass123\"}')",
+      "Bash(curl -s -X POST http://localhost:5178/api/admin/registro -H 'Content-Type: application/json' -d '{\"codigo\":\"TYLTYL-2026\",\"email\":\"sixth@tyltyl.org\",\"nombre\":\"Sixth User\",\"password\":\"Password6\"}')",
+      "Bash(cat)",
+      "Bash(bash /tmp/test-flow.sh)",
+      "Bash(bash /tmp/e2e-test.sh)",
+      "Bash(curl -s \"http://localhost:5178/admin/login\")"
+    ]
+  }
+}

@@ -87,7 +87,7 @@ async function sembrar() {
   const [codigo] = await sql`
     INSERT INTO codigos_invitacion (codigo, organizacion_id, rol_concedido, usos_maximos)
     VALUES (${CODIGO_PRUEBA}, ${org.id}, 'admin', 5)
-    ON CONFLICT (codigo) DO UPDATE SET organizacion_id = EXCLUDED.organizacion_id
+    ON CONFLICT (codigo) DO UPDATE SET organizacion_id = EXCLUDED.organizacion_id, usos_actuales = 0
     RETURNING codigo, usos_maximos, usos_actuales, activo
   `
 

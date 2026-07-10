@@ -39,18 +39,20 @@ CREATE TABLE IF NOT EXISTS codigos_invitacion (
 CREATE INDEX IF NOT EXISTS idx_codigos_organizacion ON codigos_invitacion (organizacion_id);
 
 -- Usuarios registrados. Un vecino no pertenece a ninguna organización;
--- un editor/admin sí, y llegó canjeando un código de invitación.
+-- un editor/admin sí, y llegó canjeando un código de invitación;
+-- un superadmin no tiene organización.
 CREATE TABLE IF NOT EXISTS usuarios (
   id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email                text NOT NULL UNIQUE,
   nombre               text NOT NULL,
-  rol                  text NOT NULL DEFAULT 'vecino' CHECK (rol IN ('admin', 'editor', 'vecino')),
+  password_hash        text,
+  rol                  text NOT NULL DEFAULT 'vecino' CHECK (rol IN ('admin', 'editor', 'vecino', 'superadmin')),
   organizacion_id      uuid REFERENCES organizaciones(id) ON DELETE SET NULL,
   codigo_invitacion_id uuid REFERENCES codigos_invitacion(id) ON DELETE SET NULL,
   activo               boolean NOT NULL DEFAULT true,
   creado_en            timestamptz NOT NULL DEFAULT now(),
   ultimo_acceso_en     timestamptz,
-  CONSTRAINT gestor_requiere_organizacion CHECK (rol = 'vecino' OR organizacion_id IS NOT NULL)
+  CONSTRAINT gestor_requiere_organizacion CHECK (rol IN ('vecino', 'superadmin') OR organizacion_id IS NOT NULL)
 );
 
 CREATE INDEX IF NOT EXISTS idx_usuarios_organizacion ON usuarios (organizacion_id);
@@ -96,3 +98,5 @@ ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS hora_fin text;
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS entradas_texto text;
 
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS entradas_url text;
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_hash text;

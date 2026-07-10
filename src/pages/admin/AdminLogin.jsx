@@ -112,9 +112,14 @@ export default function AdminLogin() {
           </form>
         </div>
 
-        <p className="mx-auto mt-6 max-w-xs text-center text-xs text-on-surface/50">
-          Acceso restringido a las organizaciones que publican eventos. No hay registro público.
-        </p>
+        <div className="mx-auto mt-6 max-w-xs space-y-2 text-center text-xs text-on-surface/50">
+          <p>
+            ¿Eres una organización nueva? <a href="/admin/registro" className="font-semibold text-primary hover:underline">Regístrate aquí</a>
+          </p>
+          <p className="text-on-surface/40">
+            Acceso restringido. Solo para organizaciones con código de invitación.
+          </p>
+        </div>
       </div>
     </div>
   )
