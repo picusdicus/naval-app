@@ -38,9 +38,23 @@ const aEvento = (e) => ({
 
 async function organizacionDeSesion(sql, slug) {
   const [organizacion] = await sql`
-    SELECT id, nombre, slug FROM organizaciones WHERE slug = ${slug}
+    SELECT id, nombre, slug, categoria_defecto, lugar_defecto
+    FROM organizaciones WHERE slug = ${slug}
   `
   return organizacion ?? null
+}
+
+/**
+ * La categoría y el lugar los fija el perfil de la organización, no el gestor:
+ * en el formulario son de solo lectura, y aquí se imponen aunque el cliente
+ * envíe otra cosa. Si el perfil aún no los tiene, se respeta lo recibido.
+ */
+function conPerfilDeLaOrganizacion(cuerpo, organizacion) {
+  return {
+    ...cuerpo,
+    categoria: organizacion.categoria_defecto ?? cuerpo?.categoria,
+    lugar: organizacion.lugar_defecto ?? cuerpo?.lugar,
+  }
 }
 
 async function listar(sql, organizacion, res) {
@@ -82,13 +96,15 @@ async function obtenerUno(sql, organizacion, id, res) {
 }
 
 async function crear(sql, organizacion, req, res) {
+  const cuerpo = conPerfilDeLaOrganizacion(req.body || {}, organizacion)
+
   // No nos fiamos del cliente: se revalida con las mismas reglas del formulario.
-  const errores = validarEvento(req.body || {})
+  const errores = validarEvento(cuerpo)
   if (Object.keys(errores).length > 0) {
     return res.status(422).json({ error: 'Revisa los campos del formulario.', errores })
   }
 
-  const e = normalizarEvento(req.body)
+  const e = normalizarEvento(cuerpo)
 
   const [creado] = await sql`
     INSERT INTO eventos_usuario (
@@ -107,12 +123,14 @@ async function crear(sql, organizacion, req, res) {
 }
 
 async function actualizar(sql, organizacion, id, req, res) {
-  const errores = validarEvento(req.body || {})
+  const cuerpo = conPerfilDeLaOrganizacion(req.body || {}, organizacion)
+
+  const errores = validarEvento(cuerpo)
   if (Object.keys(errores).length > 0) {
     return res.status(422).json({ error: 'Revisa los campos del formulario.', errores })
   }
 
-  const e = normalizarEvento(req.body)
+  const e = normalizarEvento(cuerpo)
 
   const [actualizado] = await sql`
     UPDATE eventos_usuario SET

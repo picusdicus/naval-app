@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
 import CampoFormulario from '../../components/admin/CampoFormulario.jsx'
 import SelectorImagen from '../../components/admin/SelectorImagen.jsx'
-import { LISTA_CATEGORIAS_EVENTO } from '../../lib/eventos.js'
+import { CATEGORIAS_EVENTO } from '../../lib/eventos.js'
 import { VALORES_INICIALES, LIMITES, validarEvento } from '../../lib/eventoForm.js'
 
 /** Los campos que faltan en la respuesta llegan como null; el <input> quiere ''. */
@@ -25,21 +25,45 @@ export default function AdminEventoForm() {
   const editando = Boolean(id)
 
   const [valores, setValores] = useState(VALORES_INICIALES)
+  const [organizacion, setOrganizacion] = useState(null)
   const [errores, setErrores] = useState({})
   const [errorGeneral, setErrorGeneral] = useState('')
   const [enviando, setEnviando] = useState(false)
-  const [cargando, setCargando] = useState(editando)
+  const [cargando, setCargando] = useState(true)
 
+  // Siempre hace falta el perfil de la organización (fija categoría y lugar);
+  // al editar, además, el evento que se está modificando.
   useEffect(() => {
-    if (!editando) return
     let vigente = true
 
-    fetch(`/api/admin/eventos?id=${encodeURIComponent(id)}`)
-      .then(async (r) => {
-        if (r.status === 401) return navegar('/admin/login', { replace: true })
-        const cuerpo = await r.json().catch(() => ({}))
-        if (!r.ok) throw new Error(cuerpo.error || 'No se pudo cargar el evento.')
-        if (vigente) setValores(aValoresDelFormulario(cuerpo.evento))
+    const pedir = async (url) => {
+      const respuesta = await fetch(url)
+      if (respuesta.status === 401) {
+        navegar('/admin/login', { replace: true })
+        return null
+      }
+      const cuerpo = await respuesta.json().catch(() => ({}))
+      if (!respuesta.ok) throw new Error(cuerpo.error || 'No se pudieron cargar los datos.')
+      return cuerpo
+    }
+
+    Promise.all([
+      pedir('/api/admin/organizacion'),
+      editando ? pedir(`/api/admin/eventos?id=${encodeURIComponent(id)}`) : null,
+    ])
+      .then(([perfil, evento]) => {
+        if (!vigente || !perfil) return
+
+        setOrganizacion(perfil.organizacion)
+        const base = evento ? aValoresDelFormulario(evento.evento) : VALORES_INICIALES
+
+        // El perfil manda: si la organización cambió de sala, el evento antiguo
+        // se guarda con la nueva. El servidor impone lo mismo al recibirlo.
+        setValores({
+          ...base,
+          categoria: perfil.organizacion.categoriaDefecto ?? base.categoria,
+          lugar: perfil.organizacion.lugarDefecto ?? base.lugar,
+        })
       })
       .catch((err) => {
         if (vigente) setErrorGeneral(err.message)
@@ -99,6 +123,10 @@ export default function AdminEventoForm() {
       setEnviando(false)
     }
   }
+
+  const ayudaDelPerfil = organizacion
+    ? `Definido en el perfil de ${organizacion.nombre}.`
+    : 'Definido en el perfil de tu organización.'
 
   // Al crear, el botón secundario guarda un borrador. Al editar, lleva el
   // evento al estado contrario del que tiene ahora.
@@ -176,37 +204,36 @@ export default function AdminEventoForm() {
               )}
             </CampoFormulario>
 
+            {/* Categoría y lugar salen del perfil de la organización: se
+                muestran para que el gestor sepa cómo se publicará el evento,
+                pero no se editan aquí (y el servidor los impone igualmente). */}
             <div className="grid gap-5 sm:grid-cols-2">
-              <CampoFormulario id="categoria" etiqueta="Categoría" error={errores.categoria}>
-                {(props) => (
-                  <select
-                    {...props}
-                    id="categoria"
-                    value={valores.categoria}
-                    onChange={cambiar('categoria')}
-                  >
-                    <option value="">Elige una categoría…</option>
-                    {LISTA_CATEGORIAS_EVENTO.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </CampoFormulario>
-
-              <CampoFormulario id="lugar" etiqueta="Lugar" error={errores.lugar}>
+              <CampoFormulario
+                id="categoria"
+                etiqueta="Categoría"
+                error={errores.categoria}
+                ayuda={ayudaDelPerfil}
+                soloLectura
+              >
                 {(props) => (
                   <input
                     {...props}
-                    id="lugar"
+                    id="categoria"
                     type="text"
-                    maxLength={LIMITES.lugar}
-                    value={valores.lugar}
-                    onChange={cambiar('lugar')}
-                    placeholder="Teatro TYL TYL"
+                    readOnly
+                    value={CATEGORIAS_EVENTO[valores.categoria]?.nombre ?? valores.categoria}
                   />
                 )}
+              </CampoFormulario>
+
+              <CampoFormulario
+                id="lugar"
+                etiqueta="Lugar"
+                error={errores.lugar}
+                ayuda={ayudaDelPerfil}
+                soloLectura
+              >
+                {(props) => <input {...props} id="lugar" type="text" readOnly value={valores.lugar} />}
               </CampoFormulario>
             </div>
 

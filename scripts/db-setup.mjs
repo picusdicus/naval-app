@@ -63,17 +63,25 @@ const ORG_PRUEBA = {
     'Compañía y sala de teatro en Navalcarnero. Organización de prueba para validar el alta de eventos.',
   email_contacto: 'info@tyltyl.org',
   web: 'https://tyltyl.org',
+  // Perfil: todos sus eventos son de cultura y se celebran en su sala.
+  categoria_defecto: 'cultura',
+  lugar_defecto: 'Teatro TYL TYL',
 }
 
 const CODIGO_PRUEBA = 'TYLTYL-2026'
 
 async function sembrar() {
   const [org] = await sql`
-    INSERT INTO organizaciones (nombre, slug, descripcion, email_contacto, web)
+    INSERT INTO organizaciones (nombre, slug, descripcion, email_contacto, web,
+                               categoria_defecto, lugar_defecto)
     VALUES (${ORG_PRUEBA.nombre}, ${ORG_PRUEBA.slug}, ${ORG_PRUEBA.descripcion},
-            ${ORG_PRUEBA.email_contacto}, ${ORG_PRUEBA.web})
-    ON CONFLICT (slug) DO UPDATE SET nombre = EXCLUDED.nombre
-    RETURNING id, nombre, slug
+            ${ORG_PRUEBA.email_contacto}, ${ORG_PRUEBA.web},
+            ${ORG_PRUEBA.categoria_defecto}, ${ORG_PRUEBA.lugar_defecto})
+    ON CONFLICT (slug) DO UPDATE SET
+      nombre = EXCLUDED.nombre,
+      categoria_defecto = EXCLUDED.categoria_defecto,
+      lugar_defecto = EXCLUDED.lugar_defecto
+    RETURNING id, nombre, slug, categoria_defecto, lugar_defecto
   `
 
   const [codigo] = await sql`
@@ -83,7 +91,10 @@ async function sembrar() {
     RETURNING codigo, usos_maximos, usos_actuales, activo
   `
 
-  console.log(`Organización de prueba: ${org.nombre} (${org.slug})`)
+  console.log(
+    `Organización de prueba: ${org.nombre} (${org.slug}) — ` +
+      `categoría "${org.categoria_defecto}", lugar "${org.lugar_defecto}"`
+  )
   console.log(
     `Código de invitación: ${codigo.codigo} — ${codigo.usos_actuales}/${codigo.usos_maximos} usos, activo: ${codigo.activo}`
   )

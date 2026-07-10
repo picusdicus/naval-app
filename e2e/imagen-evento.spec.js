@@ -13,11 +13,13 @@ const POSTER = resolve(RAIZ, 'public/poster.jpg')
 
 const EVENTO = {
   descripcion: 'Evento creado por los tests de Playwright para verificar la subida de imágenes.',
-  categoria: 'cultura',
-  lugar: 'Teatro TYL TYL',
   fecha: '2027-03-14',
   hora: '19:30',
 }
+
+// Vienen del perfil de la organización (organizaciones.categoria_defecto /
+// lugar_defecto), no se eligen en el formulario.
+const PERFIL = { categoria: 'Cultura', lugar: 'Teatro TYL TYL' }
 
 // Escritorio y móvil corren el mismo fichero: si compartieran título, cada uno
 // encontraría el evento del otro al buscarlo por nombre.
@@ -94,8 +96,6 @@ test('el cartel subido al crear un evento llega a la base de datos, al panel y a
 
   await page.locator('#titulo').fill(titulo)
   await page.locator('#descripcion').fill(EVENTO.descripcion)
-  await page.locator('#categoria').selectOption(EVENTO.categoria)
-  await page.locator('#lugar').fill(EVENTO.lugar)
   await page.locator('#fecha').fill(EVENTO.fecha)
   await page.locator('#hora').fill(EVENTO.hora)
 

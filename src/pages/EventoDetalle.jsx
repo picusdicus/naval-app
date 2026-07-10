@@ -11,6 +11,15 @@ const ORIGEN = {
   vecinal: 'Vecinal',
 }
 
+/**
+ * Búsqueda en Google Maps del lugar dentro del municipio. Se busca por nombre
+ * (no por coordenadas) porque los eventos solo guardan el nombre de la sala.
+ */
+function enlaceGoogleMaps(lugar) {
+  const consulta = encodeURIComponent(`${lugar}, Navalcarnero, Madrid`)
+  return `https://www.google.com/maps/search/?api=1&query=${consulta}`
+}
+
 function horaTexto(e) {
   if (!e.hora) return ''
   return e.horaFin ? `${e.hora} – ${e.horaFin}` : e.hora
@@ -100,7 +109,15 @@ export default function EventoDetalle() {
         {evento.lugar && (
           <div className="flex items-start gap-2 text-on-surface sm:col-span-2">
             <MIcon name="location_on" className="mt-0.5 text-[18px] text-secondary" />
-            <span>{evento.lugar}</span>
+            <a
+              href={enlaceGoogleMaps(evento.lugar)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-semibold text-primary underline-offset-2 hover:underline"
+            >
+              {evento.lugar}
+              <MIcon name="open_in_new" className="text-[14px]" />
+            </a>
           </div>
         )}
       </dl>

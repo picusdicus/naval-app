@@ -5,16 +5,20 @@
 
 -- Organizaciones culturales (teatros, asociaciones, peñas...) que publican
 -- eventos en la agenda.
+-- `categoria_defecto` y `lugar_defecto` son el perfil con el que se rellenan
+-- los eventos de la organización: sus gestores no los eligen evento a evento.
 CREATE TABLE IF NOT EXISTS organizaciones (
-  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre         text NOT NULL,
-  slug           text NOT NULL UNIQUE,
-  descripcion    text,
-  email_contacto text,
-  telefono       text,
-  web            text,
-  activa         boolean NOT NULL DEFAULT true,
-  creada_en      timestamptz NOT NULL DEFAULT now()
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre            text NOT NULL,
+  slug              text NOT NULL UNIQUE,
+  descripcion       text,
+  email_contacto    text,
+  telefono          text,
+  web               text,
+  categoria_defecto text,
+  lugar_defecto     text,
+  activa            boolean NOT NULL DEFAULT true,
+  creada_en         timestamptz NOT NULL DEFAULT now()
 );
 
 -- Códigos de invitación: una organización los reparte para que sus gestores
@@ -83,6 +87,10 @@ CREATE INDEX IF NOT EXISTS idx_eventos_publicados ON eventos_usuario (estado, fe
 
 -- Migraciones sobre bases de datos que ya tenían la tabla creada: CREATE TABLE
 -- IF NOT EXISTS no añade columnas nuevas a una tabla existente.
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS categoria_defecto text;
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS lugar_defecto text;
+
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS hora_fin text;
 
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS entradas_texto text;

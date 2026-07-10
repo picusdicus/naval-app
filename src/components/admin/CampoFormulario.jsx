@@ -1,7 +1,15 @@
 import MIcon from '../MIcon.jsx'
 
 const CLASES_CONTROL =
-  'w-full rounded-lg border bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:outline-none focus:ring-2 disabled:opacity-60'
+  'w-full rounded-lg border px-4 py-3 text-base transition-all placeholder:text-on-surface/40 focus:outline-none focus:ring-2 disabled:opacity-60'
+
+// Los campos de solo lectura no compiten por el mismo `bg-*` que los
+// editables: Tailwind resuelve el conflicto por orden en la hoja de estilos,
+// no por el orden en el atributo class, así que se elige uno u otro aquí.
+const fondo = (soloLectura) =>
+  soloLectura
+    ? 'bg-surface-container-high text-on-surface/70 cursor-not-allowed'
+    : 'bg-surface-container-lowest text-on-surface'
 
 const borde = (hayError) =>
   hayError
@@ -18,6 +26,7 @@ export default function CampoFormulario({
   etiqueta,
   error,
   opcional = false,
+  soloLectura = false,
   ayuda,
   children,
 }) {
@@ -31,7 +40,7 @@ export default function CampoFormulario({
       </label>
 
       {children({
-        className: `${CLASES_CONTROL} ${borde(Boolean(error))}`,
+        className: `${CLASES_CONTROL} ${fondo(soloLectura)} ${borde(Boolean(error))}`,
         'aria-invalid': error ? 'true' : undefined,
         'aria-describedby': error ? idError : undefined,
       })}

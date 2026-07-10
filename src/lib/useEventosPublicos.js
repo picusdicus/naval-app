@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../data/eventos.json'
 import eventosExternos from '../data/eventos-externos.json'
 
@@ -38,5 +38,9 @@ export function useEventosPublicos() {
     }
   }, [])
 
-  return { eventos: [...ESTATICOS, ...deLaBase], cargando }
+  // Identidad estable mientras no lleguen datos nuevos: quien reciba `eventos`
+  // puede usarlo como dependencia de un useMemo sin recalcular en cada render.
+  const eventos = useMemo(() => [...ESTATICOS, ...deLaBase], [deLaBase])
+
+  return { eventos, cargando }
 }
