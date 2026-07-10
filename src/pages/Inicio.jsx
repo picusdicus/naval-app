@@ -1,14 +1,14 @@
+import { useMemo } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import eventosCurados from '../data/eventos.json'
-import eventosExternos from '../data/eventos-externos.json'
 import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
+import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { useWeather } from '../hooks/useWeather.js'
 import MIcon from '../components/MIcon.jsx'
 
-const proximos = proximosEventos([...eventosCurados, ...eventosExternos], 4)
+const EVENTOS_EN_PORTADA = 6
 
 function saludo() {
   const h = new Date().getHours()
@@ -29,6 +29,15 @@ function fechaHoy() {
 export default function Inicio() {
   const { abrirChat } = useOutletContext()
   const weather = useWeather()
+
+  // Las tres fuentes de la agenda: los dos JSON y los eventos publicados desde
+  // /admin, que llegan por fetch. Se recalcula cuando llegan, no al cargar el
+  // módulo, o los eventos de la base de datos nunca aparecerían.
+  const { eventos } = useEventosPublicos()
+  const proximos = useMemo(
+    () => proximosEventos(eventos, EVENTOS_EN_PORTADA),
+    [eventos]
+  )
 
   return (
     <div className="space-y-8 md:space-y-16">

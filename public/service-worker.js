@@ -48,6 +48,18 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // La API nunca se cachea: son datos vivos (eventos del panel, agenda
+  // pública, sesión...). Cachearlos haría que el gestor publicase un evento y
+  // siguiera viendo la lista anterior. Va directa a la red.
+  if (url.pathname.startsWith('/api/')) {
+    return
+  }
+
+  // Solo se cachean lecturas: un POST/PUT/DELETE nunca debe salir de la caché.
+  if (request.method !== 'GET') {
+    return
+  }
+
   // Para HTML: network first
   if (request.mode === 'navigate') {
     event.respondWith(
