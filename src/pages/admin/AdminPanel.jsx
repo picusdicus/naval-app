@@ -212,6 +212,16 @@ export default function AdminPanel() {
             <p className="truncate text-xs text-on-surface/60">{usuario?.email}</p>
           </div>
 
+          {usuario?.rol === 'superadmin' && (
+            <Link
+              to="/admin/super"
+              className="inline-flex flex-shrink-0 items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 sm:px-4"
+            >
+              <MIcon name="verified_admin" className="text-[18px]" />
+              <span className="hidden sm:inline">Panel Superadmin</span>
+            </Link>
+          )}
+
           <button
             type="button"
             onClick={cerrarSesion}

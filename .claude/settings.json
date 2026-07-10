@@ -9,7 +9,8 @@
       "Bash(cat)",
       "Bash(bash /tmp/test-flow.sh)",
       "Bash(bash /tmp/e2e-test.sh)",
-      "Bash(curl -s \"http://localhost:5178/admin/login\")"
+      "Bash(curl -s \"http://localhost:5178/admin/login\")",
+      "Bash(chmod +x \"C:\\\\Users\\\\DANIEL~1.MOL\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-daniel-molino-Documents-Tutorials-Claude-naval-app\\\\12fa5f87-dc59-406d-85f0-03b946038331\\\\scratchpad\\\\test-super-api.sh\")"
     ]
   }
 }

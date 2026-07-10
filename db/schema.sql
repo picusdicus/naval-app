@@ -100,3 +100,22 @@ ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS entradas_texto text;
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS entradas_url text;
 
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_hash text;
+
+-- Tabla de analytics: registra eventos anónimos de uso de la app.
+CREATE TABLE IF NOT EXISTS analytics (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo_evento      text NOT NULL,
+  seccion          text,
+  organizacion_id  uuid REFERENCES organizaciones(id) ON DELETE SET NULL,
+  pregunta_asistente text,
+  comercio_buscado text,
+  creado_en        timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_tipo ON analytics (tipo_evento);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_seccion ON analytics (seccion);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_org ON analytics (organizacion_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_fecha ON analytics (creado_en);

@@ -19,6 +19,7 @@ import AdminLogin from './pages/admin/AdminLogin.jsx'
 import AdminRegistro from './pages/admin/AdminRegistro.jsx'
 import AdminPanel from './pages/admin/AdminPanel.jsx'
 import AdminEventoForm from './pages/admin/AdminEventoForm.jsx'
+import AdminSuperPanel from './pages/admin/AdminSuperPanel.jsx'
 import RutaSuperAdmin from './components/admin/RutaSuperAdmin.jsx'
 
 function ProveedorAdmin() {
@@ -62,7 +63,7 @@ export default function App() {
             <Route path="eventos/:id/editar" element={<AdminEventoForm />} />
             {/* Rutas superadmin: solo accesibles con rol superadmin. */}
             <Route element={<RutaSuperAdmin />}>
-              <Route path="super/*" element={<Navigate to="/admin" replace />} />
+              <Route path="super" element={<AdminSuperPanel />} />
             </Route>
             {/* Cualquier /admin/* desconocido pasa antes por RutaProtegida:
                 sin sesión se redirige al login, con sesión al panel. */}
