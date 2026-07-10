@@ -14,6 +14,7 @@ npm run dev             # dev server at http://localhost:5173 (also serves /api/
 npm run build            # production build (vite build)
 npm run preview          # preview the production build
 npm run lint              # eslint .
+npm run db:setup         # apply db/schema.sql to Neon + seed the TYL TYL test org (idempotent)
 npm run fetch:comercios  # regenerate src/data/comercios.json from Google Places API
 npm run fetch:eventos    # regenerate src/data/eventos-externos.json from Teatro TYL TYL API + Ayuntamiento RSS
 npm run fetch:noticias   # regenerate src/data/noticias.json from Ayuntamiento press feed RSS
@@ -52,9 +53,20 @@ Separate from the resident password gate: `App.jsx` skips the `AccessScreen` che
 - `src/lib/cocinas.js` — cuisine/type labeling helpers for directory entries.
 - Icons: `MIcon.jsx` renders Google Material Symbols (loaded via `index.html`); `components/icons.jsx` holds custom inline SVGs.
 
+### Database (Neon Postgres)
+
+The Neon project `navalcarnero-db` is provisioned through the Vercel Marketplace integration, so all `DATABASE_URL`/`POSTGRES_*` variables are injected into the Vercel environment automatically. For local work, run `npx vercel env pull .env.local` — `vite.config.js` forwards `DATABASE_URL` to the dev API handlers, and `scripts/db-setup.mjs` reads `.env.local` (falling back to `.env`).
+
+- `db/schema.sql` — canonical schema. Four tables: `organizaciones` (cultural orgs), `codigos_invitacion` (invite codes an org hands out so its managers can sign up), `usuarios` (`admin`/`editor` belong to an org, `vecino` doesn't), `eventos_usuario` (events created in-app, in `borrador`/`publicado`/`archivado`). Statements are split on a trailing `;` by the setup script, so don't add functions or dollar-quoted blocks.
+- `scripts/db-setup.mjs` (`npm run db:setup`) — applies the schema and seeds the test org **Teatro TYL TYL** (`slug: tyl-tyl`) with invite code **`TYLTYL-2026`** (grants `admin`, 5 uses). Idempotent via `ON CONFLICT`.
+- `api/_db.js` — `obtenerSql()` returns a memoized `@neondatabase/serverless` HTTP client (tagged template). Underscore prefix keeps Vercel from deploying it as an endpoint.
+- `api/health.js` — `GET /api/health` verifies the connection and that all four tables exist; returns 503 if either fails. Live at https://naval-app-one.vercel.app/api/health.
+
+The Neon HTTP driver runs one statement per request; multi-statement SQL will not work.
+
 ### Data layer (`src/data/*.json`)
 
-Static JSON is the only data store — no backend database.
+Static JSON is still the store for the read-only content below (events, news, directory, transit).
 
 - `comercios.json` — **generated**, regenerate with `npm run fetch:comercios` (Google Places API scoped to Navalcarnero). Do not hand-edit.
 - `servicios-locales.json` — hand-curated directory entries not covered by Google Places (plumbers, renovation services, etc.).

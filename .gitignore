@@ -32,3 +32,4 @@ Thumbs.db
 *.sw?
 reference/
 .playwright-mcp/
+.vercel
