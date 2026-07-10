@@ -15,6 +15,17 @@ const TIPOS_PERMITIDOS = {
 
 const MAX_BYTES = 3 * 1024 * 1024
 
+/**
+ * `@vercel/blob` admite dos credenciales: un token de lectura/escritura, o el
+ * token OIDC del despliegue junto al id del store (lo que inyecta la
+ * integración de Blob). Nos vale cualquiera de las dos.
+ */
+const hayCredencialesBlob = () =>
+  Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN ||
+      (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN)
+  )
+
 /** Nombre de fichero seguro: sin rutas, sin acentos, sin espacios. */
 function nombreSeguro(nombre, extension) {
   const base = String(nombre || 'cartel')
@@ -61,9 +72,9 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: 'La imagen supera los 3 MB.' })
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!hayCredencialesBlob()) {
     return res.status(503).json({
-      error: 'La subida de imágenes no está configurada (falta BLOB_READ_WRITE_TOKEN).',
+      error: 'La subida de imágenes no está configurada (faltan las credenciales de Vercel Blob).',
     })
   }
 
@@ -71,7 +82,18 @@ export default async function handler(req, res) {
     const { url } = await put(
       `eventos/${sesion.organizacionSlug}/${nombreSeguro(nombre, extension)}`,
       contenido,
-      { access: 'public', contentType: tipo, addRandomSuffix: true }
+      {
+        access: 'public',
+        contentType: tipo,
+        addRandomSuffix: true,
+        // Si hay token de lectura/escritura, se usa. Sin él, `put` recurre al
+        // token OIDC del despliegue (que en Vercel se inyecta solo). El SDK
+        // prefiere OIDC cuando ambos están presentes, y OIDC no está permitido
+        // en el entorno `development`: de ahí que lo pasemos explícitamente.
+        ...(process.env.BLOB_READ_WRITE_TOKEN
+          ? { token: process.env.BLOB_READ_WRITE_TOKEN }
+          : {}),
+      }
     )
     return res.status(200).json({ url })
   } catch (error) {

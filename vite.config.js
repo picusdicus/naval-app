@@ -15,6 +15,8 @@ const VARIABLES_API = [
   'ADMIN_NOMBRE',
   'ADMIN_ORG_SLUG',
   'BLOB_READ_WRITE_TOKEN',
+  'BLOB_STORE_ID',
+  'VERCEL_OIDC_TOKEN',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni

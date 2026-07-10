@@ -49,7 +49,7 @@ function FilaEvento({ evento, ocupado, onCambiarEstado, onEliminar }) {
           <img
             src={evento.imagen}
             alt=""
-            className="hidden h-20 w-20 flex-shrink-0 rounded-lg object-cover sm:block"
+            className="h-14 w-14 flex-shrink-0 rounded-lg object-cover sm:h-20 sm:w-20"
           />
         )}
 

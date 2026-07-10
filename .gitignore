@@ -34,3 +34,9 @@ reference/
 .playwright-mcp/
 .vercel
 .env*
+!.env.example
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

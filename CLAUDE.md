@@ -14,6 +14,7 @@ npm run dev             # dev server at http://localhost:5173 (also serves /api/
 npm run build            # production build (vite build)
 npm run preview          # preview the production build
 npm run lint              # eslint .
+npm run test:e2e         # Playwright: sube public/poster.jpg a Blob de verdad (ver abajo)
 npm run db:setup         # apply db/schema.sql to Neon + seed the TYL TYL test org (idempotent)
 npm run fetch:comercios  # regenerate src/data/comercios.json from Google Places API
 npm run fetch:eventos    # regenerate src/data/eventos-externos.json from Teatro TYL TYL API + Ayuntamiento RSS
@@ -21,7 +22,9 @@ npm run fetch:noticias   # regenerate src/data/noticias.json from Ayuntamiento p
 npm run fetch:transporte # regenerate src/data/horarios-bus.json from CRTM GTFS
 ```
 
-There is no test suite in this repo. `npm run lint` is configured in package.json but there is no eslint config file at the project root (only inside `node_modules`) — running it will currently fail until a flat config (`eslint.config.js`) is added.
+`npm run lint` is configured in package.json but there is no eslint config file at the project root (only inside `node_modules`) — running it will currently fail until a flat config (`eslint.config.js`) is added.
+
+The only tests are the Playwright end-to-end specs in `e2e/`, which cover the event poster upload. They are deliberately unmocked: they drive the real dev server, the real Neon database and the real Vercel Blob store, and they clean up the events and blobs they create. They need `ADMIN_EMAIL`, `ADMIN_PASSWORD` and a Blob credential in `.env`/`.env.local`. `playwright.config.js` starts the dev server on port 5199 and runs each spec on desktop and mobile viewports.
 
 ## Architecture
 
@@ -58,7 +61,8 @@ Separate from the resident password gate: `App.jsx` skips the `AccessScreen` che
 - The `resumen` (publicados, borradores, próximos, pasados) is computed server-side on every list. The panel refetches after each mutation instead of keeping a parallel count in the client.
 - `GET /api/eventos` (public, unauthenticated) returns only `publicado` rows, shaped exactly like the JSON events so the UI can concatenate them. It returns `{eventos: []}` with HTTP 200 when Neon is down, so the static agenda never breaks. `src/lib/useEventosPublicos.js` merges both sources; DB ids are prefixed `bd-` to avoid colliding with the JSON ids.
 - Date columns are formatted with `to_char(..., 'YYYY-MM-DD')` in SQL. The Neon driver returns `date` as a JS `Date`, and converting it in JS drags the timezone in.
-- `POST /api/admin/imagen` uploads the poster to Vercel Blob. The image travels base64-encoded inside the JSON body (not multipart) so it reuses the same body parsing as every other endpoint; Vercel caps a function body at 4.5 MB and base64 inflates by a third, hence the 3 MB limit. Without `BLOB_READ_WRITE_TOKEN` the endpoint 503s with a clear message and the rest of the form keeps working — the image is optional.
+- `POST /api/admin/imagen` uploads the poster to Vercel Blob and returns its URL, which the form then submits as `imagen` and the API stores in `eventos_usuario.imagen_url`. The image travels base64-encoded inside the JSON body (not multipart) so it reuses the same body parsing as every other endpoint; Vercel caps a function body at 4.5 MB and base64 inflates by a third, hence the 3 MB limit. With no Blob credential the endpoint 503s with a clear message and the rest of the form keeps working — the image is optional.
+- **Blob auth gotcha.** `@vercel/blob` prefers OIDC whenever it finds `VERCEL_OIDC_TOKEN` *and* `BLOB_STORE_ID`, falling back to `BLOB_READ_WRITE_TOKEN` only if neither is set. OIDC is not permitted in the `development` environment, so locally that preference makes every upload fail with `BlobOidcEnvironmentNotAllowedError`. `api/admin/imagen.js` therefore passes `token:` explicitly when `BLOB_READ_WRITE_TOKEN` exists, and lets OIDC take over on Vercel. Anything else calling `put`/`del`/`list` (including the e2e cleanup) must do the same.
 
 ### Frontend (Vite + React 18 + React Router + Tailwind v3)
 
