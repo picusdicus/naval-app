@@ -29,6 +29,16 @@ There is no test suite in this repo. `npm run lint` is configured in package.jso
 - `src/components/AccessScreen.jsx` — password-protected login screen that blocks the entire app until the correct password is entered. Requires `VITE_APP_PASSWORD` environment variable (never hardcoded). Session is saved in localStorage under `ncv_access` key and persists across browser sessions until cleared or logout is triggered.
 - Logout buttons in Header (desktop & mobile) and MenuDrawer footer clear the session and return to the access screen.
 
+### Admin panel (`/admin`)
+
+Separate from the resident password gate: `App.jsx` skips the `AccessScreen` check for `/admin/*`, because managers sign in with their own credentials. There is no public sign-up.
+
+- `api/_auth.js` — issues and verifies an HS256 JWT (hand-rolled on `node:crypto`, no new dependency) carried in the `ncv_admin` **httpOnly** cookie (`SameSite=Lax`, `Secure` only in production, 8 h lifetime). Credentials are compared in constant time against `ADMIN_EMAIL` / `ADMIN_PASSWORD`. `requerirSesion(req, res)` guards private endpoints — it 401s and returns `null`, so the caller must abort.
+- Endpoints: `POST /api/admin/login`, `POST /api/admin/logout`, `GET /api/admin/sesion` (who am I), `GET /api/admin/eventos`. The org slug comes from the *signed* JWT, never from the request, so nobody can read another org's events by changing a parameter.
+- Required env vars: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET` (≥32 chars; rotating it invalidates every open session). Optional: `ADMIN_NOMBRE`, `ADMIN_ORG_SLUG` (default `tyl-tyl`). None carry the `VITE_` prefix — they must never reach the browser bundle.
+- Frontend: `src/lib/adminAuth.jsx` (context; the cookie is unreadable from JS, so it asks `/api/admin/sesion` on boot), `src/components/admin/RutaProtegida.jsx` (redirects to `/admin/login`, remembering the intended path), `src/pages/admin/{AdminLogin,AdminPanel}.jsx`.
+- `api/admin/eventos.js` reads the org's events from the same JSON single source of truth as the public agenda, matching the `fuente` field that `scripts/fetch-eventos.mjs` writes (`'TYL TYL'`). The `eventos_usuario` Postgres table on `develop` is the eventual home for events created in-app; this branch has no DB layer.
+
 ### Frontend (Vite + React 18 + React Router + Tailwind v3)
 
 - `src/App.jsx` — route table and access control guard; all pages render inside `src/components/layout/Layout.jsx` (Header, Footer, bottom NavBar, MenuDrawer).

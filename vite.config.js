@@ -1,20 +1,47 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Middleware de desarrollo: sirve la función /api/chat con `npm run dev`,
-// usando el mismo handler que se despliega en Vercel (api/chat.js).
-// Así se puede probar el asistente en local sin desplegar en producción.
+// Variables que los handlers de api/ leen de process.env y que Vite solo
+// expone en import.meta.env. Las copiamos para que funcionen con `npm run dev`.
+const VARIABLES_API = [
+  'ANTHROPIC_API_KEY',
+  'ANTHROPIC_MODEL',
+  'DATABASE_URL',
+  'ADMIN_EMAIL',
+  'ADMIN_PASSWORD',
+  'ADMIN_JWT_SECRET',
+  'ADMIN_NOMBRE',
+  'ADMIN_ORG_SLUG',
+]
+
+// Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni
+// ficheros privados (los que empiezan por `_`, que Vercel tampoco despliega).
+const RUTA_API = /^\/api\/([a-z0-9-]+(?:\/[a-z0-9-]+)*)$/
+
+// Middleware de desarrollo: sirve las funciones de api/ con `npm run dev`,
+// usando los mismos handlers que se despliegan en Vercel. Así se pueden probar
+// el asistente y el panel /admin en local sin desplegar en producción.
 function devApiPlugin(env) {
   return {
     name: 'dev-api',
     apply: 'serve',
     configureServer(server) {
-      // Hace visibles las variables del .env al handler (que lee process.env).
-      if (env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY
-      if (env.ANTHROPIC_MODEL) process.env.ANTHROPIC_MODEL = env.ANTHROPIC_MODEL
+      // Hace visibles las variables del .env a los handlers (que leen process.env).
+      for (const clave of VARIABLES_API) {
+        if (env[clave]) process.env[clave] = env[clave]
+      }
 
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url || (!req.url.startsWith('/api/chat') && !req.url.startsWith('/api/bus-times') && !req.url.startsWith('/api/sync-events'))) return next()
+        if (!req.url) return next()
+
+        const [rutaUrl, queryString = ''] = req.url.split('?')
+        const coincidencia = RUTA_API.exec(rutaUrl)
+        if (!coincidencia) return next()
+
+        const modulo = `/api/${coincidencia[1]}.js`
+        if (!existsSync(resolve(process.cwd(), `.${modulo}`))) return next()
 
         // Parseo del cuerpo JSON (Vite no lo hace por nosotros).
         const chunks = []
@@ -26,6 +53,8 @@ function devApiPlugin(env) {
           req.body = {}
         }
 
+        req.query = Object.fromEntries(new URLSearchParams(queryString))
+
         // Adaptadores estilo Express/Vercel sobre la respuesta Node cruda.
         res.status = (code) => {
           res.statusCode = code
@@ -36,26 +65,8 @@ function devApiPlugin(env) {
           res.end(JSON.stringify(obj))
         }
 
-        // Parse URL query parameters (handle full URL with protocol)
-        const urlPath = req.url.split('?')[0]
-        const queryString = req.url.split('?')[1] || ''
-        req.query = {}
-        if (queryString) {
-          queryString.split('&').forEach(pair => {
-            const [key, value] = pair.split('=')
-            req.query[key] = value ? decodeURIComponent(value) : ''
-          })
-        }
-
         try {
-          let mod
-          if (req.url.startsWith('/api/chat')) {
-            mod = await server.ssrLoadModule('/api/chat.js')
-          } else if (req.url.startsWith('/api/bus-times')) {
-            mod = await server.ssrLoadModule('/api/bus-times.js')
-          } else if (req.url.startsWith('/api/sync-events')) {
-            mod = await server.ssrLoadModule('/api/sync-events.js')
-          }
+          const mod = await server.ssrLoadModule(modulo)
           await mod.default(req, res)
         } catch (err) {
           res.statusCode = 500

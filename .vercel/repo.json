@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_yaKjYDgXsI6giSCoF3uNBFLmjxG1",
+      "name": "naval-app",
+      "directory": ".",
+      "orgId": "team_7zxOrk4A5ilS3ovCXWwGeapO"
+    }
+  ]
+}
