@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import eventosCurados from '../data/eventos.json'
-import eventosExternos from '../data/eventos-externos.json'
+import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import {
   CATEGORIAS_EVENTO,
   LISTA_CATEGORIAS_EVENTO,
@@ -17,7 +16,8 @@ import MIcon from '../components/MIcon.jsx'
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
 
-  const todos = useMemo(() => [...eventosCurados, ...eventosExternos], [])
+  // Estáticos del JSON + los que las organizaciones han publicado desde /admin.
+  const { eventos: todos } = useEventosPublicos()
 
   // Solo se ofrecen como filtro las categorías presentes (en próximos o pasados).
   const categoriasDisponibles = useMemo(() => {

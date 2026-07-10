@@ -63,10 +63,13 @@ CREATE TABLE IF NOT EXISTS eventos_usuario (
   fecha_inicio    date NOT NULL,
   fecha_fin       date,
   hora            text,
+  hora_fin        text,
   lugar           text,
   direccion       text,
   precio          text,
   url             text,
+  entradas_texto  text,
+  entradas_url    text,
   imagen_url      text,
   estado          text NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador', 'publicado', 'archivado')),
   creado_en       timestamptz NOT NULL DEFAULT now(),
@@ -77,3 +80,11 @@ CREATE TABLE IF NOT EXISTS eventos_usuario (
 CREATE INDEX IF NOT EXISTS idx_eventos_organizacion ON eventos_usuario (organizacion_id);
 
 CREATE INDEX IF NOT EXISTS idx_eventos_publicados ON eventos_usuario (estado, fecha_inicio);
+
+-- Migraciones sobre bases de datos que ya tenían la tabla creada: CREATE TABLE
+-- IF NOT EXISTS no añade columnas nuevas a una tabla existente.
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS hora_fin text;
+
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS entradas_texto text;
+
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS entradas_url text;

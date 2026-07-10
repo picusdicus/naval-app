@@ -15,6 +15,7 @@ import Transporte from './pages/Transporte.jsx'
 import Asistente from './pages/Asistente.jsx'
 import AdminLogin from './pages/admin/AdminLogin.jsx'
 import AdminPanel from './pages/admin/AdminPanel.jsx'
+import AdminEventoForm from './pages/admin/AdminEventoForm.jsx'
 
 function ProveedorAdmin() {
   return (
@@ -49,6 +50,9 @@ export default function App() {
           <Route path="login" element={<AdminLogin />} />
           <Route element={<RutaProtegida />}>
             <Route index element={<AdminPanel />} />
+            <Route path="eventos/nuevo" element={<AdminEventoForm />} />
+            {/* Misma página: con :id se prerrellena y guarda con PUT. */}
+            <Route path="eventos/:id/editar" element={<AdminEventoForm />} />
             {/* Cualquier /admin/* desconocido pasa antes por RutaProtegida:
                 sin sesión se redirige al login, con sesión al panel. */}
             <Route path="*" element={<Navigate to="/admin" replace />} />

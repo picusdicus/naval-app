@@ -14,6 +14,7 @@ const VARIABLES_API = [
   'ADMIN_JWT_SECRET',
   'ADMIN_NOMBRE',
   'ADMIN_ORG_SLUG',
+  'BLOB_READ_WRITE_TOKEN',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni

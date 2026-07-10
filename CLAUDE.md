@@ -35,10 +35,30 @@ There is no test suite in this repo. `npm run lint` is configured in package.jso
 Separate from the resident password gate: `App.jsx` skips the `AccessScreen` check for `/admin/*`, because managers sign in with their own credentials. There is no public sign-up.
 
 - `api/_auth.js` — issues and verifies an HS256 JWT (hand-rolled on `node:crypto`, no new dependency) carried in the `ncv_admin` **httpOnly** cookie (`SameSite=Lax`, `Secure` only in production, 8 h lifetime). Credentials are compared in constant time against `ADMIN_EMAIL` / `ADMIN_PASSWORD`. `requerirSesion(req, res)` guards private endpoints — it 401s and returns `null`, so the caller must abort.
-- Endpoints: `POST /api/admin/login`, `POST /api/admin/logout`, `GET /api/admin/sesion` (who am I), `GET /api/admin/eventos`. The org slug comes from the *signed* JWT, never from the request, so nobody can read another org's events by changing a parameter.
-- Required env vars: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET` (≥32 chars; rotating it invalidates every open session). Optional: `ADMIN_NOMBRE`, `ADMIN_ORG_SLUG` (default `tyl-tyl`). None carry the `VITE_` prefix — they must never reach the browser bundle.
-- Frontend: `src/lib/adminAuth.jsx` (context; the cookie is unreadable from JS, so it asks `/api/admin/sesion` on boot), `src/components/admin/RutaProtegida.jsx` (redirects to `/admin/login`, remembering the intended path), `src/pages/admin/{AdminLogin,AdminPanel}.jsx`.
-- `api/admin/eventos.js` reads the org's events from the same JSON single source of truth as the public agenda, matching the `fuente` field that `scripts/fetch-eventos.mjs` writes (`'TYL TYL'`). The `eventos_usuario` Postgres table on `develop` is the eventual home for events created in-app; this branch has no DB layer.
+- Endpoints: `POST /api/admin/login`, `POST /api/admin/logout`, `GET /api/admin/sesion` (who am I), `/api/admin/eventos` (see below), `POST /api/admin/imagen` (upload a poster). The org slug comes from the *signed* JWT, never from the request, so nobody can read or write another org's events by changing a parameter.
+- Required env vars: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET` (≥32 chars; rotating it invalidates every open session). Optional: `ADMIN_NOMBRE`, `ADMIN_ORG_SLUG` (default `tyl-tyl`), `BLOB_READ_WRITE_TOKEN`. None carry the `VITE_` prefix — they must never reach the browser bundle.
+- Frontend: `src/lib/adminAuth.jsx` (context; the cookie is unreadable from JS, so it asks `/api/admin/sesion` on boot), `src/components/admin/RutaProtegida.jsx` (redirects to `/admin/login`, remembering the intended path), `src/pages/admin/{AdminLogin,AdminPanel,AdminEventoNuevo}.jsx`.
+
+### Managing events
+
+`api/admin/eventos.js` is a single endpoint keyed by method, with the event id in `?id=` rather than a dynamic route segment — that way one file serves every operation and the dev middleware in `vite.config.js` needs no special case:
+
+| Method | Query | Does |
+| --- | --- | --- |
+| `GET` | — | list the org's events + `resumen` metrics |
+| `GET` | `?id=` | one event, to pre-fill the edit form |
+| `POST` | — | create |
+| `PUT` | `?id=` | replace every field |
+| `PATCH` | `?id=` | change only `estado` |
+| `DELETE` | `?id=` | delete |
+
+- Every query filters by `organizacion_id`, so another org's event is a 404 rather than a leak — reading, editing, publishing and deleting it all fail. A malformed `id` is rejected against a UUID regex before touching the database.
+- `src/lib/eventoForm.js` is the single definition of a valid event. The form imports it to warn before submitting, and `POST`/`PUT` re-run the same `validarEvento()` server-side — the client is never trusted. `urlValida()` only accepts `http(s):`, which is what keeps `javascript:` out of the ticket link.
+- Events are rows in `eventos_usuario`, tied to the org resolved from the JWT. `estado` is `borrador` or `publicado`. `src/pages/admin/AdminEventoForm.jsx` serves both `/admin/eventos/nuevo` and `/admin/eventos/:id/editar`; with an id it pre-fills via `GET ?id=` and saves with `PUT`.
+- The `resumen` (publicados, borradores, próximos, pasados) is computed server-side on every list. The panel refetches after each mutation instead of keeping a parallel count in the client.
+- `GET /api/eventos` (public, unauthenticated) returns only `publicado` rows, shaped exactly like the JSON events so the UI can concatenate them. It returns `{eventos: []}` with HTTP 200 when Neon is down, so the static agenda never breaks. `src/lib/useEventosPublicos.js` merges both sources; DB ids are prefixed `bd-` to avoid colliding with the JSON ids.
+- Date columns are formatted with `to_char(..., 'YYYY-MM-DD')` in SQL. The Neon driver returns `date` as a JS `Date`, and converting it in JS drags the timezone in.
+- `POST /api/admin/imagen` uploads the poster to Vercel Blob. The image travels base64-encoded inside the JSON body (not multipart) so it reuses the same body parsing as every other endpoint; Vercel caps a function body at 4.5 MB and base64 inflates by a third, hence the 3 MB limit. Without `BLOB_READ_WRITE_TOKEN` the endpoint 503s with a clear message and the rest of the form keeps working — the image is optional.
 
 ### Frontend (Vite + React 18 + React Router + Tailwind v3)
 
@@ -57,7 +77,7 @@ Separate from the resident password gate: `App.jsx` skips the `AccessScreen` che
 
 The Neon project `navalcarnero-db` is provisioned through the Vercel Marketplace integration, so all `DATABASE_URL`/`POSTGRES_*` variables are injected into the Vercel environment automatically. For local work, run `npx vercel env pull .env.local` — `vite.config.js` forwards `DATABASE_URL` to the dev API handlers, and `scripts/db-setup.mjs` reads `.env.local` (falling back to `.env`).
 
-- `db/schema.sql` — canonical schema. Four tables: `organizaciones` (cultural orgs), `codigos_invitacion` (invite codes an org hands out so its managers can sign up), `usuarios` (`admin`/`editor` belong to an org, `vecino` doesn't), `eventos_usuario` (events created in-app, in `borrador`/`publicado`/`archivado`). Statements are split on a trailing `;` by the setup script, so don't add functions or dollar-quoted blocks.
+- `db/schema.sql` — canonical schema. Four tables: `organizaciones` (cultural orgs), `codigos_invitacion` (invite codes an org hands out so its managers can sign up), `usuarios` (`admin`/`editor` belong to an org, `vecino` doesn't), `eventos_usuario` (events created in-app, in `borrador`/`publicado`/`archivado`). Statements are split on a trailing `;` by the setup script, so don't add functions or dollar-quoted blocks. `CREATE TABLE IF NOT EXISTS` won't add columns to a table that already exists, so new columns also need an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at the end of the file.
 - `scripts/db-setup.mjs` (`npm run db:setup`) — applies the schema and seeds the test org **Teatro TYL TYL** (`slug: tyl-tyl`) with invite code **`TYLTYL-2026`** (grants `admin`, 5 uses). Idempotent via `ON CONFLICT`.
 - `api/_db.js` — `obtenerSql()` returns a memoized `@neondatabase/serverless` HTTP client (tagged template). Underscore prefix keeps Vercel from deploying it as an endpoint.
 - `api/health.js` — `GET /api/health` verifies the connection and that all four tables exist; returns 503 if either fails. Live at https://naval-app-one.vercel.app/api/health.

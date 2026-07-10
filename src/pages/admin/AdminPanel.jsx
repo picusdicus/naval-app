@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
+import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
+import { CATEGORIAS_EVENTO } from '../../lib/eventos.js'
 
 const ESTADOS = {
   publicado: { etiqueta: 'Publicado', clases: 'bg-secondary-container text-on-secondary-container' },
@@ -34,30 +37,87 @@ function Estadistica({ icono, valor, etiqueta }) {
   )
 }
 
-function FilaEvento({ evento }) {
+function FilaEvento({ evento, ocupado, onCambiarEstado, onEliminar }) {
   const estado = ESTADOS[evento.estado] ?? ESTADOS.borrador
+  const horario = evento.horaFin ? `${evento.hora} – ${evento.horaFin}` : evento.hora
+  const publicado = evento.estado === 'publicado'
 
   return (
     <li className="nv-card p-4 sm:p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-display font-semibold text-on-surface">{evento.titulo}</h3>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${estado.clases}`}>
-          {estado.etiqueta}
-        </span>
+      <div className="flex gap-4">
+        {evento.imagen && (
+          <img
+            src={evento.imagen}
+            alt=""
+            className="hidden h-20 w-20 flex-shrink-0 rounded-lg object-cover sm:block"
+          />
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display font-semibold text-on-surface">{evento.titulo}</h3>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${estado.clases}`}>
+              {estado.etiqueta}
+            </span>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-on-surface/70">
+            <span className="inline-flex items-center gap-1">
+              <MIcon name="calendar_today" className="text-[16px]" />
+              {formatearFecha(evento.fecha)}
+              {horario ? ` · ${horario}` : ''}
+            </span>
+            {evento.lugar && (
+              <span className="inline-flex items-center gap-1">
+                <MIcon name="place" className="text-[16px]" />
+                {evento.lugar}
+              </span>
+            )}
+            {CATEGORIAS_EVENTO[evento.categoria] && (
+              <span className="inline-flex items-center gap-1">
+                <MIcon name="sell" className="text-[16px]" />
+                {CATEGORIAS_EVENTO[evento.categoria].nombre}
+              </span>
+            )}
+            {evento.entradasUrl && (
+              <span className="inline-flex items-center gap-1">
+                <MIcon name="local_activity" className="text-[16px]" />
+                {evento.precio || 'Con entradas'}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-on-surface/70">
-        <span className="inline-flex items-center gap-1">
-          <MIcon name="calendar_today" className="text-[16px]" />
-          {formatearFecha(evento.fecha)}
-          {evento.hora ? ` · ${evento.hora}` : ''}
-        </span>
-        {evento.lugar && (
-          <span className="inline-flex items-center gap-1">
-            <MIcon name="place" className="text-[16px]" />
-            {evento.lugar}
-          </span>
-        )}
+      {/* Acciones: en móvil ocupan el ancho completo bajo los datos. */}
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-outline-variant/20 pt-3">
+        <Link
+          to={`/admin/eventos/${evento.id}/editar`}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high sm:flex-none"
+        >
+          <MIcon name="edit" className="text-[16px]" />
+          Editar
+        </Link>
+
+        <button
+          type="button"
+          disabled={ocupado}
+          onClick={() => onCambiarEstado(evento, publicado ? 'borrador' : 'publicado')}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50 sm:flex-none"
+        >
+          <MIcon name={publicado ? 'visibility_off' : 'publish'} className="text-[16px]" />
+          {publicado ? 'Pasar a borrador' : 'Publicar'}
+        </button>
+
+        <button
+          type="button"
+          disabled={ocupado}
+          onClick={() => onEliminar(evento)}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-error/30 px-3 py-2 text-sm font-semibold text-error transition-colors hover:enabled:bg-error/10 disabled:opacity-50 sm:flex-none"
+        >
+          <MIcon name="delete" className="text-[16px]" />
+          Eliminar
+        </button>
       </div>
     </li>
   )
@@ -68,20 +128,24 @@ export default function AdminPanel() {
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [ocupado, setOcupado] = useState(false)
+  const [porEliminar, setPorEliminar] = useState(null)
+
+  // Tras cada cambio se recarga la lista: las métricas salen del mismo
+  // cálculo que hace Neon, sin llevar una cuenta paralela en el cliente.
+  const cargar = useCallback(async () => {
+    const respuesta = await fetch('/api/admin/eventos')
+    if (respuesta.status === 401) return cerrarSesion()
+
+    const cuerpo = await respuesta.json().catch(() => ({}))
+    if (!respuesta.ok) throw new Error(cuerpo.error || 'No se pudieron cargar los eventos.')
+    setDatos(cuerpo)
+  }, [cerrarSesion])
 
   useEffect(() => {
     let vigente = true
 
-    fetch('/api/admin/eventos')
-      .then(async (r) => {
-        // La cookie caducó mientras el panel estaba abierto: al limpiar el
-        // usuario, RutaProtegida redirige sola al login.
-        if (r.status === 401) return cerrarSesion()
-
-        const cuerpo = await r.json().catch(() => ({}))
-        if (!r.ok) throw new Error(cuerpo.error || 'No se pudieron cargar los eventos.')
-        if (vigente) setDatos(cuerpo)
-      })
+    cargar()
       .catch((err) => {
         if (vigente) setError(err.message)
       })
@@ -92,7 +156,43 @@ export default function AdminPanel() {
     return () => {
       vigente = false
     }
-  }, [cerrarSesion])
+  }, [cargar])
+
+  const conRecarga = async (peticion) => {
+    setOcupado(true)
+    setError('')
+    try {
+      const respuesta = await peticion()
+      if (respuesta.status === 401) return cerrarSesion()
+
+      if (!respuesta.ok) {
+        const cuerpo = await respuesta.json().catch(() => ({}))
+        throw new Error(cuerpo.error || 'La acción no se pudo completar.')
+      }
+      await cargar()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  const cambiarEstado = (evento, estado) =>
+    conRecarga(() =>
+      fetch(`/api/admin/eventos?id=${encodeURIComponent(evento.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado }),
+      })
+    )
+
+  const confirmarBorrado = async () => {
+    const evento = porEliminar
+    await conRecarga(() =>
+      fetch(`/api/admin/eventos?id=${encodeURIComponent(evento.id)}`, { method: 'DELETE' })
+    )
+    setPorEliminar(null)
+  }
 
   const resumen = datos?.resumen
   const eventos = datos?.eventos ?? []
@@ -124,14 +224,24 @@ export default function AdminPanel() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="mb-4 font-display text-2xl font-bold text-on-surface">Tus eventos</h1>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-display text-2xl font-bold text-on-surface">Tus eventos</h1>
+
+          <Link
+            to="/admin/eventos/nuevo"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-shadow hover:shadow-card-lg"
+          >
+            <MIcon name="add" className="text-[18px]" />
+            Nuevo evento
+          </Link>
+        </div>
 
         {cargando && <p className="text-sm text-on-surface/60">Cargando eventos…</p>}
 
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-4"
+            className="mb-6 flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-4"
           >
             <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
             <p className="text-sm font-medium text-error">{error}</p>
@@ -140,8 +250,9 @@ export default function AdminPanel() {
 
         {resumen && (
           <>
-            <div className="mb-8 grid grid-cols-3 gap-3">
-              <Estadistica icono="event" valor={resumen.total} etiqueta="En total" />
+            <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Estadistica icono="visibility" valor={resumen.publicados} etiqueta="Publicados" />
+              <Estadistica icono="draft" valor={resumen.borradores} etiqueta="Borradores" />
               <Estadistica icono="upcoming" valor={resumen.proximos} etiqueta="Próximos" />
               <Estadistica icono="history" valor={resumen.pasados} etiqueta="Pasados" />
             </div>
@@ -153,20 +264,39 @@ export default function AdminPanel() {
                   Todavía no tienes eventos
                 </p>
                 <p className="max-w-sm text-sm text-on-surface/60">
-                  Aquí aparecerán los eventos que publique {datos?.organizacion?.nombre} en la
+                  Crea el primero: los borradores solo los ves tú, y los publicados aparecen en la
                   agenda del municipio.
                 </p>
               </div>
             ) : (
               <ul className="space-y-3">
                 {eventos.map((evento) => (
-                  <FilaEvento key={evento.id} evento={evento} />
+                  <FilaEvento
+                    key={evento.id}
+                    evento={evento}
+                    ocupado={ocupado}
+                    onCambiarEstado={cambiarEstado}
+                    onEliminar={setPorEliminar}
+                  />
                 ))}
               </ul>
             )}
           </>
         )}
       </main>
+
+      <DialogoConfirmacion
+        abierto={Boolean(porEliminar)}
+        titulo="¿Eliminar este evento?"
+        mensaje={
+          porEliminar
+            ? `«${porEliminar.titulo}» se borrará definitivamente. Esta acción no se puede deshacer.`
+            : ''
+        }
+        ocupado={ocupado}
+        onConfirmar={confirmarBorrado}
+        onCancelar={() => setPorEliminar(null)}
+      />
     </div>
   )
 }
