@@ -12,9 +12,10 @@ function devApiPlugin(env) {
       // Hace visibles las variables del .env al handler (que lee process.env).
       if (env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY
       if (env.ANTHROPIC_MODEL) process.env.ANTHROPIC_MODEL = env.ANTHROPIC_MODEL
+      if (env.DATABASE_URL) process.env.DATABASE_URL = env.DATABASE_URL
 
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url || (!req.url.startsWith('/api/chat') && !req.url.startsWith('/api/bus-times') && !req.url.startsWith('/api/sync-events'))) return next()
+        if (!req.url || (!req.url.startsWith('/api/chat') && !req.url.startsWith('/api/bus-times') && !req.url.startsWith('/api/sync-events') && !req.url.startsWith('/api/health'))) return next()
 
         // Parseo del cuerpo JSON (Vite no lo hace por nosotros).
         const chunks = []
@@ -55,6 +56,8 @@ function devApiPlugin(env) {
             mod = await server.ssrLoadModule('/api/bus-times.js')
           } else if (req.url.startsWith('/api/sync-events')) {
             mod = await server.ssrLoadModule('/api/sync-events.js')
+          } else if (req.url.startsWith('/api/health')) {
+            mod = await server.ssrLoadModule('/api/health.js')
           }
           await mod.default(req, res)
         } catch (err) {
