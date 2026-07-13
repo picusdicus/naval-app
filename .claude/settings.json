@@ -24,7 +24,15 @@
       "Bash(curl -s -X POST http://localhost:5173/api/admin/login -H 'Content-Type: application/json' -d '{ *)",
       "Bash(tail -50 /tmp/dev.log 2>/dev/null | head -30)",
       "Bash(cd \"c:\\\\Users\\\\daniel.molino\\\\Documents\\\\Tutorials\\\\Claude\\\\naval-app\" && npm run dev > /tmp/dev.log 2>&1 & *)",
-      "Bash(curl -s -X GET http://localhost:5173/api/super/codigos -b /tmp/admin_session.txt)"
+      "Bash(curl -s -X GET http://localhost:5173/api/super/codigos -b /tmp/admin_session.txt)",
+      "Bash(curl -s http://localhost:5173/api/admin/_test-edge-db)",
+      "Bash(curl -s http://localhost:5173/api/admin/_test-edge-db.js)",
+      "Bash(curl -s http://localhost:5173/api/admin/test-edge-db)",
+      "Bash(curl -s http://localhost:5173/api/admin/test-edge-via-db)",
+      "Bash(vercel deploy *)",
+      "Bash(vercel build *)",
+      "Bash(vercel pull *)",
+      "Bash(vercel logs *)"
     ]
   }
 }
