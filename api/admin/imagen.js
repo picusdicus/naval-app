@@ -7,6 +7,8 @@
 import { put } from '@vercel/blob'
 import { requerirSesion } from '../_auth.js'
 
+export const config = { runtime: 'edge' }
+
 const TIPOS_PERMITIDOS = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -45,7 +47,7 @@ export default async function handler(req, res) {
 
   let sesion
   try {
-    sesion = requerirSesion(req, res)
+    sesion = await requerirSesion(req, res)
   } catch (error) {
     console.error('Sesión mal configurada:', error.message)
     return res.status(401).json({ error: 'No autenticado' })
@@ -64,7 +66,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'No se recibió ninguna imagen.' })
   }
 
-  const contenido = Buffer.from(String(datos), 'base64')
+  const contenido = new TextEncoder().encode(atob(String(datos)))
   if (contenido.length === 0) {
     return res.status(400).json({ error: 'La imagen no se pudo leer.' })
   }

@@ -2,6 +2,8 @@
 // para decidir si muestra el panel o redirige a /admin/login.
 import { obtenerSesion } from '../_auth.js'
 
+export const config = { runtime: 'edge' }
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido' })
@@ -9,7 +11,7 @@ export default async function handler(req, res) {
 
   let sesion = null
   try {
-    sesion = obtenerSesion(req)
+    sesion = await obtenerSesion(req)
   } catch (error) {
     // Falta ADMIN_JWT_SECRET: sin secreto no hay sesión que valga.
     console.error('Sesión mal configurada:', error.message)

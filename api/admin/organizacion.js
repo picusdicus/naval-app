@@ -4,6 +4,8 @@
 import { obtenerSql } from '../_db.js'
 import { requerirSesion } from '../_auth.js'
 
+export const config = { runtime: 'edge' }
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido' })
@@ -11,7 +13,7 @@ export default async function handler(req, res) {
 
   let sesion
   try {
-    sesion = requerirSesion(req, res)
+    sesion = await requerirSesion(req, res)
   } catch (error) {
     // Falta ADMIN_JWT_SECRET: sin secreto no hay sesión que valga.
     console.error('Sesión mal configurada:', error.message)

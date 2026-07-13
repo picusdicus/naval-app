@@ -3,6 +3,8 @@
 import { obtenerSql } from '../_db.js'
 import { firmarToken, establecerCookieSesion, hashPassword } from '../_auth.js'
 
+export const config = { runtime: 'edge' }
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' })
@@ -62,7 +64,7 @@ export default async function handler(req, res) {
     }
 
     // 3. Crear el usuario con la contraseña hash.
-    const passwordHash = hashPassword(password)
+    const passwordHash = await hashPassword(password)
     const nuevoUsuario = await sql`
       INSERT INTO usuarios (
         email,
@@ -99,7 +101,7 @@ export default async function handler(req, res) {
     `
 
     // 5. Emitir JWT con el rol incluido.
-    const token = firmarToken({
+    const token = await firmarToken({
       email: usuario.email,
       nombre: usuario.nombre,
       rol: usuario.rol,

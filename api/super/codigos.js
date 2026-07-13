@@ -2,12 +2,15 @@
 // POST /api/super/codigos — crea un nuevo código de invitación
 import { requerirSuperAdmin } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
-import { randomBytes } from 'node:crypto'
+
+export const config = { runtime: 'edge' }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function generarCodigo() {
-  return randomBytes(8).toString('hex').toUpperCase()
+  const arr = new Uint8Array(8)
+  crypto.getRandomValues(arr)
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()
 }
 
 function calcularEstado(codigo) {
@@ -18,7 +21,7 @@ function calcularEstado(codigo) {
 }
 
 export default async function handler(req, res) {
-  const sesion = requerirSuperAdmin(req, res)
+  const sesion = await requerirSuperAdmin(req, res)
   if (!sesion) return
 
   try {

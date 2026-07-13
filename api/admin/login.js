@@ -2,6 +2,8 @@
 import { credencialesValidas, credencialesSuperAdminValidas, firmarToken, establecerCookieSesion, usuarioDeEntorno, passwordCorrecto } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
 
+export const config = { runtime: 'edge' }
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' })
@@ -14,14 +16,14 @@ export default async function handler(req, res) {
 
   // Intentar superadmin primero (env vars).
   try {
-    if (credencialesSuperAdminValidas(email, password)) {
+    if (await credencialesSuperAdminValidas(email, password)) {
       const usuario = {
         email: (process.env.SUPER_ADMIN_EMAIL || '').trim().toLowerCase(),
         nombre: process.env.SUPER_ADMIN_NOMBRE || 'Superadmin',
         rol: 'superadmin',
       }
       try {
-        establecerCookieSesion(res, firmarToken(usuario))
+        establecerCookieSesion(res, await firmarToken(usuario))
         return res.status(200).json({ usuario })
       } catch (error) {
         console.error('Login mal configurado:', error.message)
@@ -34,10 +36,10 @@ export default async function handler(req, res) {
 
   // Intentar credenciales de entorno (usuario admin de la app).
   try {
-    if (credencialesValidas(email, password)) {
+    if (await credencialesValidas(email, password)) {
       const usuario = usuarioDeEntorno()
       try {
-        establecerCookieSesion(res, firmarToken(usuario))
+        establecerCookieSesion(res, await firmarToken(usuario))
         return res.status(200).json({ usuario })
       } catch (error) {
         console.error('Login mal configurado:', error.message)
@@ -59,7 +61,7 @@ export default async function handler(req, res) {
 
     if (usuarios.length > 0) {
       const usuario = usuarios[0]
-      if (usuario.password_hash && passwordCorrecto(password, usuario.password_hash)) {
+      if (usuario.password_hash && await passwordCorrecto(password, usuario.password_hash)) {
         // Obtener el slug de la organización.
         let slug = null
         if (usuario.organizacion_id) {
@@ -77,7 +79,7 @@ export default async function handler(req, res) {
         if (slug) payload.organizacionSlug = slug
 
         try {
-          establecerCookieSesion(res, firmarToken(payload))
+          establecerCookieSesion(res, await firmarToken(payload))
           return res.status(200).json({
             usuario: {
               email: usuario.email,

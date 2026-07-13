@@ -56,7 +56,7 @@ function devApiPlugin(env) {
         // Parseo del cuerpo JSON (Vite no lo hace por nosotros).
         const chunks = []
         for await (const c of req) chunks.push(c)
-        const raw = Buffer.concat(chunks).toString('utf8')
+        const raw = chunks.length > 0 ? Buffer.concat(chunks).toString('utf8') : ''
         try {
           req.body = raw ? JSON.parse(raw) : {}
         } catch {
@@ -77,24 +77,8 @@ function devApiPlugin(env) {
 
         try {
           const mod = await server.ssrLoadModule(modulo)
-
-          // Las Edge Functions (`export const config = { runtime: 'edge' }`)
-          // reciben un Request y devuelven un Response, no el par (req, res) de
-          // Node. Adaptamos en ambos sentidos para poder probarlas en local.
-          if (mod.config?.runtime === 'edge') {
-            const peticion = new Request(`http://${req.headers.host}${req.url}`, {
-              method: req.method,
-              headers: req.headers,
-              body: ['GET', 'HEAD'].includes(req.method) || !raw ? undefined : raw,
-            })
-
-            const respuesta = await mod.default(peticion)
-            res.statusCode = respuesta.status
-            respuesta.headers.forEach((valor, clave) => res.setHeader(clave, valor))
-            res.end(Buffer.from(await respuesta.arrayBuffer()))
-            return
-          }
-
+          // Los handlers Edge en Vercel pueden seguir usando (req, res) de Node,
+          // así que no hay conversión especial en local; usamos el mismo adaptador.
           await mod.default(req, res)
         } catch (err) {
           res.statusCode = 500

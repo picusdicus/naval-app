@@ -13,6 +13,8 @@ import { obtenerSql } from '../_db.js'
 import { requerirSesion } from '../_auth.js'
 import { validarEvento, normalizarEvento, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
 
+export const config = { runtime: 'edge' }
+
 const hoyISO = () => new Date().toISOString().slice(0, 10)
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -184,7 +186,7 @@ export default async function handler(req, res) {
 
   let sesion
   try {
-    sesion = requerirSesion(req, res)
+    sesion = await requerirSesion(req, res)
   } catch (error) {
     // Falta ADMIN_JWT_SECRET: sin secreto no hay sesión que valga.
     console.error('Sesión mal configurada:', error.message)

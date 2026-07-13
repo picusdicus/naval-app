@@ -2,8 +2,10 @@
 import { requerirSuperAdmin } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
 
+export const config = { runtime: 'edge' }
+
 export default async function handler(req, res) {
-  const sesion = requerirSuperAdmin(req, res)
+  const sesion = await requerirSuperAdmin(req, res)
   if (!sesion) return
 
   if (req.method !== 'GET') {

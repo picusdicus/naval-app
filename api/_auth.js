@@ -5,20 +5,36 @@
 // (HMAC-SHA256) guardado en una cookie httpOnly, inaccesible desde JavaScript.
 //
 // El guion bajo evita que Vercel lo despliegue como endpoint propio.
-import { createHmac, timingSafeEqual, createHash } from 'node:crypto'
+// Usa WebCrypto (crypto.subtle) para compatibilidad con Edge Runtime.
 
 export const COOKIE_SESION = 'ncv_admin'
 
 /** Duración de la sesión: 8 horas (JWT y cookie caducan a la vez). */
 const DURACION_SESION_S = 8 * 60 * 60
 
-const codificar = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url')
+const codificar = (obj) => {
+  const json = JSON.stringify(obj)
+  const encoded = new TextEncoder().encode(json)
+  const arr = Array.from(encoded)
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
 
 /** Compara dos cadenas en tiempo constante (evita filtrar longitudes). */
-function igualSeguro(a, b) {
-  const ha = createHash('sha256').update(String(a)).digest()
-  const hb = createHash('sha256').update(String(b)).digest()
-  return timingSafeEqual(ha, hb)
+async function igualSeguro(a, b) {
+  const encoder = new TextEncoder()
+  const algo = { name: 'SHA-256' }
+  const ha = await crypto.subtle.digest(algo, encoder.encode(String(a)))
+  const hb = await crypto.subtle.digest(algo, encoder.encode(String(b)))
+
+  const va = new Uint8Array(ha)
+  const vb = new Uint8Array(hb)
+  if (va.length !== vb.length) return false
+
+  let resultado = 0
+  for (let i = 0; i < va.length; i++) {
+    resultado |= va[i] ^ vb[i]
+  }
+  return resultado === 0
 }
 
 function secreto() {
@@ -31,31 +47,46 @@ function secreto() {
   return valor
 }
 
-const firmar = (datos) => createHmac('sha256', secreto()).update(datos).digest('base64url')
+async function firmar(datos) {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secreto()),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const firma = await crypto.subtle.sign('HMAC', key, encoder.encode(datos))
+  const arr = Array.from(new Uint8Array(firma))
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
 
 /** Emite un JWT HS256 con el payload dado. `exp` se añade automáticamente. */
-export function firmarToken(payload) {
+export async function firmarToken(payload) {
   const ahora = Math.floor(Date.now() / 1000)
   const cuerpo = codificar({ ...payload, iat: ahora, exp: ahora + DURACION_SESION_S })
   const cabecera = codificar({ alg: 'HS256', typ: 'JWT' })
-  return `${cabecera}.${cuerpo}.${firmar(`${cabecera}.${cuerpo}`)}`
+  const firma = await firmar(`${cabecera}.${cuerpo}`)
+  return `${cabecera}.${cuerpo}.${firma}`
 }
 
 /** Verifica firma y caducidad. Devuelve el payload o null si no es válido. */
-export function verificarToken(token) {
+export async function verificarToken(token) {
   if (typeof token !== 'string') return null
 
   const partes = token.split('.')
   if (partes.length !== 3) return null
 
   const [cabecera, cuerpo, firma] = partes
-  const esperada = firmar(`${cabecera}.${cuerpo}`)
+  const esperada = await firmar(`${cabecera}.${cuerpo}`)
   if (firma.length !== esperada.length) return null
-  if (!timingSafeEqual(Buffer.from(firma), Buffer.from(esperada))) return null
+
+  if (!(await igualSeguro(firma, esperada))) return null
 
   let payload
   try {
-    payload = JSON.parse(Buffer.from(cuerpo, 'base64url').toString('utf8'))
+    const decoded = atob(cuerpo.replace(/-/g, '+').replace(/_/g, '/'))
+    payload = JSON.parse(decoded)
   } catch {
     return null
   }
@@ -107,15 +138,15 @@ export function borrarCookieSesion(res) {
  * Comprueba las credenciales contra ADMIN_EMAIL / ADMIN_PASSWORD.
  * Siempre ejecuta ambas comparaciones para no revelar cuál falló.
  */
-export function credencialesValidas(email, password) {
+export async function credencialesValidas(email, password) {
   const emailEsperado = process.env.ADMIN_EMAIL
   const passwordEsperada = process.env.ADMIN_PASSWORD
   if (!emailEsperado || !passwordEsperada) {
     throw new Error('Faltan ADMIN_EMAIL y/o ADMIN_PASSWORD en el entorno.')
   }
 
-  const emailOk = igualSeguro(String(email ?? '').trim().toLowerCase(), emailEsperado.trim().toLowerCase())
-  const passwordOk = igualSeguro(String(password ?? ''), passwordEsperada)
+  const emailOk = await igualSeguro(String(email ?? '').trim().toLowerCase(), emailEsperado.trim().toLowerCase())
+  const passwordOk = await igualSeguro(String(password ?? ''), passwordEsperada)
   return emailOk && passwordOk
 }
 
@@ -133,13 +164,13 @@ export function usuarioDeEntorno() {
  * Verifica credenciales de superadmin contra env vars.
  * Devuelve true si ambas coinciden, false si no.
  */
-export function credencialesSuperAdminValidas(email, password) {
+export async function credencialesSuperAdminValidas(email, password) {
   const emailEsperado = process.env.SUPER_ADMIN_EMAIL
   const passwordEsperada = process.env.SUPER_ADMIN_PASSWORD
   if (!emailEsperado || !passwordEsperada) return false
 
-  const emailOk = igualSeguro(String(email ?? '').trim().toLowerCase(), emailEsperado.trim().toLowerCase())
-  const passwordOk = igualSeguro(String(password ?? ''), passwordEsperada)
+  const emailOk = await igualSeguro(String(email ?? '').trim().toLowerCase(), emailEsperado.trim().toLowerCase())
+  const passwordOk = await igualSeguro(String(password ?? ''), passwordEsperada)
   return emailOk && passwordOk
 }
 
@@ -147,30 +178,33 @@ export function credencialesSuperAdminValidas(email, password) {
  * Guarda a usuario hash SHA-256 de una contraseña (sin salt).
  * Retorna el hash en hex.
  */
-export function hashPassword(password) {
-  return createHash('sha256').update(String(password || '')).digest('hex')
+export async function hashPassword(password) {
+  const encoder = new TextEncoder()
+  const hash = await crypto.subtle.digest('SHA-256', encoder.encode(String(password || '')))
+  const arr = Array.from(new Uint8Array(hash))
+  return arr.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 /**
  * Compara una contraseña contra un hash almacenado en tiempo constante.
  */
-export function passwordCorrecto(password, hash) {
-  const calculado = hashPassword(password)
+export async function passwordCorrecto(password, hash) {
+  const calculado = await hashPassword(password)
   if (calculado.length !== hash.length) return false
-  return timingSafeEqual(Buffer.from(calculado), Buffer.from(hash))
+  return await igualSeguro(calculado, hash)
 }
 
 /** Devuelve el payload de la sesión activa, o null si no hay cookie válida. */
-export function obtenerSesion(req) {
-  return verificarToken(leerCookie(req, COOKIE_SESION))
+export async function obtenerSesion(req) {
+  return await verificarToken(leerCookie(req, COOKIE_SESION))
 }
 
 /**
  * Guardia para endpoints privados: si no hay sesión responde 401 y devuelve
  * null; si la hay, devuelve el payload. El llamante debe abortar si es null.
  */
-export function requerirSesion(req, res) {
-  const sesion = obtenerSesion(req)
+export async function requerirSesion(req, res) {
+  const sesion = await obtenerSesion(req)
   if (!sesion) {
     res.status(401).json({ error: 'No autenticado' })
     return null
@@ -182,8 +216,8 @@ export function requerirSesion(req, res) {
  * Guardia para endpoints de superadmin: si no hay sesión o el rol no es
  * superadmin, responde 403 y devuelve null. El llamante debe abortar si es null.
  */
-export function requerirSuperAdmin(req, res) {
-  const sesion = obtenerSesion(req)
+export async function requerirSuperAdmin(req, res) {
+  const sesion = await obtenerSesion(req)
   if (!sesion) {
     res.status(401).json({ error: 'No autenticado' })
     return null
