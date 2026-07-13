@@ -1,29 +1,37 @@
+// GET /api/bus-times?codStop=… — tiempos de espera en tiempo real del CRTM.
+// Edge Function: solo usa fetch/Request/Response, así que no consume una de las
+// 12 Serverless Functions del plan Hobby.
+export const config = { runtime: 'edge' }
+
 const CRTM_API_BASE = 'https://www.crtm.es/widgets/api/'
 
-export default async function handler(req, res) {
+const json = (datos, status = 200) =>
+  new Response(JSON.stringify(datos), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+export default async function handler(req) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { codStop } = req.query
+  const codStop = new URL(req.url).searchParams.get('codStop')
 
   if (!codStop) {
-    return res.status(400).json({ error: 'codStop is required' })
+    return json({ error: 'codStop is required' }, 400)
   }
 
   try {
-    const response = await fetch(
+    const respuesta = await fetch(
       `${CRTM_API_BASE}GetStopsTimes.php?codStop=${encodeURIComponent(codStop)}`
     )
 
-    const data = await response.json()
-
-    // Always return 200 OK with the CRTM response
-    // The frontend will handle parsing errors gracefully
-    res.status(200).json(data)
+    // Siempre 200 con la respuesta del CRTM: el frontend gestiona los errores
+    // de parseo sin romper la página.
+    return json(await respuesta.json())
   } catch (error) {
     console.error('Error fetching from CRTM:', error)
-    // Return 200 with error indicator so frontend can handle gracefully
-    res.status(200).json({ error: 'Failed to fetch real-time data' })
+    return json({ error: 'Failed to fetch real-time data' })
   }
 }

@@ -76,6 +76,22 @@ async function umamiGet(apiUrl, path, token) {
   return res.json();
 }
 
+// v3 returns flat totals ({ pageviews: 12, ... }) plus a `comparison` block,
+// while the panel (and v2) expect { pageviews: { value, prev } }. Normalise so
+// UmamiStats.jsx keeps working untouched.
+function normaliseSummary(stats) {
+  const metricas = ["pageviews", "visitors", "visits", "bounces", "totaltime"];
+  const salida = {};
+  for (const m of metricas) {
+    const bruto = stats?.[m];
+    salida[m] =
+      bruto && typeof bruto === "object"
+        ? bruto // already { value, prev } — an older Umami
+        : { value: bruto ?? 0, prev: stats?.comparison?.[m] ?? 0 };
+  }
+  return salida;
+}
+
 // Every call the panel needs, in parallel
 function fetchAll(apiUrl, websiteId, qs, token) {
   const base = `/api/websites/${websiteId}`;
@@ -84,8 +100,8 @@ function fetchAll(apiUrl, websiteId, qs, token) {
     umamiGet(apiUrl, `${base}/stats${qs}`, token),
     // Daily timeseries for the sparkline
     umamiGet(apiUrl, `${base}/pageviews${qs}&unit=day&timezone=Europe%2FMadrid`, token),
-    // Top pages
-    umamiGet(apiUrl, `${base}/metrics${qs}&type=url&limit=10`, token),
+    // Top pages — v3 renamed this metric from `url` to `path`; `url` now 400s.
+    umamiGet(apiUrl, `${base}/metrics${qs}&type=path&limit=10`, token),
     // Device types (desktop / mobile / tablet)
     umamiGet(apiUrl, `${base}/metrics${qs}&type=device&limit=10`, token),
     // Top browsers
@@ -138,11 +154,11 @@ export default async function handler(req) {
       results = await fetchAll(apiUrl, UMAMI_WEBSITE_ID, qs, token);
     }
 
-    const [summary, pageviews, pages, devices, browsers, countries, events] = results;
+    const [stats, pageviews, pages, devices, browsers, countries, events] = results;
 
     const payload = {
       period,
-      summary,        // { pageviews, visitors, visits, bounces, totaltime }
+      summary: normaliseSummary(stats), // { pageviews: {value, prev}, visitors: {…}, … }
       pageviews,      // { pageviews: [{x, y}], sessions: [{x, y}] }
       pages,          // [{ x: "/ruta", y: count }]
       devices,        // [{ x: "mobile", y: count }]

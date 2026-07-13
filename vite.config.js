@@ -20,6 +20,10 @@ const VARIABLES_API = [
   'BLOB_READ_WRITE_TOKEN',
   'BLOB_STORE_ID',
   'VERCEL_OIDC_TOKEN',
+  'UMAMI_API_URL',
+  'UMAMI_USERNAME',
+  'UMAMI_PASSWORD',
+  'UMAMI_WEBSITE_ID',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni
@@ -73,6 +77,24 @@ function devApiPlugin(env) {
 
         try {
           const mod = await server.ssrLoadModule(modulo)
+
+          // Las Edge Functions (`export const config = { runtime: 'edge' }`)
+          // reciben un Request y devuelven un Response, no el par (req, res) de
+          // Node. Adaptamos en ambos sentidos para poder probarlas en local.
+          if (mod.config?.runtime === 'edge') {
+            const peticion = new Request(`http://${req.headers.host}${req.url}`, {
+              method: req.method,
+              headers: req.headers,
+              body: ['GET', 'HEAD'].includes(req.method) || !raw ? undefined : raw,
+            })
+
+            const respuesta = await mod.default(peticion)
+            res.statusCode = respuesta.status
+            respuesta.headers.forEach((valor, clave) => res.setHeader(clave, valor))
+            res.end(Buffer.from(await respuesta.arrayBuffer()))
+            return
+          }
+
           await mod.default(req, res)
         } catch (err) {
           res.statusCode = 500

@@ -1,10 +1,20 @@
-// GET /api/health — comprueba que la función serverless alcanza Neon Postgres
-// y que el esquema inicial está presente. No expone credenciales.
+// GET /api/health — comprueba que la función alcanza Neon Postgres y que el
+// esquema inicial está presente. No expone credenciales.
+//
+// Edge Function: el driver HTTP de Neon va sobre fetch (ver api/eventos.js).
+export const config = { runtime: 'edge' }
+
 import { obtenerSql, TABLAS } from './_db.js'
 
-export default async function handler(req, res) {
+const json = (datos, status = 200) =>
+  new Response(JSON.stringify(datos), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+export default async function handler(req) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
   const inicio = Date.now()
@@ -22,22 +32,28 @@ export default async function handler(req, res) {
     const encontradas = filas.map((f) => f.tabla)
     const faltan = TABLAS.filter((t) => !encontradas.includes(t))
 
-    return res.status(faltan.length ? 503 : 200).json({
-      ok: faltan.length === 0,
-      baseDatos: 'conectada',
-      hora: ahora,
-      esquema: faltan.length ? 'incompleto' : 'ok',
-      tablas: encontradas.sort(),
-      faltan,
-      latenciaMs: Date.now() - inicio,
-    })
+    return json(
+      {
+        ok: faltan.length === 0,
+        baseDatos: 'conectada',
+        hora: ahora,
+        esquema: faltan.length ? 'incompleto' : 'ok',
+        tablas: encontradas.sort(),
+        faltan,
+        latenciaMs: Date.now() - inicio,
+      },
+      faltan.length ? 503 : 200
+    )
   } catch (error) {
     console.error('Health check falló:', error)
-    return res.status(503).json({
-      ok: false,
-      baseDatos: 'desconectada',
-      error: error.message,
-      latenciaMs: Date.now() - inicio,
-    })
+    return json(
+      {
+        ok: false,
+        baseDatos: 'desconectada',
+        error: error.message,
+        latenciaMs: Date.now() - inicio,
+      },
+      503
+    )
   }
 }

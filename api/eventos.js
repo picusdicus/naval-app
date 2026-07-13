@@ -4,11 +4,19 @@
 //
 // Se devuelven con la misma forma que los eventos de src/data/eventos*.json,
 // para que el frontend pueda mezclarlos sin adaptadores.
+//
+// Edge Function: el driver HTTP de Neon (`neon()`) va sobre fetch, así que no
+// hace falta el runtime de Node y no consume una de las 12 Serverless Functions.
+export const config = { runtime: 'edge' }
+
 import { obtenerSql } from './_db.js'
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método no permitido' })
+    return new Response(JSON.stringify({ error: 'Método no permitido' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -46,14 +54,22 @@ export default async function handler(req, res) {
         : null,
     }))
 
-    // Cache corta en el CDN: la agenda no necesita ser instantánea, pero un
-    // evento recién publicado debe aparecer en menos de un minuto.
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
-    return res.status(200).json({ eventos })
+    return new Response(JSON.stringify({ eventos }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        // Cache corta en el CDN: la agenda no necesita ser instantánea, pero un
+        // evento recién publicado debe aparecer en menos de un minuto.
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    })
   } catch (error) {
     // La agenda pública debe seguir mostrando los eventos del JSON aunque la
     // base de datos no responda.
     console.error('No se pudieron leer los eventos publicados:', error)
-    return res.status(200).json({ eventos: [], error: 'base-de-datos-no-disponible' })
+    return new Response(
+      JSON.stringify({ eventos: [], error: 'base-de-datos-no-disponible' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
   }
 }
