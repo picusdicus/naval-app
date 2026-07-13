@@ -1,39 +1,41 @@
 // GET /api/super/organizaciones — lista todas las organizaciones
 // POST /api/super/organizaciones — crea una nueva organización
-// PUT /api/super/organizaciones/:id — actualiza una organización
-import { requerirSuperAdmin } from '../_auth.js'
+// PUT /api/super/organizaciones?id=… — actualiza una organización
+// PATCH /api/super/organizaciones?id=… — activa/desactiva una organización
+import { requerirSuperAdminEdge } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
+import { json, leerJson, queryDe } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export default async function handler(req, res) {
-  const sesion = await requerirSuperAdmin(req, res)
-  if (!sesion) return
+export default async function handler(req) {
+  const sesion = await requerirSuperAdminEdge(req)
+  if (sesion instanceof Response) return sesion
 
   try {
     if (req.method === 'GET') {
-      return manejarGet(res)
+      return await manejarGet()
     }
     if (req.method === 'POST') {
-      return manejarPost(req, res)
+      return await manejarPost(req)
     }
     if (req.method === 'PUT') {
-      return manejarPut(req, res)
+      return await manejarPut(req)
     }
     if (req.method === 'PATCH') {
-      return manejarPatch(req, res)
+      return await manejarPatch(req)
     }
 
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   } catch (error) {
     console.error('Error en /api/super/organizaciones:', error)
-    return res.status(503).json({ error: 'No se pudo conectar con la base de datos.' })
+    return json({ error: 'No se pudo conectar con la base de datos.' }, 503)
   }
 }
 
-async function manejarGet(res) {
+async function manejarGet() {
   const sql = obtenerSql()
   const orgs = await sql`
     SELECT
@@ -77,14 +79,14 @@ async function manejarGet(res) {
     })
   )
 
-  return res.status(200).json({ organizaciones: conDatos })
+  return json({ organizaciones: conDatos })
 }
 
-async function manejarPost(req, res) {
-  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto } = req.body || {}
+async function manejarPost(req) {
+  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto } = await leerJson(req)
 
   if (!nombre || !slug) {
-    return res.status(400).json({ error: 'Nombre y slug son requeridos.' })
+    return json({ error: 'Nombre y slug son requeridos.' }, 400)
   }
 
   const sql = obtenerSql()
@@ -96,11 +98,11 @@ async function manejarPost(req, res) {
   `
 
   if (nueva.length === 0) {
-    return res.status(400).json({ error: 'No se pudo crear la organización.' })
+    return json({ error: 'No se pudo crear la organización.' }, 400)
   }
 
   const org = nueva[0]
-  return res.status(201).json({
+  return json({
     organizacion: {
       id: org.id,
       nombre: org.nombre,
@@ -117,19 +119,43 @@ async function manejarPost(req, res) {
       eventosCount: 0,
       codigosActivosCount: 0,
     },
-  })
+  }, 201)
 }
 
-async function manejarPut(req, res) {
-  const { id } = req.query
-  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto } = req.body || {}
+/** Perfil completo de una organización con sus contadores, para PUT/PATCH. */
+async function organizacionConContadores(sql, org) {
+  const usuarios = await sql`SELECT COUNT(*) as total FROM usuarios WHERE organizacion_id = ${org.id}`
+  const eventos = await sql`SELECT COUNT(*) as total FROM eventos_usuario WHERE organizacion_id = ${org.id}`
+  const codigos = await sql`SELECT COUNT(*) as total FROM codigos_invitacion WHERE organizacion_id = ${org.id} AND activo = true`
+
+  return {
+    id: org.id,
+    nombre: org.nombre,
+    slug: org.slug,
+    descripcion: org.descripcion,
+    emailContacto: org.email_contacto,
+    telefono: org.telefono,
+    web: org.web,
+    categoriaDefecto: org.categoria_defecto,
+    lugarDefecto: org.lugar_defecto,
+    activa: org.activa,
+    creadaEn: org.creada_en,
+    usuariosCount: usuarios[0].total,
+    eventosCount: eventos[0].total,
+    codigosActivosCount: codigos[0].total,
+  }
+}
+
+async function manejarPut(req) {
+  const { id } = queryDe(req)
+  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto } = await leerJson(req)
 
   if (!id || !UUID_REGEX.test(id)) {
-    return res.status(400).json({ error: 'ID inválido.' })
+    return json({ error: 'ID inválido.' }, 400)
   }
 
   if (!nombre || !slug) {
-    return res.status(400).json({ error: 'Nombre y slug son requeridos.' })
+    return json({ error: 'Nombre y slug son requeridos.' }, 400)
   }
 
   const sql = obtenerSql()
@@ -149,44 +175,22 @@ async function manejarPut(req, res) {
   `
 
   if (actualizada.length === 0) {
-    return res.status(404).json({ error: 'Organización no encontrada.' })
+    return json({ error: 'Organización no encontrada.' }, 404)
   }
 
-  const org = actualizada[0]
-  const usuarios = await sql`SELECT COUNT(*) as total FROM usuarios WHERE organizacion_id = ${org.id}`
-  const eventos = await sql`SELECT COUNT(*) as total FROM eventos_usuario WHERE organizacion_id = ${org.id}`
-  const codigos = await sql`SELECT COUNT(*) as total FROM codigos_invitacion WHERE organizacion_id = ${org.id} AND activo = true`
-
-  return res.status(200).json({
-    organizacion: {
-      id: org.id,
-      nombre: org.nombre,
-      slug: org.slug,
-      descripcion: org.descripcion,
-      emailContacto: org.email_contacto,
-      telefono: org.telefono,
-      web: org.web,
-      categoriaDefecto: org.categoria_defecto,
-      lugarDefecto: org.lugar_defecto,
-      activa: org.activa,
-      creadaEn: org.creada_en,
-      usuariosCount: usuarios[0].total,
-      eventosCount: eventos[0].total,
-      codigosActivosCount: codigos[0].total,
-    },
-  })
+  return json({ organizacion: await organizacionConContadores(sql, actualizada[0]) })
 }
 
-async function manejarPatch(req, res) {
-  const { id } = req.query
-  const { activa } = req.body || {}
+async function manejarPatch(req) {
+  const { id } = queryDe(req)
+  const { activa } = await leerJson(req)
 
   if (!id || !UUID_REGEX.test(id)) {
-    return res.status(400).json({ error: 'ID inválido.' })
+    return json({ error: 'ID inválido.' }, 400)
   }
 
   if (typeof activa !== 'boolean') {
-    return res.status(400).json({ error: 'El campo activa debe ser un booleano.' })
+    return json({ error: 'El campo activa debe ser un booleano.' }, 400)
   }
 
   const sql = obtenerSql()
@@ -199,30 +203,8 @@ async function manejarPatch(req, res) {
   `
 
   if (actualizada.length === 0) {
-    return res.status(404).json({ error: 'Organización no encontrada.' })
+    return json({ error: 'Organización no encontrada.' }, 404)
   }
 
-  const org = actualizada[0]
-  const usuarios = await sql`SELECT COUNT(*) as total FROM usuarios WHERE organizacion_id = ${org.id}`
-  const eventos = await sql`SELECT COUNT(*) as total FROM eventos_usuario WHERE organizacion_id = ${org.id}`
-  const codigos = await sql`SELECT COUNT(*) as total FROM codigos_invitacion WHERE organizacion_id = ${org.id} AND activo = true`
-
-  return res.status(200).json({
-    organizacion: {
-      id: org.id,
-      nombre: org.nombre,
-      slug: org.slug,
-      descripcion: org.descripcion,
-      emailContacto: org.email_contacto,
-      telefono: org.telefono,
-      web: org.web,
-      categoriaDefecto: org.categoria_defecto,
-      lugarDefecto: org.lugar_defecto,
-      activa: org.activa,
-      creadaEn: org.creada_en,
-      usuariosCount: usuarios[0].total,
-      eventosCount: eventos[0].total,
-      codigosActivosCount: codigos[0].total,
-    },
-  })
+  return json({ organizacion: await organizacionConContadores(sql, actualizada[0]) })
 }

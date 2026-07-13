@@ -1,12 +1,13 @@
 // GET /api/admin/sesion — ¿hay sesión válida? Lo usa el frontend al arrancar
 // para decidir si muestra el panel o redirige a /admin/login.
 import { obtenerSesion } from '../_auth.js'
+import { json } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   }
 
   let sesion = null
@@ -17,10 +18,10 @@ export default async function handler(req, res) {
     console.error('Sesión mal configurada:', error.message)
   }
 
-  if (!sesion) return res.status(401).json({ autenticado: false })
+  if (!sesion) return json({ autenticado: false }, 401)
 
   const { email, nombre, rol, organizacionSlug } = sesion
-  return res.status(200).json({
+  return json({
     autenticado: true,
     usuario: { email, nombre, rol, organizacionSlug },
   })

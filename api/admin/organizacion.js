@@ -2,24 +2,18 @@
 // autenticado. El formulario de eventos lo usa para mostrar la categoría y el
 // lugar con los que se publicarán, que el gestor no elige.
 import { obtenerSql } from '../_db.js'
-import { requerirSesion } from '../_auth.js'
+import { requerirSesionEdge } from '../_auth.js'
+import { json } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   }
 
-  let sesion
-  try {
-    sesion = await requerirSesion(req, res)
-  } catch (error) {
-    // Falta ADMIN_JWT_SECRET: sin secreto no hay sesión que valga.
-    console.error('Sesión mal configurada:', error.message)
-    return res.status(401).json({ error: 'No autenticado' })
-  }
-  if (!sesion) return
+  const sesion = await requerirSesionEdge(req)
+  if (sesion instanceof Response) return sesion
 
   try {
     const sql = obtenerSql()
@@ -29,10 +23,10 @@ export default async function handler(req, res) {
       WHERE slug = ${sesion.organizacionSlug}
     `
     if (!organizacion) {
-      return res.status(404).json({ error: 'La organización de tu cuenta ya no existe.' })
+      return json({ error: 'La organización de tu cuenta ya no existe.' }, 404)
     }
 
-    return res.status(200).json({
+    return json({
       organizacion: {
         nombre: organizacion.nombre,
         slug: organizacion.slug,
@@ -42,6 +36,6 @@ export default async function handler(req, res) {
     })
   } catch (error) {
     console.error('Fallo en /api/admin/organizacion:', error)
-    return res.status(503).json({ error: 'No se pudo conectar con la base de datos.' })
+    return json({ error: 'No se pudo conectar con la base de datos.' }, 503)
   }
 }

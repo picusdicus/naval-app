@@ -1,15 +1,16 @@
 // GET /api/super/analytics — obtiene métricas globales anónimas de la app
-import { requerirSuperAdmin } from '../_auth.js'
+import { requerirSuperAdminEdge } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
+import { json } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
-export default async function handler(req, res) {
-  const sesion = await requerirSuperAdmin(req, res)
-  if (!sesion) return
+export default async function handler(req) {
+  const sesion = await requerirSuperAdminEdge(req)
+  if (sesion instanceof Response) return sesion
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   }
 
   try {
@@ -94,7 +95,7 @@ export default async function handler(req, res) {
       WHERE tipo_evento = 'visita' AND creado_en > NOW() - INTERVAL '30 days'
     `
 
-    return res.status(200).json({
+    return json({
       analytics: {
         visitasPorSeccion: visitasPorSeccion.map((v) => ({
           seccion: v.seccion,
@@ -129,6 +130,6 @@ export default async function handler(req, res) {
     })
   } catch (error) {
     console.error('Error en /api/super/analytics:', error)
-    return res.status(503).json({ error: 'No se pudo conectar con la base de datos.' })
+    return json({ error: 'No se pudo conectar con la base de datos.' }, 503)
   }
 }

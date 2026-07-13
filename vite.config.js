@@ -53,32 +53,59 @@ function devApiPlugin(env) {
         const modulo = `/api/${coincidencia[1]}.js`
         if (!existsSync(resolve(process.cwd(), `.${modulo}`))) return next()
 
-        // Parseo del cuerpo JSON (Vite no lo hace por nosotros).
+        // Cuerpo crudo (Vite no lo lee por nosotros).
         const chunks = []
         for await (const c of req) chunks.push(c)
         const raw = chunks.length > 0 ? Buffer.concat(chunks).toString('utf8') : ''
-        try {
-          req.body = raw ? JSON.parse(raw) : {}
-        } catch {
-          req.body = {}
-        }
-
-        req.query = Object.fromEntries(new URLSearchParams(queryString))
-
-        // Adaptadores estilo Express/Vercel sobre la respuesta Node cruda.
-        res.status = (code) => {
-          res.statusCode = code
-          return res
-        }
-        res.json = (obj) => {
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify(obj))
-        }
 
         try {
           const mod = await server.ssrLoadModule(modulo)
-          // Los handlers Edge en Vercel pueden seguir usando (req, res) de Node,
-          // así que no hay conversión especial en local; usamos el mismo adaptador.
+
+          // Las Edge Functions (config.runtime === 'edge') reciben una Request
+          // de la Web API y devuelven una Response — igual que en Vercel. Si el
+          // handler usara (req, res) de Node aquí fallaría, exactamente como
+          // fallaría desplegado: el dev server no debe enmascarar la diferencia.
+          if (mod.config?.runtime === 'edge') {
+            const url = `http://${req.headers.host ?? 'localhost'}${req.url}`
+            const cabeceras = new Headers()
+            for (const [clave, valor] of Object.entries(req.headers)) {
+              if (typeof valor === 'string') cabeceras.set(clave, valor)
+              else if (Array.isArray(valor)) cabeceras.set(clave, valor.join(', '))
+            }
+            const peticion = new Request(url, {
+              method: req.method,
+              headers: cabeceras,
+              body: req.method === 'GET' || req.method === 'HEAD' ? undefined : raw,
+            })
+
+            const respuesta = await mod.default(peticion)
+
+            res.statusCode = respuesta.status
+            respuesta.headers.forEach((valor, clave) => {
+              if (clave !== 'set-cookie') res.setHeader(clave, valor)
+            })
+            // Set-Cookie puede venir repetida; Headers la aplana salvo con getSetCookie.
+            const cookies = respuesta.headers.getSetCookie?.() ?? []
+            if (cookies.length > 0) res.setHeader('Set-Cookie', cookies)
+            res.end(Buffer.from(await respuesta.arrayBuffer()))
+            return
+          }
+
+          // Funciones Serverless (Node): adaptadores estilo Express/Vercel.
+          try {
+            req.body = raw ? JSON.parse(raw) : {}
+          } catch {
+            req.body = {}
+          }
+          req.query = Object.fromEntries(new URLSearchParams(queryString))
+          res.status = (code) => {
+            res.statusCode = code
+            return res
+          }
+          res.json = (obj) => {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify(obj))
+          }
           await mod.default(req, res)
         } catch (err) {
           res.statusCode = 500

@@ -1,13 +1,13 @@
 // POST /api/admin/logout — caduca la cookie de sesión.
-import { borrarCookieSesion } from '../_auth.js'
+import { cookieDeBorrado } from '../_auth.js'
+import { json } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   }
 
-  borrarCookieSesion(res)
-  return res.status(200).json({ ok: true })
+  return json({ ok: true }, 200, { 'Set-Cookie': cookieDeBorrado() })
 }

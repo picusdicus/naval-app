@@ -1,20 +1,21 @@
 // POST /api/admin/registro — { codigo, email, nombre, password }
 // Registra una organización validando su código de invitación.
 import { obtenerSql } from '../_db.js'
-import { firmarToken, establecerCookieSesion, hashPassword } from '../_auth.js'
+import { firmarToken, cookieDeSesion, hashPassword } from '../_auth.js'
+import { json, leerJson } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   }
 
-  const { codigo, email, nombre, password } = req.body || {}
+  const { codigo, email, nombre, password } = await leerJson(req)
   if (!codigo || !email || !nombre || !password) {
-    return res.status(400).json({
+    return json({
       error: 'Introduce código de invitación, email, nombre y contraseña.'
-    })
+    }, 400)
   }
 
   try {
@@ -37,21 +38,21 @@ export default async function handler(req, res) {
     `
 
     if (codigoRow.length === 0) {
-      return res.status(404).json({ error: 'Código de invitación no válido.' })
+      return json({ error: 'Código de invitación no válido.' }, 404)
     }
 
     const codigo_inv = codigoRow[0]
 
     if (!codigo_inv.activo) {
-      return res.status(403).json({ error: 'Este código ha sido desactivado.' })
+      return json({ error: 'Este código ha sido desactivado.' }, 403)
     }
 
     if (codigo_inv.expira_en && new Date(codigo_inv.expira_en) < new Date()) {
-      return res.status(403).json({ error: 'Este código ha caducado.' })
+      return json({ error: 'Este código ha caducado.' }, 403)
     }
 
     if (codigo_inv.usos_actuales >= codigo_inv.usos_maximos) {
-      return res.status(403).json({ error: 'Este código ha alcanzado su límite de usos.' })
+      return json({ error: 'Este código ha alcanzado su límite de usos.' }, 403)
     }
 
     // 2. Comprobar si el email ya existe.
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
     `
 
     if (existing.length > 0) {
-      return res.status(409).json({ error: 'Este email ya está registrado.' })
+      return json({ error: 'Este email ya está registrado.' }, 409)
     }
 
     // 3. Crear el usuario con la contraseña hash.
@@ -88,7 +89,7 @@ export default async function handler(req, res) {
     `
 
     if (nuevoUsuario.length === 0) {
-      return res.status(500).json({ error: 'No se pudo crear el usuario.' })
+      return json({ error: 'No se pudo crear el usuario.' }, 500)
     }
 
     const usuario = nuevoUsuario[0]
@@ -108,18 +109,16 @@ export default async function handler(req, res) {
       organizacionSlug: codigo_inv.slug,
     })
 
-    establecerCookieSesion(res, token)
-
-    return res.status(201).json({
+    return json({
       usuario: {
         email: usuario.email,
         nombre: usuario.nombre,
         rol: usuario.rol,
         organizacionSlug: codigo_inv.slug,
       },
-    })
+    }, 201, { 'Set-Cookie': cookieDeSesion(token) })
   } catch (error) {
     console.error('Error en registro:', error)
-    return res.status(500).json({ error: 'Error en el servidor durante el registro.' })
+    return json({ error: 'Error en el servidor durante el registro.' }, 500)
   }
 }

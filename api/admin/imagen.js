@@ -7,7 +7,8 @@
 import { put } from '@vercel/blob'
 import { requerirSesion } from '../_auth.js'
 
-export const config = { runtime: 'edge' }
+// Serverless (Node) a propósito: @vercel/blob arrastra undici, que necesita
+// builtins de Node que el Edge Runtime no tiene — su build de Edge falla.
 
 const TIPOS_PERMITIDOS = {
   'image/jpeg': 'jpg',

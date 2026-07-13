@@ -1,7 +1,8 @@
 // GET /api/super/codigos — lista todos los códigos de invitación
 // POST /api/super/codigos — crea un nuevo código de invitación
-import { requerirSuperAdmin } from '../_auth.js'
+import { requerirSuperAdminEdge } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
+import { json, leerJson, queryDe } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
@@ -20,27 +21,27 @@ function calcularEstado(codigo) {
   return 'activo'
 }
 
-export default async function handler(req, res) {
-  const sesion = await requerirSuperAdmin(req, res)
-  if (!sesion) return
+export default async function handler(req) {
+  const sesion = await requerirSuperAdminEdge(req)
+  if (sesion instanceof Response) return sesion
 
   try {
     if (req.method === 'GET') {
-      return manejarGet(req, res)
+      return await manejarGet(req)
     }
     if (req.method === 'POST') {
-      return manejarPost(req, res)
+      return await manejarPost(req)
     }
 
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   } catch (error) {
     console.error('Error en /api/super/codigos:', error)
-    return res.status(503).json({ error: 'No se pudo conectar con la base de datos.' })
+    return json({ error: 'No se pudo conectar con la base de datos.' }, 503)
   }
 }
 
-async function manejarGet(req, res) {
-  const { organizacion_id } = req.query
+async function manejarGet(req) {
+  const { organizacion_id } = queryDe(req)
 
   const sql = obtenerSql()
 
@@ -91,18 +92,18 @@ async function manejarGet(req, res) {
     creadoEn: c.creado_en,
   }))
 
-  return res.status(200).json({ codigos: conDatos })
+  return json({ codigos: conDatos })
 }
 
-async function manejarPost(req, res) {
-  const { organizacionId, rolConcedido, usosMaximos, expiracion } = req.body || {}
+async function manejarPost(req) {
+  const { organizacionId, rolConcedido, usosMaximos, expiracion } = await leerJson(req)
 
   if (!organizacionId || !UUID_REGEX.test(organizacionId)) {
-    return res.status(400).json({ error: 'organizacionId inválido.' })
+    return json({ error: 'organizacionId inválido.' }, 400)
   }
 
   if (!rolConcedido || !['admin', 'editor'].includes(rolConcedido)) {
-    return res.status(400).json({ error: 'rolConcedido debe ser "admin" o "editor".' })
+    return json({ error: 'rolConcedido debe ser "admin" o "editor".' }, 400)
   }
 
   const maxUsos = Math.max(1, usosMaximos || 1)
@@ -112,7 +113,7 @@ async function manejarPost(req, res) {
   // Verificar que la organización existe
   const orgs = await sql`SELECT id FROM organizaciones WHERE id = ${organizacionId}`
   if (orgs.length === 0) {
-    return res.status(404).json({ error: 'Organización no encontrada.' })
+    return json({ error: 'Organización no encontrada.' }, 404)
   }
 
   const codigo = generarCodigo()
@@ -125,11 +126,11 @@ async function manejarPost(req, res) {
   `
 
   if (nuevo.length === 0) {
-    return res.status(400).json({ error: 'No se pudo crear el código de invitación.' })
+    return json({ error: 'No se pudo crear el código de invitación.' }, 400)
   }
 
   const c = nuevo[0]
-  return res.status(201).json({
+  return json({
     codigo: {
       id: c.id,
       codigo: c.codigo,
@@ -142,5 +143,5 @@ async function manejarPost(req, res) {
       estado: calcularEstado(c),
       creadoEn: c.creado_en,
     },
-  })
+  }, 201)
 }

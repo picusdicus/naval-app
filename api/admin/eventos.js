@@ -10,7 +10,8 @@
 // consultas filtran por `organizacion_id`: nadie puede leer, editar ni borrar
 // eventos de otra organización cambiando un parámetro.
 import { obtenerSql } from '../_db.js'
-import { requerirSesion } from '../_auth.js'
+import { requerirSesionEdge } from '../_auth.js'
+import { json, leerJson } from '../_http.js'
 import { validarEvento, normalizarEvento, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
 
 export const config = { runtime: 'edge' }
@@ -59,7 +60,7 @@ function conPerfilDeLaOrganizacion(cuerpo, organizacion) {
   }
 }
 
-async function listar(sql, organizacion, res) {
+async function listar(sql, organizacion) {
   const filas = await sql`
     SELECT id, titulo, descripcion, categoria, lugar,
            to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha, hora, hora_fin,
@@ -72,7 +73,7 @@ async function listar(sql, organizacion, res) {
   const hoy = hoyISO()
   const eventos = filas.map(aEvento)
 
-  return res.status(200).json({
+  return json({
     organizacion: { nombre: organizacion.nombre, slug: organizacion.slug },
     eventos,
     resumen: {
@@ -85,7 +86,7 @@ async function listar(sql, organizacion, res) {
   })
 }
 
-async function obtenerUno(sql, organizacion, id, res) {
+async function obtenerUno(sql, organizacion, id) {
   const [fila] = await sql`
     SELECT id, titulo, descripcion, categoria, lugar,
            to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha, hora, hora_fin,
@@ -93,17 +94,17 @@ async function obtenerUno(sql, organizacion, id, res) {
     FROM eventos_usuario
     WHERE id = ${id} AND organizacion_id = ${organizacion.id}
   `
-  if (!fila) return res.status(404).json({ error: 'Ese evento no existe.' })
-  return res.status(200).json({ evento: aEvento(fila) })
+  if (!fila) return json({ error: 'Ese evento no existe.' }, 404)
+  return json({ evento: aEvento(fila) })
 }
 
-async function crear(sql, organizacion, req, res) {
-  const cuerpo = conPerfilDeLaOrganizacion(req.body || {}, organizacion)
+async function crear(sql, organizacion, cuerpoRecibido) {
+  const cuerpo = conPerfilDeLaOrganizacion(cuerpoRecibido, organizacion)
 
   // No nos fiamos del cliente: se revalida con las mismas reglas del formulario.
   const errores = validarEvento(cuerpo)
   if (Object.keys(errores).length > 0) {
-    return res.status(422).json({ error: 'Revisa los campos del formulario.', errores })
+    return json({ error: 'Revisa los campos del formulario.', errores }, 422)
   }
 
   const e = normalizarEvento(cuerpo)
@@ -121,15 +122,15 @@ async function crear(sql, organizacion, req, res) {
     RETURNING id, titulo, estado
   `
 
-  return res.status(201).json({ evento: creado })
+  return json({ evento: creado }, 201)
 }
 
-async function actualizar(sql, organizacion, id, req, res) {
-  const cuerpo = conPerfilDeLaOrganizacion(req.body || {}, organizacion)
+async function actualizar(sql, organizacion, id, cuerpoRecibido) {
+  const cuerpo = conPerfilDeLaOrganizacion(cuerpoRecibido, organizacion)
 
   const errores = validarEvento(cuerpo)
   if (Object.keys(errores).length > 0) {
-    return res.status(422).json({ error: 'Revisa los campos del formulario.', errores })
+    return json({ error: 'Revisa los campos del formulario.', errores }, 422)
   }
 
   const e = normalizarEvento(cuerpo)
@@ -145,14 +146,14 @@ async function actualizar(sql, organizacion, id, req, res) {
     RETURNING id, titulo, estado
   `
 
-  if (!actualizado) return res.status(404).json({ error: 'Ese evento no existe.' })
-  return res.status(200).json({ evento: actualizado })
+  if (!actualizado) return json({ error: 'Ese evento no existe.' }, 404)
+  return json({ evento: actualizado })
 }
 
-async function cambiarEstado(sql, organizacion, id, req, res) {
-  const { estado } = req.body || {}
+async function cambiarEstado(sql, organizacion, id, cuerpoRecibido) {
+  const { estado } = cuerpoRecibido
   if (!ESTADOS_EVENTO.includes(estado)) {
-    return res.status(422).json({ error: 'Estado no válido.' })
+    return json({ error: 'Estado no válido.' }, 422)
   }
 
   const [actualizado] = await sql`
@@ -162,70 +163,66 @@ async function cambiarEstado(sql, organizacion, id, req, res) {
     RETURNING id, titulo, estado
   `
 
-  if (!actualizado) return res.status(404).json({ error: 'Ese evento no existe.' })
-  return res.status(200).json({ evento: actualizado })
+  if (!actualizado) return json({ error: 'Ese evento no existe.' }, 404)
+  return json({ evento: actualizado })
 }
 
-async function eliminar(sql, organizacion, id, res) {
+async function eliminar(sql, organizacion, id) {
   const [borrado] = await sql`
     DELETE FROM eventos_usuario
     WHERE id = ${id} AND organizacion_id = ${organizacion.id}
     RETURNING id, titulo
   `
 
-  if (!borrado) return res.status(404).json({ error: 'Ese evento no existe.' })
-  return res.status(200).json({ evento: borrado })
+  if (!borrado) return json({ error: 'Ese evento no existe.' }, 404)
+  return json({ evento: borrado })
 }
 
 const METODOS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+const METODOS_CON_CUERPO = ['POST', 'PUT', 'PATCH']
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (!METODOS.includes(req.method)) {
-    return res.status(405).json({ error: 'Método no permitido' })
+    return json({ error: 'Método no permitido' }, 405)
   }
 
-  let sesion
-  try {
-    sesion = await requerirSesion(req, res)
-  } catch (error) {
-    // Falta ADMIN_JWT_SECRET: sin secreto no hay sesión que valga.
-    console.error('Sesión mal configurada:', error.message)
-    return res.status(401).json({ error: 'No autenticado' })
-  }
-  if (!sesion) return
+  const sesion = await requerirSesionEdge(req)
+  if (sesion instanceof Response) return sesion
 
-  const id = req.query?.id
+  const id = new URL(req.url).searchParams.get('id')
   const necesitaId = req.method !== 'GET' && req.method !== 'POST'
 
   // Un id con otra forma nunca existirá: cortamos antes de tocar la base de
   // datos, que rechazaría el uuid inválido con un error de tipo.
   if ((necesitaId || id) && !UUID.test(String(id ?? ''))) {
-    return res.status(necesitaId ? 400 : 404).json({ error: 'Ese evento no existe.' })
+    return json({ error: 'Ese evento no existe.' }, necesitaId ? 400 : 404)
   }
+
+  const cuerpo = METODOS_CON_CUERPO.includes(req.method) ? await leerJson(req) : {}
 
   try {
     const sql = obtenerSql()
     const organizacion = await organizacionDeSesion(sql, sesion.organizacionSlug)
     if (!organizacion) {
-      return res.status(404).json({ error: 'La organización de tu cuenta ya no existe.' })
+      return json({ error: 'La organización de tu cuenta ya no existe.' }, 404)
     }
 
     switch (req.method) {
       case 'POST':
-        return await crear(sql, organizacion, req, res)
+        return await crear(sql, organizacion, cuerpo)
       case 'PUT':
-        return await actualizar(sql, organizacion, id, req, res)
+        return await actualizar(sql, organizacion, id, cuerpo)
       case 'PATCH':
-        return await cambiarEstado(sql, organizacion, id, req, res)
+        return await cambiarEstado(sql, organizacion, id, cuerpo)
       case 'DELETE':
-        return await eliminar(sql, organizacion, id, res)
+        return await eliminar(sql, organizacion, id)
       default:
         return id
-          ? await obtenerUno(sql, organizacion, id, res)
-          : await listar(sql, organizacion, res)
+          ? await obtenerUno(sql, organizacion, id)
+          : await listar(sql, organizacion)
     }
   } catch (error) {
     console.error('Fallo en /api/admin/eventos:', error)
-    return res.status(503).json({ error: 'No se pudo conectar con la base de datos.' })
+    return json({ error: 'No se pudo conectar con la base de datos.' }, 503)
   }
 }

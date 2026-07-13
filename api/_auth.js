@@ -7,6 +7,8 @@
 // El guion bajo evita que Vercel lo despliegue como endpoint propio.
 // Usa WebCrypto (crypto.subtle) para compatibilidad con Edge Runtime.
 
+import { json } from './_http.js'
+
 export const COOKIE_SESION = 'ncv_admin'
 
 /** Duración de la sesión: 8 horas (JWT y cookie caducan a la vez). */
@@ -95,9 +97,13 @@ export async function verificarToken(token) {
   return payload
 }
 
-/** Lee una cookie de la petición sin depender de req.cookies (ausente en dev). */
+/**
+ * Lee una cookie de la petición sin depender de req.cookies (ausente en dev).
+ * Acepta tanto la Request de Edge (headers.get) como la req de Node (headers.cookie).
+ */
 export function leerCookie(req, nombre) {
-  const cabecera = req.headers?.cookie
+  const cabecera =
+    typeof req.headers?.get === 'function' ? req.headers.get('cookie') : req.headers?.cookie
   if (!cabecera) return null
 
   for (const trozo of cabecera.split(';')) {
@@ -126,12 +132,14 @@ function serializarCookie(valor, maxEdad) {
   return partes.join('; ')
 }
 
-export function establecerCookieSesion(res, token) {
-  res.setHeader('Set-Cookie', serializarCookie(token, DURACION_SESION_S))
+/** Valor de Set-Cookie que abre sesión. Para las Response de Edge. */
+export function cookieDeSesion(token) {
+  return serializarCookie(token, DURACION_SESION_S)
 }
 
-export function borrarCookieSesion(res) {
-  res.setHeader('Set-Cookie', serializarCookie('', 0))
+/** Valor de Set-Cookie que caduca la sesión. Para las Response de Edge. */
+export function cookieDeBorrado() {
+  return serializarCookie('', 0)
 }
 
 /**
@@ -200,8 +208,9 @@ export async function obtenerSesion(req) {
 }
 
 /**
- * Guardia para endpoints privados: si no hay sesión responde 401 y devuelve
- * null; si la hay, devuelve el payload. El llamante debe abortar si es null.
+ * Guardia para endpoints privados en Node (Serverless, p. ej. imagen.js):
+ * si no hay sesión responde 401 y devuelve null; si la hay, devuelve el
+ * payload. El llamante debe abortar si es null.
  */
 export async function requerirSesion(req, res) {
   const sesion = await obtenerSesion(req)
@@ -213,18 +222,32 @@ export async function requerirSesion(req, res) {
 }
 
 /**
- * Guardia para endpoints de superadmin: si no hay sesión o el rol no es
- * superadmin, responde 403 y devuelve null. El llamante debe abortar si es null.
+ * Guardia para Edge Functions: devuelve el payload de la sesión, o una
+ * Response 401 lista para retornar. El llamante hace
+ * `if (resultado instanceof Response) return resultado`.
+ * Absorbe el error de configuración (falta ADMIN_JWT_SECRET): sin secreto
+ * no hay sesión que valga.
  */
-export async function requerirSuperAdmin(req, res) {
-  const sesion = await obtenerSesion(req)
-  if (!sesion) {
-    res.status(401).json({ error: 'No autenticado' })
-    return null
+export async function requerirSesionEdge(req) {
+  let sesion = null
+  try {
+    sesion = await obtenerSesion(req)
+  } catch (error) {
+    console.error('Sesión mal configurada:', error.message)
   }
-  if (sesion.rol !== 'superadmin') {
-    res.status(403).json({ error: 'Acceso denegado. Solo superadmin.' })
-    return null
-  }
+  if (!sesion) return json({ error: 'No autenticado' }, 401)
   return sesion
+}
+
+/**
+ * Guardia de superadmin para Edge Functions: devuelve el payload, o una
+ * Response 401/403 lista para retornar.
+ */
+export async function requerirSuperAdminEdge(req) {
+  const resultado = await requerirSesionEdge(req)
+  if (resultado instanceof Response) return resultado
+  if (resultado.rol !== 'superadmin') {
+    return json({ error: 'Acceso denegado. Solo superadmin.' }, 403)
+  }
+  return resultado
 }
