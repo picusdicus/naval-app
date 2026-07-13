@@ -13,7 +13,6 @@ import { obtenerSql } from '../_db.js'
 import { requerirSesion } from '../_auth.js'
 import { validarEvento, normalizarEvento, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
 
-export const config = { runtime: 'edge' }
 
 const hoyISO = () => new Date().toISOString().slice(0, 10)
 

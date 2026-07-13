@@ -3,7 +3,6 @@
 import { requerirSuperAdmin } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
 
-export const config = { runtime: 'edge' }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

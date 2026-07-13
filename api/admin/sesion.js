@@ -2,7 +2,6 @@
 // para decidir si muestra el panel o redirige a /admin/login.
 import { obtenerSesion } from '../_auth.js'
 
-export const config = { runtime: 'edge' }
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

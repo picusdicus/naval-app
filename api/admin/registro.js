@@ -3,7 +3,6 @@
 import { obtenerSql } from '../_db.js'
 import { firmarToken, establecerCookieSesion, hashPassword } from '../_auth.js'
 
-export const config = { runtime: 'edge' }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

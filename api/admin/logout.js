@@ -1,7 +1,6 @@
 // POST /api/admin/logout — caduca la cookie de sesión.
 import { borrarCookieSesion } from '../_auth.js'
 
-export const config = { runtime: 'edge' }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

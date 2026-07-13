@@ -2,7 +2,6 @@
 // esquema inicial está presente. No expone credenciales.
 //
 // Edge Function: el driver HTTP de Neon va sobre fetch (ver api/eventos.js).
-export const config = { runtime: 'edge' }
 
 import { obtenerSql, TABLAS } from './_db.js'
 

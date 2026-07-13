@@ -7,7 +7,6 @@
 import { put } from '@vercel/blob'
 import { requerirSesion } from '../_auth.js'
 
-export const config = { runtime: 'edge' }
 
 const TIPOS_PERMITIDOS = {
   'image/jpeg': 'jpg',

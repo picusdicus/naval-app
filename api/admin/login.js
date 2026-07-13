@@ -2,7 +2,6 @@
 import { credencialesValidas, credencialesSuperAdminValidas, firmarToken, establecerCookieSesion, usuarioDeEntorno, passwordCorrecto } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
 
-export const config = { runtime: 'edge' }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

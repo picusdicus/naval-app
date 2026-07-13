@@ -4,7 +4,6 @@
 import { obtenerSql } from '../_db.js'
 import { requerirSesion } from '../_auth.js'
 
-export const config = { runtime: 'edge' }
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
