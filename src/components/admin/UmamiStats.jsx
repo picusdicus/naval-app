@@ -4,11 +4,13 @@
  * Analytics section for /admin/super.
  * Fetches data from our proxy route GET /api/analytics/umami-stats
  * and renders key metrics: visitors, pageviews, top pages, devices,
- * and a daily sparkline chart.
+ * countries, browsers, and a daily sparkline chart.
  *
  * Props:
  *   umamiDashboardUrl  — direct link to your self-hosted Umami dashboard
  *                        (shown as a "Ver dashboard completo" button)
+ *   onStatsLoaded      — callback(summary) fired when stats load, to expose
+ *                        Umami's summary metrics to the parent component
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -97,17 +99,26 @@ const PAGE_LABELS = {
   "/noticias": "Noticias",
   "/transporte": "Transporte",
   "/asistente": "Asistente IA",
+  "/admin/login": "Admin — Login",
   "/admin/super": "Panel Admin",
 };
 
 function friendlyPage(url) {
   // Strip query strings
   const path = url.split("?")[0];
+  // Dynamic routes
+  if (path.startsWith("/eventos/")) return "Evento (detalle)";
+  if (path.startsWith("/noticias/")) return "Noticia (detalle)";
   return PAGE_LABELS[path] || path;
 }
 
 // Friendly device labels
-const DEVICE_LABELS = { desktop: "🖥️ Escritorio", mobile: "📱 Móvil", tablet: "🪬 Tablet" };
+const DEVICE_LABELS = {
+  desktop: "🖥️ Escritorio",
+  laptop: "🖥️ Escritorio",
+  mobile: "📱 Móvil",
+  tablet: "🪬 Tablet",
+};
 
 // Format seconds to "Xm Ys"
 function formatSeconds(s) {
@@ -123,7 +134,7 @@ function fmt(n) {
 
 // --- Main component -----------------------------------------------------------
 
-export default function UmamiStats({ umamiDashboardUrl }) {
+export default function UmamiStats({ umamiDashboardUrl, onStatsLoaded }) {
   const [period, setPeriod] = useState("7d");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -138,13 +149,18 @@ export default function UmamiStats({ umamiDashboardUrl }) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `HTTP ${res.status}`);
       }
-      setData(await res.json());
+      const statsData = await res.json();
+      setData(statsData);
+      // Expose summary to parent
+      if (onStatsLoaded && statsData?.summary) {
+        onStatsLoaded(statsData.summary);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onStatsLoaded]);
 
   useEffect(() => {
     fetchStats(period);
@@ -165,7 +181,11 @@ export default function UmamiStats({ umamiDashboardUrl }) {
   const dailyViews = data?.pageviews?.pageviews ?? [];
   const pages = data?.pages ?? [];
   const devices = data?.devices ?? [];
+  const countries = data?.countries ?? [];
+  const browsers = data?.browsers ?? [];
   const totalDevices = devices.reduce((a, d) => a + d.y, 0);
+  const totalCountries = countries.reduce((a, c) => a + c.y, 0);
+  const totalBrowsers = browsers.reduce((a, b) => a + b.y, 0);
 
   // Top custom events (from your existing POST /api/analytics/track calls)
   const events = (data?.events ?? []).slice(0, 8);
@@ -277,7 +297,7 @@ export default function UmamiStats({ umamiDashboardUrl }) {
             </div>
           )}
 
-          {/* Pages + Devices side by side */}
+          {/* Pages + Devices + Countries + Browsers (2x2 grid) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top pages */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
@@ -302,53 +322,111 @@ export default function UmamiStats({ umamiDashboardUrl }) {
             </div>
 
             {/* Devices */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
-              <div>
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
-                  Dispositivos
-                </p>
-                {devices.length === 0 ? (
-                  <p className="text-sm text-gray-400">Sin datos</p>
-                ) : (
-                  <div className="space-y-2.5">
-                    {devices.map((d, i) => (
-                      <RankBar
-                        key={d.x}
-                        rank={i + 1}
-                        label={DEVICE_LABELS[d.x] ?? d.x}
-                        value={d.y}
-                        total={totalDevices}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
+                Dispositivos
+              </p>
+              {devices.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin datos</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {devices.map((d, i) => (
+                    <RankBar
+                      key={d.x}
+                      rank={i + 1}
+                      label={DEVICE_LABELS[d.x] ?? d.x}
+                      value={d.y}
+                      total={totalDevices}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
-              {/* Custom events (from your existing track calls) */}
-              {events.length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
-                    Interacciones más frecuentes
-                  </p>
-                  <div className="space-y-1.5">
-                    {events.map((e) => (
-                      <div key={e.x} className="flex justify-between text-sm">
-                        <span className="text-gray-600 truncate max-w-[180px]">{e.x}</span>
-                        <span className="text-gray-900 font-medium">{fmt(e.y)}</span>
-                      </div>
-                    ))}
-                  </div>
+            {/* Countries */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
+                Países
+              </p>
+              {countries.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin datos</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {countries.slice(0, 8).map((c, i) => (
+                    <RankBar
+                      key={c.x}
+                      rank={i + 1}
+                      label={c.x?.toUpperCase() || "—"}
+                      value={c.y}
+                      total={totalCountries}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Browsers */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
+                Navegadores
+              </p>
+              {browsers.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin datos</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {browsers.slice(0, 8).map((b, i) => (
+                    <RankBar
+                      key={b.x}
+                      rank={i + 1}
+                      label={b.x}
+                      value={b.y}
+                      total={totalBrowsers}
+                    />
+                  ))}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Pitch note for local businesses */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
-            <strong>💡 Dato para comercios:</strong> En los últimos{" "}
-            {period === "7d" ? "7 días" : period === "30d" ? "30 días" : "90 días"},{" "}
-            <strong>{fmt(totalVisitors)} vecinos únicos</strong> han usado la app —
-            cada uno es un potencial cliente de los negocios locales listados en el directorio.
+          {/* Custom events (from your existing track calls) */}
+          {events.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
+                Interacciones más frecuentes
+              </p>
+              <div className="space-y-1.5">
+                {events.map((e) => (
+                  <div key={e.x} className="flex justify-between text-sm">
+                    <span className="text-gray-600 truncate max-w-[180px]">{e.x}</span>
+                    <span className="text-gray-900 font-medium">{fmt(e.y)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pitch: business discovery metrics */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
+            <p className="text-xs text-blue-600 font-medium uppercase tracking-wide mb-4">
+              Oportunidades para comercios locales
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-blue-900">{fmt(totalVisitors)}</p>
+                <p className="text-sm text-blue-700 mt-1">Visitantes únicos</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-blue-900">{fmt(totalPageviews)}</p>
+                <p className="text-sm text-blue-700 mt-1">Páginas vistas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-blue-900">{avgTime}</p>
+                <p className="text-sm text-blue-700 mt-1">Tiempo medio/sesión</p>
+              </div>
+            </div>
+            <p className="text-sm text-blue-800 mt-4 text-center">
+              <strong>Estos son los vecinos de Navalcarnero que podrían descubrir tu negocio en la app.</strong>
+            </p>
           </div>
         </>
       )}

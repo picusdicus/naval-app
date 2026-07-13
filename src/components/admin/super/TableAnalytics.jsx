@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import MIcon from '../../MIcon.jsx'
 
-export default function TableAnalytics() {
+export default function TableAnalytics({ umamiSummary }) {
   const [datos, setDatos] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -25,6 +25,9 @@ export default function TableAnalytics() {
       setCargando(false)
     }
   }
+
+  // Calculate visits from Umami summary if available
+  const visitasUltimos30Dias = umamiSummary?.visits?.value ?? datos?.resumen?.visitasUltimos30Dias ?? 0
 
   if (cargando) {
     return (
@@ -72,7 +75,9 @@ export default function TableAnalytics() {
           </div>
           <div className="rounded-lg bg-surface-container-high p-4">
             <div className="text-sm text-on-surface/70">Visitas últimos 30 días</div>
-            <div className="text-3xl font-bold text-primary">{resumen.visitasUltimos30Dias}</div>
+            <div className="text-3xl font-bold text-primary">
+              {visitasUltimos30Dias.toLocaleString('es-ES')}
+            </div>
           </div>
         </div>
       </div>

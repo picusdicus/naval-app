@@ -7,6 +7,11 @@ import UmamiStats from '../../components/admin/UmamiStats.jsx'
 
 export default function AdminSuperPanel() {
   const [seccionActiva, setSeccionActiva] = useState('organizaciones')
+  const [umamiSummary, setUmamiSummary] = useState(null)
+
+  const handleStatsLoaded = (summary) => {
+    setUmamiSummary(summary)
+  }
 
   return (
     <div className="min-h-screen bg-surface-container-low p-4 sm:p-6">
@@ -60,8 +65,11 @@ export default function AdminSuperPanel() {
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
           {seccionActiva === 'analytics' && (
             <div className="space-y-8">
-              <TableAnalytics />
-              <UmamiStats umamiDashboardUrl="https://umami-navalcarnero.vercel.app" />
+              <TableAnalytics umamiSummary={umamiSummary} />
+              <UmamiStats
+                umamiDashboardUrl="https://umami-navalcarnero.vercel.app"
+                onStatsLoaded={handleStatsLoaded}
+              />
             </div>
           )}
         </div>
