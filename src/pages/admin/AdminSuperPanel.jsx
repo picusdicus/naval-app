@@ -3,6 +3,7 @@ import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
 import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
+import UmamiStats from '../../components/admin/UmamiStats.jsx'
 
 export default function AdminSuperPanel() {
   const [seccionActiva, setSeccionActiva] = useState('organizaciones')
@@ -57,7 +58,12 @@ export default function AdminSuperPanel() {
         <div className="rounded-lg bg-surface-container-lowest p-6">
           {seccionActiva === 'organizaciones' && <TablesOrganizaciones />}
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
-          {seccionActiva === 'analytics' && <TableAnalytics />}
+          {seccionActiva === 'analytics' && (
+            <div className="space-y-8">
+              <TableAnalytics />
+              <UmamiStats umamiDashboardUrl="https://umami-navalcarnero.vercel.app" />
+            </div>
+          )}
         </div>
       </div>
     </div>
