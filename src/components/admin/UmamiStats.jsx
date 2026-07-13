@@ -140,31 +140,31 @@ export default function UmamiStats({ umamiDashboardUrl, onStatsLoaded }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchStats = useCallback(async (p) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/analytics/umami-stats?period=${p}`);
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP ${res.status}`);
-      }
-      const statsData = await res.json();
-      setData(statsData);
-      // Expose summary to parent
-      if (onStatsLoaded && statsData?.summary) {
-        onStatsLoaded(statsData.summary);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [onStatsLoaded]);
-
   useEffect(() => {
-    fetchStats(period);
-  }, [period, fetchStats]);
+    const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/analytics/umami-stats?period=${period}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `HTTP ${res.status}`);
+        }
+        const statsData = await res.json();
+        setData(statsData);
+        // Expose summary to parent
+        if (onStatsLoaded && statsData?.summary) {
+          onStatsLoaded(statsData.summary);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [period, onStatsLoaded]);
 
   // ---- Derived values --------------------------------------------------------
   const s = data?.summary ?? {};

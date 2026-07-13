@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
@@ -9,9 +9,9 @@ export default function AdminSuperPanel() {
   const [seccionActiva, setSeccionActiva] = useState('organizaciones')
   const [umamiSummary, setUmamiSummary] = useState(null)
 
-  const handleStatsLoaded = (summary) => {
+  const handleStatsLoaded = useCallback((summary) => {
     setUmamiSummary(summary)
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-surface-container-low p-4 sm:p-6">
