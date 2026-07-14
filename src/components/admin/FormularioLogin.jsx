@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import MIcon from '../../components/MIcon.jsx'
+import MIcon from '../MIcon.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
-export default function AdminLogin() {
+/**
+ * Formulario de email + contraseña compartido por los dos puntos de entrada
+ * del panel de gestión: /login (organizaciones, api/login.js) y /admin
+ * (superadmin, api/admin/login.js). Cada uno pasa su propio endpoint, copy y
+ * destino tras iniciar sesión.
+ */
+export default function FormularioLogin({ titulo, subtitulo, icono, endpoint, destinoDefecto, pie }) {
   const { usuario, cargando, iniciarSesion } = useAdminAuth()
   const navegar = useNavigate()
   const ubicacion = useLocation()
@@ -13,7 +19,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  const destino = ubicacion.state?.desde || '/admin'
+  const destino = ubicacion.state?.desde || destinoDefecto
 
   // Ya autenticado: nada que hacer en el login.
   if (!cargando && usuario) return <Navigate to={destino} replace />
@@ -23,7 +29,7 @@ export default function AdminLogin() {
     setError('')
     setEnviando(true)
     try {
-      await iniciarSesion(email, password)
+      await iniciarSesion(email, password, endpoint)
       navegar(destino, { replace: true })
     } catch (err) {
       setError(err.message)
@@ -39,16 +45,14 @@ export default function AdminLogin() {
         <div className="nv-card p-6 sm:p-8">
           <div className="mb-8 flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-container">
-              <MIcon name="admin_panel_settings" className="text-[32px] text-on-primary" />
+              <MIcon name={icono} className="text-[32px] text-on-primary" />
             </div>
           </div>
 
           <h1 className="mb-2 text-center font-display text-2xl font-bold text-primary">
-            Panel de gestión
+            {titulo}
           </h1>
-          <p className="mb-8 text-center text-sm text-on-surface/70">
-            Accede con las credenciales de tu organización
-          </p>
+          <p className="mb-8 text-center text-sm text-on-surface/70">{subtitulo}</p>
 
           <form onSubmit={enviar} className="space-y-4" noValidate>
             <div>
@@ -112,14 +116,7 @@ export default function AdminLogin() {
           </form>
         </div>
 
-        <div className="mx-auto mt-6 max-w-xs space-y-2 text-center text-xs text-on-surface/50">
-          <p>
-            ¿Eres una organización nueva? <a href="/admin/registro" className="font-semibold text-primary hover:underline">Regístrate aquí</a>
-          </p>
-          <p className="text-on-surface/40">
-            Acceso restringido. Solo para organizaciones con código de invitación.
-          </p>
-        </div>
+        {pie && <div className="mx-auto mt-6 max-w-xs space-y-2 text-center text-xs text-on-surface/50">{pie}</div>}
       </div>
     </div>
   )

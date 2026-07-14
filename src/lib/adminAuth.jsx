@@ -37,8 +37,8 @@ export function AdminAuthProvider({ children }) {
     }
   }, [])
 
-  const iniciarSesion = useCallback(async (email, password) => {
-    const respuesta = await fetch('/api/admin/login', {
+  const iniciarSesion = useCallback(async (email, password, endpoint = '/api/login') => {
+    const respuesta = await fetch(endpoint, {
       method: 'POST',
       headers: JSON_HEADERS,
       body: JSON.stringify({ email, password }),

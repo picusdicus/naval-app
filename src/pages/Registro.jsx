@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import MIcon from '../../components/MIcon.jsx'
-import { useAdminAuth } from '../../lib/adminAuth.jsx'
+import MIcon from '../components/MIcon.jsx'
+import { useAdminAuth } from '../lib/adminAuth.jsx'
 
-export default function AdminRegistro() {
+export default function Registro() {
   const { usuario, cargando } = useAdminAuth()
   const navegar = useNavigate()
 
@@ -16,7 +16,7 @@ export default function AdminRegistro() {
   const [enviando, setEnviando] = useState(false)
 
   // Ya autenticado: ir al panel.
-  if (!cargando && usuario) return <Navigate to="/admin" replace />
+  if (!cargando && usuario) return <Navigate to="/panel" replace />
 
   const enviar = async (e) => {
     e.preventDefault()
@@ -35,7 +35,7 @@ export default function AdminRegistro() {
 
     setEnviando(true)
     try {
-      const respuesta = await fetch('/api/admin/registro', {
+      const respuesta = await fetch('/api/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -54,7 +54,7 @@ export default function AdminRegistro() {
       }
 
       // Registro exitoso: ir al panel.
-      navegar('/admin', { replace: true })
+      navegar('/panel', { replace: true })
     } catch (err) {
       setError('Error de conexión. Intenta de nuevo.')
     } finally {
@@ -201,7 +201,7 @@ export default function AdminRegistro() {
           <div className="mt-6 flex items-center gap-2 rounded-lg border border-outline-variant/20 bg-surface-container-lowest p-3">
             <MIcon name="info" className="flex-shrink-0 text-[20px] text-on-surface/60" />
             <p className="text-xs text-on-surface/60">
-              ¿Ya tienes cuenta? <a href="/admin/login" className="font-semibold text-primary hover:underline">Accede aquí</a>
+              ¿Ya tienes cuenta? <a href="/login" className="font-semibold text-primary hover:underline">Accede aquí</a>
             </p>
           </div>
         </div>

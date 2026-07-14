@@ -16,18 +16,18 @@ const creados = []
 test.describe.configure({ mode: 'serial' })
 
 async function iniciarSesionAdmin(page) {
-  await page.goto('/admin/login')
+  await page.goto('/login')
   await page.locator('#email').fill(exigir('ADMIN_EMAIL'))
   await page.locator('#password').fill(exigir('ADMIN_PASSWORD'))
   await page.getByRole('button', { name: 'Acceder' }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(/\/panel$/)
 }
 
 test.afterAll(async ({ playwright }) => {
   if (creados.length === 0) return
 
   const contexto = await playwright.request.newContext({ baseURL: BASE_URL })
-  await contexto.post('/api/admin/login', {
+  await contexto.post('/api/login', {
     data: { email: exigir('ADMIN_EMAIL'), password: exigir('ADMIN_PASSWORD') },
   })
   for (const id of creados) await contexto.delete(`/api/admin/eventos?id=${id}`)
@@ -39,7 +39,7 @@ test('el formulario muestra categoría y lugar del perfil, y no deja modificarlo
   page,
 }) => {
   await iniciarSesionAdmin(page)
-  await page.goto('/admin/eventos/nuevo')
+  await page.goto('/panel/eventos/nuevo')
 
   const categoria = page.locator('#categoria')
   const lugar = page.locator('#lugar')

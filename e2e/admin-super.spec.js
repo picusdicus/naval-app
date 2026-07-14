@@ -2,36 +2,26 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Admin Superadmin Panel', () => {
   test.beforeEach(async ({ page }) => {
-    // Login como superadmin
-    await page.goto('/admin/login')
+    // /admin es a la vez el login y el panel del superadmin: al enviar el
+    // formulario se aterriza directamente en el panel, sin pasar por /admin/super.
+    await page.goto('/admin')
     await page.fill('input[type="email"]', process.env.SUPER_ADMIN_EMAIL || 'superadmin@navalcarnero.es')
     await page.fill('input[type="password"]', process.env.SUPER_ADMIN_PASSWORD || 'superadmin123456')
     await page.click('button[type="submit"]')
     await page.waitForURL('/admin')
   })
 
-  test('should show superadmin panel link in header', async ({ page }) => {
-    const panelLink = page.locator('a:has-text("Panel Superadmin")')
-    await expect(panelLink).toBeVisible()
-  })
-
-  test('should navigate to superadmin panel', async ({ page }) => {
-    await page.click('a:has-text("Panel Superadmin")')
-    await page.waitForURL('/admin/super')
-    await expect(page).toHaveURL('/admin/super')
+  test('should show the superadmin panel right after login', async ({ page }) => {
+    await expect(page.locator('h1:has-text("Panel Superadmin")')).toBeVisible()
   })
 
   test('superadmin panel should have three tabs', async ({ page }) => {
-    await page.goto('/admin/super')
-
     const tabs = page.locator('button').filter({ hasText: /Organizaciones|Códigos de invitación|Analytics/ })
     const count = await tabs.count()
     expect(count).toBe(3)
   })
 
   test('organizaciones tab should show list and create button', async ({ page }) => {
-    await page.goto('/admin/super')
-
     // Check organizations tab
     const orgTab = page.locator('button:has-text("Organizaciones")')
     await expect(orgTab).toBeVisible()
@@ -42,8 +32,6 @@ test.describe('Admin Superadmin Panel', () => {
   })
 
   test('should load organizations list', async ({ page }) => {
-    await page.goto('/admin/super')
-
     // Wait for table to be visible
     await page.waitForSelector('table')
     const table = page.locator('table')
@@ -55,8 +43,6 @@ test.describe('Admin Superadmin Panel', () => {
   })
 
   test('codigos tab should show list and create button', async ({ page }) => {
-    await page.goto('/admin/super')
-
     const codigosTab = page.locator('button:has-text("Códigos de invitación")')
     await codigosTab.click()
 
@@ -65,8 +51,6 @@ test.describe('Admin Superadmin Panel', () => {
   })
 
   test('analytics tab should show metrics', async ({ page }) => {
-    await page.goto('/admin/super')
-
     const analyticsTab = page.locator('button:has-text("Analytics")')
     await analyticsTab.click()
 
@@ -75,15 +59,14 @@ test.describe('Admin Superadmin Panel', () => {
     await expect(page.locator('text=Organizaciones activas')).toBeVisible()
   })
 
-  test('non-superadmin should not access superadmin panel', async ({ page, context }) => {
+  test('sin sesión, /admin muestra el login en vez del panel', async ({ page, context }) => {
     // Clear cookies to logout
     await context.clearCookies()
 
-    // Logout and try direct access
-    await page.goto('/admin/super')
+    await page.goto('/admin')
 
-    // Should redirect to login or main panel
-    const url = page.url()
-    expect(url).not.toContain('/admin/super')
+    // Debe verse el formulario de login, no las tabs del panel.
+    await expect(page.locator('input[type="email"]')).toBeVisible()
+    await expect(page.locator('button:has-text("Organizaciones")')).toHaveCount(0)
   })
 })

@@ -92,7 +92,7 @@ function FilaEvento({ evento, ocupado, onCambiarEstado, onEliminar }) {
       {/* Acciones: en móvil ocupan el ancho completo bajo los datos. */}
       <div className="mt-4 flex flex-wrap gap-2 border-t border-outline-variant/20 pt-3">
         <Link
-          to={`/admin/eventos/${evento.id}/editar`}
+          to={`/panel/eventos/${evento.id}/editar`}
           className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high sm:flex-none"
         >
           <MIcon name="edit" className="text-[16px]" />
@@ -212,16 +212,6 @@ export default function AdminPanel() {
             <p className="truncate text-xs text-on-surface/60">{usuario?.email}</p>
           </div>
 
-          {usuario?.rol === 'superadmin' && (
-            <Link
-              to="/admin/super"
-              className="inline-flex flex-shrink-0 items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 sm:px-4"
-            >
-              <MIcon name="verified_admin" className="text-[18px]" />
-              <span className="hidden sm:inline">Panel Superadmin</span>
-            </Link>
-          )}
-
           <button
             type="button"
             onClick={cerrarSesion}
@@ -238,7 +228,7 @@ export default function AdminPanel() {
           <h1 className="font-display text-2xl font-bold text-on-surface">Tus eventos</h1>
 
           <Link
-            to="/admin/eventos/nuevo"
+            to="/panel/eventos/nuevo"
             className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-shadow hover:shadow-card-lg"
           >
             <MIcon name="add" className="text-[18px]" />

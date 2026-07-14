@@ -15,12 +15,11 @@ import Noticias from './pages/Noticias.jsx'
 import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
 import Transporte from './pages/Transporte.jsx'
 import Asistente from './pages/Asistente.jsx'
-import AdminLogin from './pages/admin/AdminLogin.jsx'
-import AdminRegistro from './pages/admin/AdminRegistro.jsx'
-import AdminPanel from './pages/admin/AdminPanel.jsx'
-import AdminEventoForm from './pages/admin/AdminEventoForm.jsx'
-import AdminSuperPanel from './pages/admin/AdminSuperPanel.jsx'
-import RutaSuperAdmin from './components/admin/RutaSuperAdmin.jsx'
+import Login from './pages/Login.jsx'
+import Registro from './pages/Registro.jsx'
+import AdminEntrada from './pages/admin/AdminEntrada.jsx'
+import AdminPanel from './pages/panel/AdminPanel.jsx'
+import AdminEventoForm from './pages/panel/AdminEventoForm.jsx'
 
 function ProveedorAdmin() {
   return (
@@ -40,10 +39,12 @@ export default function App() {
   }
 
   // El panel de gestión tiene su propio login (email + contraseña de la
-  // organización), así que no pasa por la contraseña del portal vecinal.
-  const esAdmin = pathname.startsWith('/admin')
+  // organización, o del superadmin), así que no pasa por la contraseña del
+  // portal vecinal.
+  const RUTAS_GESTION = ['/admin', '/panel', '/login', '/registro']
+  const esGestion = RUTAS_GESTION.some((r) => pathname === r || pathname.startsWith(`${r}/`))
 
-  if (!esAdmin && !isAccessGranted) {
+  if (!esGestion && !isAccessGranted) {
     return <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
   }
 
@@ -53,21 +54,20 @@ export default function App() {
       <OfflineIndicator />
       <InstallPrompt />
       <Routes>
-        <Route path="/admin" element={<ProveedorAdmin />}>
-          <Route path="login" element={<AdminLogin />} />
-          <Route path="registro" element={<AdminRegistro />} />
-          <Route element={<RutaProtegida />}>
+        <Route element={<ProveedorAdmin />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/registro" element={<Registro />} />
+          {/* Superadmin: login y su panel fusionados en la misma ruta. */}
+          <Route path="/admin" element={<AdminEntrada />} />
+
+          <Route path="/panel" element={<RutaProtegida />}>
             <Route index element={<AdminPanel />} />
             <Route path="eventos/nuevo" element={<AdminEventoForm />} />
             {/* Misma página: con :id se prerrellena y guarda con PUT. */}
             <Route path="eventos/:id/editar" element={<AdminEventoForm />} />
-            {/* Rutas superadmin: solo accesibles con rol superadmin. */}
-            <Route element={<RutaSuperAdmin />}>
-              <Route path="super" element={<AdminSuperPanel />} />
-            </Route>
-            {/* Cualquier /admin/* desconocido pasa antes por RutaProtegida:
+            {/* Cualquier /panel/* desconocido pasa antes por RutaProtegida:
                 sin sesión se redirige al login, con sesión al panel. */}
-            <Route path="*" element={<Navigate to="/admin" replace />} />
+            <Route path="*" element={<Navigate to="/panel" replace />} />
           </Route>
         </Route>
 
@@ -81,6 +81,18 @@ export default function App() {
           <Route path="/transporte" element={<Transporte />} />
           <Route path="/asistente" element={<Asistente />} />
         </Route>
+
+        {/* Rutas de antes de separar los logins: una organización puede
+            tenerlas en favoritos. Redirigen en vez de dejar la página en
+            blanco. `replace` evita que la URL rota quede en el historial. */}
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/registro" element={<Navigate to="/registro" replace />} />
+        <Route path="/admin/super" element={<Navigate to="/admin" replace />} />
+
+        {/* Lo que no capturó ningún <Route> anterior. React Router elige por
+            especificidad, no por orden: este `*` de raíz es el menos
+            específico, así que nunca le roba nada al `*` de /panel. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   )

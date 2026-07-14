@@ -208,6 +208,20 @@ export async function obtenerSesion(req) {
 }
 
 /**
+ * Respuesta común de los endpoints de login (organización y superadmin):
+ * firma el payload, la manda como cookie de sesión y devuelve el usuario en
+ * el cuerpo. 500 si falta ADMIN_JWT_SECRET (login mal configurado).
+ */
+export async function responderConSesion(usuario, payload = usuario, status = 200) {
+  try {
+    return json({ usuario }, status, { 'Set-Cookie': cookieDeSesion(await firmarToken(payload)) })
+  } catch (error) {
+    console.error('Login mal configurado:', error.message)
+    return json({ error: 'El acceso no está configurado en el servidor.' }, 500)
+  }
+}
+
+/**
  * Guardia para endpoints privados en Node (Serverless, p. ej. imagen.js):
  * si no hay sesión responde 401 y devuelve null; si la hay, devuelve el
  * payload. El llamante debe abortar si es null.

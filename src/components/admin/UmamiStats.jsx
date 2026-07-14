@@ -1,7 +1,7 @@
 /**
  * src/components/admin/UmamiStats.jsx
  *
- * Analytics section for /admin/super.
+ * Analytics section for /admin (panel superadmin).
  * Fetches data from our proxy route GET /api/analytics/umami-stats
  * and renders key metrics: visitors, pageviews, top pages, devices,
  * countries, browsers, and a daily sparkline chart.
@@ -99,8 +99,10 @@ const PAGE_LABELS = {
   "/noticias": "Noticias",
   "/transporte": "Transporte",
   "/asistente": "Asistente IA",
-  "/admin/login": "Admin — Login",
-  "/admin/super": "Panel Admin",
+  "/login": "Organizaciones — Login",
+  "/registro": "Organizaciones — Registro",
+  "/admin": "Superadmin — Login / Panel",
+  "/panel": "Panel de organización",
 };
 
 function friendlyPage(url) {

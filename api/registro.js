@@ -1,8 +1,8 @@
-// POST /api/admin/registro — { codigo, email, nombre, password }
+// POST /api/registro — { codigo, email, nombre, password }
 // Registra una organización validando su código de invitación.
-import { obtenerSql } from '../_db.js'
-import { firmarToken, cookieDeSesion, hashPassword } from '../_auth.js'
-import { json, leerJson } from '../_http.js'
+import { obtenerSql } from './_db.js'
+import { firmarToken, cookieDeSesion, hashPassword } from './_auth.js'
+import { json, leerJson } from './_http.js'
 
 export const config = { runtime: 'edge' }
 

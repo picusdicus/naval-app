@@ -1,5 +1,6 @@
 // GET /api/admin/sesion — ¿hay sesión válida? Lo usa el frontend al arrancar
-// para decidir si muestra el panel o redirige a /admin/login.
+// para decidir si muestra el panel o redirige al login (/login o /admin,
+// según el rol).
 import { obtenerSesion } from '../_auth.js'
 import { json } from '../_http.js'
 

@@ -39,7 +39,7 @@ export default function AdminEventoForm() {
     const pedir = async (url) => {
       const respuesta = await fetch(url)
       if (respuesta.status === 401) {
-        navegar('/admin/login', { replace: true })
+        navegar('/login', { replace: true })
         return null
       }
       const cuerpo = await respuesta.json().catch(() => ({}))
@@ -107,7 +107,7 @@ export default function AdminEventoForm() {
       const cuerpo = await respuesta.json().catch(() => ({}))
 
       if (respuesta.status === 401) {
-        navegar('/admin/login', { replace: true })
+        navegar('/login', { replace: true })
         return
       }
       if (!respuesta.ok) {
@@ -116,7 +116,7 @@ export default function AdminEventoForm() {
         throw new Error(cuerpo.error || 'No se pudo guardar el evento.')
       }
 
-      navegar('/admin', { replace: true })
+      navegar('/panel', { replace: true })
     } catch (err) {
       setErrorGeneral(err.message)
     } finally {
@@ -154,7 +154,7 @@ export default function AdminEventoForm() {
       <header className="border-b border-outline-variant/20 bg-surface-container-lowest">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
           <Link
-            to="/admin"
+            to="/panel"
             className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary-container"
           >
             <MIcon name="arrow_back" className="text-[18px]" />

@@ -2,9 +2,11 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
 /**
- * Envuelve las rutas privadas de /admin. Mientras se comprueba la cookie de
- * sesión no se decide nada (si no, un usuario válido vería un parpadeo del
- * login); sin sesión, se redirige a /admin/login recordando el destino.
+ * Envuelve las rutas privadas de /panel (organizaciones). Mientras se
+ * comprueba la cookie de sesión no se decide nada (si no, un usuario válido
+ * vería un parpadeo del login); sin sesión, se redirige a /login recordando
+ * el destino. El superadmin no tiene organización propia: si llega aquí se
+ * manda a /admin, su panel real.
  */
 export default function RutaProtegida() {
   const { usuario, cargando } = useAdminAuth()
@@ -23,7 +25,11 @@ export default function RutaProtegida() {
   }
 
   if (!usuario) {
-    return <Navigate to="/admin/login" replace state={{ desde: ubicacion.pathname }} />
+    return <Navigate to="/login" replace state={{ desde: ubicacion.pathname }} />
+  }
+
+  if (usuario.rol === 'superadmin') {
+    return <Navigate to="/admin" replace />
   }
 
   return <Outlet />

@@ -5,7 +5,7 @@ import { RAIZ, BASE_URL, DOMINIO_BLOB, exigir } from './entorno.js'
 
 // Recorrido completo del cartel de un evento: se elige en el formulario, sube a
 // Vercel Blob, su URL queda en eventos_usuario y la imagen se ve en el panel de
-// /admin y en la agenda pública. Se ejerce tanto al crear como al editar.
+// /panel y en la agenda pública. Se ejerce tanto al crear como al editar.
 //
 // No hay mocks: esto habla con el Neon y el store de Blob de verdad.
 
@@ -31,11 +31,11 @@ const creados = { eventos: [], blobs: [] }
 test.describe.configure({ mode: 'serial' })
 
 async function iniciarSesionAdmin(page) {
-  await page.goto('/admin/login')
+  await page.goto('/login')
   await page.locator('#email').fill(exigir('ADMIN_EMAIL'))
   await page.locator('#password').fill(exigir('ADMIN_PASSWORD'))
   await page.getByRole('button', { name: 'Acceder' }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(/\/panel$/)
 }
 
 /** Sube public/poster.jpg y devuelve la URL que ha devuelto Vercel Blob. */
@@ -69,7 +69,7 @@ async function eventoEnLaBaseDeDatos(page, titulo) {
 test.afterAll(async ({ playwright }) => {
   if (creados.eventos.length > 0) {
     const contexto = await playwright.request.newContext({ baseURL: BASE_URL })
-    await contexto.post('/api/admin/login', {
+    await contexto.post('/api/login', {
       data: { email: exigir('ADMIN_EMAIL'), password: exigir('ADMIN_PASSWORD') },
     })
     for (const id of creados.eventos) await contexto.delete(`/api/admin/eventos?id=${id}`)
@@ -92,7 +92,7 @@ test('el cartel subido al crear un evento llega a la base de datos, al panel y a
   const titulo = tituloDe(info)
 
   await iniciarSesionAdmin(page)
-  await page.goto('/admin/eventos/nuevo')
+  await page.goto('/panel/eventos/nuevo')
 
   await page.locator('#titulo').fill(titulo)
   await page.locator('#descripcion').fill(EVENTO.descripcion)
@@ -102,7 +102,7 @@ test('el cartel subido al crear un evento llega a la base de datos, al panel y a
   const urlCartel = await subirCartel(page)
 
   await page.getByRole('button', { name: 'Publicar evento' }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(/\/panel$/)
 
   // 1. La URL quedó guardada en eventos_usuario.
   const guardado = await eventoEnLaBaseDeDatos(page, titulo)
@@ -141,7 +141,7 @@ test('al editar un evento se puede reemplazar el cartel y el cambio se propaga',
   expect(antes, 'el test anterior debe haber creado el evento').toBeTruthy()
   const urlAnterior = antes.imagen
 
-  await page.goto(`/admin/eventos/${antes.id}/editar`)
+  await page.goto(`/panel/eventos/${antes.id}/editar`)
 
   // El formulario llega prerrellenado con el cartel que ya tenía.
   const vistaPrevia = page.getByAltText('Cartel del evento')
@@ -154,7 +154,7 @@ test('al editar un evento se puede reemplazar el cartel y el cambio se propaga',
   expect(urlNueva, 'cada subida crea un blob distinto').not.toBe(urlAnterior)
 
   await page.getByRole('button', { name: 'Guardar cambios' }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(/\/panel$/)
 
   const despues = await eventoEnLaBaseDeDatos(page, titulo)
   expect(despues.imagen).toBe(urlNueva)
