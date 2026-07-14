@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'No se recibió ninguna imagen.' })
   }
 
-  const contenido = new TextEncoder().encode(atob(String(datos)))
+  const contenido = Buffer.from(String(datos), 'base64')
   if (contenido.length === 0) {
     return res.status(400).json({ error: 'La imagen no se pudo leer.' })
   }
