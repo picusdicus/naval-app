@@ -7,19 +7,38 @@
 -- eventos en la agenda.
 -- `categoria_defecto` y `lugar_defecto` son el perfil con el que se rellenan
 -- los eventos de la organización: sus gestores no los eligen evento a evento.
+--
+-- Suscripción: `tier` decide qué puede hacer la organización.
+--   'bloqueado' — no puede publicar (es el valor por defecto: una organización
+--                 recién creada no tiene nada contratado ni trial arrancado).
+--   'pro'       — plan de pago estándar.
+--   'premium'   — plan de pago superior.
+-- El trial de 30 días se concede una sola vez: al arrancarlo se sella
+-- `trial_iniciado_en` y se marca `trial_usado`, que ya nunca vuelve a false,
+-- de modo que borrar la fecha no regala un segundo periodo de prueba.
 CREATE TABLE IF NOT EXISTS organizaciones (
-  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre            text NOT NULL,
-  slug              text NOT NULL UNIQUE,
-  descripcion       text,
-  email_contacto    text,
-  telefono          text,
-  web               text,
-  categoria_defecto text,
-  lugar_defecto     text,
-  activa            boolean NOT NULL DEFAULT true,
-  creada_en         timestamptz NOT NULL DEFAULT now()
+  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre                 text NOT NULL,
+  slug                   text NOT NULL UNIQUE,
+  descripcion            text,
+  email_contacto         text,
+  telefono               text,
+  web                    text,
+  categoria_defecto      text,
+  lugar_defecto          text,
+  activa                 boolean NOT NULL DEFAULT true,
+  tier                   text NOT NULL DEFAULT 'bloqueado' CHECK (tier IN ('bloqueado', 'pro', 'premium')),
+  trial_iniciado_en      timestamptz,
+  trial_usado            boolean NOT NULL DEFAULT false,
+  suscripcion_estado     text NOT NULL DEFAULT 'ninguna' CHECK (suscripcion_estado IN ('ninguna', 'trial', 'activa', 'impagada', 'cancelada')),
+  suscripcion_inicio     timestamptz,
+  suscripcion_vence_en   timestamptz,
+  stripe_customer_id     text,
+  stripe_subscription_id text,
+  creada_en              timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_organizaciones_tier ON organizaciones (tier);
 
 -- Códigos de invitación: una organización los reparte para que sus gestores
 -- se den de alta y puedan publicar eventos en su nombre.
@@ -92,6 +111,24 @@ CREATE INDEX IF NOT EXISTS idx_eventos_publicados ON eventos_usuario (estado, fe
 ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS categoria_defecto text;
 
 ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS lugar_defecto text;
+
+-- Suscripciones. Las organizaciones que ya existieran entran como 'bloqueado'
+-- con el trial sin usar, así que pueden arrancar su periodo de prueba.
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS tier text NOT NULL DEFAULT 'bloqueado' CHECK (tier IN ('bloqueado', 'pro', 'premium'));
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS trial_iniciado_en timestamptz;
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS trial_usado boolean NOT NULL DEFAULT false;
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS suscripcion_estado text NOT NULL DEFAULT 'ninguna' CHECK (suscripcion_estado IN ('ninguna', 'trial', 'activa', 'impagada', 'cancelada'));
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS suscripcion_inicio timestamptz;
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS suscripcion_vence_en timestamptz;
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS stripe_customer_id text;
+
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS hora_fin text;
 
