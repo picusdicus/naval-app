@@ -18,3 +18,9 @@ export function reportarPreguntaAsistente(pregunta) {
 export function reportarBusquedaComercio(comercio) {
   reportarAnalytics('busqueda_comercio', { comercioBuscado: comercio })
 }
+
+// Visita al detalle de un evento publicado desde el panel (id de Neon, sin el
+// prefijo 'bd-'). Alimenta la pestaña "Mis analíticas" de su organización.
+export function reportarVisitaEvento(eventoId, organizacionId) {
+  reportarAnalytics('visita_evento', { eventoId, organizacionId })
+}

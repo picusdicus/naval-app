@@ -86,6 +86,60 @@ async function listar(sql, organizacion) {
   })
 }
 
+/**
+ * GET ?accion=analytics — métricas de visitas para "Mis analíticas".
+ * Todo filtra por la organización del JWT: total de visitas a sus eventos en
+ * 30 días, ranking de sus eventos por visitas (mismo periodo) y serie diaria
+ * de los últimos 14 días para el sparkline. El driver HTTP de Neon ejecuta
+ * una sentencia por petición, de ahí las tres consultas separadas.
+ */
+async function analiticas(sql, organizacion) {
+  const [total] = await sql`
+    SELECT count(*)::int AS visitas
+    FROM analytics
+    WHERE tipo_evento = 'visita_evento'
+      AND organizacion_id = ${organizacion.id}
+      AND creado_en >= now() - interval '30 days'
+  `
+
+  const ranking = await sql`
+    SELECT e.id, e.titulo, to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
+           count(a.id)::int AS visitas
+    FROM eventos_usuario e
+    LEFT JOIN analytics a
+      ON a.evento_id = e.id
+     AND a.tipo_evento = 'visita_evento'
+     AND a.creado_en >= now() - interval '30 days'
+    WHERE e.organizacion_id = ${organizacion.id}
+    GROUP BY e.id, e.titulo, e.fecha_inicio
+    ORDER BY visitas DESC, e.fecha_inicio DESC
+  `
+
+  // generate_series rellena con cero los días sin visitas: el sparkline
+  // necesita los 14 puntos aunque no haya actividad.
+  const serie = await sql`
+    SELECT to_char(d.dia, 'YYYY-MM-DD') AS dia, count(a.id)::int AS visitas
+    FROM generate_series(current_date - 13, current_date, interval '1 day') AS d(dia)
+    LEFT JOIN analytics a
+      ON a.creado_en::date = d.dia::date
+     AND a.tipo_evento = 'visita_evento'
+     AND a.organizacion_id = ${organizacion.id}
+    GROUP BY d.dia
+    ORDER BY d.dia
+  `
+
+  return json({
+    totalVisitas: total?.visitas ?? 0,
+    rankingEventos: ranking.map((e) => ({
+      id: e.id,
+      titulo: e.titulo,
+      fecha: e.fecha,
+      visitas: e.visitas,
+    })),
+    serieDiaria: serie.map((d) => ({ dia: d.dia, visitas: d.visitas })),
+  })
+}
+
 async function obtenerUno(sql, organizacion, id) {
   const [fila] = await sql`
     SELECT id, titulo, descripcion, categoria, lugar,
@@ -189,7 +243,9 @@ export default async function handler(req) {
   const sesion = await requerirSesionEdge(req)
   if (sesion instanceof Response) return sesion
 
-  const id = new URL(req.url).searchParams.get('id')
+  const parametros = new URL(req.url).searchParams
+  const id = parametros.get('id')
+  const accion = parametros.get('accion')
   const necesitaId = req.method !== 'GET' && req.method !== 'POST'
 
   // Un id con otra forma nunca existirá: cortamos antes de tocar la base de
@@ -217,6 +273,7 @@ export default async function handler(req) {
       case 'DELETE':
         return await eliminar(sql, organizacion, id)
       default:
+        if (accion === 'analytics') return await analiticas(sql, organizacion)
         return id
           ? await obtenerUno(sql, organizacion, id)
           : await listar(sql, organizacion)

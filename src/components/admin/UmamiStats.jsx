@@ -17,8 +17,8 @@ import { useState, useEffect, useCallback } from "react";
 
 // --- Small helper components ---------------------------------------------------
 
-/** A single KPI card */
-function StatCard({ label, value, sub, icon }) {
+/** A single KPI card. Exported: la reutiliza AnaliticasOrganizacion. */
+export function StatCard({ label, value, sub, icon }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-start gap-3 shadow-sm">
       <span className="text-2xl">{icon}</span>
@@ -31,8 +31,8 @@ function StatCard({ label, value, sub, icon }) {
   );
 }
 
-/** Minimal SVG sparkline from an array of {x, y} daily values */
-function Sparkline({ data = [], color = "#2563eb", height = 48 }) {
+/** Minimal SVG sparkline from an array of {x, y} daily values. Exported: la reutiliza AnaliticasOrganizacion. */
+export function Sparkline({ data = [], color = "#2563eb", height = 48 }) {
   if (!data.length) return null;
 
   const values = data.map((d) => d.y ?? 0);
@@ -69,8 +69,8 @@ function Sparkline({ data = [], color = "#2563eb", height = 48 }) {
   );
 }
 
-/** Horizontal bar for a ranked list item (pages, devices, etc.) */
-function RankBar({ label, value, total, rank }) {
+/** Horizontal bar for a ranked list item (pages, devices, etc.). Exported: la reutiliza AnaliticasOrganizacion. */
+export function RankBar({ label, value, total, rank }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
     <div className="flex items-center gap-2 text-sm">

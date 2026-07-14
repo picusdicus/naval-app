@@ -119,3 +119,11 @@ CREATE INDEX IF NOT EXISTS idx_analytics_seccion ON analytics (seccion);
 CREATE INDEX IF NOT EXISTS idx_analytics_org ON analytics (organizacion_id);
 
 CREATE INDEX IF NOT EXISTS idx_analytics_fecha ON analytics (creado_en);
+
+-- Vincula una visita ('visita_evento') con el evento concreto que se vio.
+-- Nullable: los demás tipos (pregunta_asistente, comercio_buscado...) no
+-- tienen evento asociado. Si el evento se borra, la visita queda huérfana
+-- pero se conserva para los totales de la organización.
+ALTER TABLE analytics ADD COLUMN IF NOT EXISTS evento_id uuid REFERENCES eventos_usuario(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_analytics_evento ON analytics (evento_id);

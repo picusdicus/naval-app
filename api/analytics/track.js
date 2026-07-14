@@ -23,17 +23,22 @@ export default async function handler(req) {
     cuerpo = {}
   }
 
-  const { tipoEvento, seccion, preguntaAsistente, comercioBuscado, organizacionId } = cuerpo
+  const { tipoEvento, seccion, preguntaAsistente, comercioBuscado, organizacionId, eventoId } = cuerpo
 
   if (!tipoEvento) {
     return json({ error: 'tipoEvento es requerido.' }, 400)
   }
 
+  // Un eventoId malformado haría fallar el INSERT entero (la columna es uuid);
+  // mejor descartarlo y conservar el resto del registro.
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const eventoIdValido = UUID.test(String(eventoId ?? '')) ? eventoId : null
+
   try {
     const sql = obtenerSql()
     await sql`
-      INSERT INTO analytics (tipo_evento, seccion, pregunta_asistente, comercio_buscado, organizacion_id)
-      VALUES (${tipoEvento}, ${seccion || null}, ${preguntaAsistente || null}, ${comercioBuscado || null}, ${organizacionId || null})
+      INSERT INTO analytics (tipo_evento, seccion, pregunta_asistente, comercio_buscado, organizacion_id, evento_id)
+      VALUES (${tipoEvento}, ${seccion || null}, ${preguntaAsistente || null}, ${comercioBuscado || null}, ${organizacionId || null}, ${eventoIdValido})
     `
 
     return json({ success: true }, 201)

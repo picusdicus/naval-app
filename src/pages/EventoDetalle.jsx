@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
+import { reportarVisitaEvento } from '../lib/useAnalytics.js'
 import { CATEGORIAS_EVENTO, formatearFechaLarga } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
@@ -45,6 +47,17 @@ export default function EventoDetalle() {
   const { id } = useParams()
   const { eventos, cargando } = useEventosPublicos()
   const evento = eventos.find((e) => e.id === id)
+
+  // Solo los eventos de la base de datos (prefijo 'bd-') tienen una
+  // organización dueña que pueda ver la visita en "Mis analíticas". El ref
+  // evita contarla dos veces (StrictMode monta el efecto dos veces en dev).
+  const visitaReportada = useRef(null)
+  useEffect(() => {
+    if (!evento?.organizacionId || !evento.id.startsWith('bd-')) return
+    if (visitaReportada.current === evento.id) return
+    visitaReportada.current = evento.id
+    reportarVisitaEvento(evento.id.slice(3), evento.organizacionId)
+  }, [evento])
 
   if (!evento) {
     // Los eventos publicados desde /admin llegan por fetch: mientras no estén,

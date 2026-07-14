@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
 import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
+import AnaliticasOrganizacion from '../../components/admin/AnaliticasOrganizacion.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 import { CATEGORIAS_EVENTO } from '../../lib/eventos.js'
 
@@ -130,6 +131,7 @@ export default function AdminPanel() {
   const [cargando, setCargando] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const [porEliminar, setPorEliminar] = useState(null)
+  const [pestana, setPestana] = useState('eventos')
 
   // Tras cada cambio se recarga la lista: las métricas salen del mismo
   // cálculo que hace Neon, sin llevar una cuenta paralela en el cliente.
@@ -224,6 +226,31 @@ export default function AdminPanel() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        {/* Pestañas: eventos (gestión) y analíticas (visitas propias en Neon). */}
+        <div className="mb-6 flex gap-1 rounded-full bg-surface-container-high p-1 sm:w-fit">
+          {[
+            ['eventos', 'event', 'Mis eventos'],
+            ['analiticas', 'monitoring', 'Mis analíticas'],
+          ].map(([clave, icono, etiqueta]) => (
+            <button
+              key={clave}
+              type="button"
+              onClick={() => setPestana(clave)}
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:flex-none ${
+                pestana === clave
+                  ? 'bg-primary text-on-primary shadow-card'
+                  : 'text-on-surface/70 hover:text-on-surface'
+              }`}
+            >
+              <MIcon name={icono} className="text-[18px]" />
+              {etiqueta}
+            </button>
+          ))}
+        </div>
+
+        {pestana === 'analiticas' && <AnaliticasOrganizacion onNoAutenticado={cerrarSesion} />}
+
+        <div className={pestana === 'eventos' ? '' : 'hidden'}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-2xl font-bold text-on-surface">Tus eventos</h1>
 
@@ -283,6 +310,7 @@ export default function AdminPanel() {
             )}
           </>
         )}
+        </div>
       </main>
 
       <DialogoConfirmacion
