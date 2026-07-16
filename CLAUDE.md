@@ -33,14 +33,29 @@ The only tests are the Playwright end-to-end specs in `e2e/`, which cover the ev
 - `src/components/AccessScreen.jsx` — password-protected login screen that blocks the entire app until the correct password is entered. Requires `VITE_APP_PASSWORD` environment variable (never hardcoded). Session is saved in localStorage under `ncv_access` key and persists across browser sessions until cleared or logout is triggered.
 - Logout buttons in Header (desktop & mobile) and MenuDrawer footer clear the session and return to the access screen.
 
-### Admin panel (`/admin`)
+### Manager panel & superadmin (`/login`, `/panel`, `/admin`)
 
-Separate from the resident password gate: `App.jsx` skips the `AccessScreen` check for `/admin/*`, because managers sign in with their own credentials. There is no public sign-up.
+Separate from the resident password gate: `App.jsx` treats `/login`, `/registro`, `/panel` and `/admin` as "management routes" and skips the `AccessScreen` check for all of them, because managers and the superadmin sign in with their own credentials. Org users log in at `/login` and work in `/panel`; the superadmin's login and dashboard are merged into `/admin`. Old `/admin/login`, `/admin/registro` and `/admin/super` paths redirect to the new ones for anyone with them bookmarked. Unlike the original single-tenant setup, **there is now public sign-up**: `POST /api/registro` creates an org-scoped `usuarios` row after validating an invitation code from `codigos_invitacion` (see `src/pages/Registro.jsx`).
 
-- `api/_auth.js` — issues and verifies an HS256 JWT (hand-rolled on `node:crypto`, no new dependency) carried in the `ncv_admin` **httpOnly** cookie (`SameSite=Lax`, `Secure` only in production, 8 h lifetime). Credentials are compared in constant time against `ADMIN_EMAIL` / `ADMIN_PASSWORD`. `requerirSesion(req, res)` guards private endpoints — it 401s and returns `null`, so the caller must abort.
-- Endpoints: `POST /api/admin/login`, `POST /api/admin/logout`, `GET /api/admin/sesion` (who am I), `/api/admin/eventos` (see below), `POST /api/admin/imagen` (upload a poster). The org slug comes from the *signed* JWT, never from the request, so nobody can read or write another org's events by changing a parameter.
-- Required env vars: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET` (≥32 chars; rotating it invalidates every open session). Optional: `ADMIN_NOMBRE`, `ADMIN_ORG_SLUG` (default `tyl-tyl`), `BLOB_READ_WRITE_TOKEN`. None carry the `VITE_` prefix — they must never reach the browser bundle.
-- Frontend: `src/lib/adminAuth.jsx` (context; the cookie is unreadable from JS, so it asks `/api/admin/sesion` on boot), `src/components/admin/RutaProtegida.jsx` (redirects to `/admin/login`, remembering the intended path), `src/pages/admin/{AdminLogin,AdminPanel,AdminEventoForm}.jsx`.
+#### Roles and permissions
+
+Only **two** distinctions actually change behaviour:
+
+- **Platform owner** — the superadmin. Signs in at `/admin` with `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD`, and is the only role that can reach `/api/super/*` (orgs, invite codes, cross-org analytics). `requerirSuperAdminEdge()` is the guard, and it checks `rol === 'superadmin'` and nothing else.
+- **Org member** — anyone who signed up with an org's invitation code. Works in `/panel`, and can create, edit, publish and delete **that org's** events. Scoping is by `organizacion_id` taken from the signed JWT, never by role.
+
+Everyone else is a resident: no login, read-only access to the public pages.
+
+**There is no privilege ladder inside an organization.** `usuarios.rol` still stores the legacy values `admin` and `editor` (the CHECK is `admin` / `editor` / `vecino` / `superadmin`, and `/api/super/codigos` still lets you pick which one a code grants), but **no code path branches on the difference** — an `editor` can do everything an `admin` can. Don't write authorization logic that assumes `admin` outranks `editor`; if you need a real distinction inside an org, it has to be built, not merely read.
+
+- `api/_auth.js` — issues and verifies an HS256 JWT using **WebCrypto** (`crypto.subtle.importKey`/`sign`/`digest`, not `node:crypto`) so the same module works in both Edge and Node runtimes. The token is carried in the `ncv_admin` **httpOnly** cookie (`SameSite=Lax`, `Secure` only in production, 8 h lifetime). Multiple credential paths: `credencialesValidas()` (env-based platform admin, `ADMIN_EMAIL`/`ADMIN_PASSWORD`), `credencialesSuperAdminValidas()` (`SUPER_ADMIN_EMAIL`/`SUPER_ADMIN_PASSWORD`), and `passwordCorrecto()` for org users created via `/registro` (checked against `usuarios.password_hash`). `requerirSesion(req, res)` guards Node/Serverless endpoints (401s and returns `null`); `requerirSesionEdge(req)` / `requerirSuperAdminEdge(req)` do the equivalent for Edge handlers, returning a ready-to-return `Response` on failure instead.
+- Endpoints: `POST /api/login` (org users, falls back from env admin to the `usuarios` table), `POST /api/registro` (sign-up via invite code), `POST /api/admin/login` (superadmin only), `POST /api/admin/logout`, `GET /api/admin/sesion` (who am I, works for all roles), `/api/admin/eventos` (CRUD events for the authenticated org), `POST /api/admin/imagen` (upload event poster), `/api/super/organizaciones` and `/api/super/codigos` (superadmin CRUD over orgs and invite codes), `GET /api/super/analytics` (cross-org metrics). The org slug/role comes from the *signed* JWT, never from the request, so nobody can read or write another org's events by changing a parameter.
+- Required env vars: `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`, `ADMIN_JWT_SECRET` (≥32 chars; rotating it invalidates every open session). Optional: `SUPER_ADMIN_NOMBRE`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_ORG_SLUG` (default `tyl-tyl`), `BLOB_READ_WRITE_TOKEN`. None carry the `VITE_` prefix — they must never reach the browser bundle.
+- Frontend: `src/lib/adminAuth.jsx` (context; the cookie is unreadable from JS, so it asks `/api/admin/sesion` on boot), `src/components/admin/RutaProtegida.jsx` (guards `/panel/*`, redirects to `/login`, remembering the intended path), `src/pages/Login.jsx`, `src/pages/Registro.jsx`, `src/pages/admin/AdminEntrada.jsx` (superadmin login + dashboard entry), `src/pages/admin/AdminSuperPanel.jsx`, `src/pages/panel/{AdminPanel,AdminEventoForm}.jsx`.
+
+### Edge Runtime
+
+Nearly every `api/**` handler declares `export const config = { runtime: 'edge' }` and is written against the Web `Request`/`Response` API (`api/_http.js` for `json()`/`leerJson()`/`queryDe()` helpers) rather than Node's `req`/`res`. The one deliberate exception is `api/admin/imagen.js`, which stays Serverless (Node) because `@vercel/blob` pulls in `undici`, which needs Node builtins unavailable on Edge — see the comment at the top of that file. Keep this in mind before importing anything Node-only (`fs`, `node:crypto`, etc.) into an Edge handler, and before adding `res.status()`/`res.json()` calls to one — those only exist on the Node req/res object.
 
 ### Managing events
 
@@ -59,7 +74,7 @@ Separate from the resident password gate: `App.jsx` skips the `AccessScreen` che
 - Every query filters by `organizacion_id`, so another org's event is a 404 rather than a leak — reading, editing, publishing and deleting it all fail. A malformed `id` is rejected against a UUID regex before touching the database.
 - **The organisation's profile owns `categoria` and `lugar`.** `organizaciones.categoria_defecto` / `lugar_defecto` decide how every event of that org is published; the form shows them as read-only fields (fed by `GET /api/admin/organizacion`) and `POST`/`PUT` overwrite whatever the client sent with the profile values. Don't add a category picker back to the form without changing both sides.
 - `src/lib/eventoForm.js` is the single definition of a valid event. The form imports it to warn before submitting, and `POST`/`PUT` re-run the same `validarEvento()` server-side — the client is never trusted. `urlValida()` only accepts `http(s):`, which is what keeps `javascript:` out of the ticket link.
-- Events are rows in `eventos_usuario`, tied to the org resolved from the JWT. `estado` is `borrador` or `publicado`. `src/pages/admin/AdminEventoForm.jsx` serves both `/admin/eventos/nuevo` and `/admin/eventos/:id/editar`; with an id it pre-fills via `GET ?id=` and saves with `PUT`.
+- Events are rows in `eventos_usuario`, tied to the org resolved from the JWT. `estado` is `borrador` or `publicado`. `src/pages/panel/AdminEventoForm.jsx` serves both `/panel/eventos/nuevo` and `/panel/eventos/:id/editar`; with an id it pre-fills via `GET ?id=` and saves with `PUT`.
 - The `resumen` (publicados, borradores, próximos, pasados) is computed server-side on every list. The panel refetches after each mutation instead of keeping a parallel count in the client.
 - `GET /api/eventos` (public, unauthenticated) returns only `publicado` rows, shaped exactly like the JSON events so the UI can concatenate them. It returns `{eventos: []}` with HTTP 200 when Neon is down, so the static agenda never breaks. `src/lib/useEventosPublicos.js` merges all three sources (`eventos.json`, `eventos-externos.json`, Neon) and is the only way a page should read the agenda — `Inicio`, `Eventos` and `EventoDetalle` all use it. DB ids are prefixed `bd-` to avoid colliding with the JSON ids. The hook memoises the merged array so callers can use it as a `useMemo` dependency.
 - `EventoDetalle` links the venue name to a Google Maps search for `"<lugar>, Navalcarnero, Madrid"` — events only store the venue name, never coordinates.
@@ -84,12 +99,47 @@ Separate from the resident password gate: `App.jsx` skips the `AccessScreen` che
 
 The Neon project `navalcarnero-db` is provisioned through the Vercel Marketplace integration, so all `DATABASE_URL`/`POSTGRES_*` variables are injected into the Vercel environment automatically. For local work, run `npx vercel env pull .env.local` — `vite.config.js` forwards `DATABASE_URL` to the dev API handlers, and `scripts/db-setup.mjs` reads `.env.local` (falling back to `.env`).
 
-- `db/schema.sql` — canonical schema. Four tables: `organizaciones` (cultural orgs), `codigos_invitacion` (invite codes an org hands out so its managers can sign up), `usuarios` (`admin`/`editor` belong to an org, `vecino` doesn't), `eventos_usuario` (events created in-app, in `borrador`/`publicado`/`archivado`). Statements are split on a trailing `;` by the setup script, so don't add functions or dollar-quoted blocks. `CREATE TABLE IF NOT EXISTS` won't add columns to a table that already exists, so new columns also need an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at the end of the file.
+- `db/schema.sql` — canonical schema. Five tables: `organizaciones` (cultural orgs; also carries the subscription columns — see **Organization tiers and subscriptions** below), `codigos_invitacion` (invite codes an org hands out so its managers can sign up), `usuarios` (`admin`/`editor` belong to an org, `vecino` doesn't — but see the roles note above: the two are not distinguished anywhere; also holds `password_hash` for accounts created via `/registro`), `eventos_usuario` (events created in-app, in `borrador`/`publicado`/`archivado`), `analytics` (anonymous visit/event tracking behind `api/super/analytics.js` and `api/analytics/track.js`). Statements are split on a trailing `;` by the setup script, so don't add functions or dollar-quoted blocks. `CREATE TABLE IF NOT EXISTS` won't add columns to a table that already exists, so new columns also need an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at the end of the file.
 - `scripts/db-setup.mjs` (`npm run db:setup`) — applies the schema and seeds the test org **Teatro TYL TYL** (`slug: tyl-tyl`) with invite code **`TYLTYL-2026`** (grants `admin`, 5 uses). Idempotent via `ON CONFLICT`.
-- `api/_db.js` — `obtenerSql()` returns a memoized `@neondatabase/serverless` HTTP client (tagged template). Underscore prefix keeps Vercel from deploying it as an endpoint.
-- `api/health.js` — `GET /api/health` verifies the connection and that all four tables exist; returns 503 if either fails. Live at https://naval-app-one.vercel.app/api/health.
+- `api/_db.js` — `obtenerSql()` returns a memoized `@neondatabase/serverless` HTTP client (tagged template). Underscore prefix keeps Vercel from deploying it as an endpoint. Its `TABLAS` constant (used by `/api/health`) still only lists the original four tables and has not been updated to include `analytics` — a real gap in the code, not just this doc, worth fixing or at least being aware of.
+- `api/health.js` — `GET /api/health` verifies the connection and that the tables in `api/_db.js`'s `TABLAS` exist (currently four, missing `analytics` — see above); returns 503 if either fails. Live at https://naval-app-one.vercel.app/api/health.
 
 The Neon HTTP driver runs one statement per request; multi-statement SQL will not work.
+
+### Organization tiers and subscriptions
+
+> **Status: schema only.** The columns below are defined in `db/schema.sql` on branch `feature/user-subscription`, but `npm run db:setup` has **not** been run against any real database yet, and no API handler or page reads `tier` so far. Treat this section as the design to implement against, not as a description of live behaviour.
+
+An organization's `tier` decides what it is allowed to do. It is a single column on `organizaciones`, so it applies to every user of that org at once — it is not a per-user permission.
+
+| `tier` | Meaning |
+| --- | --- |
+| `bloqueado` | **The default.** A freshly created org has nothing contracted and has not started its trial, so it cannot publish. |
+| `pro` | Standard paid plan. |
+| `premium` | Higher paid plan. |
+
+#### The 30-day trial
+
+The trial is granted **once per organization**, and that is the point of splitting it across two columns:
+
+- `trial_iniciado_en` (timestamptz, nullable) — stamped when the trial starts. The trial is live while `now() < trial_iniciado_en + interval '30 days'`.
+- `trial_usado` (boolean, default `false`) — flipped to `true` at the same moment and **never flipped back**.
+
+Because `trial_usado` is what gates the offer (not the presence of a date), clearing `trial_iniciado_en` does not hand an org a second free month. Check `trial_usado` before granting a trial; check `trial_iniciado_en` to decide whether the one in progress is still valid.
+
+An org whose trial has run out drops back to `bloqueado` — the trial does not silently upgrade anyone to `pro`.
+
+#### Subscription columns (Stripe)
+
+- `suscripcion_estado` (text, default `'ninguna'`, CHECK `ninguna` / `trial` / `activa` / `impagada` / `cancelada`) — where the org is in the billing lifecycle. `tier` is what the app enforces; `suscripcion_estado` is why it has that tier.
+- `suscripcion_inicio` (timestamptz, nullable) — when the paid subscription began.
+- `suscripcion_vence_en` (timestamptz, nullable) — end of the current paid period.
+- `stripe_customer_id` (text, nullable) — Stripe `cus_…`.
+- `stripe_subscription_id` (text, nullable) — Stripe `sub_…`.
+
+`idx_organizaciones_tier` indexes `tier` so the superadmin dashboard can group orgs by plan without a sequential scan.
+
+The two column sets are deliberately independent: a Stripe webhook writes `suscripcion_*` / `stripe_*`, and only then derives the `tier` the app actually enforces. Nothing outside that reconciliation step should write `tier` directly.
 
 ### Data layer (`src/data/*.json`)
 
@@ -104,7 +154,7 @@ Static JSON is still the store for the read-only content below (events, news, di
 
 ### AI assistant (`api/chat.js`, `api/_knowledge.js`)
 
-- `api/chat.js` is a Vercel serverless function (streaming) that calls the Anthropic API (`@anthropic-ai/sdk`). Model defaults to `claude-opus-4-8`, overridable via `ANTHROPIC_MODEL`. Requires `ANTHROPIC_API_KEY`.
+- `api/chat.js` is a Vercel serverless function (streaming) that calls the Anthropic API (`@anthropic-ai/sdk`). Model defaults to `claude-sonnet-4-6`, overridable via `ANTHROPIC_MODEL`. Requires `ANTHROPIC_API_KEY`.
 - `api/_knowledge.js` (leading underscore = not deployed as its own endpoint) builds the system prompt: it imports the *same* JSON/lib files the frontend uses (news, events, transit, directory) plus a hardcoded list of municipal procedures (`TRAMITES`), so the assistant's knowledge stays in sync with the visible app content ("single source of truth"). The prompt instructs the model to answer only in plain-text Spanish (no Markdown) and to stick to the supplied data — no invented phone numbers, dates, or addresses.
 - `vite.config.js` has a custom dev-only middleware (`devApiPlugin`) that loads `api/chat.js` via `server.ssrLoadModule` and adapts the raw Node request/response to Express/Vercel-style `req.body`/`res.json`, so the assistant works under `npm run dev` without deploying. It also copies `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` from `.env` into `process.env` for that handler.
 - `vercel.json` rewrites all non-`/api/*` paths to `/index.html` (SPA routing) — API routes are handled by Vercel's function runtime directly.
