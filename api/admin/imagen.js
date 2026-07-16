@@ -81,9 +81,14 @@ export default async function handler(req, res) {
     })
   }
 
+  // La sesión de superadmin no lleva organización: sus subidas (imágenes de
+  // destacados desde /admin) van a una carpeta propia en lugar de a
+  // eventos/undefined/.
+  const carpeta = sesion.organizacionSlug ? `eventos/${sesion.organizacionSlug}` : 'destacados'
+
   try {
     const { url } = await put(
-      `eventos/${sesion.organizacionSlug}/${nombreSeguro(nombre, extension)}`,
+      `${carpeta}/${nombreSeguro(nombre, extension)}`,
       contenido,
       {
         access: 'public',

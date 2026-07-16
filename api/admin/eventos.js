@@ -11,6 +11,7 @@
 // eventos de otra organización cambiando un parámetro.
 import { obtenerSql } from '../_db.js'
 import { requerirSesionEdge } from '../_auth.js'
+import { organizacionDeSesion } from '../_organizacion.js'
 import { json, leerJson } from '../_http.js'
 import { validarEvento, normalizarEvento, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
 
@@ -38,14 +39,6 @@ const aEvento = (e) => ({
   precio: e.precio,
   estado: e.estado,
 })
-
-async function organizacionDeSesion(sql, slug) {
-  const [organizacion] = await sql`
-    SELECT id, nombre, slug, categoria_defecto, lugar_defecto
-    FROM organizaciones WHERE slug = ${slug}
-  `
-  return organizacion ?? null
-}
 
 /**
  * La categoría y el lugar los fija el perfil de la organización, no el gestor:

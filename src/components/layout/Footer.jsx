@@ -15,8 +15,8 @@ export default function Footer({ onAbrirChat }) {
           <Link to="/eventos" className="opacity-80 hover:opacity-100 hover:underline">
             Eventos
           </Link>
-          <Link to="/mapa" className="opacity-80 hover:opacity-100 hover:underline">
-            Guía local
+          <Link to="/comercios" className="opacity-80 hover:opacity-100 hover:underline">
+            Comercios
           </Link>
           <Link to="/transporte" className="opacity-80 hover:opacity-100 hover:underline">
             Transporte

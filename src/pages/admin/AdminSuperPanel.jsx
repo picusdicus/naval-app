@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
+import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
 import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
 import UmamiStats from '../../components/admin/UmamiStats.jsx'
 
@@ -22,11 +23,12 @@ export default function AdminSuperPanel() {
           <p className="text-on-surface/70">Gestión global de organizaciones, códigos y métricas</p>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6 flex gap-2 border-b border-outline-variant">
+        {/* Tabs: con cuatro secciones ya no caben en un móvil, así que la fila
+            hace scroll horizontal en vez de encoger (y solapar) los botones. */}
+        <div className="hide-scrollbar mb-6 flex gap-2 overflow-x-auto border-b border-outline-variant">
           <button
             onClick={() => setSeccionActiva('organizaciones')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 font-semibold transition-colors ${
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-semibold transition-colors ${
               seccionActiva === 'organizaciones'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface/60 hover:text-on-surface'
@@ -37,7 +39,7 @@ export default function AdminSuperPanel() {
           </button>
           <button
             onClick={() => setSeccionActiva('codigos')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 font-semibold transition-colors ${
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-semibold transition-colors ${
               seccionActiva === 'codigos'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface/60 hover:text-on-surface'
@@ -47,8 +49,19 @@ export default function AdminSuperPanel() {
             Códigos de invitación
           </button>
           <button
+            onClick={() => setSeccionActiva('destacados')}
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-semibold transition-colors ${
+              seccionActiva === 'destacados'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-on-surface/60 hover:text-on-surface'
+            }`}
+          >
+            <MIcon name="star" className="text-[20px]" />
+            Destacados
+          </button>
+          <button
             onClick={() => setSeccionActiva('analytics')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 font-semibold transition-colors ${
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-semibold transition-colors ${
               seccionActiva === 'analytics'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface/60 hover:text-on-surface'
@@ -63,6 +76,7 @@ export default function AdminSuperPanel() {
         <div className="rounded-lg bg-surface-container-lowest p-6">
           {seccionActiva === 'organizaciones' && <TablesOrganizaciones />}
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
+          {seccionActiva === 'destacados' && <TablesDestacados />}
           {seccionActiva === 'analytics' && (
             <div className="space-y-8">
               <TableAnalytics umamiSummary={umamiSummary} />

@@ -55,7 +55,7 @@ test.describe('Admin Superadmin Panel', () => {
     await analyticsTab.click()
 
     // Check for summary metrics
-    await expect(page).toContainText('Resumen general')
+    await expect(page.locator('body')).toContainText('Resumen general')
     await expect(page.locator('text=Organizaciones activas')).toBeVisible()
   })
 

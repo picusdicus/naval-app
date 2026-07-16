@@ -29,4 +29,5 @@ export const TABLAS = [
   'codigos_invitacion',
   'usuarios',
   'eventos_usuario',
+  'destacados',
 ]

@@ -4,7 +4,7 @@ import MIcon from '../MIcon.jsx'
 const rutas = [
   { to: '/', label: 'Inicio', icono: 'home', end: true },
   { to: '/eventos', label: 'Eventos', icono: 'calendar_today' },
-  { to: '/mapa', label: 'Guía local', icono: 'explore' },
+  { to: '/comercios', label: 'Comercios', icono: 'storefront' },
   { to: '/noticias', label: 'Noticias', icono: 'newspaper' },
   { to: '/asistente', label: 'Asistente IA', icono: 'smart_toy' },
 ]

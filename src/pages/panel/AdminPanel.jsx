@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
 import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
 import AnaliticasOrganizacion from '../../components/admin/AnaliticasOrganizacion.jsx'
+import DestacaNegocio from '../../components/admin/DestacaNegocio.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 import { CATEGORIAS_EVENTO } from '../../lib/eventos.js'
 
@@ -38,10 +39,19 @@ function Estadistica({ icono, valor, etiqueta }) {
   )
 }
 
-function FilaEvento({ evento, ocupado, onCambiarEstado, onEliminar }) {
+const hoyISO = () => {
+  const hoy = new Date()
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0')
+  const dia = String(hoy.getDate()).padStart(2, '0')
+  return `${hoy.getFullYear()}-${mes}-${dia}`
+}
+
+function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, onDestacar, onRetirarDestacado }) {
   const estado = ESTADOS[evento.estado] ?? ESTADOS.borrador
   const horario = evento.horaFin ? `${evento.hora} – ${evento.horaFin}` : evento.hora
   const publicado = evento.estado === 'publicado'
+  // Solo tiene sentido destacar lo que ya está en la agenda y aún no ha pasado.
+  const destacable = publicado && evento.fecha >= hoyISO() && !destacado
 
   return (
     <li className="nv-card p-4 sm:p-5">
@@ -60,6 +70,18 @@ function FilaEvento({ evento, ocupado, onCambiarEstado, onEliminar }) {
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${estado.clases}`}>
               {estado.etiqueta}
             </span>
+            {destacado?.estado === 'pendiente' && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-tertiary-container px-2.5 py-0.5 text-xs font-semibold text-on-tertiary-container">
+                <MIcon name="hourglass_top" className="text-[14px]" />
+                Destacado solicitado
+              </span>
+            )}
+            {destacado?.estado === 'activo' && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-secondary-container px-2.5 py-0.5 text-xs font-semibold text-on-secondary-container">
+                <MIcon name="kid_star" className="text-[14px]" fill />
+                Destacado
+              </span>
+            )}
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-on-surface/70">
@@ -110,6 +132,30 @@ function FilaEvento({ evento, ocupado, onCambiarEstado, onEliminar }) {
           {publicado ? 'Pasar a borrador' : 'Publicar'}
         </button>
 
+        {destacable && (
+          <button
+            type="button"
+            disabled={ocupado}
+            onClick={() => onDestacar(evento)}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50 sm:flex-none"
+          >
+            <MIcon name="star" className="text-[16px]" />
+            Destacar
+          </button>
+        )}
+
+        {destacado?.estado === 'pendiente' && (
+          <button
+            type="button"
+            disabled={ocupado}
+            onClick={() => onRetirarDestacado(destacado)}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50 sm:flex-none"
+          >
+            <MIcon name="star_half" className="text-[16px]" />
+            Retirar solicitud
+          </button>
+        )}
+
         <button
           type="button"
           disabled={ocupado}
@@ -133,15 +179,30 @@ export default function AdminPanel() {
   const [porEliminar, setPorEliminar] = useState(null)
   const [pestana, setPestana] = useState('eventos')
 
+  // Estado de las solicitudes de destacado y el negocio vinculado (si lo hay).
+  const [destacadosOrg, setDestacadosOrg] = useState([])
+  const [comercioId, setComercioId] = useState(null)
+
   // Tras cada cambio se recarga la lista: las métricas salen del mismo
   // cálculo que hace Neon, sin llevar una cuenta paralela en el cliente.
   const cargar = useCallback(async () => {
-    const respuesta = await fetch('/api/admin/eventos')
+    const [respuesta, respuestaDestacados] = await Promise.all([
+      fetch('/api/admin/eventos'),
+      fetch('/api/admin/destacados'),
+    ])
     if (respuesta.status === 401) return cerrarSesion()
 
     const cuerpo = await respuesta.json().catch(() => ({}))
     if (!respuesta.ok) throw new Error(cuerpo.error || 'No se pudieron cargar los eventos.')
     setDatos(cuerpo)
+
+    // Los destacados son complementarios: si fallan, el panel sigue operativo
+    // (sin botón "Destacar"), no se rompe la gestión de eventos.
+    const cuerpoDestacados = await respuestaDestacados.json().catch(() => ({}))
+    if (respuestaDestacados.ok) {
+      setDestacadosOrg(cuerpoDestacados.destacados ?? [])
+      setComercioId(cuerpoDestacados.comercioId ?? null)
+    }
   }, [cerrarSesion])
 
   useEffect(() => {
@@ -195,6 +256,39 @@ export default function AdminPanel() {
     )
     setPorEliminar(null)
   }
+
+  const solicitarDestacadoEvento = (evento) =>
+    conRecarga(() =>
+      fetch('/api/admin/destacados', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: 'evento', eventoId: evento.id }),
+      })
+    )
+
+  const solicitarDestacadoComercio = (imagenUrl) =>
+    conRecarga(() =>
+      fetch('/api/admin/destacados', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: 'comercio', imagenUrl }),
+      })
+    )
+
+  const retirarSolicitud = (destacado) =>
+    conRecarga(() =>
+      fetch(`/api/admin/destacados?id=${encodeURIComponent(destacado.id)}`, { method: 'DELETE' })
+    )
+
+  // Una solicitud rechazada (cancelado) se trata como inexistente: la
+  // organización simplemente vuelve a ver el botón "Destacar".
+  const destacadoDeEvento = (evento) =>
+    destacadosOrg.find(
+      (d) => d.tipo === 'evento' && d.referenciaId === `bd-${evento.id}` && d.estado !== 'cancelado'
+    ) ?? null
+
+  const destacadoComercio =
+    destacadosOrg.find((d) => d.tipo === 'comercio' && d.estado !== 'cancelado') ?? null
 
   const resumen = datos?.resumen
   const eventos = datos?.eventos ?? []
@@ -284,6 +378,16 @@ export default function AdminPanel() {
               <Estadistica icono="history" valor={resumen.pasados} etiqueta="Pasados" />
             </div>
 
+            {comercioId && (
+              <DestacaNegocio
+                comercioId={comercioId}
+                destacado={destacadoComercio}
+                ocupado={ocupado}
+                onSolicitar={solicitarDestacadoComercio}
+                onRetirar={retirarSolicitud}
+              />
+            )}
+
             {eventos.length === 0 ? (
               <div className="nv-card flex flex-col items-center gap-3 px-6 py-12 text-center">
                 <MIcon name="event_busy" className="text-[40px] text-on-surface/30" />
@@ -301,9 +405,12 @@ export default function AdminPanel() {
                   <FilaEvento
                     key={evento.id}
                     evento={evento}
+                    destacado={destacadoDeEvento(evento)}
                     ocupado={ocupado}
                     onCambiarEstado={cambiarEstado}
                     onEliminar={setPorEliminar}
+                    onDestacar={solicitarDestacadoEvento}
+                    onRetirarDestacado={retirarSolicitud}
                   />
                 ))}
               </ul>

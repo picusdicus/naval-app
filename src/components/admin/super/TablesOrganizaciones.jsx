@@ -1,21 +1,42 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import MIcon from '../../MIcon.jsx'
+import { COMERCIOS_POR_ID } from '../../../lib/destacados.js'
+
+const FORMULARIO_VACIO = {
+  nombre: '',
+  slug: '',
+  descripcion: '',
+  emailContacto: '',
+  telefono: '',
+  web: '',
+  comercioId: '',
+  // Sin input propio en este formulario, pero el PUT reemplaza la fila entera:
+  // si no viajan de vuelta, cada "Guardar" borra el perfil de eventos de la
+  // organización (y el formulario de /panel se queda sin categoría ni lugar).
+  categoriaDefecto: '',
+  lugarDefecto: '',
+}
 
 export default function TablesOrganizaciones() {
   const [organizaciones, setOrganizaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
-  const [formularioData, setFormularioData] = useState({
-    nombre: '',
-    slug: '',
-    descripcion: '',
-    emailContacto: '',
-    telefono: '',
-    web: '',
-  })
+  const [formularioData, setFormularioData] = useState(FORMULARIO_VACIO)
+  const [busquedaComercio, setBusquedaComercio] = useState('')
   const [editandoId, setEditandoId] = useState(null)
   const [enviando, setEnviando] = useState(false)
+
+  // Candidatos del buscador de "Negocio vinculado" (mismo patrón que el
+  // formulario de destacados): filtra el directorio por el texto tecleado.
+  const candidatosComercio = useMemo(() => {
+    const texto = busquedaComercio.trim().toLowerCase()
+    if (texto.length < 2) return []
+    return [...COMERCIOS_POR_ID.values()]
+      .filter((c) => c.nombre.toLowerCase().includes(texto))
+      .slice(0, 8)
+      .map((c) => ({ id: c.id, nombre: c.nombre, detalle: c.tipoDisplay || c.subtipo || '' }))
+  }, [busquedaComercio])
 
   useEffect(() => {
     cargarOrganizaciones()
@@ -63,14 +84,8 @@ export default function TablesOrganizaciones() {
       await cargarOrganizaciones()
       setMostrarFormulario(false)
       setEditandoId(null)
-      setFormularioData({
-        nombre: '',
-        slug: '',
-        descripcion: '',
-        emailContacto: '',
-        telefono: '',
-        web: '',
-      })
+      setFormularioData(FORMULARIO_VACIO)
+      setBusquedaComercio('')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -100,22 +115,20 @@ export default function TablesOrganizaciones() {
       emailContacto: org.emailContacto || '',
       telefono: org.telefono || '',
       web: org.web || '',
+      comercioId: org.comercioId || '',
+      categoriaDefecto: org.categoriaDefecto || '',
+      lugarDefecto: org.lugarDefecto || '',
     })
     setEditandoId(org.id)
+    setBusquedaComercio('')
     setMostrarFormulario(true)
   }
 
   const cancelar = () => {
     setMostrarFormulario(false)
     setEditandoId(null)
-    setFormularioData({
-      nombre: '',
-      slug: '',
-      descripcion: '',
-      emailContacto: '',
-      telefono: '',
-      web: '',
-    })
+    setFormularioData(FORMULARIO_VACIO)
+    setBusquedaComercio('')
     setError('')
   }
 
@@ -169,7 +182,15 @@ export default function TablesOrganizaciones() {
                 ) : (
                   organizaciones.map((org) => (
                     <tr key={org.id} className="border-b border-outline-variant/30 hover:bg-surface-container-high/50">
-                      <td className="px-4 py-3 font-medium">{org.nombre}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {org.nombre}
+                        {org.comercioId && (
+                          <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-on-surface/50">
+                            <MIcon name="storefront" className="text-[14px]" />
+                            {COMERCIOS_POR_ID.get(org.comercioId)?.nombre || org.comercioId}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-on-surface/70">{org.slug}</td>
                       <td className="px-4 py-3 text-center">{org.usuariosCount}</td>
                       <td className="px-4 py-3 text-center">{org.eventosCount}</td>
@@ -285,6 +306,66 @@ export default function TablesOrganizaciones() {
                   disabled={enviando}
                 />
               </div>
+            </div>
+
+            {/* Vincula la cuenta con su ficha del directorio: habilita que la
+                organización solicite destacar su negocio desde /panel. */}
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Negocio vinculado
+                <span className="ml-1.5 font-normal text-on-surface/50">(opcional)</span>
+              </label>
+              {formularioData.comercioId ? (
+                <div className="flex items-center justify-between rounded-lg border border-outline-variant/30 bg-surface-container-high px-4 py-2">
+                  <span className="inline-flex items-center gap-2 text-sm font-medium">
+                    <MIcon name="storefront" className="text-[18px] text-primary" />
+                    {COMERCIOS_POR_ID.get(formularioData.comercioId)?.nombre || (
+                      <span className="text-error" title={formularioData.comercioId}>
+                        Referencia no encontrada
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFormularioData({ ...formularioData, comercioId: '' })}
+                    className="text-on-surface/50 hover:text-error"
+                    title="Desvincular"
+                    disabled={enviando}
+                  >
+                    <MIcon name="close" className="text-[18px]" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={busquedaComercio}
+                    onChange={(e) => setBusquedaComercio(e.target.value)}
+                    placeholder="Escribe para buscar en el directorio y elige uno…"
+                    className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                    disabled={enviando}
+                  />
+                  {candidatosComercio.length > 0 && (
+                    <ul className="mt-1 divide-y divide-outline-variant/20 overflow-hidden rounded-lg border border-outline-variant/30">
+                      {candidatosComercio.map((c) => (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormularioData({ ...formularioData, comercioId: c.id })
+                              setBusquedaComercio('')
+                            }}
+                            className="flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-surface-container-high"
+                          >
+                            <span className="font-medium">{c.nombre}</span>
+                            <span className="shrink-0 text-xs text-on-surface/50">{c.detalle}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="flex gap-2 pt-4">

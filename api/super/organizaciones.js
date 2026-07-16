@@ -10,6 +10,21 @@ export const config = { runtime: 'edge' }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// Ids del directorio de comercios: 'gpl_…' (comercios.json, Google Places) o
+// 'local/…' (servicios-locales.json). Solo se valida el formato — el picker
+// del panel garantiza que el id existe; importar los JSON aquí sería inflar
+// la función Edge sin ganancia.
+const COMERCIO_ID_REGEX = /^(gpl_|local\/)/
+
+/** Traduce una violación de UNIQUE (23505) a un 409 con mensaje útil. */
+function conflictoUnico(error) {
+  if (error?.code !== '23505') return null
+  if (String(error.constraint || '').includes('comercio')) {
+    return json({ error: 'Ese comercio ya está vinculado a otra organización.' }, 409)
+  }
+  return json({ error: 'Ya existe una organización con ese slug.' }, 409)
+}
+
 export default async function handler(req) {
   const sesion = await requerirSuperAdminEdge(req)
   if (sesion instanceof Response) return sesion
@@ -48,6 +63,7 @@ async function manejarGet() {
       web,
       categoria_defecto,
       lugar_defecto,
+      comercio_id,
       activa,
       creada_en
     FROM organizaciones
@@ -70,6 +86,7 @@ async function manejarGet() {
         web: org.web,
         categoriaDefecto: org.categoria_defecto,
         lugarDefecto: org.lugar_defecto,
+        comercioId: org.comercio_id,
         activa: org.activa,
         creadaEn: org.creada_en,
         usuariosCount: usuarios[0].total,
@@ -83,19 +100,29 @@ async function manejarGet() {
 }
 
 async function manejarPost(req) {
-  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto } = await leerJson(req)
+  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto, comercioId } = await leerJson(req)
 
   if (!nombre || !slug) {
     return json({ error: 'Nombre y slug son requeridos.' }, 400)
   }
+  if (comercioId && !COMERCIO_ID_REGEX.test(comercioId)) {
+    return json({ error: 'Referencia de comercio inválida.' }, 400)
+  }
 
   const sql = obtenerSql()
 
-  const nueva = await sql`
-    INSERT INTO organizaciones (nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, activa)
-    VALUES (${nombre}, ${slug}, ${descripcion || null}, ${emailContacto || null}, ${telefono || null}, ${web || null}, ${categoriaDefecto || null}, ${lugarDefecto || null}, true)
-    RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, activa, creada_en
-  `
+  let nueva
+  try {
+    nueva = await sql`
+      INSERT INTO organizaciones (nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa)
+      VALUES (${nombre}, ${slug}, ${descripcion || null}, ${emailContacto || null}, ${telefono || null}, ${web || null}, ${categoriaDefecto || null}, ${lugarDefecto || null}, ${comercioId || null}, true)
+      RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa, creada_en
+    `
+  } catch (error) {
+    const conflicto = conflictoUnico(error)
+    if (conflicto) return conflicto
+    throw error
+  }
 
   if (nueva.length === 0) {
     return json({ error: 'No se pudo crear la organización.' }, 400)
@@ -113,6 +140,7 @@ async function manejarPost(req) {
       web: org.web,
       categoriaDefecto: org.categoria_defecto,
       lugarDefecto: org.lugar_defecto,
+      comercioId: org.comercio_id,
       activa: org.activa,
       creadaEn: org.creada_en,
       usuariosCount: 0,
@@ -138,6 +166,7 @@ async function organizacionConContadores(sql, org) {
     web: org.web,
     categoriaDefecto: org.categoria_defecto,
     lugarDefecto: org.lugar_defecto,
+    comercioId: org.comercio_id,
     activa: org.activa,
     creadaEn: org.creada_en,
     usuariosCount: usuarios[0].total,
@@ -148,7 +177,7 @@ async function organizacionConContadores(sql, org) {
 
 async function manejarPut(req) {
   const { id } = queryDe(req)
-  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto } = await leerJson(req)
+  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto, comercioId } = await leerJson(req)
 
   if (!id || !UUID_REGEX.test(id)) {
     return json({ error: 'ID inválido.' }, 400)
@@ -157,22 +186,33 @@ async function manejarPut(req) {
   if (!nombre || !slug) {
     return json({ error: 'Nombre y slug son requeridos.' }, 400)
   }
+  if (comercioId && !COMERCIO_ID_REGEX.test(comercioId)) {
+    return json({ error: 'Referencia de comercio inválida.' }, 400)
+  }
 
   const sql = obtenerSql()
 
-  const actualizada = await sql`
-    UPDATE organizaciones
-    SET nombre = ${nombre},
-        slug = ${slug},
-        descripcion = ${descripcion || null},
-        email_contacto = ${emailContacto || null},
-        telefono = ${telefono || null},
-        web = ${web || null},
-        categoria_defecto = ${categoriaDefecto || null},
-        lugar_defecto = ${lugarDefecto || null}
-    WHERE id = ${id}
-    RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, activa, creada_en
-  `
+  let actualizada
+  try {
+    actualizada = await sql`
+      UPDATE organizaciones
+      SET nombre = ${nombre},
+          slug = ${slug},
+          descripcion = ${descripcion || null},
+          email_contacto = ${emailContacto || null},
+          telefono = ${telefono || null},
+          web = ${web || null},
+          categoria_defecto = ${categoriaDefecto || null},
+          lugar_defecto = ${lugarDefecto || null},
+          comercio_id = ${comercioId || null}
+      WHERE id = ${id}
+      RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa, creada_en
+    `
+  } catch (error) {
+    const conflicto = conflictoUnico(error)
+    if (conflicto) return conflicto
+    throw error
+  }
 
   if (actualizada.length === 0) {
     return json({ error: 'Organización no encontrada.' }, 404)
@@ -199,7 +239,7 @@ async function manejarPatch(req) {
     UPDATE organizaciones
     SET activa = ${activa}
     WHERE id = ${id}
-    RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, activa, creada_en
+    RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa, creada_en
   `
 
   if (actualizada.length === 0) {

@@ -18,7 +18,13 @@ function aBase64(fichero) {
  * Sube el cartel del evento a Vercel Blob y comunica la URL resultante al
  * formulario. La imagen viaja en base64 dentro del JSON (ver api/admin/imagen.js).
  */
-export default function SelectorImagen({ valor, onChange, error }) {
+export default function SelectorImagen({
+  valor,
+  onChange,
+  error,
+  etiqueta = 'Cartel del evento',
+  opcional = true,
+}) {
   const entrada = useRef(null)
   const [subiendo, setSubiendo] = useState(false)
   const [fallo, setFallo] = useState('')
@@ -63,8 +69,8 @@ export default function SelectorImagen({ valor, onChange, error }) {
   return (
     <div>
       <span className="mb-2 block text-sm font-semibold text-on-surface">
-        Cartel del evento
-        <span className="ml-1.5 font-normal text-on-surface/50">(opcional)</span>
+        {etiqueta}
+        {opcional && <span className="ml-1.5 font-normal text-on-surface/50">(opcional)</span>}
       </span>
 
       {valor ? (

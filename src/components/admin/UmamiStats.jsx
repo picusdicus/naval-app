@@ -95,6 +95,8 @@ export function RankBar({ label, value, total, rank }) {
 const PAGE_LABELS = {
   "/": "Inicio",
   "/eventos": "Eventos",
+  "/comercios": "Comercios / Directorio",
+  // Ruta antigua de la guía: sigue apareciendo en las visitas históricas.
   "/mapa": "Mapa / Directorio",
   "/noticias": "Noticias",
   "/transporte": "Transporte",

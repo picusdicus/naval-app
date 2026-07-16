@@ -52,10 +52,10 @@
       ]
     },
     {
-      "name": "Guía Local",
-      "short_name": "Guía",
+      "name": "Comercios",
+      "short_name": "Comercios",
       "description": "Explorar comercios y servicios locales",
-      "url": "/mapa",
+      "url": "/comercios",
       "icons": [
         {
           "src": "/logo.png",

@@ -4,7 +4,7 @@ import MIcon from '../MIcon.jsx'
 const enlaces = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/eventos', label: 'Eventos' },
-  { to: '/mapa', label: 'Guía' },
+  { to: '/comercios', label: 'Comercios' },
   { to: '/transporte', label: 'Transporte' },
   { to: '/noticias', label: 'Noticias' },
 ]

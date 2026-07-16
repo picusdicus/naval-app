@@ -5,10 +5,13 @@ import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
+import { useDestacados } from '../lib/useDestacados.js'
 import { useWeather } from '../hooks/useWeather.js'
 import MIcon from '../components/MIcon.jsx'
+import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 
 const EVENTOS_EN_PORTADA = 6
+const DESTACADOS_EN_PORTADA = 4
 
 function saludo() {
   const h = new Date().getHours()
@@ -38,6 +41,9 @@ export default function Inicio() {
     () => proximosEventos(eventos, EVENTOS_EN_PORTADA),
     [eventos]
   )
+
+  // Teaser mixto (eventos + comercios) contratados como destacados.
+  const { items: destacados } = useDestacados({ eventos, limite: DESTACADOS_EN_PORTADA })
 
   return (
     <div className="space-y-8 md:space-y-16">
@@ -82,14 +88,32 @@ export default function Inicio() {
               Ver eventos
             </Link>
             <Link
-              to="/mapa"
+              to="/comercios"
               className="rounded-lg bg-white/70 px-8 py-3 text-sm font-semibold text-on-surface backdrop-blur transition-all hover:bg-white"
             >
-              Guía local
+              Ver comercios
             </Link>
           </div>
         </div>
       </section>
+
+      {/* Destacados: eventos y comercios contratados. Se oculta si no hay. */}
+      {destacados.length > 0 && (
+        <section>
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <h2 className="nv-section-title flex items-center gap-2 md:text-2xl">
+                <MIcon name="kid_star" className="text-[22px]" fill />
+                Destacados
+              </h2>
+              <p className="mt-1 hidden text-on-surface-variant md:block">
+                Lo que no te puedes perder estos días.
+              </p>
+            </div>
+          </div>
+          <CarruselDestacados items={destacados} columnas={4} />
+        </section>
+      )}
 
       {/* Accesos rápidos (móvil) */}
       <section className="grid grid-cols-2 gap-4 md:hidden">
@@ -271,7 +295,7 @@ export default function Inicio() {
                 Preguntar al asistente
               </button>
               <Link
-                to="/mapa"
+                to="/comercios"
                 className="rounded-lg border border-outline px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
               >
                 Sugerir un comercio

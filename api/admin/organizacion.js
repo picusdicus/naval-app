@@ -3,6 +3,7 @@
 // lugar con los que se publicarán, que el gestor no elige.
 import { obtenerSql } from '../_db.js'
 import { requerirSesionEdge } from '../_auth.js'
+import { organizacionDeSesion } from '../_organizacion.js'
 import { json } from '../_http.js'
 
 export const config = { runtime: 'edge' }
@@ -17,11 +18,7 @@ export default async function handler(req) {
 
   try {
     const sql = obtenerSql()
-    const [organizacion] = await sql`
-      SELECT nombre, slug, categoria_defecto, lugar_defecto
-      FROM organizaciones
-      WHERE slug = ${sesion.organizacionSlug}
-    `
+    const organizacion = await organizacionDeSesion(sql, sesion.organizacionSlug)
     if (!organizacion) {
       return json({ error: 'La organización de tu cuenta ya no existe.' }, 404)
     }

@@ -8,7 +8,7 @@ import { writeFileSync } from 'fs';
   
   try {
     console.log('Navigating to map page...');
-    await page.goto('http://localhost:5173/mapa', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:5173/comercios', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
     
     // Screenshot 1: Initial state

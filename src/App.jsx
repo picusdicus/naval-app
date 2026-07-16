@@ -29,6 +29,13 @@ function ProveedorAdmin() {
   )
 }
 
+// Redirección que conserva la query string: /mapa?comercio=X debe seguir
+// abriendo la ficha en /comercios?comercio=X (enlaces y accesos antiguos).
+function RedirigirConQuery({ a }) {
+  const { search } = useLocation()
+  return <Navigate to={`${a}${search}`} replace />
+}
+
 export default function App() {
   const [isAccessGranted, setIsAccessGranted] = useState(false)
   const { pathname } = useLocation()
@@ -75,7 +82,7 @@ export default function App() {
           <Route path="/" element={<Inicio />} />
           <Route path="/eventos" element={<Eventos />} />
           <Route path="/eventos/:id" element={<EventoDetalle />} />
-          <Route path="/mapa" element={<Mapa />} />
+          <Route path="/comercios" element={<Mapa />} />
           <Route path="/noticias" element={<Noticias />} />
           <Route path="/noticias/:id" element={<NoticiaDetalle />} />
           <Route path="/transporte" element={<Transporte />} />
@@ -85,6 +92,7 @@ export default function App() {
         {/* Rutas de antes de separar los logins: una organización puede
             tenerlas en favoritos. Redirigen en vez de dejar la página en
             blanco. `replace` evita que la URL rota quede en el historial. */}
+        <Route path="/mapa" element={<RedirigirConQuery a="/comercios" />} />
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />
         <Route path="/admin/registro" element={<Navigate to="/registro" replace />} />
         <Route path="/admin/super" element={<Navigate to="/admin" replace />} />

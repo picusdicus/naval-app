@@ -12,6 +12,8 @@ import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import EventoFila from '../components/eventos/EventoFila.jsx'
 import { imagenEvento, CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
+import { useDestacados } from '../lib/useDestacados.js'
+import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
@@ -31,7 +33,15 @@ export default function Eventos() {
   const futuros = useMemo(() => porCategoria(proximosEventos(todos)), [todos, categoria])
   const pasados = useMemo(() => porCategoria(eventosPasados(todos)), [todos, categoria])
 
-  const [destacado, ...resto] = futuros
+  // Eventos destacados contratados. El carrusel solo sustituye al hero en la
+  // vista sin filtrar; con un filtro activo (o sin destacados vigentes) se
+  // conserva el comportamiento clásico: el primer próximo como hero grande.
+  const { items: destacadosEvento } = useDestacados({ eventos: todos, tipo: 'evento', limite: 3 })
+  const conCarrusel = categoria === null && destacadosEvento.length > 0
+
+  // El carrusel realza, no quita: con él, la lista inferior muestra todos los
+  // próximos; sin él, el primero pasa a ser el hero y el resto la lista.
+  const [destacado, ...resto] = conCarrusel ? [null, ...futuros] : futuros
 
   return (
     <div className="space-y-8">
@@ -73,6 +83,17 @@ export default function Eventos() {
         </div>
       )}
 
+      {/* Destacados (contratados): sección propia, encima de los próximos. */}
+      {conCarrusel && (
+        <section className="space-y-6">
+          <h2 className="nv-section-title flex items-center gap-2 md:text-2xl">
+            <MIcon name="kid_star" className="text-[22px]" fill />
+            Destacados
+          </h2>
+          <CarruselDestacados items={destacadosEvento} tamano="grande" columnas={3} />
+        </section>
+      )}
+
       {/* ----------------------------- Próximos ----------------------------- */}
       <section className="space-y-6">
         <h2 className="nv-section-title flex items-center gap-2 md:text-2xl">
@@ -86,7 +107,7 @@ export default function Eventos() {
           </p>
         )}
 
-        {/* Evento destacado */}
+        {/* Evento destacado (fallback clásico: el primer próximo) */}
         {destacado && (
           <Link
             to={`/eventos/${destacado.id}`}

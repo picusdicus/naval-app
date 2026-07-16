@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import comerciosData from '../data/comercios.json'
 import serviciosLocales from '../data/servicios-locales.json'
 import { etiquetaCocina } from '../lib/cocinas.js'
@@ -8,6 +9,8 @@ import ComercioCard from '../components/directorio/ComercioCard.jsx'
 import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
 import { buscarDirectorio } from '../lib/busqueda.js'
+import { useDestacados } from '../lib/useDestacados.js'
+import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import MIcon from '../components/MIcon.jsx'
 
 // Hook: ¿el viewport cumple el media query? Se usa para montar el mapa solo en
@@ -40,6 +43,16 @@ export default function Mapa() {
 
   // OSM (con coordenadas) + servicios locales curados (sin ubicación fija).
   const todos = useMemo(() => [...comerciosData, ...serviciosLocales], [])
+
+  // ?comercio=<id> abre la ficha directamente (lo usan las tarjetas de
+  // destacados de la portada para aterrizar en el comercio concreto).
+  const [searchParams] = useSearchParams()
+  useEffect(() => {
+    const id = searchParams.get('comercio')
+    if (!id) return
+    const comercio = todos.find((c) => c.id === id)
+    if (comercio) setSeleccionado(comercio)
+  }, [searchParams, todos])
 
   // Al cambiar de categoría, se descarta el sub-filtro de tipo de cocina.
   function elegirCategoria(cat) {
@@ -80,6 +93,11 @@ export default function Mapa() {
     [comercios],
   )
 
+  // Comercios destacados (contratados). La franja solo se muestra en la vista
+  // sin filtrar: con una categoría o búsqueda activa el usuario va a lo suyo.
+  const { items: comerciosDestacados } = useDestacados({ tipo: 'comercio', limite: 6 })
+  const conDestacados = !categoria && !busqueda && comerciosDestacados.length > 0
+
   // Al seleccionar un comercio, scroll la ficha a la vista dentro del contenedor de la
   // columna izquierda. En desktop el scroll es dentro del contenedor (lg:overflow-y-auto),
   // en móvil se usa scrollIntoView normal.
@@ -116,7 +134,7 @@ export default function Mapa() {
       >
         <header>
           <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
-            Guía local
+            Comercios
           </h1>
           <p className="mt-1 text-on-surface-variant">
             Encuentra los mejores rincones de Navalcarnero. Datos de OpenStreetMap.
@@ -158,6 +176,23 @@ export default function Mapa() {
               </button>
             ))}
           </div>
+        )}
+
+        {/* Franja de comercios destacados: carrusel en todos los tamaños, la
+            columna es estrecha incluso en escritorio (lg:w-2/5). El clic
+            selecciona la ficha en la propia página, como en la lista. */}
+        {conDestacados && (
+          <section>
+            <h2 className="nv-section-title mb-3 flex items-center gap-2 text-lg">
+              <MIcon name="kid_star" className="text-[20px]" fill />
+              Comercios destacados
+            </h2>
+            <CarruselDestacados
+              items={comerciosDestacados}
+              soloCarrusel
+              onItemClick={(comercio) => setSeleccionado(comercio)}
+            />
+          </section>
         )}
 
         <div className="flex items-center justify-between">

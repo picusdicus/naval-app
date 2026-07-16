@@ -127,3 +127,38 @@ CREATE INDEX IF NOT EXISTS idx_analytics_fecha ON analytics (creado_en);
 ALTER TABLE analytics ADD COLUMN IF NOT EXISTS evento_id uuid REFERENCES eventos_usuario(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_analytics_evento ON analytics (evento_id);
+
+-- Destacados contratados: eventos o comercios que se realzan en portada,
+-- agenda y guía. `referencia_id` es texto opaco: ids de eventos estáticos
+-- ('ev-…', 'aytocult-…'), de la base ('bd-<uuid>'), de comercios ('gpl_…') o
+-- de servicios locales ('local/…'); si la referencia muere (evento borrado,
+-- comercio desaparecido al regenerar el JSON), el cliente la filtra sin romper.
+-- `organizacion_id` registra quién contrató el destacado; la vigencia se
+-- calcula en lectura con fecha_inicio/fecha_fin (sin cron). Una fila por item
+-- (UNIQUE): una nueva contratación del mismo item reutiliza su fila, no hay
+-- histórico de campañas pasadas.
+CREATE TABLE IF NOT EXISTS destacados (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo            text NOT NULL CHECK (tipo IN ('evento', 'comercio')),
+  referencia_id   text NOT NULL,
+  organizacion_id uuid REFERENCES organizaciones(id) ON DELETE SET NULL,
+  orden           integer NOT NULL DEFAULT 0,
+  imagen_url      text,
+  fecha_inicio    date NOT NULL DEFAULT CURRENT_DATE,
+  fecha_fin       date,
+  estado          text NOT NULL DEFAULT 'activo' CHECK (estado IN ('pendiente', 'activo', 'cancelado')),
+  creado_en       timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT destacado_unico UNIQUE (tipo, referencia_id),
+  CONSTRAINT destacado_fin_no_anterior CHECK (fecha_fin IS NULL OR fecha_fin >= fecha_inicio)
+);
+
+CREATE INDEX IF NOT EXISTS idx_destacados_vigentes ON destacados (estado, fecha_inicio, fecha_fin);
+
+-- Vincula una cuenta de organización con su ficha del directorio de comercios
+-- ('gpl_…' de comercios.json o 'local/…' de servicios-locales.json), para que
+-- pueda solicitar destacar su negocio desde /panel. Texto sin FK: el
+-- directorio vive en JSON, no en la base. El índice único parcial garantiza
+-- que un comercio solo pertenece a una organización.
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS comercio_id text;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_organizaciones_comercio ON organizaciones (comercio_id) WHERE comercio_id IS NOT NULL;
