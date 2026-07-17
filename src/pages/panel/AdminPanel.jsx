@@ -6,6 +6,8 @@ import AnaliticasOrganizacion from '../../components/admin/AnaliticasOrganizacio
 import DestacaNegocio from '../../components/admin/DestacaNegocio.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 import { CATEGORIAS_EVENTO } from '../../lib/eventos.js'
+import { campanaFinalizada, diasParaCaducar, textoCaducidad } from '../../lib/destacados.js'
+import { hoyISO } from '../../lib/fechas.js'
 
 const ESTADOS = {
   publicado: { etiqueta: 'Publicado', clases: 'bg-secondary-container text-on-secondary-container' },
@@ -39,13 +41,6 @@ function Estadistica({ icono, valor, etiqueta }) {
   )
 }
 
-const hoyISO = () => {
-  const hoy = new Date()
-  const mes = String(hoy.getMonth() + 1).padStart(2, '0')
-  const dia = String(hoy.getDate()).padStart(2, '0')
-  return `${hoy.getFullYear()}-${mes}-${dia}`
-}
-
 function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, onDestacar, onRetirarDestacado }) {
   const estado = ESTADOS[evento.estado] ?? ESTADOS.borrador
   const horario = evento.horaFin ? `${evento.hora} – ${evento.horaFin}` : evento.hora
@@ -76,10 +71,25 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
                 Destacado solicitado
               </span>
             )}
-            {destacado?.estado === 'activo' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-secondary-container px-2.5 py-0.5 text-xs font-semibold text-on-secondary-container">
+            {/* Activo con la campaña terminada: que la org no crea que sigue en vigor. */}
+            {campanaFinalizada(destacado) && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-semibold text-on-surface/60">
+                <MIcon name="kid_star" className="text-[14px]" />
+                Destacado finalizado
+              </span>
+            )}
+            {destacado?.estado === 'activo' && !campanaFinalizada(destacado) && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  diasParaCaducar(destacado) !== null
+                    ? 'bg-tertiary-container text-on-tertiary-container'
+                    : 'bg-secondary-container text-on-secondary-container'
+                }`}
+              >
                 <MIcon name="kid_star" className="text-[14px]" fill />
-                Destacado
+                {diasParaCaducar(destacado) !== null
+                  ? `Destacado · ${textoCaducidad(diasParaCaducar(destacado))}`
+                  : 'Destacado'}
               </span>
             )}
           </div>

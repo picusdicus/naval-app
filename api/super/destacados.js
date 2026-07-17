@@ -45,7 +45,10 @@ function validar({ tipo, referenciaId, organizacionId, imagenUrl, fechaInicio, f
   if (organizacionId && !UUID_REGEX.test(organizacionId)) return 'Organización inválida.'
   if (estado !== undefined && !ESTADOS.includes(estado)) return 'Estado no válido.'
   if (fechaInicio && !/^\d{4}-\d{2}-\d{2}$/.test(fechaInicio)) return 'Fecha de inicio inválida.'
-  if (fechaFin && !/^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) return 'Fecha de fin inválida.'
+  // La duración es obligatoria: un destacado es una campaña con fin. Las filas
+  // legacy sin fecha_fin siguen vigentes, pero al editarlas adquieren una.
+  if (!fechaFin) return 'Indica la duración del destacado.'
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) return 'Fecha de fin inválida.'
   if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
     return 'La fecha de fin no puede ser anterior a la de inicio.'
   }
@@ -169,6 +172,18 @@ async function manejarPatch(req) {
   if (!ESTADOS.includes(estado)) return json({ error: 'Estado no válido.' }, 400)
 
   const sql = obtenerSql()
+
+  // Nada se activa sin duración: las solicitudes de las orgs nacen sin fechas
+  // (las fija el superadmin) y las filas legacy pueden no tenerla. La UI abre
+  // el formulario de edición en ese caso; esto es la red de seguridad.
+  if (estado === 'activo') {
+    const previas = await sql`SELECT fecha_fin FROM destacados WHERE id = ${id}`
+    if (previas.length === 0) return json({ error: 'Destacado no encontrado.' }, 404)
+    if (!previas[0].fecha_fin) {
+      return json({ error: 'Asigna primero la duración editando el destacado.' }, 400)
+    }
+  }
+
   const filas = await sql`
     UPDATE destacados
     SET estado = ${estado}

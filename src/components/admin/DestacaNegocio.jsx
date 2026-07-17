@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import MIcon from '../MIcon.jsx'
 import SelectorImagen from './SelectorImagen.jsx'
-import { COMERCIOS_POR_ID } from '../../lib/destacados.js'
+import { campanaFinalizada, COMERCIOS_POR_ID, diasParaCaducar, textoCaducidad } from '../../lib/destacados.js'
+import { formatearFechaLarga } from '../../lib/eventos.js'
 
 // Tarjeta de /panel para solicitar destacar el negocio vinculado a la cuenta.
 // Solo se monta si la organización tiene `comercio_id` (lo vincula el
@@ -29,10 +30,25 @@ export default function DestacaNegocio({ comercioId, destacado, ocupado, onSolic
             Solicitud enviada
           </span>
         )}
-        {destacado?.estado === 'activo' && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-secondary-container px-2.5 py-0.5 text-xs font-semibold text-on-secondary-container">
+        {/* Activo con la campaña terminada: que la org no crea que sigue en vigor. */}
+        {campanaFinalizada(destacado) && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-semibold text-on-surface/60">
+            <MIcon name="kid_star" className="text-[14px]" />
+            Destacado finalizado
+          </span>
+        )}
+        {destacado?.estado === 'activo' && !campanaFinalizada(destacado) && (
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              diasParaCaducar(destacado) !== null
+                ? 'bg-tertiary-container text-on-tertiary-container'
+                : 'bg-secondary-container text-on-secondary-container'
+            }`}
+          >
             <MIcon name="kid_star" className="text-[14px]" fill />
-            Destacado
+            {diasParaCaducar(destacado) !== null
+              ? `Destacado · ${textoCaducidad(diasParaCaducar(destacado))}`
+              : 'Destacado'}
           </span>
         )}
       </div>
@@ -80,10 +96,15 @@ export default function DestacaNegocio({ comercioId, destacado, ocupado, onSolic
         </div>
       )}
 
-      {destacado?.estado === 'activo' && (
+      {destacado?.estado === 'activo' && !campanaFinalizada(destacado) && (
         <p className="mt-3 text-sm text-on-surface/70">
           Tu negocio está destacado en la portada y en la guía local
-          {destacado.fechaFin ? ` hasta el ${destacado.fechaFin}` : ''}.
+          {destacado.fechaFin ? ` hasta el ${formatearFechaLarga(destacado.fechaFin)}` : ''}.
+        </p>
+      )}
+      {campanaFinalizada(destacado) && (
+        <p className="mt-3 text-sm text-on-surface/70">
+          Tu campaña de destacado ha terminado. Si quieres renovarla, contacta con nosotros.
         </p>
       )}
     </section>

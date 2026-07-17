@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react'
 import MIcon from '../../MIcon.jsx'
 import SelectorImagen from '../SelectorImagen.jsx'
 import DialogoConfirmacion from '../DialogoConfirmacion.jsx'
-import { COMERCIOS_POR_ID } from '../../../lib/destacados.js'
+import { COMERCIOS_POR_ID, diasParaCaducar, textoCaducidad } from '../../../lib/destacados.js'
 import { useEventosPublicos } from '../../../lib/useEventosPublicos.js'
 import { proximosEventos, formatearFechaCorta } from '../../../lib/eventos.js'
+import { aFecha, hoyISO, sumarDias } from '../../../lib/fechas.js'
 
 // Gestión de los destacados contratados: qué eventos y comercios se realzan
 // en portada, agenda y guía, con qué orden y durante qué periodo. El pago se
@@ -16,15 +17,25 @@ const ETIQUETA_ESTADO = {
   cancelado: { texto: 'Cancelado', clases: 'bg-error/20 text-error hover:bg-error/30' },
 }
 
-const FORMULARIO_VACIO = {
+// La duración se elige con presets y fecha_fin se calcula al enviar
+// (inclusiva: N días naturales contando el de inicio ⇒ fin = inicio + N − 1).
+const PRESETS_DURACION = [7, 15, 30]
+
+/** Días naturales de una campaña con ambas fechas incluidas. */
+const duracionDe = (inicioIso, finIso) =>
+  Math.round((aFecha(finIso) - aFecha(inicioIso)) / 86_400_000) + 1
+
+// Función y no constante: con hoyISO() a nivel de módulo la fecha quedaría
+// congelada en sesiones largas.
+const crearFormularioVacio = () => ({
   tipo: 'evento',
   referenciaId: '',
   organizacionId: '',
   orden: 0,
   imagenUrl: '',
-  fechaInicio: '',
-  fechaFin: '',
-}
+  fechaInicio: hoyISO(),
+  duracionDias: '30',
+})
 
 export default function TablesDestacados() {
   const [destacados, setDestacados] = useState([])
@@ -32,7 +43,7 @@ export default function TablesDestacados() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
-  const [formularioData, setFormularioData] = useState(FORMULARIO_VACIO)
+  const [formularioData, setFormularioData] = useState(crearFormularioVacio)
   const [busquedaItem, setBusquedaItem] = useState('')
   const [editandoId, setEditandoId] = useState(null)
   const [enviando, setEnviando] = useState(false)
@@ -99,6 +110,10 @@ export default function TablesDestacados() {
       setError('Un comercio destacado necesita una imagen.')
       return
     }
+    if (!formularioData.duracionDias) {
+      setError('Indica la duración del destacado.')
+      return
+    }
 
     setEnviando(true)
     setError('')
@@ -107,15 +122,18 @@ export default function TablesDestacados() {
       const metodo = editandoId ? 'PUT' : 'POST'
       const url = editandoId ? `/api/super/destacados?id=${editandoId}` : '/api/super/destacados'
 
+      // fecha_fin se materializa aquí a partir de la duración elegida.
+      const inicio = formularioData.fechaInicio || hoyISO()
       const res = await fetch(url, {
         method: metodo,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formularioData,
+          tipo: formularioData.tipo,
+          referenciaId: formularioData.referenciaId,
           organizacionId: formularioData.organizacionId || null,
           orden: Number(formularioData.orden) || 0,
-          fechaInicio: formularioData.fechaInicio || null,
-          fechaFin: formularioData.fechaFin || null,
+          fechaInicio: inicio,
+          fechaFin: sumarDias(inicio, Number(formularioData.duracionDias) - 1),
           imagenUrl: formularioData.imagenUrl || null,
         }),
       })
@@ -139,7 +157,8 @@ export default function TablesDestacados() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado }),
       })
-      if (!res.ok) throw new Error('Error al cambiar estado')
+      const datos = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(datos.error || 'Error al cambiar estado')
       await cargarDestacados()
     } catch (err) {
       setError(err.message)
@@ -147,9 +166,16 @@ export default function TablesDestacados() {
   }
 
   // pendiente → activo (aprobar) · activo ⇄ cancelado. Rechazar una solicitud
-  // pendiente tiene su propio botón: no debe pasar por activo.
-  const cambiarEstado = (destacado) =>
+  // pendiente tiene su propio botón: no debe pasar por activo. Activar exige
+  // duración: sin fecha_fin (solicitudes de las orgs, que nacen sin fechas, o
+  // filas antiguas) se abre la edición para fijarla; aprobar es el segundo clic.
+  const cambiarEstado = (destacado) => {
+    if (destacado.estado !== 'activo' && !destacado.fechaFin) {
+      abrirEdicion(destacado)
+      return
+    }
     patchEstado(destacado, destacado.estado === 'activo' ? 'cancelado' : 'activo')
+  }
 
   const rechazar = (destacado) => patchEstado(destacado, 'cancelado')
 
@@ -169,14 +195,17 @@ export default function TablesDestacados() {
   }
 
   const abrirEdicion = (destacado) => {
+    const fechaInicio = destacado.fechaInicio || hoyISO()
     setFormularioData({
       tipo: destacado.tipo,
       referenciaId: destacado.referenciaId,
       organizacionId: destacado.organizacionId || '',
       orden: destacado.orden,
       imagenUrl: destacado.imagenUrl || '',
-      fechaInicio: destacado.fechaInicio || '',
-      fechaFin: destacado.fechaFin || '',
+      fechaInicio,
+      // Se infiere la duración de las fechas actuales; sin fecha_fin (legacy o
+      // solicitud recién llegada) queda vacía y el envío obliga a elegir.
+      duracionDias: destacado.fechaFin ? String(duracionDe(fechaInicio, destacado.fechaFin)) : '',
     })
     setEditandoId(destacado.id)
     setBusquedaItem('')
@@ -186,7 +215,7 @@ export default function TablesDestacados() {
   const cancelar = () => {
     setMostrarFormulario(false)
     setEditandoId(null)
-    setFormularioData(FORMULARIO_VACIO)
+    setFormularioData(crearFormularioVacio())
     setBusquedaItem('')
     setError('')
   }
@@ -272,6 +301,12 @@ export default function TablesDestacados() {
                           {!d.vigente && d.estado === 'activo' && (
                             <span className="ml-1.5 rounded bg-error/10 px-1.5 py-0.5 text-[10px] font-semibold text-error">
                               fuera de plazo
+                            </span>
+                          )}
+                          {/* Excluyente con "fuera de plazo": el aviso exige vigente. */}
+                          {diasParaCaducar(d) !== null && (
+                            <span className="ml-1.5 rounded bg-tertiary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-tertiary-container">
+                              {textoCaducidad(diasParaCaducar(d))}
                             </span>
                           )}
                         </td>
@@ -451,16 +486,42 @@ export default function TablesDestacados() {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold">Fin</label>
-                <input
-                  type="date"
-                  value={formularioData.fechaFin}
+                <label className="mb-2 block text-sm font-semibold">Duración</label>
+                <select
+                  value={formularioData.duracionDias}
                   onChange={(e) =>
-                    setFormularioData({ ...formularioData, fechaFin: e.target.value })
+                    setFormularioData({ ...formularioData, duracionDias: e.target.value })
                   }
                   className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
                   disabled={enviando}
-                />
+                >
+                  {formularioData.duracionDias === '' && (
+                    <option value="" disabled>
+                      Selecciona duración…
+                    </option>
+                  )}
+                  {/* Campañas con duración no estándar: se puede reguardar sin alterarla. */}
+                  {formularioData.duracionDias !== '' &&
+                    !PRESETS_DURACION.includes(Number(formularioData.duracionDias)) && (
+                      <option value={formularioData.duracionDias}>
+                        Personalizada ({formularioData.duracionDias} días)
+                      </option>
+                    )}
+                  {PRESETS_DURACION.map((n) => (
+                    <option key={n} value={String(n)}>
+                      {n} días
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-on-surface/60">
+                  Fin:{' '}
+                  {formularioData.duracionDias
+                    ? sumarDias(
+                        formularioData.fechaInicio || hoyISO(),
+                        Number(formularioData.duracionDias) - 1,
+                      )
+                    : '—'}
+                </p>
               </div>
             </div>
 

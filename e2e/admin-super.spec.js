@@ -15,10 +15,10 @@ test.describe('Admin Superadmin Panel', () => {
     await expect(page.locator('h1:has-text("Panel Superadmin")')).toBeVisible()
   })
 
-  test('superadmin panel should have three tabs', async ({ page }) => {
-    const tabs = page.locator('button').filter({ hasText: /Organizaciones|Códigos de invitación|Analytics/ })
+  test('superadmin panel should have four tabs', async ({ page }) => {
+    const tabs = page.locator('button').filter({ hasText: /Organizaciones|Códigos de invitación|Destacados|Analytics/ })
     const count = await tabs.count()
-    expect(count).toBe(3)
+    expect(count).toBe(4)
   })
 
   test('organizaciones tab should show list and create button', async ({ page }) => {

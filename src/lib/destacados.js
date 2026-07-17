@@ -12,6 +12,7 @@
 
 import comerciosData from '../data/comercios.json'
 import serviciosLocales from '../data/servicios-locales.json'
+import { diasHasta, UMBRAL_AVISO_CADUCIDAD } from './fechas.js'
 import { CATEGORIAS_EVENTO, formatearFechaCorta } from './eventos.js'
 import { imagenEvento } from './imagenesEvento.js'
 import { CATEGORIAS } from './categorias.js'
@@ -23,6 +24,33 @@ import { SIMBOLO_CATEGORIA } from '../components/directorio/iconosCategoria.jsx'
 export const COMERCIOS_POR_ID = new Map(
   [...comerciosData, ...serviciosLocales].map((c) => [c.id, c]),
 )
+
+// Días que le quedan a una campaña activa y en vigor que caduca pronto
+// (0..UMBRAL_AVISO_CADUCIDAD), o null si no procede avisar. Única fuente del
+// aviso "caduca en N días" para la tabla del superadmin y el panel de la org.
+// Exige `vigente`, así que es excluyente con "fuera de plazo" por construcción.
+export function diasParaCaducar(destacado) {
+  if (destacado?.estado !== 'activo' || !destacado.vigente || !destacado.fechaFin) return null
+  const dias = diasHasta(destacado.fechaFin)
+  return dias >= 0 && dias <= UMBRAL_AVISO_CADUCIDAD ? dias : null
+}
+
+export function textoCaducidad(dias) {
+  if (dias === 0) return 'caduca hoy'
+  if (dias === 1) return 'caduca mañana'
+  return `caduca en ${dias} días`
+}
+
+// Campaña activa cuyo plazo ya pasó. No basta con `!vigente`: un activo puede
+// no estar en vigor también porque su fecha_inicio aún no ha llegado.
+export function campanaFinalizada(destacado) {
+  return (
+    destacado?.estado === 'activo' &&
+    !destacado.vigente &&
+    Boolean(destacado.fechaFin) &&
+    diasHasta(destacado.fechaFin) < 0
+  )
+}
 
 export function eventoATarjeta(evento, imagenOverride) {
   const propia = imagenEvento(evento)

@@ -9,10 +9,15 @@ import { COMERCIOS_POR_ID, comercioATarjeta, eventoATarjeta } from './destacados
 //
 //   const { items, cargando } = useDestacados({ eventos, tipo: 'evento', limite: 3 })
 //
-// Devuelve items ya adaptados a props de <TarjetaDestacado>, en el orden que
-// fijó el superadmin (el endpoint ya viene ordenado por `orden`).
+// Devuelve items ya adaptados a props de <TarjetaDestacado>. Si los vigentes
+// caben en `limite`, en el orden que fijó el superadmin (el endpoint ya viene
+// ordenado por `orden`); si hay más que huecos, cada montaje sortea cuáles se
+// muestran (semilla estable por montaje, para que la selección no baile entre
+// re-renders) y re-ordena la selección por ese mismo `orden` — así todos los
+// contratados rotan por los huecos sin perder su prioridad relativa.
 export function useDestacados({ eventos = [], tipo = null, limite } = {}) {
   const [crudos, setCrudos] = useState(null) // null mientras carga
+  const [semilla] = useState(() => Math.random())
 
   useEffect(() => {
     let vigente = true
@@ -51,8 +56,39 @@ export function useDestacados({ eventos = [], tipo = null, limite } = {}) {
       })
       .filter(Boolean)
 
-    return typeof limite === 'number' ? resueltos.slice(0, limite) : resueltos
-  }, [crudos, eventos, tipo, limite])
+    if (typeof limite !== 'number' || resueltos.length <= limite) return resueltos
+
+    // Más contratados que huecos: se sortean `limite` y se restaura el orden
+    // original (índice) dentro de la selección para respetar la prioridad.
+    const indexados = resueltos.map((item, i) => ({ item, i }))
+    return barajarConSemilla(indexados, semilla)
+      .slice(0, limite)
+      .sort((a, b) => a.i - b.i)
+      .map(({ item }) => item)
+  }, [crudos, eventos, tipo, limite, semilla])
 
   return { items, cargando: crudos === null }
+}
+
+// PRNG determinista minúsculo: misma semilla → misma secuencia, para que el
+// sorteo no cambie cuando el useMemo recomputa (p. ej. al llegar los eventos).
+function mulberry32(a) {
+  return function () {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/** Fisher-Yates sembrado con un número en [0, 1). No muta la lista. */
+export function barajarConSemilla(lista, semilla) {
+  const azar = mulberry32(Math.floor(semilla * 2 ** 32))
+  const copia = [...lista]
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(azar() * (i + 1))
+    ;[copia[i], copia[j]] = [copia[j], copia[i]]
+  }
+  return copia
 }
