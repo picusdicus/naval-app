@@ -1,6 +1,6 @@
 {
-  "name": "Vecinal - Navalcarnero",
-  "short_name": "Vecinal",
+  "name": "En Navalcarnero",
+  "short_name": "En Navalcarnero",
   "description": "Portal vecinal de Navalcarnero: agenda de eventos, guía local, noticias y asistente IA para trámites municipales.",
   "start_url": "/",
   "scope": "/",

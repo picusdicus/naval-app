@@ -1,4 +1,4 @@
--- Esquema inicial de Navalcarnero Vecinal (Neon Postgres).
+-- Esquema inicial de En Navalcarnero (Neon Postgres).
 --
 -- Las sentencias se separan por ';' al final de línea: no uses funciones ni
 -- bloques con dollar-quoting aquí (scripts/db-setup.mjs las trocea así).

@@ -17,7 +17,7 @@ async function verify() {
     const html = await fetchPage('http://localhost:5173/transporte');
     
     // Verify the page loads
-    if (html.includes('<title>Navalcarnero Vecinal</title>')) {
+    if (html.includes('<title>En Navalcarnero</title>')) {
       console.log('✅ Page title correct');
     }
     

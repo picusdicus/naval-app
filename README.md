@@ -1,4 +1,4 @@
-# Navalcarnero Vecinal
+# En Navalcarnero
 
 Aplicación web para los vecinos de Navalcarnero (Madrid): eventos, directorio de
 comercios y servicios sobre mapa, noticias, transporte y un asistente de IA para

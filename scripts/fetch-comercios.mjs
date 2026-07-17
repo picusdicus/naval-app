@@ -264,7 +264,7 @@ const SEARCH_QUERIES = [
 // ---------------------------------------------------------------------------
 
 async function main() {
-  console.log("Navalcarnero Vecinal — Google Places fetch script");
+  console.log("En Navalcarnero — Google Places fetch script");
   console.log("=".repeat(55));
 
   // ── Phase 1: collect unique place IDs via text search ─────────────────────

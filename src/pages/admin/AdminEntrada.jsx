@@ -28,7 +28,7 @@ export default function AdminEntrada() {
     return (
       <FormularioLogin
         titulo="Superadministración"
-        subtitulo="Acceso restringido al equipo de Navalcarnero Vecinal"
+        subtitulo="Acceso restringido al equipo de En Navalcarnero"
         icono="verified_admin"
         endpoint="/api/admin/login"
         destinoDefecto="/admin"

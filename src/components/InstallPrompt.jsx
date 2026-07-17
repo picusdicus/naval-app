@@ -52,7 +52,7 @@ export default function InstallPrompt() {
             <MIcon name="mobile_screen_share" className="text-primary text-[24px]" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-display font-bold text-primary mb-1">Instalar Vecinal</h3>
+            <h3 className="font-display font-bold text-primary mb-1">Instalar En Navalcarnero</h3>
             <p className="text-sm text-on-surface-variant">
               Accede rápidamente a la app desde tu pantalla de inicio. Funciona offline.
             </p>

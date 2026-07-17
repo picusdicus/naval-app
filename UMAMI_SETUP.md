@@ -1,6 +1,6 @@
 # Integración de Umami Analytics
 
-Guía completa para desplegar y conectar Umami a Navalcarnero Vecinal.
+Guía completa para desplegar y conectar Umami a En Navalcarnero.
 
 ---
 
@@ -37,7 +37,7 @@ Umami inicializará el schema automáticamente en el primer arranque.
 1. Abre `https://tu-umami.vercel.app` → login con `admin` / `umami`
 2. **Cambia la contraseña inmediatamente** (Settings → Profile)
 3. Ve a **Settings → Websites → Add website**
-   - Nombre: `Navalcarnero Vecinal`
+   - Nombre: `En Navalcarnero`
    - Domain: `navalcarnero-vecinal.vercel.app`
 4. Copia el **Website ID** (UUID) que aparece en el snippet de tracking
 5. Ve a **Settings → API Keys → Create** → copia el token generado
@@ -154,7 +154,7 @@ La respuesta se cachea 5 minutos (`Cache-Control: max-age=300`) para no saturar 
 
 ```
 ┌─────────────────────────────────────────┐
-│  Navalcarnero Vecinal (Vercel)           │
+│  En Navalcarnero (Vercel)           │
 │                                          │
 │  index.html                              │
 │    └─ <script> → umami.vercel.app/script │  pageviews automáticos
