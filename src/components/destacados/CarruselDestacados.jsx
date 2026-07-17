@@ -6,16 +6,18 @@ import TarjetaDestacado from './TarjetaDestacado.jsx'
 // Con `soloCarrusel` se mantiene el carrusel en todos los breakpoints, con
 // tarjetas estrechas — lo necesita la columna izquierda del Mapa (lg:w-2/5).
 //
-// Rotación en bucle: con más items que `visibles`, el markup cambia a una
-// pista deslizante (overflow oculto + flex con N+1 tarjetas): cada AVANCE_MS
-// la pista anima translateX exactamente una tarjeta hacia la izquierda y, al
-// terminar la transición, avanza `paso` y resetea el transform sin transición
-// — la ventana queda igual que al final del deslizamiento y el bucle continúa
-// sin salto visible. Así todos los contratados pasan por pantalla ante el
-// mismo visitante. El arranque es aleatorio por montaje, se pausa con el
-// ratón encima o al tocar (que la tarjeta no cambie bajo el dedo/cursor) y no
-// avanza con prefers-reduced-motion. El ancho de cada hueco de la pista llega
-// por variables CSS (--nv-hueco / --nv-hueco-md, ver .nv-pista en index.css).
+// Rotación en bucle: con más items que `visibles`, en md+ el markup cambia a
+// una pista deslizante (overflow oculto + flex con N+1 tarjetas): cada
+// AVANCE_MS la pista anima translateX exactamente una tarjeta hacia la
+// izquierda y, al terminar la transición, avanza `paso` y resetea el
+// transform sin transición — la ventana queda igual que al final del
+// deslizamiento y el bucle continúa sin salto visible. Así todos los
+// contratados pasan por pantalla ante el mismo visitante. En móvil NO hay
+// pista: se mantiene el carrusel nativo con scroll y TODOS los items (el
+// swipe es el gesto natural ahí, y el overflow oculto de la pista lo
+// rompería). El arranque es aleatorio por montaje, se pausa con el ratón
+// encima y no avanza con prefers-reduced-motion. El ancho de cada hueco de
+// la pista llega por variable CSS (--nv-hueco, ver .nv-pista en index.css).
 //
 // Pendiente de pulido (anotado en el plan, no bloqueante): el carrusel móvil
 // no tiene indicador de que hay más contenido a la derecha ni navegación por
@@ -61,10 +63,13 @@ export default function CarruselDestacados({
     const id = setInterval(() => {
       const pista = pistaRef.current
       if (!pista || pista.children.length === 0) return
-      // La distancia se mide en el momento (ancho real de tarjeta + gap), así
-      // vale para móvil y escritorio sin duplicar el cálculo de la CSS.
+      // La distancia se mide en el momento (ancho real de tarjeta + gap), sin
+      // duplicar el cálculo de la CSS. En móvil la pista está oculta (ancho
+      // 0): no se avanza — allí manda el scroll manual del carrusel nativo.
+      const ancho = pista.children[0].getBoundingClientRect().width
+      if (!ancho) return
       const gap = parseFloat(getComputedStyle(pista).columnGap) || 0
-      setDistancia(pista.children[0].getBoundingClientRect().width + gap)
+      setDistancia(ancho + gap)
       setDeslizando(true)
     }, AVANCE_MS)
     return () => clearInterval(id)
@@ -140,35 +145,51 @@ export default function CarruselDestacados({
   const inicio = Math.floor(semilla * total)
   const ventana = Array.from({ length: huecos + 1 }, (_, i) => items[(inicio + paso + i) % total])
 
+  const envoltorioMovil = soloCarrusel ? 'w-56 flex-none snap-start' : 'w-[80%] max-w-xs flex-none snap-start'
+
   return (
-    <div
-      className="overflow-hidden"
-      onMouseEnter={pausar}
-      onMouseLeave={reanudar}
-      onTouchStart={pausaTemporal}
-    >
-      <div
-        ref={pistaRef}
-        onTransitionEnd={(e) => {
-          if (e.target === pistaRef.current && e.propertyName === 'transform' && deslizando) {
-            terminarDeslizamiento()
-          }
-        }}
-        className={`nv-pista flex ${soloCarrusel ? 'gap-3' : 'gap-3 md:gap-4'} pb-1 md:pb-0`}
-        style={{
-          '--nv-hueco': soloCarrusel ? '14rem' : '80%',
-          // Debe cuadrar con md:gap-4 (1rem) para que quepan N tarjetas justas.
-          '--nv-hueco-md': soloCarrusel ? '14rem' : `calc((100% - ${huecos - 1} * 1rem) / ${huecos})`,
-          transform: deslizando ? `translateX(-${distancia}px)` : 'translateX(0)',
-          transition: deslizando ? `transform ${DESLIZAMIENTO_MS}ms ease-in-out` : 'none',
-        }}
-      >
-        {ventana.map((destacado) => (
-          <div key={destacado.id} className="flex-none">
+    <>
+      {/* Móvil: nada de pista — carrusel nativo con TODOS los items, que el
+          swipe es la forma natural de recorrerlos (y overflow-hidden lo
+          mataría). La pista auto-deslizante queda para md+, donde no hay
+          gesto de scroll horizontal cómodo. */}
+      <div className={`hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 md:hidden`}>
+        {items.map((destacado) => (
+          <div key={destacado.id} className={envoltorioMovil}>
             {tarjeta(destacado)}
           </div>
         ))}
       </div>
-    </div>
+
+      <div
+        className="hidden overflow-hidden md:block"
+        onMouseEnter={pausar}
+        onMouseLeave={reanudar}
+        onTouchStart={pausaTemporal}
+      >
+        <div
+          ref={pistaRef}
+          onTransitionEnd={(e) => {
+            if (e.target === pistaRef.current && e.propertyName === 'transform' && deslizando) {
+              terminarDeslizamiento()
+            }
+          }}
+          className={`nv-pista flex ${soloCarrusel ? 'gap-3' : 'gap-4'}`}
+          style={{
+            // Debe cuadrar con el gap de la pista para que quepan N tarjetas
+            // justas (gap-4 = 1rem; soloCarrusel usa ancho fijo y gap-3).
+            '--nv-hueco': soloCarrusel ? '14rem' : `calc((100% - ${huecos - 1} * 1rem) / ${huecos})`,
+            transform: deslizando ? `translateX(-${distancia}px)` : 'translateX(0)',
+            transition: deslizando ? `transform ${DESLIZAMIENTO_MS}ms ease-in-out` : 'none',
+          }}
+        >
+          {ventana.map((destacado) => (
+            <div key={destacado.id} className="flex-none">
+              {tarjeta(destacado)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   )
 }
