@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import MIcon from '../../MIcon.jsx'
 import { COMERCIOS_POR_ID } from '../../../lib/destacados.js'
+import { LISTA_CATEGORIAS_EVENTO } from '../../../lib/eventos.js'
 
 const FORMULARIO_VACIO = {
   nombre: '',
@@ -10,9 +11,9 @@ const FORMULARIO_VACIO = {
   telefono: '',
   web: '',
   comercioId: '',
-  // Sin input propio en este formulario, pero el PUT reemplaza la fila entera:
-  // si no viajan de vuelta, cada "Guardar" borra el perfil de eventos de la
-  // organización (y el formulario de /panel se queda sin categoría ni lugar).
+  // Perfil de eventos: el formulario de /panel los muestra como solo lectura
+  // y el servidor machaca con ellos lo que mande el cliente. Sin rellenarlos,
+  // la organización no puede publicar eventos.
   categoriaDefecto: '',
   lugarDefecto: '',
 }
@@ -305,6 +306,51 @@ export default function TablesOrganizaciones() {
                   className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
                   disabled={enviando}
                 />
+              </div>
+            </div>
+
+            {/* Perfil de eventos: cada evento de la organización se publica
+                con esta categoría y este lugar (el gestor los ve como solo
+                lectura en su formulario). Sin ambos, no puede publicar. */}
+            <div>
+              <p className="mb-2 text-sm font-semibold">
+                Perfil de eventos
+                <span className="ml-1.5 font-normal text-on-surface/50">
+                  (sin categoría y lugar, la organización no puede publicar eventos)
+                </span>
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">Categoría por defecto</label>
+                  <select
+                    value={formularioData.categoriaDefecto}
+                    onChange={(e) =>
+                      setFormularioData({ ...formularioData, categoriaDefecto: e.target.value })
+                    }
+                    className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                    disabled={enviando}
+                  >
+                    <option value="">— Sin asignar —</option>
+                    {LISTA_CATEGORIAS_EVENTO.map((categoria) => (
+                      <option key={categoria.id} value={categoria.id}>
+                        {categoria.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">Lugar por defecto</label>
+                  <input
+                    type="text"
+                    value={formularioData.lugarDefecto}
+                    onChange={(e) =>
+                      setFormularioData({ ...formularioData, lugarDefecto: e.target.value })
+                    }
+                    placeholder="P. ej. Teatro Centro, Navalcarnero"
+                    className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                    disabled={enviando}
+                  />
+                </div>
               </div>
             </div>
 

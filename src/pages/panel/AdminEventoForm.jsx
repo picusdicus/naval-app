@@ -128,6 +128,12 @@ export default function AdminEventoForm() {
     ? `Definido en el perfil de ${organizacion.nombre}.`
     : 'Definido en el perfil de tu organización.'
 
+  // Categoría y lugar son de solo lectura para el gestor: si el superadmin
+  // aún no los asignó al perfil, marcar los campos en rojo solo confunde —
+  // hay que decir claramente que la pelota está en el tejado del equipo.
+  const perfilIncompleto =
+    Boolean(organizacion) && (!organizacion.categoriaDefecto || !organizacion.lugarDefecto)
+
   // Al crear, el botón secundario guarda un borrador. Al editar, lleva el
   // evento al estado contrario del que tiene ahora.
   const esBorrador = valores.estado === 'borrador'
@@ -207,6 +213,19 @@ export default function AdminEventoForm() {
             {/* Categoría y lugar salen del perfil de la organización: se
                 muestran para que el gestor sepa cómo se publicará el evento,
                 pero no se editan aquí (y el servidor los impone igualmente). */}
+            {perfilIncompleto && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-tertiary-container bg-tertiary-container/40 p-4"
+              >
+                <MIcon name="info" className="mt-0.5 flex-shrink-0 text-[20px] text-on-tertiary-container" />
+                <p className="text-sm font-medium text-on-surface">
+                  El perfil de tu organización aún no tiene asignados la categoría y el lugar de
+                  publicación — los configura el equipo de la app. Hasta entonces no podrás guardar
+                  eventos: contacta con nosotros para completarlo.
+                </p>
+              </div>
+            )}
             <div className="grid gap-5 sm:grid-cols-2">
               <CampoFormulario
                 id="categoria"
@@ -367,7 +386,7 @@ export default function AdminEventoForm() {
           <div className="flex flex-col gap-3 sm:flex-row-reverse">
             <button
               type="submit"
-              disabled={enviando}
+              disabled={enviando || perfilIncompleto}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-3 font-semibold text-on-primary transition-all hover:enabled:shadow-card-lg active:enabled:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <MIcon name={editando ? 'save' : 'publish'} className="text-[18px]" />
@@ -376,7 +395,7 @@ export default function AdminEventoForm() {
 
             <button
               type="button"
-              disabled={enviando}
+              disabled={enviando || perfilIncompleto}
               onClick={() => guardar(accionSecundaria.estado)}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-outline-variant/40 py-3 font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
             >
