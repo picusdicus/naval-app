@@ -11,7 +11,6 @@ import MIcon from '../components/MIcon.jsx'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 
 const EVENTOS_EN_PORTADA = 6
-const DESTACADOS_EN_PORTADA = 4
 
 function saludo() {
   const h = new Date().getHours()
@@ -43,7 +42,7 @@ export default function Inicio() {
   )
 
   // Teaser mixto (eventos + comercios) contratados como destacados.
-  const { items: destacados } = useDestacados({ eventos, limite: DESTACADOS_EN_PORTADA })
+  const { items: destacados } = useDestacados({ eventos })
 
   return (
     <div className="space-y-8 md:space-y-16">
@@ -111,7 +110,7 @@ export default function Inicio() {
               </p>
             </div>
           </div>
-          <CarruselDestacados items={destacados} columnas={4} />
+          <CarruselDestacados items={destacados} columnas={4} seccion="inicio" />
         </section>
       )}
 

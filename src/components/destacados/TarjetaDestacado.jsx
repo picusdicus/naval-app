@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
+import { reportarClicDestacado } from '../../lib/useAnalytics.js'
 
 // Tarjeta de destacado: foto a sangre completa con degradado oscuro inferior,
 // pastilla de categoría, título en blanco y líneas de detalle con icono —
@@ -9,9 +10,12 @@ import MIcon from '../MIcon.jsx'
 //
 // `destacado` es la forma que devuelven los adaptadores de src/lib/destacados.js.
 // Con `onClick` se renderiza como botón (la franja del Mapa selecciona la ficha
-// en la propia página); sin él, como <Link> a `destacado.to`.
-export default function TarjetaDestacado({ destacado, tamano = 'normal', onClick }) {
+// en la propia página); sin él, como <Link> a `destacado.to`. Con `seccion`
+// (superficie que la muestra) el clic se registra en analytics — sendBeacon
+// sobrevive a la navegación del Link.
+export default function TarjetaDestacado({ destacado, tamano = 'normal', onClick, seccion }) {
   const grande = tamano === 'grande'
+  const registrarClic = seccion ? () => reportarClicDestacado(destacado, seccion) : undefined
 
   const contenido = (
     <>
@@ -72,14 +76,21 @@ export default function TarjetaDestacado({ destacado, tamano = 'normal', onClick
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={`${clases} text-left`}>
+      <button
+        type="button"
+        onClick={() => {
+          registrarClic?.()
+          onClick()
+        }}
+        className={`${clases} text-left`}
+      >
         {contenido}
       </button>
     )
   }
 
   return (
-    <Link to={destacado.to} className={clases}>
+    <Link to={destacado.to} onClick={registrarClic} className={clases}>
       {contenido}
     </Link>
   )

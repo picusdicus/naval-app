@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import TarjetaDestacado from './TarjetaDestacado.jsx'
 
 // En móvil, carrusel horizontal con scroll-snap (cada tarjeta ocupa ~80% del
@@ -5,9 +6,24 @@ import TarjetaDestacado from './TarjetaDestacado.jsx'
 // Con `soloCarrusel` se mantiene el carrusel en todos los breakpoints, con
 // tarjetas estrechas — lo necesita la columna izquierda del Mapa (lg:w-2/5).
 //
+// Rotación en bucle: con más items que `visibles`, el markup cambia a una
+// pista deslizante (overflow oculto + flex con N+1 tarjetas): cada AVANCE_MS
+// la pista anima translateX exactamente una tarjeta hacia la izquierda y, al
+// terminar la transición, avanza `paso` y resetea el transform sin transición
+// — la ventana queda igual que al final del deslizamiento y el bucle continúa
+// sin salto visible. Así todos los contratados pasan por pantalla ante el
+// mismo visitante. El arranque es aleatorio por montaje, se pausa con el
+// ratón encima o al tocar (que la tarjeta no cambie bajo el dedo/cursor) y no
+// avanza con prefers-reduced-motion. El ancho de cada hueco de la pista llega
+// por variables CSS (--nv-hueco / --nv-hueco-md, ver .nv-pista en index.css).
+//
 // Pendiente de pulido (anotado en el plan, no bloqueante): el carrusel móvil
 // no tiene indicador de que hay más contenido a la derecha ni navegación por
 // teclado más allá del foco de cada tarjeta.
+
+const AVANCE_MS = 5000
+const DESLIZAMIENTO_MS = 600
+const PAUSA_TRAS_TOQUE_MS = 12000
 
 // Tailwind no ve clases construidas dinámicamente: el nº de columnas se
 // resuelve contra este mapa estático.
@@ -23,30 +39,136 @@ export default function CarruselDestacados({
   columnas = 3,
   soloCarrusel = false,
   onItemClick,
+  seccion,
+  visibles,
 }) {
-  if (!items || items.length === 0) return null
+  const huecos = visibles ?? columnas
+  const total = items?.length ?? 0
+  const rota = total > huecos
 
-  const contenedor = soloCarrusel
-    ? 'hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1'
-    : `hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 md:grid ${
-        COLUMNAS[columnas] || COLUMNAS[3]
-      } md:gap-4 md:overflow-visible md:pb-0`
+  const [semilla] = useState(() => Math.random())
+  const [paso, setPaso] = useState(0)
+  const [deslizando, setDeslizando] = useState(false)
+  const [distancia, setDistancia] = useState(0)
+  const [pausado, setPausado] = useState(false)
+  const pistaRef = useRef(null)
+  const temporizadorToque = useRef(null)
 
-  const envoltorio = soloCarrusel
-    ? 'w-56 flex-none snap-start'
-    : 'w-[80%] max-w-xs flex-none snap-start md:w-auto md:max-w-none'
+  useEffect(() => {
+    if (!rota || pausado || deslizando) return undefined
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+
+    const id = setInterval(() => {
+      const pista = pistaRef.current
+      if (!pista || pista.children.length === 0) return
+      // La distancia se mide en el momento (ancho real de tarjeta + gap), así
+      // vale para móvil y escritorio sin duplicar el cálculo de la CSS.
+      const gap = parseFloat(getComputedStyle(pista).columnGap) || 0
+      setDistancia(pista.children[0].getBoundingClientRect().width + gap)
+      setDeslizando(true)
+    }, AVANCE_MS)
+    return () => clearInterval(id)
+  }, [rota, pausado, deslizando])
+
+  const terminarDeslizamiento = () => {
+    setPaso((p) => p + 1)
+    setDeslizando(false)
+  }
+
+  // Red de seguridad: si transitionend no llega (pestaña en segundo plano),
+  // se consolida igualmente. Se limpia si la transición termina antes.
+  useEffect(() => {
+    if (!deslizando) return undefined
+    const id = setTimeout(terminarDeslizamiento, DESLIZAMIENTO_MS + 200)
+    return () => clearTimeout(id)
+  }, [deslizando])
+
+  useEffect(() => () => clearTimeout(temporizadorToque.current), [])
+
+  if (total === 0) return null
+
+  // mouseenter/leave y no pointer*: en táctil pointerenter dispara sin un
+  // "leave" fiable y dejaría la rotación pausada para siempre; un toque pausa
+  // un rato y se reanuda solo.
+  const pausar = () => {
+    clearTimeout(temporizadorToque.current)
+    setPausado(true)
+  }
+  const reanudar = () => {
+    clearTimeout(temporizadorToque.current)
+    setPausado(false)
+  }
+  const pausaTemporal = () => {
+    pausar()
+    temporizadorToque.current = setTimeout(() => setPausado(false), PAUSA_TRAS_TOQUE_MS)
+  }
+
+  const tarjeta = (destacado) => (
+    <TarjetaDestacado
+      destacado={destacado}
+      tamano={tamano}
+      seccion={seccion}
+      onClick={onItemClick ? () => onItemClick(destacado.item) : undefined}
+    />
+  )
+
+  if (!rota) {
+    const contenedor = soloCarrusel
+      ? 'hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1'
+      : `hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 md:grid ${
+          COLUMNAS[columnas] || COLUMNAS[3]
+        } md:gap-4 md:overflow-visible md:pb-0`
+
+    const envoltorio = soloCarrusel
+      ? 'w-56 flex-none snap-start'
+      : 'w-[80%] max-w-xs flex-none snap-start md:w-auto md:max-w-none'
+
+    return (
+      <div className={contenedor}>
+        {items.map((destacado) => (
+          <div key={destacado.id} className={envoltorio}>
+            {tarjeta(destacado)}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // rota ⇒ total ≥ huecos + 1: la ventana (con la tarjeta entrante extra)
+  // nunca repite ids, las keys estables dejan a React reutilizar los nodos al
+  // consolidar el paso.
+  const inicio = Math.floor(semilla * total)
+  const ventana = Array.from({ length: huecos + 1 }, (_, i) => items[(inicio + paso + i) % total])
 
   return (
-    <div className={contenedor}>
-      {items.map((destacado) => (
-        <div key={destacado.id} className={envoltorio}>
-          <TarjetaDestacado
-            destacado={destacado}
-            tamano={tamano}
-            onClick={onItemClick ? () => onItemClick(destacado.item) : undefined}
-          />
-        </div>
-      ))}
+    <div
+      className="overflow-hidden"
+      onMouseEnter={pausar}
+      onMouseLeave={reanudar}
+      onTouchStart={pausaTemporal}
+    >
+      <div
+        ref={pistaRef}
+        onTransitionEnd={(e) => {
+          if (e.target === pistaRef.current && e.propertyName === 'transform' && deslizando) {
+            terminarDeslizamiento()
+          }
+        }}
+        className={`nv-pista flex ${soloCarrusel ? 'gap-3' : 'gap-3 md:gap-4'} pb-1 md:pb-0`}
+        style={{
+          '--nv-hueco': soloCarrusel ? '14rem' : '80%',
+          // Debe cuadrar con md:gap-4 (1rem) para que quepan N tarjetas justas.
+          '--nv-hueco-md': soloCarrusel ? '14rem' : `calc((100% - ${huecos - 1} * 1rem) / ${huecos})`,
+          transform: deslizando ? `translateX(-${distancia}px)` : 'translateX(0)',
+          transition: deslizando ? `transform ${DESLIZAMIENTO_MS}ms ease-in-out` : 'none',
+        }}
+      >
+        {ventana.map((destacado) => (
+          <div key={destacado.id} className="flex-none">
+            {tarjeta(destacado)}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

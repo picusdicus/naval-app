@@ -12,11 +12,10 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-// Registrar service worker para PWA
-if ('serviceWorker' in navigator) {
+// Registrar service worker para PWA — solo en producción: su cache-first
+// sobre los módulos JS de Vite servía bundles rancios durante el desarrollo.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').catch(() => {
-      // Fallar silenciosamente en desarrollo
-    })
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {})
   })
 }

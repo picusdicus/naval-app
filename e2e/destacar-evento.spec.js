@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test'
 import { BASE_URL, exigir } from './entorno.js'
 
 // Autoservicio de destacados: la organización solicita destacar un evento
-// publicado desde /panel. La solicitud nace en 'pendiente' (las fechas y el
-// orden los pone el superadmin al activarla) y puede retirarse mientras nadie
-// la gestione. El flujo de comercio no se cubre aquí: depende de que el
+// publicado desde /panel, proponiendo fecha de inicio y duración en un
+// diálogo. La solicitud nace en 'pendiente' con la propuesta (el orden y la
+// decisión final son del superadmin) y puede retirarse mientras nadie la
+// gestione. El flujo de comercio no se cubre aquí: depende de que el
 // superadmin vincule `comercio_id`, otra sesión.
 
 // Con fecha futura el botón «Destacar» está disponible (publicado + no pasado).
@@ -71,16 +72,20 @@ test('solicitar y retirar el destacado de un evento desde el panel', async ({ pa
   await page.goto('/panel')
   const fila = page.locator('li').filter({ hasText: titulo })
 
-  // Publicado y futuro: el botón está disponible y crea la solicitud.
+  // Publicado y futuro: el botón abre el diálogo de propuesta de fechas; los
+  // valores por defecto (hoy + 30 días) valen para el test.
   await fila.getByRole('button', { name: 'Destacar', exact: true }).click()
+  await page.getByRole('button', { name: 'Solicitar destacado' }).click()
   await expect(fila.getByText('Destacado solicitado')).toBeVisible()
 
-  // La solicitud existe en la API en estado pendiente, sin fechas de vigencia
-  // decididas por la organización (las pone el superadmin al activar).
+  // La solicitud existe en la API en estado pendiente y lleva la propuesta de
+  // vigencia (fecha_fin la calculó el servidor a partir de la duración).
   const propios = await page.request.get('/api/admin/destacados')
   const { destacados } = await propios.json()
   const solicitud = destacados.find((d) => d.referenciaId === `bd-${evento.id}`)
   expect(solicitud?.estado).toBe('pendiente')
+  expect(solicitud?.fechaInicio).toBeTruthy()
+  expect(solicitud?.fechaFin).toBeTruthy()
 
   // Retirarla devuelve la fila a su estado original.
   await fila.getByRole('button', { name: 'Retirar solicitud' }).click()

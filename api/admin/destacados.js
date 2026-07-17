@@ -1,9 +1,11 @@
 // /api/admin/destacados — solicitudes de destacado de la organización.
 //   GET            — las solicitudes/destacados propios + el comercio vinculado.
 //   POST           — solicita destacar un evento propio publicado o el negocio
-//                    vinculado; siempre nace en estado 'pendiente'. Las fechas
-//                    y el orden los fija el superadmin al activar (el pago se
-//                    acuerda fuera de la app).
+//                    vinculado, proponiendo fecha de inicio y duración (presets
+//                    de tarifasDestacados.js); siempre nace en estado
+//                    'pendiente'. El superadmin puede ajustar la propuesta al
+//                    aprobar; el orden es solo suyo (el pago se acuerda fuera
+//                    de la app).
 //   DELETE ?id=…   — retira una solicitud propia aún pendiente.
 //
 // La organización sale del JWT firmado, nunca de la petición. El rechazo del
@@ -13,6 +15,8 @@ import { obtenerSql } from '../_db.js'
 import { requerirSesionEdge } from '../_auth.js'
 import { organizacionDeSesion } from '../_organizacion.js'
 import { json, leerJson, queryDe } from '../_http.js'
+import { hoyISO, sumarDias } from '../../src/lib/fechas.js'
+import { PRESETS_DURACION } from '../../src/lib/tarifasDestacados.js'
 
 export const config = { runtime: 'edge' }
 
@@ -29,6 +33,7 @@ function aRespuesta(fila) {
     fechaInicio: fila.fecha_inicio,
     fechaFin: fila.fecha_fin,
     vigente: fila.vigente,
+    imagenUrl: fila.imagen_url ?? null,
   }
 }
 
@@ -56,7 +61,7 @@ export default async function handler(req) {
 
 async function manejarGet(sql, organizacion) {
   const filas = await sql`
-    SELECT id, tipo, referencia_id, estado,
+    SELECT id, tipo, referencia_id, estado, imagen_url,
            to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
            to_char(fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
            (estado = 'activo'
@@ -73,7 +78,21 @@ async function manejarGet(sql, organizacion) {
 }
 
 async function manejarPost(req, sql, organizacion) {
-  const { tipo, eventoId, imagenUrl } = await leerJson(req)
+  const { tipo, eventoId, imagenUrl, fechaInicio, duracionDias } = await leerJson(req)
+
+  // La propuesta de vigencia es obligatoria y acotada: fecha de inicio no
+  // pasada y duración de los presets. fecha_fin se calcula aquí (inclusiva),
+  // nunca la manda el cliente.
+  if (!fechaInicio || !/^\d{4}-\d{2}-\d{2}$/.test(fechaInicio)) {
+    return json({ error: 'Indica la fecha de inicio propuesta.' }, 400)
+  }
+  if (fechaInicio < hoyISO()) {
+    return json({ error: 'La fecha de inicio no puede ser pasada.' }, 400)
+  }
+  if (!PRESETS_DURACION.includes(duracionDias)) {
+    return json({ error: 'Elige una duración válida.' }, 400)
+  }
+  const fechaFin = sumarDias(fechaInicio, duracionDias - 1)
 
   let referenciaId
   let imagen = null
@@ -110,7 +129,8 @@ async function manejarPost(req, sql, organizacion) {
 
   // Una fila por item (UNIQUE tipo+referencia). Si existe una cancelada
   // (rechazo anterior o campaña cancelada) propia o sin dueño, se resucita a
-  // 'pendiente' sin tocar orden/fechas — esos campos son del superadmin.
+  // 'pendiente' con la nueva propuesta de fechas — el orden sigue siendo del
+  // superadmin.
   const [existente] = await sql`
     SELECT id, estado, organizacion_id FROM destacados
     WHERE tipo = ${tipo} AND referencia_id = ${referenciaId}
@@ -125,7 +145,9 @@ async function manejarPost(req, sql, organizacion) {
       UPDATE destacados
       SET estado = 'pendiente',
           organizacion_id = ${organizacion.id},
-          imagen_url = COALESCE(${imagen}, imagen_url)
+          imagen_url = COALESCE(${imagen}, imagen_url),
+          fecha_inicio = ${fechaInicio},
+          fecha_fin = ${fechaFin}
       WHERE id = ${existente.id}
       RETURNING id, tipo, referencia_id, estado,
                 to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
@@ -141,8 +163,8 @@ async function manejarPost(req, sql, organizacion) {
   let filas
   try {
     filas = await sql`
-      INSERT INTO destacados (tipo, referencia_id, organizacion_id, imagen_url, estado)
-      VALUES (${tipo}, ${referenciaId}, ${organizacion.id}, ${imagen}, 'pendiente')
+      INSERT INTO destacados (tipo, referencia_id, organizacion_id, imagen_url, estado, fecha_inicio, fecha_fin)
+      VALUES (${tipo}, ${referenciaId}, ${organizacion.id}, ${imagen}, 'pendiente', ${fechaInicio}, ${fechaFin})
       RETURNING id, tipo, referencia_id, estado,
                 to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
                 to_char(fecha_fin, 'YYYY-MM-DD') AS fecha_fin,

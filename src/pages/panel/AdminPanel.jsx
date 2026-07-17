@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
 import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
+import DialogoSolicitudDestacado from '../../components/admin/DialogoSolicitudDestacado.jsx'
+import DetalleDestacado from '../../components/admin/DetalleDestacado.jsx'
 import AnaliticasOrganizacion from '../../components/admin/AnaliticasOrganizacion.jsx'
 import DestacaNegocio from '../../components/admin/DestacaNegocio.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
@@ -41,7 +43,7 @@ function Estadistica({ icono, valor, etiqueta }) {
   )
 }
 
-function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, onDestacar, onRetirarDestacado }) {
+function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, onDestacar, onRetirarDestacado, onVerDestacado }) {
   const estado = ESTADOS[evento.estado] ?? ESTADOS.borrador
   const horario = evento.horaFin ? `${evento.hora} – ${evento.horaFin}` : evento.hora
   const publicado = evento.estado === 'publicado'
@@ -65,22 +67,36 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${estado.clases}`}>
               {estado.etiqueta}
             </span>
+            {/* Los badges de destacado abren el detalle (fechas, tarifa…). */}
             {destacado?.estado === 'pendiente' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-tertiary-container px-2.5 py-0.5 text-xs font-semibold text-on-tertiary-container">
+              <button
+                type="button"
+                onClick={() => onVerDestacado(destacado, evento.titulo)}
+                title="Ver detalle del destacado"
+                className="inline-flex items-center gap-1 rounded-full bg-tertiary-container px-2.5 py-0.5 text-xs font-semibold text-on-tertiary-container transition-opacity hover:opacity-80"
+              >
                 <MIcon name="hourglass_top" className="text-[14px]" />
                 Destacado solicitado
-              </span>
+              </button>
             )}
             {/* Activo con la campaña terminada: que la org no crea que sigue en vigor. */}
             {campanaFinalizada(destacado) && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-semibold text-on-surface/60">
+              <button
+                type="button"
+                onClick={() => onVerDestacado(destacado, evento.titulo)}
+                title="Ver detalle del destacado"
+                className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-semibold text-on-surface/60 transition-opacity hover:opacity-80"
+              >
                 <MIcon name="kid_star" className="text-[14px]" />
                 Destacado finalizado
-              </span>
+              </button>
             )}
             {destacado?.estado === 'activo' && !campanaFinalizada(destacado) && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              <button
+                type="button"
+                onClick={() => onVerDestacado(destacado, evento.titulo)}
+                title="Ver detalle del destacado"
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80 ${
                   diasParaCaducar(destacado) !== null
                     ? 'bg-tertiary-container text-on-tertiary-container'
                     : 'bg-secondary-container text-on-secondary-container'
@@ -90,7 +106,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
                 {diasParaCaducar(destacado) !== null
                   ? `Destacado · ${textoCaducidad(diasParaCaducar(destacado))}`
                   : 'Destacado'}
-              </span>
+              </button>
             )}
           </div>
 
@@ -187,6 +203,8 @@ export default function AdminPanel() {
   const [cargando, setCargando] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const [porEliminar, setPorEliminar] = useState(null)
+  const [porDestacar, setPorDestacar] = useState(null) // evento cuya solicitud se está proponiendo
+  const [detalleDestacado, setDetalleDestacado] = useState(null) // { destacado, titulo } abierto en el modal
   const [pestana, setPestana] = useState('eventos')
 
   // Estado de las solicitudes de destacado y el negocio vinculado (si lo hay).
@@ -267,21 +285,25 @@ export default function AdminPanel() {
     setPorEliminar(null)
   }
 
-  const solicitarDestacadoEvento = (evento) =>
-    conRecarga(() =>
+  // La propuesta {fechaInicio, duracionDias} sale del diálogo (eventos) o de
+  // los campos de DestacaNegocio (comercio); fecha_fin la calcula el servidor.
+  const solicitarDestacadoEvento = async (evento, propuesta) => {
+    await conRecarga(() =>
       fetch('/api/admin/destacados', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'evento', eventoId: evento.id }),
+        body: JSON.stringify({ tipo: 'evento', eventoId: evento.id, ...propuesta }),
       })
     )
+    setPorDestacar(null)
+  }
 
-  const solicitarDestacadoComercio = (imagenUrl) =>
+  const solicitarDestacadoComercio = (imagenUrl, propuesta) =>
     conRecarga(() =>
       fetch('/api/admin/destacados', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'comercio', imagenUrl }),
+        body: JSON.stringify({ tipo: 'comercio', imagenUrl, ...propuesta }),
       })
     )
 
@@ -395,6 +417,7 @@ export default function AdminPanel() {
                 ocupado={ocupado}
                 onSolicitar={solicitarDestacadoComercio}
                 onRetirar={retirarSolicitud}
+                onVerDetalle={(destacado, titulo) => setDetalleDestacado({ destacado, titulo })}
               />
             )}
 
@@ -419,8 +442,9 @@ export default function AdminPanel() {
                     ocupado={ocupado}
                     onCambiarEstado={cambiarEstado}
                     onEliminar={setPorEliminar}
-                    onDestacar={solicitarDestacadoEvento}
+                    onDestacar={setPorDestacar}
                     onRetirarDestacado={retirarSolicitud}
+                    onVerDestacado={(destacado, titulo) => setDetalleDestacado({ destacado, titulo })}
                   />
                 ))}
               </ul>
@@ -441,6 +465,20 @@ export default function AdminPanel() {
         ocupado={ocupado}
         onConfirmar={confirmarBorrado}
         onCancelar={() => setPorEliminar(null)}
+      />
+
+      <DialogoSolicitudDestacado
+        abierto={Boolean(porDestacar)}
+        titulo={porDestacar ? `«${porDestacar.titulo}»` : ''}
+        ocupado={ocupado}
+        onConfirmar={(propuesta) => solicitarDestacadoEvento(porDestacar, propuesta)}
+        onCancelar={() => setPorDestacar(null)}
+      />
+
+      <DetalleDestacado
+        destacado={detalleDestacado?.destacado ?? null}
+        titulo={detalleDestacado?.titulo ?? ''}
+        onCerrar={() => setDetalleDestacado(null)}
       />
     </div>
   )

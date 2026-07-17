@@ -5,7 +5,8 @@ import DialogoConfirmacion from '../DialogoConfirmacion.jsx'
 import { COMERCIOS_POR_ID, diasParaCaducar, textoCaducidad } from '../../../lib/destacados.js'
 import { useEventosPublicos } from '../../../lib/useEventosPublicos.js'
 import { proximosEventos, formatearFechaCorta } from '../../../lib/eventos.js'
-import { aFecha, hoyISO, sumarDias } from '../../../lib/fechas.js'
+import { duracionDe, hoyISO, sumarDias } from '../../../lib/fechas.js'
+import { PRESETS_DURACION } from '../../../lib/tarifasDestacados.js'
 
 // Gestión de los destacados contratados: qué eventos y comercios se realzan
 // en portada, agenda y guía, con qué orden y durante qué periodo. El pago se
@@ -17,14 +18,8 @@ const ETIQUETA_ESTADO = {
   cancelado: { texto: 'Cancelado', clases: 'bg-error/20 text-error hover:bg-error/30' },
 }
 
-// La duración se elige con presets y fecha_fin se calcula al enviar
-// (inclusiva: N días naturales contando el de inicio ⇒ fin = inicio + N − 1).
-const PRESETS_DURACION = [7, 15, 30]
-
-/** Días naturales de una campaña con ambas fechas incluidas. */
-const duracionDe = (inicioIso, finIso) =>
-  Math.round((aFecha(finIso) - aFecha(inicioIso)) / 86_400_000) + 1
-
+// La duración se elige con los presets compartidos (tarifasDestacados.js) y
+// fecha_fin se calcula al enviar (inclusiva: fin = inicio + N − 1).
 // Función y no constante: con hoyISO() a nivel de módulo la fecha quedaría
 // congelada en sesiones largas.
 const crearFormularioVacio = () => ({
@@ -298,6 +293,12 @@ export default function TablesDestacados() {
                           {d.fechaInicio}
                           {' → '}
                           {d.fechaFin || 'sin fin'}
+                          {/* Las fechas de un pendiente son la propuesta de la org, no vigencia decidida. */}
+                          {d.estado === 'pendiente' && d.fechaFin && (
+                            <span className="ml-1.5 rounded bg-secondary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-secondary-container">
+                              propuesta
+                            </span>
+                          )}
                           {!d.vigente && d.estado === 'activo' && (
                             <span className="ml-1.5 rounded bg-error/10 px-1.5 py-0.5 text-[10px] font-semibold text-error">
                               fuera de plazo

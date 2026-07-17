@@ -42,3 +42,17 @@ body {
     @apply font-display text-xl font-semibold text-primary;
   }
 }
+
+/* Pista deslizante de la rotación de destacados (CarruselDestacados en modo
+   rotatorio): el ancho de cada hueco llega por variable CSS desde el
+   componente, que es quien sabe cuántas tarjetas caben (--nv-hueco-md debe
+   cuadrar con su gap de escritorio). El movimiento lo pone el transform de la
+   propia pista; el componente no anima nada con prefers-reduced-motion. */
+.nv-pista > * {
+  flex: 0 0 var(--nv-hueco);
+}
+@media (min-width: 768px) {
+  .nv-pista > * {
+    flex-basis: var(--nv-hueco-md);
+  }
+}

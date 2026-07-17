@@ -95,7 +95,7 @@ export default function Mapa() {
 
   // Comercios destacados (contratados). La franja solo se muestra en la vista
   // sin filtrar: con una categoría o búsqueda activa el usuario va a lo suyo.
-  const { items: comerciosDestacados } = useDestacados({ tipo: 'comercio', limite: 6 })
+  const { items: comerciosDestacados } = useDestacados({ tipo: 'comercio' })
   const conDestacados = !categoria && !busqueda && comerciosDestacados.length > 0
 
   // Al seleccionar un comercio, scroll la ficha a la vista dentro del contenedor de la
@@ -190,6 +190,8 @@ export default function Mapa() {
             <CarruselDestacados
               items={comerciosDestacados}
               soloCarrusel
+              visibles={6}
+              seccion="comercios"
               onItemClick={(comercio) => setSeleccionado(comercio)}
             />
           </section>

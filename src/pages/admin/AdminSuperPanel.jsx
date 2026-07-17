@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
@@ -9,10 +9,30 @@ import UmamiStats from '../../components/admin/UmamiStats.jsx'
 export default function AdminSuperPanel() {
   const [seccionActiva, setSeccionActiva] = useState('organizaciones')
   const [umamiSummary, setUmamiSummary] = useState(null)
+  const [pendientes, setPendientes] = useState(0)
 
   const handleStatsLoaded = useCallback((summary) => {
     setUmamiSummary(summary)
   }, [])
+
+  // Solicitudes de destacado sin gestionar, para el contador del tab. Se
+  // recuenta al montar y al cambiar de sección (así se refresca tras aprobar
+  // o rechazar dentro del propio tab); puede ir un refresco por detrás
+  // mientras se gestiona sin salir del tab, y no pasa nada.
+  useEffect(() => {
+    let vigente = true
+
+    fetch('/api/super/destacados')
+      .then((r) => (r.ok ? r.json() : { destacados: [] }))
+      .then(({ destacados = [] }) => {
+        if (vigente) setPendientes(destacados.filter((d) => d.estado === 'pendiente').length)
+      })
+      .catch(() => {})
+
+    return () => {
+      vigente = false
+    }
+  }, [seccionActiva])
 
   return (
     <div className="min-h-screen bg-surface-container-low p-4 sm:p-6">
@@ -58,6 +78,11 @@ export default function AdminSuperPanel() {
           >
             <MIcon name="star" className="text-[20px]" />
             Destacados
+            {pendientes > 0 && (
+              <span className="min-w-[1.25rem] rounded-full bg-primary px-1.5 py-0.5 text-center text-xs font-bold text-on-primary">
+                {pendientes}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setSeccionActiva('analytics')}

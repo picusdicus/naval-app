@@ -60,6 +60,38 @@ test('crear un destacado sin duración se rechaza con 400', async ({ page }) => 
   expect(error).toContain('duración')
 })
 
+test('una solicitud pendiente cuenta en el tab y su vigencia se marca como propuesta', async ({ page }, info) => {
+  await iniciarSesionSuper(page)
+
+  const respuesta = await page.request.post('/api/super/destacados', {
+    data: {
+      tipo: 'evento',
+      referenciaId: `bd-e2e-propuesta-${info.project.name}-${Date.now()}`,
+      estado: 'pendiente',
+      fechaInicio: isoLocal(1),
+      fechaFin: isoLocal(30),
+    },
+  })
+  expect(respuesta.status()).toBe(201)
+  const { destacado } = await respuesta.json()
+  creados.push(destacado.id)
+
+  await page.goto('/admin')
+
+  // El tab Destacados muestra el nº de pendientes (al menos el recién creado).
+  // El contador llega en un fetch propio del panel: el filtro numérico hace
+  // que toBeVisible espere a que se pinte (el otro span del botón es el icono).
+  const tabDestacados = page.locator('button').filter({ hasText: 'Destacados' })
+  const contador = tabDestacados.locator('span').filter({ hasText: /^\d+$/ })
+  await expect(contador).toBeVisible()
+  expect(Number(await contador.textContent())).toBeGreaterThanOrEqual(1)
+
+  // En la tabla, las fechas de un pendiente se marcan como propuesta de la org.
+  await tabDestacados.click()
+  const fila = page.locator('tr').filter({ hasText: isoLocal(30) })
+  await expect(fila.first().getByText('propuesta')).toBeVisible()
+})
+
 test('un activo próximo a caducar muestra el aviso en la tabla', async ({ page }, info) => {
   await iniciarSesionSuper(page)
 

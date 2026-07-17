@@ -35,5 +35,10 @@ export function diasHasta(iso) {
   return Math.round((aFecha(iso) - hoy) / 86_400_000)
 }
 
+/** Días naturales de una campaña con ambas fechas incluidas (7 días ⇒ fin = inicio + 6). */
+export function duracionDe(inicioIso, finIso) {
+  return Math.round((aFecha(finIso) - aFecha(inicioIso)) / 86_400_000) + 1
+}
+
 /** A cuántos días de fecha_fin se empieza a avisar de que un destacado caduca. */
 export const UMBRAL_AVISO_CADUCIDAD = 5

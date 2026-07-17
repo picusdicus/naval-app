@@ -36,7 +36,7 @@ export default function Eventos() {
   // Eventos destacados contratados. El carrusel solo sustituye al hero en la
   // vista sin filtrar; con un filtro activo (o sin destacados vigentes) se
   // conserva el comportamiento clásico: el primer próximo como hero grande.
-  const { items: destacadosEvento } = useDestacados({ eventos: todos, tipo: 'evento', limite: 3 })
+  const { items: destacadosEvento } = useDestacados({ eventos: todos, tipo: 'evento' })
   const conCarrusel = categoria === null && destacadosEvento.length > 0
 
   // El carrusel realza, no quita: con él, la lista inferior muestra todos los
@@ -90,7 +90,7 @@ export default function Eventos() {
             <MIcon name="kid_star" className="text-[22px]" fill />
             Destacados
           </h2>
-          <CarruselDestacados items={destacadosEvento} tamano="grande" columnas={3} />
+          <CarruselDestacados items={destacadosEvento} tamano="grande" columnas={3} seccion="eventos" />
         </section>
       )}
 

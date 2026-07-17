@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import MIcon from '../MIcon.jsx'
 import SelectorImagen from './SelectorImagen.jsx'
+import { CamposPropuestaDestacado } from './DialogoSolicitudDestacado.jsx'
 import { campanaFinalizada, COMERCIOS_POR_ID, diasParaCaducar, textoCaducidad } from '../../lib/destacados.js'
 import { formatearFechaLarga } from '../../lib/eventos.js'
+import { hoyISO } from '../../lib/fechas.js'
 
 // Tarjeta de /panel para solicitar destacar el negocio vinculado a la cuenta.
 // Solo se monta si la organización tiene `comercio_id` (lo vincula el
@@ -10,10 +12,14 @@ import { formatearFechaLarga } from '../../lib/eventos.js'
 // imagen propia y la tarjeta de destacado la necesita a sangre completa.
 // `destacado` es la solicitud propia de tipo comercio (pendiente o activa),
 // o null — las rechazadas se filtran antes y aquí vuelve a salir el formulario.
-export default function DestacaNegocio({ comercioId, destacado, ocupado, onSolicitar, onRetirar }) {
+export default function DestacaNegocio({ comercioId, destacado, ocupado, onSolicitar, onRetirar, onVerDetalle }) {
   const [imagenUrl, setImagenUrl] = useState('')
+  const [fechaInicio, setFechaInicio] = useState(hoyISO)
+  const [duracionDias, setDuracionDias] = useState(30)
   const comercio = COMERCIOS_POR_ID.get(comercioId)
   if (!comercio) return null
+
+  const propuestaValida = Boolean(fechaInicio) && fechaInicio >= hoyISO()
 
   return (
     <section className="nv-card mb-8 p-4 sm:p-5">
@@ -51,6 +57,15 @@ export default function DestacaNegocio({ comercioId, destacado, ocupado, onSolic
               : 'Destacado'}
           </span>
         )}
+        {destacado && (
+          <button
+            type="button"
+            onClick={() => onVerDetalle(destacado, comercio.nombre)}
+            className="text-xs font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            Ver detalle
+          </button>
+        )}
       </div>
 
       {!destacado && (
@@ -67,10 +82,25 @@ export default function DestacaNegocio({ comercioId, destacado, ocupado, onSolic
               opcional={false}
             />
           </div>
+          <div className="mt-4 max-w-md">
+            <CamposPropuestaDestacado
+              fechaInicio={fechaInicio}
+              duracionDias={duracionDias}
+              deshabilitado={ocupado}
+              onCambio={({ fechaInicio: inicio, duracionDias: dias }) => {
+                if (inicio !== undefined) setFechaInicio(inicio)
+                if (dias !== undefined) setDuracionDias(dias)
+              }}
+            />
+            <p className="mt-2 text-xs text-on-surface/60">
+              Las fechas son una propuesta: te contactaremos para confirmar las condiciones y el
+              pago antes de activar el destacado.
+            </p>
+          </div>
           <button
             type="button"
-            disabled={ocupado || !imagenUrl}
-            onClick={() => onSolicitar(imagenUrl)}
+            disabled={ocupado || !imagenUrl || !propuestaValida}
+            onClick={() => onSolicitar(imagenUrl, { fechaInicio, duracionDias })}
             className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-shadow hover:enabled:shadow-card-lg disabled:opacity-50"
           >
             <MIcon name="star" className="text-[18px]" />
