@@ -4,7 +4,7 @@
 // PATCH /api/super/organizaciones?id=… — activa/desactiva una organización
 import { requerirSuperAdminEdge } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
-import { json, leerJson, queryDe } from '../_http.js'
+import { json, leerJson, queryDe, csrfInvalido, rechazoCsrf } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
@@ -26,6 +26,8 @@ function conflictoUnico(error) {
 }
 
 export default async function handler(req) {
+  if (csrfInvalido(req)) return rechazoCsrf()
+
   const sesion = await requerirSuperAdminEdge(req)
   if (sesion instanceof Response) return sesion
 

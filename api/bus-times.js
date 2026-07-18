@@ -22,6 +22,13 @@ export default async function handler(req) {
     return json({ error: 'codStop is required' }, 400)
   }
 
+  // Defensa en profundidad: los códigos de parada del CRTM son numéricos (a
+  // veces con separadores). Validamos el formato antes de reenviarlo a su API
+  // para no propagar entrada arbitraria del cliente.
+  if (!/^[0-9_]{1,12}$/.test(codStop)) {
+    return json({ error: 'codStop no válido' }, 400)
+  }
+
   try {
     const respuesta = await fetch(
       `${CRTM_API_BASE}GetStopsTimes.php?codStop=${encodeURIComponent(codStop)}`

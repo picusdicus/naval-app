@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { BASE_URL, exigir } from './entorno.js'
+import { BASE_URL, exigir, abrirCandado } from './entorno.js'
 
 // La categoría y el lugar de un evento salen del perfil de la organización
 // (organizaciones.categoria_defecto / lugar_defecto): el gestor los ve, no los
@@ -89,7 +89,7 @@ test('el detalle público enlaza el lugar a Google Maps y la portada lista el ev
   page,
 }, info) => {
   const titulo = `Prueba e2e · Perfil · ${info.project.name}`
-  await page.addInitScript(() => localStorage.setItem('ncv_access', 'true'))
+  await abrirCandado(page)
 
   const publicos = await page.request.get('/api/eventos')
   const { eventos } = await publicos.json()

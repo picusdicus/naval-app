@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { test, expect } from '@playwright/test'
 import { del } from '@vercel/blob'
-import { RAIZ, BASE_URL, DOMINIO_BLOB, exigir } from './entorno.js'
+import { RAIZ, BASE_URL, DOMINIO_BLOB, exigir, abrirCandado } from './entorno.js'
 
 // Recorrido completo del cartel de un evento: se elige en el formulario, sube a
 // Vercel Blob, su URL queda en eventos_usuario y la imagen se ve en el panel de
@@ -122,7 +122,7 @@ test('el cartel subido al crear un evento llega a la base de datos, al panel y a
   expect(publicado, 'el evento publicado debe salir en /api/eventos').toBeTruthy()
   expect(publicado.imagen).toBe(urlCartel)
 
-  await page.addInitScript(() => localStorage.setItem('ncv_access', 'true'))
+  await abrirCandado(page)
   await page.goto(`/eventos/${publicado.id}`)
 
   const cartelPublico = page.getByAltText(titulo)
@@ -163,7 +163,7 @@ test('al editar un evento se puede reemplazar el cartel y el cambio se propaga',
   await imagenSeCarga(enPanel)
   await expect(enPanel).toHaveAttribute('src', urlNueva)
 
-  await page.addInitScript(() => localStorage.setItem('ncv_access', 'true'))
+  await abrirCandado(page)
   await page.goto(`/eventos/bd-${despues.id}`)
 
   const cartelPublico = page.getByAltText(titulo)

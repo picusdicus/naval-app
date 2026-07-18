@@ -5,7 +5,7 @@
 // DELETE /api/super/destacados?id=… — elimina el destacado
 import { requerirSuperAdminEdge } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
-import { json, leerJson, queryDe } from '../_http.js'
+import { json, leerJson, queryDe, csrfInvalido, rechazoCsrf } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
@@ -39,6 +39,12 @@ function validar({ tipo, referenciaId, organizacionId, imagenUrl, fechaInicio, f
   if (!referenciaId || typeof referenciaId !== 'string' || !referenciaId.trim()) {
     return 'Falta la referencia del evento o comercio.'
   }
+  // La referencia es texto opaco (ids de eventos/comercios), pero acotamos su
+  // longitud y su alfabeto como defensa en profundidad: nunca lleva espacios ni
+  // caracteres de control, y 200 caracteres sobran para cualquier id real.
+  if (referenciaId.length > 200 || !/^[A-Za-z0-9._/-]+$/.test(referenciaId)) {
+    return 'Referencia no válida.'
+  }
   // Los comercios del directorio no tienen foto propia: destacar uno exige
   // aportarla (la tarjeta a sangre completa la necesita).
   if (tipo === 'comercio' && !imagenUrl) return 'Un comercio destacado necesita una imagen.'
@@ -56,6 +62,8 @@ function validar({ tipo, referenciaId, organizacionId, imagenUrl, fechaInicio, f
 }
 
 export default async function handler(req) {
+  if (csrfInvalido(req)) return rechazoCsrf()
+
   const sesion = await requerirSuperAdminEdge(req)
   if (sesion instanceof Response) return sesion
 

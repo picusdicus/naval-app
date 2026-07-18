@@ -1,30 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { buildSystemPrompt } from './_knowledge.js'
+import { limitar, obtenerIp } from './_ratelimit.js'
+import { csrfInvalido } from './_http.js'
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6'
-
-// Simple in-memory rate limiter (resets on server restart).
-// In Vercel each instance has its own Map, but it's enough to prevent basic abuse.
-const requestCountByIP = new Map()
-const REQUESTS_PER_MINUTE_LIMIT = 10
-
-function isWithinRateLimit(ip) {
-  const now = Date.now()
-  const entry = requestCountByIP.get(ip) || { count: 0, since: now }
-
-  // Reset counter if more than one minute has passed.
-  if (now - entry.since > 60_000) {
-    requestCountByIP.set(ip, { count: 1, since: now })
-    return true
-  }
-
-  // Reject if limit exceeded.
-  if (entry.count >= REQUESTS_PER_MINUTE_LIMIT) return false
-
-  entry.count++
-  requestCountByIP.set(ip, entry)
-  return true
-}
+const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
 // Normalizes the history received from the frontend into valid API messages:
 // user/assistant roles, starting with user and without empty entries.
@@ -50,16 +29,21 @@ export default async function handler(req, res) {
     return
   }
 
+  if (csrfInvalido(req)) {
+    res.status(403).json({ error: 'Origen no permitido.' })
+    return
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     res.status(500).json({ error: 'Falta configurar ANTHROPIC_API_KEY en el servidor.' })
     return
   }
 
-  // Get client IP (Vercel sets this header).
-  const clientIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown'
-
-  // Check rate limit before making any call to Anthropic.
-  if (!isWithinRateLimit(clientIP)) {
+  // Rate limit compartido (Upstash) antes de llamar a Anthropic: el límite en
+  // memoria anterior no servía en serverless (un Map por instancia).
+  const limite = await limitar({ clave: `chat:ip:${obtenerIp(req)}`, limite: 10, ventanaS: 60 })
+  if (!limite.ok) {
+    res.setHeader('Retry-After', String(limite.resetEnS))
     res.status(429).json({
       error: 'Demasiadas peticiones. Espera un momento antes de volver a preguntar.',
     })
@@ -100,11 +84,13 @@ export default async function handler(req, res) {
     }
     res.end()
   } catch (err) {
+    console.error('Error en /api/chat:', err)
     if (res.headersSent && !res.writableEnded) {
       res.write('\n\n[Se produjo un error al generar la respuesta.]')
       res.end()
     } else {
-      res.status(500).json({ error: 'Error al generar la respuesta.', detalle: err.message })
+      // Sin `detalle`: no filtramos internals (modelo, cuotas, trazas del SDK).
+      res.status(500).json({ error: 'Error al generar la respuesta.' })
     }
   }
 }

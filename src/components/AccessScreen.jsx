@@ -1,36 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import MIcon from './MIcon'
-
-const SESSION_KEY = 'ncv_access'
 
 export default function AccessScreen({ onAccessGranted }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    const savedSession = localStorage.getItem(SESSION_KEY)
-    if (savedSession) {
-      onAccessGranted()
-    }
-  }, [onAccessGranted])
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
 
-    const correctPassword = import.meta.env.VITE_APP_PASSWORD
-
-    if (password === correctPassword) {
-      localStorage.setItem(SESSION_KEY, 'true')
-      onAccessGranted()
-    } else {
-      setError('Contraseña incorrecta')
-      setPassword('')
+    // La contraseña se verifica en el servidor: si es correcta, el endpoint
+    // fija una cookie httpOnly firmada que el navegador no puede falsificar.
+    try {
+      const respuesta = await fetch('/api/acceso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (respuesta.ok) {
+        onAccessGranted()
+      } else {
+        const datos = await respuesta.json().catch(() => ({}))
+        setError(datos.error || 'Contraseña incorrecta')
+        setPassword('')
+      }
+    } catch {
+      setError('No se pudo verificar el acceso. Inténtalo de nuevo.')
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   return (

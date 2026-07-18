@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Outlet, Routes, Route, useLocation } from 'react-router-dom'
 import ScrollManager from './components/ScrollManager.jsx'
 import Layout from './components/layout/Layout.jsx'
@@ -37,22 +37,46 @@ function RedirigirConQuery({ a }) {
 }
 
 export default function App() {
+  // El candado del portal se verifica en el servidor: al arrancar preguntamos si
+  // la cookie de portal es válida (no confiamos en localStorage, que era falsificable).
   const [isAccessGranted, setIsAccessGranted] = useState(false)
+  const [accesoComprobado, setAccesoComprobado] = useState(false)
   const { pathname } = useLocation()
 
-  const handleLogout = () => {
-    localStorage.removeItem('ncv_access')
-    setIsAccessGranted(false)
-  }
-
-  // El panel de gestión tiene su propio login (email + contraseña de la
-  // organización, o del superadmin), así que no pasa por la contraseña del
-  // portal vecinal.
   const RUTAS_GESTION = ['/admin', '/panel', '/login', '/registro']
   const esGestion = RUTAS_GESTION.some((r) => pathname === r || pathname.startsWith(`${r}/`))
 
-  if (!esGestion && !isAccessGranted) {
-    return <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
+  useEffect(() => {
+    // El panel de gestión tiene su propio login, así que no comprobamos el
+    // candado del portal en esas rutas.
+    if (esGestion) return
+    let vigente = true
+    fetch('/api/acceso')
+      .then((r) => {
+        if (vigente) setIsAccessGranted(r.ok)
+      })
+      .catch(() => {
+        if (vigente) setIsAccessGranted(false)
+      })
+      .finally(() => {
+        if (vigente) setAccesoComprobado(true)
+      })
+    return () => {
+      vigente = false
+    }
+  }, [esGestion])
+
+  const handleLogout = () => {
+    fetch('/api/acceso', { method: 'DELETE' }).finally(() => setIsAccessGranted(false))
+  }
+
+  if (!esGestion) {
+    // Mientras no sepamos si el candado está abierto, no pintamos nada (evita el
+    // parpadeo de la pantalla de acceso antes de resolver la cookie).
+    if (!accesoComprobado) return null
+    if (!isAccessGranted) {
+      return <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
+    }
   }
 
   return (

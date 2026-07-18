@@ -24,6 +24,13 @@ const VARIABLES_API = [
   'UMAMI_USERNAME',
   'UMAMI_PASSWORD',
   'UMAMI_WEBSITE_ID',
+  // Candado del portal verificado en servidor (api/acceso.js).
+  'APP_ACCESO_PASSWORD',
+  // Auth del cron de sincronización de eventos (api/sync-events.js).
+  'CRON_SECRET',
+  // Rate-limiting compartido (api/_ratelimit.js).
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni

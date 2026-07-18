@@ -35,5 +35,19 @@ export function exigir(clave) {
 export const PUERTO = 5199
 export const BASE_URL = `http://localhost:${PUERTO}`
 
+/**
+ * Abre el candado del portal vecinal para poder visitar las páginas públicas.
+ * La contraseña se verifica en el servidor (POST /api/acceso) y la cookie de
+ * portal resultante queda en el contexto del navegador, así que los `goto`
+ * posteriores la envían. Reemplaza al antiguo localStorage 'ncv_access'.
+ */
+export async function abrirCandado(page) {
+  const password = exigir('APP_ACCESO_PASSWORD')
+  const res = await page.request.post('/api/acceso', { data: { password } })
+  if (!res.ok()) {
+    throw new Error(`No se pudo abrir el candado del portal (HTTP ${res.status()}).`)
+  }
+}
+
 /** Vercel Blob sirve los ficheros desde este dominio. */
 export const DOMINIO_BLOB = /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\//

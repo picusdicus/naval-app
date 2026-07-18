@@ -9,10 +9,29 @@
 
 import { json } from './_http.js'
 
-export const COOKIE_SESION = 'ncv_admin'
+// Nombres base de las cookies. En producción llevan el prefijo `__Host-`, que
+// obliga al navegador a exigir Secure + Path=/ + sin Domain (el binding más
+// estricto). En `npm run dev` (http, sin Secure) ese prefijo invalidaría la
+// cookie, así que se usa el nombre pelado. Emisor y lector deben pasar SIEMPRE
+// por estas funciones para no desincronizarse.
+const enProduccion = () =>
+  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
 
-/** Duración de la sesión: 8 horas (JWT y cookie caducan a la vez). */
+/** Nombre de la cookie de sesión de gestión (panel /admin y /panel). */
+export function nombreCookieAdmin() {
+  return enProduccion() ? '__Host-ncv_admin' : 'ncv_admin'
+}
+
+/** Nombre de la cookie del candado del portal vecinal. */
+export function nombreCookiePortal() {
+  return enProduccion() ? '__Host-ncv_portal' : 'ncv_portal'
+}
+
+/** Duración de la sesión de gestión: 8 horas (JWT y cookie caducan a la vez). */
 const DURACION_SESION_S = 8 * 60 * 60
+
+/** Duración del candado del portal: 30 días (los vecinos no re-teclean a diario). */
+const DURACION_PORTAL_S = 30 * 24 * 60 * 60
 
 const codificar = (obj) => {
   const json = JSON.stringify(obj)
@@ -22,7 +41,7 @@ const codificar = (obj) => {
 }
 
 /** Compara dos cadenas en tiempo constante (evita filtrar longitudes). */
-async function igualSeguro(a, b) {
+export async function igualSeguro(a, b) {
   const encoder = new TextEncoder()
   const algo = { name: 'SHA-256' }
   const ha = await crypto.subtle.digest(algo, encoder.encode(String(a)))
@@ -64,9 +83,9 @@ async function firmar(datos) {
 }
 
 /** Emite un JWT HS256 con el payload dado. `exp` se añade automáticamente. */
-export async function firmarToken(payload) {
+export async function firmarToken(payload, duracionS = DURACION_SESION_S) {
   const ahora = Math.floor(Date.now() / 1000)
-  const cuerpo = codificar({ ...payload, iat: ahora, exp: ahora + DURACION_SESION_S })
+  const cuerpo = codificar({ ...payload, iat: ahora, exp: ahora + duracionS })
   const cabecera = codificar({ alg: 'HS256', typ: 'JWT' })
   const firma = await firmar(`${cabecera}.${cuerpo}`)
   return `${cabecera}.${cuerpo}.${firma}`
@@ -116,30 +135,44 @@ export function leerCookie(req, nombre) {
   return null
 }
 
-const enProduccion = () =>
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
-
-function serializarCookie(valor, maxEdad) {
+function serializarCookie(nombre, valor, maxEdad, sameSite = 'Lax') {
   const partes = [
-    `${COOKIE_SESION}=${encodeURIComponent(valor)}`,
+    `${nombre}=${encodeURIComponent(valor)}`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Lax',
+    `SameSite=${sameSite}`,
     `Max-Age=${maxEdad}`,
   ]
-  // Sin HTTPS en `npm run dev`, así que Secure solo en despliegue.
+  // Sin HTTPS en `npm run dev`, así que Secure solo en despliegue. Es también
+  // lo que permite el prefijo `__Host-` de los nombres de cookie en producción.
   if (enProduccion()) partes.push('Secure')
   return partes.join('; ')
 }
 
-/** Valor de Set-Cookie que abre sesión. Para las Response de Edge. */
+/**
+ * Cookie de sesión de gestión. SameSite=Strict: el panel es de un solo origen y
+ * no necesita sobrevivir a navegaciones cross-site, así que apretamos el CSRF.
+ */
 export function cookieDeSesion(token) {
-  return serializarCookie(token, DURACION_SESION_S)
+  return serializarCookie(nombreCookieAdmin(), token, DURACION_SESION_S, 'Strict')
 }
 
-/** Valor de Set-Cookie que caduca la sesión. Para las Response de Edge. */
+/** Valor de Set-Cookie que caduca la sesión de gestión. */
 export function cookieDeBorrado() {
-  return serializarCookie('', 0)
+  return serializarCookie(nombreCookieAdmin(), '', 0, 'Strict')
+}
+
+/**
+ * Cookie del candado del portal vecinal. SameSite=Lax: debe sobrevivir a que un
+ * vecino llegue desde un enlace externo (WhatsApp, buscador) sin re-teclear.
+ */
+export function cookieDePortal(token) {
+  return serializarCookie(nombreCookiePortal(), token, DURACION_PORTAL_S, 'Lax')
+}
+
+/** Valor de Set-Cookie que caduca el candado del portal. */
+export function cookieDeBorradoPortal() {
+  return serializarCookie(nombreCookiePortal(), '', 0, 'Lax')
 }
 
 /**
@@ -182,29 +215,113 @@ export async function credencialesSuperAdminValidas(email, password) {
   return emailOk && passwordOk
 }
 
+// Iteraciones objetivo de PBKDF2-SHA256 (recomendación OWASP). Subirlas obliga
+// a re-hashear en el siguiente login (ver necesitaRehash).
+const PBKDF2_ITERACIONES = 310000
+
+/** base64 estándar de un Uint8Array (se guarda en la BD, no en URL). */
+function bytesAB64(bytes) {
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin)
+}
+
+/** Uint8Array desde base64 estándar. */
+function b64ABytes(b64) {
+  const bin = atob(b64)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
+}
+
+/** Deriva 256 bits con PBKDF2-SHA256 a partir de contraseña, salt e iteraciones. */
+async function derivarPbkdf2(password, salt, iteraciones) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(String(password || '')),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  )
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iteraciones },
+    key,
+    256
+  )
+  return new Uint8Array(bits)
+}
+
+/** SHA-256 hex sin salt: solo para verificar hashes del formato antiguo. */
+async function sha256Hex(password) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(password || '')))
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 /**
- * Guarda a usuario hash SHA-256 de una contraseña (sin salt).
- * Retorna el hash en hex.
+ * Hashea una contraseña con PBKDF2 (salt aleatorio de 16 bytes).
+ * Formato almacenado: `pbkdf2$<iteraciones>$<saltB64>$<hashB64>`.
  */
 export async function hashPassword(password) {
-  const encoder = new TextEncoder()
-  const hash = await crypto.subtle.digest('SHA-256', encoder.encode(String(password || '')))
-  const arr = Array.from(new Uint8Array(hash))
-  return arr.map(b => b.toString(16).padStart(2, '0')).join('')
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const derivado = await derivarPbkdf2(password, salt, PBKDF2_ITERACIONES)
+  return `pbkdf2$${PBKDF2_ITERACIONES}$${bytesAB64(salt)}$${bytesAB64(derivado)}`
 }
 
 /**
- * Compara una contraseña contra un hash almacenado en tiempo constante.
+ * Compara una contraseña contra un hash almacenado, en tiempo constante.
+ * Acepta el formato nuevo (`pbkdf2$…`) y el antiguo (SHA-256 hex de 64 chars),
+ * para no invalidar a los usuarios registrados antes de la migración.
  */
-export async function passwordCorrecto(password, hash) {
-  const calculado = await hashPassword(password)
-  if (calculado.length !== hash.length) return false
-  return await igualSeguro(calculado, hash)
+export async function passwordCorrecto(password, hashAlmacenado) {
+  if (typeof hashAlmacenado !== 'string' || !hashAlmacenado) return false
+
+  if (hashAlmacenado.startsWith('pbkdf2$')) {
+    const partes = hashAlmacenado.split('$')
+    if (partes.length !== 4) return false
+    const iteraciones = Number(partes[1])
+    if (!Number.isInteger(iteraciones) || iteraciones < 1) return false
+    let salt
+    try {
+      salt = b64ABytes(partes[2])
+    } catch {
+      return false
+    }
+    const derivado = await derivarPbkdf2(password, salt, iteraciones)
+    return await igualSeguro(bytesAB64(derivado), partes[3])
+  }
+
+  // Formato antiguo: SHA-256 hex sin salt.
+  if (/^[0-9a-f]{64}$/i.test(hashAlmacenado)) {
+    return await igualSeguro(await sha256Hex(password), hashAlmacenado)
+  }
+
+  return false
 }
 
-/** Devuelve el payload de la sesión activa, o null si no hay cookie válida. */
+/**
+ * ¿El hash almacenado debería re-hashearse? True si es del formato antiguo o si
+ * usa menos iteraciones que el objetivo actual. El llamante (login) re-hashea
+ * de forma transparente tras validar la contraseña.
+ */
+export function necesitaRehash(hashAlmacenado) {
+  if (typeof hashAlmacenado !== 'string') return false
+  if (!hashAlmacenado.startsWith('pbkdf2$')) return true
+  const iteraciones = Number(hashAlmacenado.split('$')[1])
+  return !Number.isInteger(iteraciones) || iteraciones < PBKDF2_ITERACIONES
+}
+
+/** Devuelve el payload de la sesión de gestión activa, o null si no hay cookie válida. */
 export async function obtenerSesion(req) {
-  return await verificarToken(leerCookie(req, COOKIE_SESION))
+  return await verificarToken(leerCookie(req, nombreCookieAdmin()))
+}
+
+/**
+ * Verifica el candado del portal vecinal. Devuelve el payload si la cookie es
+ * válida y su rol es 'vecino', o null. No confundir con las sesiones de gestión.
+ */
+export async function verificarSesionPortal(req) {
+  const payload = await verificarToken(leerCookie(req, nombreCookiePortal()))
+  return payload?.rol === 'vecino' ? payload : null
 }
 
 /**

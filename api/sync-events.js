@@ -1,3 +1,5 @@
+import { igualSeguro } from './_auth.js'
+
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
 const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
@@ -478,10 +480,16 @@ export default async function handler(req, res) {
     return
   }
 
-  // Verificar token de cron de Vercel (opcional pero recomendado)
-  const cronSecret = req.headers['x-vercel-cron-secret']
-  if (cronSecret !== process.env.CRON_SECRET) {
-    res.status(401).json({ error: 'Cron secret inválido' })
+  // Vercel Cron autentica con `Authorization: Bearer <CRON_SECRET>`.
+  // Comparación en tiempo constante y "fallar cerrado": sin CRON_SECRET
+  // configurado nadie puede invocar el endpoint (antes, con la env sin
+  // definir, la comparación `undefined !== undefined` dejaba pasar a cualquiera).
+  const cabeceraAuth = req.headers['authorization'] || ''
+  const secretoValido =
+    Boolean(process.env.CRON_SECRET) &&
+    (await igualSeguro(cabeceraAuth, `Bearer ${process.env.CRON_SECRET}`))
+  if (!secretoValido) {
+    res.status(401).json({ error: 'No autorizado' })
     return
   }
 

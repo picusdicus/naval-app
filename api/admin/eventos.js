@@ -12,7 +12,7 @@
 import { obtenerSql } from '../_db.js'
 import { requerirSesionEdge } from '../_auth.js'
 import { organizacionDeSesion } from '../_organizacion.js'
-import { json, leerJson } from '../_http.js'
+import { json, leerJson, csrfInvalido, rechazoCsrf } from '../_http.js'
 import { validarEvento, normalizarEvento, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
 
 export const config = { runtime: 'edge' }
@@ -232,6 +232,7 @@ export default async function handler(req) {
   if (!METODOS.includes(req.method)) {
     return json({ error: 'Método no permitido' }, 405)
   }
+  if (csrfInvalido(req)) return rechazoCsrf()
 
   const sesion = await requerirSesionEdge(req)
   if (sesion instanceof Response) return sesion

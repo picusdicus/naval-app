@@ -2,7 +2,7 @@
 // POST /api/super/codigos — crea un nuevo código de invitación
 import { requerirSuperAdminEdge } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
-import { json, leerJson, queryDe } from '../_http.js'
+import { json, leerJson, queryDe, csrfInvalido, rechazoCsrf } from '../_http.js'
 
 export const config = { runtime: 'edge' }
 
@@ -22,6 +22,8 @@ function calcularEstado(codigo) {
 }
 
 export default async function handler(req) {
+  if (csrfInvalido(req)) return rechazoCsrf()
+
   const sesion = await requerirSuperAdminEdge(req)
   if (sesion instanceof Response) return sesion
 

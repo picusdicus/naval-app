@@ -6,6 +6,7 @@
 // 4,5 MB y base64 infla un 33 %, de ahí el tope de 3 MB.
 import { put } from '@vercel/blob'
 import { requerirSesion } from '../_auth.js'
+import { csrfInvalido } from '../_http.js'
 
 // Serverless (Node) a propósito: @vercel/blob arrastra undici, que necesita
 // builtins de Node que el Edge Runtime no tiene — su build de Edge falla.
@@ -44,6 +45,9 @@ function nombreSeguro(nombre, extension) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' })
+  }
+  if (csrfInvalido(req)) {
+    return res.status(403).json({ error: 'Origen no permitido.' })
   }
 
   let sesion

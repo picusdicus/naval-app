@@ -14,7 +14,7 @@
 import { obtenerSql } from '../_db.js'
 import { requerirSesionEdge } from '../_auth.js'
 import { organizacionDeSesion } from '../_organizacion.js'
-import { json, leerJson, queryDe } from '../_http.js'
+import { json, leerJson, queryDe, csrfInvalido, rechazoCsrf } from '../_http.js'
 import { hoyISO, sumarDias } from '../../src/lib/fechas.js'
 import { PRESETS_DURACION } from '../../src/lib/tarifasDestacados.js'
 
@@ -38,6 +38,8 @@ function aRespuesta(fila) {
 }
 
 export default async function handler(req) {
+  if (csrfInvalido(req)) return rechazoCsrf()
+
   const sesion = await requerirSesionEdge(req)
   if (sesion instanceof Response) return sesion
 

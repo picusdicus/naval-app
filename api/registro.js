@@ -2,7 +2,8 @@
 // Registra una organización validando su código de invitación.
 import { obtenerSql } from './_db.js'
 import { firmarToken, cookieDeSesion, hashPassword } from './_auth.js'
-import { json, leerJson } from './_http.js'
+import { json, leerJson, csrfInvalido, rechazoCsrf } from './_http.js'
+import { limitar, obtenerIp, respuesta429 } from './_ratelimit.js'
 
 export const config = { runtime: 'edge' }
 
@@ -10,6 +11,11 @@ export default async function handler(req) {
   if (req.method !== 'POST') {
     return json({ error: 'Método no permitido' }, 405)
   }
+  if (csrfInvalido(req)) return rechazoCsrf()
+
+  // Rate-limit por IP: frena la fuerza bruta de códigos de invitación.
+  const limite = await limitar({ clave: `registro:ip:${obtenerIp(req)}`, limite: 10, ventanaS: 60 * 60 })
+  if (!limite.ok) return respuesta429(limite.resetEnS)
 
   const { codigo, email, nombre, password } = await leerJson(req)
   if (!codigo || !email || !nombre || !password) {
