@@ -107,6 +107,32 @@ que `CRON_SECRET` no está bien puesta.
   (`__Host-`) en producción, así que gestores y vecinos tendrán que **volver a
   iniciar sesión / reintroducir el candado una vez**. Efecto único y esperado.
 
+## El candado del portal: qué es y cuándo quitarlo
+
+`APP_ACCESO_PASSWORD` es **una única contraseña compartida** que tapa **toda la
+app** (la pantalla "Portal privado… se requiere contraseña"). No es una cuenta
+por vecino: todos teclean la misma. Es apropiada para la **fase beta actual**,
+en la que la app la ve poca gente invitada.
+
+Es independiente de:
+- El **login de organizaciones** (`/login`, `/panel`), que usa credenciales
+  propias de cada gestor.
+- Las **notificaciones push** de vecinos (feature futura, anónima, sin registro).
+
+**Cuándo quitarlo:** cuando la app se abra al público general (cualquier vecino
+de Navalcarnero, que es lo que encaja con las push anónimas), el candado sobra.
+
+**Cómo quitarlo (cambio de un minuto, no afecta al resto de la seguridad):**
+1. En `src/App.jsx`, eliminar el bloque que muestra `<AccessScreen>` (la
+   comprobación `if (!esGestion) { … return <AccessScreen …/> }`) para que las
+   rutas públicas se rendericen siempre.
+2. En Vercel, borrar la variable `APP_ACCESO_PASSWORD`.
+3. Opcional: borrar `api/acceso.js`, `src/components/AccessScreen.jsx` y el
+   helper `abrirCandado` de los e2e.
+
+El login de gestores, el rate-limit, las cabeceras/CSP y el resto siguen igual
+estés en beta o en público.
+
 ## Recordatorios (de la fase de análisis)
 
 - Para uso municipal necesitas el **plan Vercel Pro** (~20 $/mes + consumo), por
