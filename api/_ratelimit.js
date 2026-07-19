@@ -21,8 +21,18 @@ export function obtenerIp(req) {
   return (xff || '').split(',')[0].trim() || 'desconocida'
 }
 
+// La integración de Upstash en Vercel puede inyectar las credenciales con dos
+// juegos de nombres: `UPSTASH_REDIS_REST_*` (estilo Upstash) o `KV_REST_API_*`
+// (estilo Vercel KV). Aceptamos ambos para no depender de cómo se provisionó.
+function redisUrl() {
+  return process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
+}
+function redisToken() {
+  return process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
+}
+
 function configurado() {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  return Boolean(redisUrl() && redisToken())
 }
 
 /**
@@ -37,7 +47,7 @@ export async function limitar({ clave, limite, ventanaS }) {
     return { ok: true, restantes: limite, resetEnS: 0 }
   }
 
-  const url = `${process.env.UPSTASH_REDIS_REST_URL.replace(/\/+$/, '')}/pipeline`
+  const url = `${redisUrl().replace(/\/+$/, '')}/pipeline`
   const cuerpo = [
     ['SET', clave, '0', 'EX', String(ventanaS), 'NX'],
     ['INCR', clave],
@@ -48,7 +58,7 @@ export async function limitar({ clave, limite, ventanaS }) {
     const res = await fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+        Authorization: `Bearer ${redisToken()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(cuerpo),

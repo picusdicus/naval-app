@@ -16,10 +16,10 @@ Da soporte al rate-limiting (el "portero"). Tier gratuito de sobra.
 3. Crea la base de datos Redis en región **Europa** (p. ej. `eu-west-1`):
    latencia baja y argumento de residencia de datos para el sector público.
 4. Conéctala al proyecto `naval-app`. Vercel inyecta las variables solo.
-5. **Verifica el nombre exacto** de las variables inyectadas: el código lee
-   `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Si la integración las
-   inyecta con otro nombre, copia sus valores a esos dos en Settings →
-   Environment Variables.
+5. **Nombres de las variables**: la integración las inyecta como
+   `KV_REST_API_URL` y `KV_REST_API_TOKEN` (estilo Vercel KV) **o** como
+   `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (estilo Upstash). El
+   código **acepta los dos juegos**, así que no hay que renombrar nada.
 
 **Coste:** gratis hasta 10.000 comandos/día; el rate-limiting gasta ~2-3 por
 login. Sobra de largo.
@@ -49,8 +49,8 @@ Vercel → proyecto → **Settings → Environment Variables**:
 | --- | --- | --- |
 | `CRON_SECRET` | el `openssl rand` de arriba | Production, Preview |
 | `APP_ACCESO_PASSWORD` | la contraseña del portal que elijas | Production, Preview, Development |
-| `UPSTASH_REDIS_REST_URL` | inyectada por Upstash (verifica que existe) | todas |
-| `UPSTASH_REDIS_REST_TOKEN` | inyectada por Upstash (verifica que existe) | todas |
+| `KV_REST_API_URL` (o `UPSTASH_REDIS_REST_URL`) | inyectada por Upstash | todas |
+| `KV_REST_API_TOKEN` (o `UPSTASH_REDIS_REST_TOKEN`) | inyectada por Upstash | todas |
 
 Y **elimina** la vieja `VITE_APP_PASSWORD` (su prefijo `VITE_` la exponía en el
 navegador y ya no se usa).

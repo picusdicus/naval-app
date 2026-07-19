@@ -28,9 +28,12 @@ const VARIABLES_API = [
   'APP_ACCESO_PASSWORD',
   // Auth del cron de sincronización de eventos (api/sync-events.js).
   'CRON_SECRET',
-  // Rate-limiting compartido (api/_ratelimit.js).
+  // Rate-limiting compartido (api/_ratelimit.js). La integración de Upstash
+  // puede inyectar cualquiera de los dos juegos de nombres; aceptamos ambos.
   'UPSTASH_REDIS_REST_URL',
   'UPSTASH_REDIS_REST_TOKEN',
+  'KV_REST_API_URL',
+  'KV_REST_API_TOKEN',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni
