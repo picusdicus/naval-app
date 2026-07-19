@@ -117,7 +117,7 @@ en la que la app la ve poca gente invitada.
 Es independiente de:
 - El **login de organizaciones** (`/login`, `/panel`), que usa credenciales
   propias de cada gestor.
-- Las **notificaciones push** de vecinos (feature futura, anónima, sin registro).
+- Las **notificaciones push** de vecinos (fase 1 implementada: anónimas, sin registro).
 
 **Cuándo quitarlo:** cuando la app se abra al público general (cualquier vecino
 de Navalcarnero, que es lo que encaja con las push anónimas), el candado sobra.
@@ -132,6 +132,24 @@ de Navalcarnero, que es lo que encaja con las push anónimas), el candado sobra.
 
 El login de gestores, el rate-limit, las cabeceras/CSP y el resto siguen igual
 estés en beta o en público.
+
+## Notificaciones push (fase 1): variables VAPID
+
+Para que el digest diario de avisos funcione en producción hay que provisionar
+el par de claves VAPID **una sola vez**:
+
+1. Generar el par: `npx web-push generate-vapid-keys`.
+2. En Vercel (Project Settings → Environment Variables):
+   - `VITE_VAPID_PUBLIC_KEY` = la clave pública (sí lleva el prefijo `VITE_`:
+     el navegador la necesita para suscribirse).
+   - `VAPID_PRIVATE_KEY` = la clave privada (sin prefijo, jamás al bundle).
+   - `VAPID_SUBJECT` = `mailto:<contacto real>` (opcional pero recomendado).
+3. Redesplegar (la clave pública se hornea en el bundle en build).
+
+Si faltan las claves, el envío se omite con un aviso en logs y el cron de
+sincronización sigue funcionando igual. Rotar el par invalida todas las
+suscripciones existentes (los navegadores rechazarán los envíos y las filas se
+limpiarán solas con los 404/410).
 
 ## Recordatorios (de la fase de análisis)
 

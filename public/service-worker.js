@@ -108,3 +108,42 @@ self.addEventListener('fetch', (event) => {
     }),
   )
 })
+
+// Notificaciones push (digest diario de eventos). El payload lo construye
+// api/_push-send.js: { titulo, cuerpo, icono, url }.
+self.addEventListener('push', (event) => {
+  let datos = {}
+  try {
+    datos = event.data ? event.data.json() : {}
+  } catch {
+    // Payload no-JSON: se muestra la notificación genérica.
+  }
+  event.waitUntil(
+    self.registration.showNotification(datos.titulo || 'En Navalcarnero', {
+      body: datos.cuerpo || 'Hay novedades en la agenda de eventos.',
+      icon: datos.icono || '/logo.png',
+      badge: '/logo.png',
+      data: { url: datos.url || '/eventos' },
+    }),
+  )
+})
+
+// Al tocar la notificación: enfocar una pestaña abierta de la app (navegándola
+// a la URL del evento) o abrir una nueva.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = (event.notification.data && event.notification.data.url) || '/eventos'
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((ventanas) => {
+        for (const ventana of ventanas) {
+          if (new URL(ventana.url).origin === self.location.origin && 'focus' in ventana) {
+            if ('navigate' in ventana) ventana.navigate(url)
+            return ventana.focus()
+          }
+        }
+        return self.clients.openWindow(url)
+      }),
+  )
+})

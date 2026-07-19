@@ -34,6 +34,12 @@ const VARIABLES_API = [
   'UPSTASH_REDIS_REST_TOKEN',
   'KV_REST_API_URL',
   'KV_REST_API_TOKEN',
+  // Notificaciones push (api/_push-send.js, vía api/sync-events.js). La clave
+  // pública lleva prefijo VITE_ porque el navegador la necesita para
+  // suscribirse; el servidor también la lee de process.env. La privada, jamás.
+  'VITE_VAPID_PUBLIC_KEY',
+  'VAPID_PRIVATE_KEY',
+  'VAPID_SUBJECT',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni

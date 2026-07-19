@@ -1,8 +1,17 @@
 # Notificaciones push para vecinos
 
-> **Estado: propuesta (estudio de viabilidad, julio 2026). No implementado.**
-> Feature analizada sin tocar código; este documento recoge las decisiones de
-> diseño para cuando se aborde.
+> **Estado: fase 1 IMPLEMENTADA (julio 2026).** Suscripción anónima por temas,
+> `POST/DELETE /api/push`, digest diario en el cron, handlers del service
+> worker y diálogo de opt-in en Eventos. Las fases 2 (favoritos/recordatorios)
+> y 3 (cuenta de vecino) siguen sin abordar. Decisiones tomadas al implementar:
+>
+> - **Eventos de Neon en el digest**: entran en el mismo digest del cron (no
+>   hay disparo al publicar); el estado "ya avisado" es la columna
+>   `eventos_usuario.notificado_en` (NULL = pendiente de avisar).
+> - **Lista de organizadores**: endpoint público `GET /api/organizadores`
+>   (slug+nombre de orgs activas) + fijos en `ORGANIZADORES_FIJOS`; se descartó
+>   derivarla de los eventos cargados.
+> - El detalle operativo vive en la sección "Notificaciones push" de CLAUDE.md.
 
 ## Qué es
 

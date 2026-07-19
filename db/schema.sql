@@ -162,3 +162,26 @@ CREATE INDEX IF NOT EXISTS idx_destacados_vigentes ON destacados (estado, fecha_
 ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS comercio_id text;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_organizaciones_comercio ON organizaciones (comercio_id) WHERE comercio_id IS NOT NULL;
+
+-- Suscripciones push anónimas por dispositivo (fase 1 de NOTIFICACIONES_PUSH.md).
+-- `endpoint` identifica el dispositivo (URL del push service del navegador);
+-- `temas` es la lista plana de intereses ('todos', 'cat:<categoria>',
+-- 'org:<slug>'). `usuario_id` nace NULL: si en el futuro hay cuenta de vecino
+-- (fase 3), sus suscripciones anónimas se le adjuntan sin migración. Las filas
+-- caducadas se borran inline cuando el envío devuelve 404/410 (sin cron aparte).
+CREATE TABLE IF NOT EXISTS push_suscripciones (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint   text NOT NULL UNIQUE,
+  p256dh     text NOT NULL,
+  auth       text NOT NULL,
+  temas      jsonb NOT NULL DEFAULT '["todos"]',
+  usuario_id uuid REFERENCES usuarios(id) ON DELETE SET NULL,
+  creada_en  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT temas_es_lista CHECK (jsonb_typeof(temas) = 'array')
+);
+
+-- Marca de "ya avisado" del digest push: el cron notifica los eventos
+-- publicados con notificado_en NULL y la rellena después. Así un evento que
+-- pasa a publicado días después de crearse también entra en el digest, y las
+-- ediciones posteriores no re-notifican.
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS notificado_en timestamptz;

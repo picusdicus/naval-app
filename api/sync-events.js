@@ -1,4 +1,7 @@
 import { igualSeguro } from './_auth.js'
+import { obtenerSql } from './_db.js'
+import { enviarDigest } from './_push-send.js'
+import { temasDeEvento } from '../src/lib/temasPush.js'
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
@@ -474,6 +477,38 @@ async function hacerCommitSiHayCambios(eventosPrevios, eventosNuevos) {
   }
 }
 
+// Eventos de organizaciones (Neon) que entran en el digest push. Decisión
+// (NOTIFICACIONES_PUSH.md daba dos opciones): se incluyen en ESTE digest, no
+// se dispara nada al publicar desde api/admin/eventos.js — así el envío queda
+// agrupado, en un solo punto y solo en runtime Node. El estado "ya avisado" es
+// la columna eventos_usuario.notificado_en: se avisan los publicados futuros
+// con notificado_en NULL y el cron la rellena tras el envío, con lo que un
+// borrador publicado tarde también entra y las ediciones no re-notifican.
+async function eventosNeonPendientes() {
+  const sql = obtenerSql()
+  const filas = await sql`
+    SELECT e.id, e.titulo, e.lugar, e.categoria, e.imagen_url,
+           to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
+           o.slug AS organizacion_slug
+    FROM eventos_usuario e
+    JOIN organizaciones o ON o.id = e.organizacion_id
+    WHERE e.estado = 'publicado' AND o.activa = true
+      AND e.notificado_en IS NULL AND e.fecha_inicio >= CURRENT_DATE
+  `
+  return filas.map((e) => ({
+    // Mismo id público 'bd-…' que /api/eventos: la URL de la notificación
+    // debe abrir la página de detalle real.
+    id: `bd-${e.id}`,
+    idBd: e.id,
+    titulo: e.titulo,
+    fecha: e.fecha,
+    lugar: e.lugar,
+    categoria: e.categoria,
+    imagen: e.imagen_url || '',
+    organizacionSlug: e.organizacion_slug,
+  }))
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido. Usa GET o POST.' })
@@ -549,6 +584,45 @@ export default async function handler(req, res) {
     // Hacer commit a GitHub si hay cambios (NO escribir en el disco)
     const commitRealizado = await hacerCommitSiHayCambios(eventosPrevios, eventosNuevos)
     resultado.commitRealizado = commitRealizado
+
+    // Paso 5: digest push. Cualquier fallo aquí se loguea y se anota en
+    // `errores`, pero jamás tumba la sincronización (el commit ya está hecho).
+    try {
+      const hoyISO = new Date().toISOString().slice(0, 10)
+      const agregadosExternos = eventosNuevos.filter(
+        (e) => !idsAnteriores.has(e.id) && e.fecha >= hoyISO,
+      )
+
+      let deNeon = []
+      try {
+        deNeon = await eventosNeonPendientes()
+      } catch (err) {
+        resultado.errores.push(`Push (Neon): ${err.message}`)
+      }
+
+      // Etiquetar cada evento con sus temas ('cat:…' + 'org:…') antes de
+      // comparar contra las suscripciones. El mapeo fuente→slug vive en
+      // src/lib/temasPush.js: un evento del TYL TYL matchea org:tyl-tyl tanto
+      // si viene de su API de WordPress como de su panel de Neon.
+      const paraAvisar = [...agregadosExternos, ...deNeon].map((e) => ({
+        ...e,
+        temas: temasDeEvento(e),
+      }))
+
+      const resumenPush = await enviarDigest(paraAvisar)
+      resultado.push = resumenPush
+
+      if (resumenPush.configurado && deNeon.length > 0) {
+        const sql = obtenerSql()
+        await sql`
+          UPDATE eventos_usuario SET notificado_en = now()
+          WHERE id = ANY(${deNeon.map((e) => e.idBd)})
+        `
+      }
+    } catch (err) {
+      console.error('Push: fallo en el digest:', err)
+      resultado.errores.push(`Push: ${err.message}`)
+    }
 
     console.log(JSON.stringify(resultado, null, 2))
     res.status(200).json(resultado)

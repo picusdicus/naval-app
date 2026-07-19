@@ -14,9 +14,15 @@ import { imagenEvento, CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { useDestacados } from '../lib/useDestacados.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
+import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
+import { prefsLocales } from '../lib/push.js'
 
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
+  const [avisosAbierto, setAvisosAbierto] = useState(false)
+  // Solo para pintar el botón ("Recibir avisos" vs "Avisos activados"): la
+  // copia local de las preferencias, no el estado real del servidor.
+  const [avisosActivos, setAvisosActivos] = useState(() => Boolean(prefsLocales()))
 
   // Estáticos del JSON + los que las organizaciones han publicado desde /admin.
   const { eventos: todos } = useEventosPublicos()
@@ -45,12 +51,39 @@ export default function Eventos() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
-          Agenda cultural
-        </h1>
-        <p className="mt-1 text-on-surface-variant">Descubre lo que sucede en tu comunidad.</p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
+            Agenda cultural
+          </h1>
+          <p className="mt-1 text-on-surface-variant">Descubre lo que sucede en tu comunidad.</p>
+        </div>
+        {/* Entrada del opt-in de push: solo en Eventos (ni Inicio ni Comercios). */}
+        <button
+          type="button"
+          onClick={() => setAvisosAbierto(true)}
+          className={`nv-chip flex items-center gap-2 whitespace-nowrap transition-all ${
+            avisosActivos
+              ? 'bg-primary-container text-on-primary-container'
+              : 'bg-primary text-on-primary shadow-md hover:opacity-90'
+          }`}
+        >
+          <MIcon
+            name={avisosActivos ? 'notifications_active' : 'notifications'}
+            className="text-[18px]"
+            fill={avisosActivos}
+          />
+          {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
+        </button>
       </header>
+
+      <DialogoAvisos
+        abierto={avisosAbierto}
+        onCerrar={() => {
+          setAvisosAbierto(false)
+          setAvisosActivos(Boolean(prefsLocales()))
+        }}
+      />
 
       {/* Selector de categorías */}
       {categoriasDisponibles.length > 0 && (
