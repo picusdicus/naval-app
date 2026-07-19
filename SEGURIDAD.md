@@ -1,28 +1,45 @@
 # Auditoría de seguridad
 
-> **Estado: informe de auditoría (julio 2026).** Análisis de la superficie
-> completa (27 endpoints API, autenticación, subida de imágenes, frontend,
-> cabeceras HTTP y configuración) sin modificar código. Recoge las
-> vulnerabilidades detectadas ordenadas por gravedad, con su solución, pensado
-> para un despliegue de uso municipal (referencias a ENS / CCN-STIC y OWASP).
+> **Estado: RESUELTO y desplegado en producción (julio 2026).** El informe
+> original auditó la superficie completa (27 endpoints API, autenticación,
+> subida de imágenes, frontend, cabeceras HTTP y configuración) para un
+> despliegue de uso municipal (ENS / CCN-STIC y OWASP). Las 8 vulnerabilidades
+> (4 altas + 4 medias) están corregidas y verificadas en producción. El detalle
+> "en simple" está en `FLUJO_SEGURIDAD.md` y los pasos de provisión en
+> `PUESTA_EN_MARCHA.md`.
+>
+> ⚠️ **PASO PENDIENTE (dentro de unos días):** la CSP se desplegó en modo
+> `Content-Security-Policy-Report-Only` (solo avisa, no bloquea) para observar
+> tráfico real sin riesgo de romper nada. **Falta promoverla a
+> `Content-Security-Policy` (activa)** — es cambiar esa palabra en `vercel.json`.
+> Antes de activarla, pasear por todas las páginas en producción (noticias,
+> mapa de comercios, asistente, instalación PWA) y confirmar que la consola no
+> reporta violaciones de recursos legítimos. En las pruebas iniciales las únicas
+> violaciones vistas fueron de la infraestructura de *preview* de Vercel
+> (`vercel.live`, `vercel.com/sso-api`), que no existe en producción. Nota: no
+> hay recolector central de reportes, así que "esperar" solo aporta si alguien
+> revisa consolas o se monta un `report-uri`.
 
 ## Resumen
 
-La base es sólida: SQL siempre parametrizado, aislamiento multi-tenant por JWT
-firmado, React sin `innerHTML`, secretos fuera de git y comparaciones en tiempo
-constante. Quedan **4 vulnerabilidades altas**, **4 medias** y varias
-carencias de cumplimiento que un despliegue institucional exige resolver.
+La base ya era sólida (SQL parametrizado, aislamiento multi-tenant por JWT
+firmado, React sin `innerHTML`, secretos fuera de git, comparaciones en tiempo
+constante). Estado de cada hallazgo:
 
-| # | Gravedad | Título | Esfuerzo |
+| # | Gravedad | Título | Estado |
 | --- | --- | --- | --- |
-| 1 | 🔴 Alta | Candado de acceso decorativo (contraseña en el bundle) | Medio |
-| 2 | 🔴 Alta | Hash de contraseñas SHA-256 sin salt | Medio |
-| 3 | 🔴 Alta | Cron `sync-events` roto y abierto a la vez | Bajo |
-| 4 | 🔴 Alta | Sin rate-limiting en login/registro/track | Medio |
-| 5 | 🟠 Media | Faltan cabeceras de seguridad HTTP (CSP incluida) | Medio |
-| 6 | 🟠 Media | Cookie no `__Host-`, sin defensa CSRF explícita | Bajo |
-| 7 | 🟠 Media | Asistente IA: inyección de prompt y coste | Medio |
-| 8 | 🟠 Media | Fuga de detalle de error en `chat.js` | Bajo |
+| 1 | 🔴 Alta | Candado de acceso decorativo (contraseña en el bundle) | ✅ Resuelto (`api/acceso.js`, cookie servidor) |
+| 2 | 🔴 Alta | Hash de contraseñas SHA-256 sin salt | ✅ Resuelto (PBKDF2 + rehash transparente) |
+| 3 | 🔴 Alta | Cron `sync-events` roto y abierto a la vez | ✅ Resuelto (Bearer + fail-closed; verificado 200/401) |
+| 4 | 🔴 Alta | Sin rate-limiting en login/registro/track | ✅ Resuelto (Upstash, `_ratelimit.js`) |
+| 5 | 🟠 Media | Faltan cabeceras de seguridad HTTP (CSP incluida) | 🟡 Cabeceras ✅ · **CSP en Report-Only, falta activarla** |
+| 6 | 🟠 Media | Cookie no `__Host-`, sin defensa CSRF explícita | ✅ Resuelto (`__Host-` + `csrfInvalido`) |
+| 7 | 🟠 Media | Asistente IA: inyección de prompt y coste | 🟡 Rate-limit + fuga de error ✅ · aviso/prompt: mejora futura |
+| 8 | 🟠 Media | Fuga de detalle de error en `chat.js` | ✅ Resuelto |
+
+**Lo único que queda del código es activar la CSP** (hallazgo 5). El resto son
+tareas de negocio/jurídico (plan Vercel Pro, RGPD) descritas en la sección de
+cumplimiento.
 
 ---
 
@@ -109,7 +126,18 @@ blanca.
 
 ### 5. Faltan cabeceras de seguridad HTTP (incluida CSP)
 
-No hay bloque `headers` en `vercel.json` ni CSP. Sin ellas, no hay segunda
+> **Estado: cabeceras ✅ desplegadas · CSP 🟡 en Report-Only, FALTA ACTIVARLA.**
+> El bloque `headers` de `vercel.json` está en producción (verificado con
+> `curl -I`): HSTS, `X-Content-Type-Options`, `X-Frame-Options: DENY`,
+> `Referrer-Policy`, `Permissions-Policy` y la CSP con los orígenes reales. La
+> CSP se desplegó como `Content-Security-Policy-Report-Only` a propósito.
+> **Paso pendiente (dentro de unos días):** tras pasear por todas las páginas en
+> producción y confirmar consola limpia, cambiar la clave a
+> `Content-Security-Policy` (activa). El origen de Umami va hardcodeado porque
+> `vercel.json` no interpola env; no hay scripts inline, así que no hizo falta
+> `nonce`.
+
+No había bloque `headers` en `vercel.json` ni CSP. Sin ellas, no hay segunda
 capa ante XSS, clickjacking o sniffing — de los primeros puntos que audita una
 revisión ENS/CCN-STIC en un dominio institucional.
 
