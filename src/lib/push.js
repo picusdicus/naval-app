@@ -9,6 +9,28 @@
 import { validarTemas } from './temasPush.js'
 
 const CLAVE_LOCAL = 'ncv_push_temas'
+// Marca de tiempo (ISO) de la última vez que el vecino abrió la bandeja: todo
+// aviso posterior cuenta como "no leído". Vive solo en el cliente porque las
+// suscripciones son anónimas (no hay estado de lectura por dispositivo en Neon).
+const CLAVE_VISTO = 'ncv_push_visto'
+
+/** Instante de la última apertura de la bandeja (ISO), o null si nunca se abrió. */
+export function vistoLocal() {
+  try {
+    return localStorage.getItem(CLAVE_VISTO)
+  } catch {
+    return null
+  }
+}
+
+/** Marca la bandeja como leída hasta ahora (se llama al abrirla). */
+export function marcarVisto() {
+  try {
+    localStorage.setItem(CLAVE_VISTO, new Date().toISOString())
+  } catch {
+    // localStorage bloqueado: se perderá el "no leído", no es crítico.
+  }
+}
 
 /** ¿El navegador soporta Web Push? (en iOS, solo dentro de la PWA instalada). */
 export function soportaPush() {

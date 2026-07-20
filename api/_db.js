@@ -31,4 +31,5 @@ export const TABLAS = [
   'eventos_usuario',
   'destacados',
   'push_suscripciones',
+  'push_avisos',
 ]

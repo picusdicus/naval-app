@@ -609,6 +609,28 @@ export default async function handler(req, res) {
         temas: temasDeEvento(e),
       }))
 
+      // Registrar cada evento anunciado en el historial (la "bandeja" que el
+      // vecino ve en la app). Se hace ANTES del envío y en su propio try: la
+      // bandeja debe poblarse aunque las claves VAPID no estén configuradas o
+      // el envío falle. UNIQUE(referencia_id) + ON CONFLICT evita duplicar un
+      // evento si reaparece en otra ejecución del cron.
+      if (paraAvisar.length > 0) {
+        try {
+          const sql = obtenerSql()
+          for (const e of paraAvisar) {
+            const cuerpo = [e.fecha, e.lugar].filter(Boolean).join(' · ')
+            await sql`
+              INSERT INTO push_avisos (referencia_id, titulo, cuerpo, url, temas)
+              VALUES (${e.id}, ${e.titulo}, ${cuerpo}, ${`/eventos/${e.id}`},
+                      ${JSON.stringify(e.temas)}::jsonb)
+              ON CONFLICT (referencia_id) DO NOTHING
+            `
+          }
+        } catch (err) {
+          resultado.errores.push(`Push (bandeja): ${err.message}`)
+        }
+      }
+
       const resumenPush = await enviarDigest(paraAvisar)
       resultado.push = resumenPush
 

@@ -105,6 +105,22 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
   const iosSinInstalar = esIOS() && !esPWAInstalada()
   const sinSoporte = !soportaPush() && !iosSinInstalar
 
+  // Resumen legible de a qué está suscrito ahora (opción "ver mis preferencias").
+  const resumenActual = useMemo(() => {
+    if (!activo) return ''
+    if (modo === 'todos') return 'Todos los eventos'
+    if (modo === 'categorias') {
+      const nombres = categorias
+        .map((id) => LISTA_CATEGORIAS_EVENTO.find((c) => c.id === id)?.nombre)
+        .filter(Boolean)
+      return nombres.length ? nombres.join(', ') : 'Ninguna categoría'
+    }
+    const nombres = organizadores
+      .map((slug) => listaOrganizadores.find((o) => o.slug === slug)?.nombre || slug)
+      .filter(Boolean)
+    return nombres.length ? nombres.join(', ') : 'Ningún organizador'
+  }, [activo, modo, categorias, organizadores, listaOrganizadores])
+
   const activar = async () => {
     setOcupado(true)
     setError('')
@@ -152,6 +168,16 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
           Te avisamos en este dispositivo cuando haya eventos nuevos. Sin registro: elige de qué
           quieres enterarte.
         </p>
+
+        {/* Ver mis preferencias: resumen de a qué está suscrito ahora este aparato. */}
+        {resumenActual && !iosSinInstalar && !sinSoporte && (
+          <div className="mt-4 flex items-start gap-2 rounded-lg bg-primary-container/30 px-4 py-3 text-sm text-on-surface">
+            <MIcon name="check_circle" className="mt-0.5 text-[18px] text-primary" fill />
+            <span>
+              Ahora recibes: <span className="font-semibold">{resumenActual}</span>
+            </span>
+          </div>
+        )}
 
         {iosSinInstalar ? (
           <div className="mt-4 rounded-lg bg-secondary-container/60 p-4 text-sm text-on-secondary-container">

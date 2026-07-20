@@ -185,3 +185,24 @@ CREATE TABLE IF NOT EXISTS push_suscripciones (
 -- pasa a publicado días después de crearse también entra en el digest, y las
 -- ediciones posteriores no re-notifican.
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS notificado_en timestamptz;
+
+-- Historial de avisos push (la "bandeja" que el vecino ve en la app). Web Push
+-- es efímero, así que el cron registra aquí cada evento que anuncia en un
+-- digest: una fila por evento (`referencia_id` = id público del evento, UNIQUE
+-- para no duplicar entre ejecuciones del cron). La app lee este historial y lo
+-- filtra CLIENT-SIDE por los temas del dispositivo (mismo patrón que
+-- destacados), así no se multiplica el almacenamiento por suscriptor ni hace
+-- falta exponer el `endpoint`. El "no leído" se calcula en el cliente
+-- (localStorage con la última visita); no hay estado de lectura por dispositivo.
+CREATE TABLE IF NOT EXISTS push_avisos (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  referencia_id text NOT NULL UNIQUE,
+  titulo        text NOT NULL,
+  cuerpo        text,
+  url           text NOT NULL,
+  temas         jsonb NOT NULL DEFAULT '[]',
+  enviado_en    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT avisos_temas_es_lista CHECK (jsonb_typeof(temas) = 'array')
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_avisos_fecha ON push_avisos (enviado_en DESC);
