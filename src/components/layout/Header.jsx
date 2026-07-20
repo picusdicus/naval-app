@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
+import CentroAvisos from '../avisos/CentroAvisos.jsx'
 
 const enlaces = [
   { to: '/', label: 'Inicio', end: true },
@@ -25,7 +26,8 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
           </button>
           <h1 className="font-display text-xl font-bold text-primary">En Navalcarnero</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <CentroAvisos />
           <button
             type="button"
             onClick={onLogout}
@@ -62,7 +64,8 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
             </NavLink>
           ))}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <CentroAvisos variante="neutral" />
           <button
             type="button"
             onClick={onAbrirChat}

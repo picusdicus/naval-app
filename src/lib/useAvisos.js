@@ -1,21 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { interseca } from './temasPush.js'
-import { prefsLocales, vistoLocal } from './push.js'
+import {
+  prefsLocales,
+  avisosLeidos,
+  avisosOcultos,
+  guardarLeidos,
+  guardarOcultos,
+  vistoLegacy,
+  limpiarVistoLegacy,
+} from './push.js'
 
 // Lee el historial de avisos (GET /api/avisos) y lo filtra CLIENT-SIDE por los
-// temas del dispositivo, igual que useDestacados filtra los destacados: una
-// respuesta cacheable para todos, y el navegador ya sabe a qué está suscrito.
-//
-// Sin suscripción hecha desde este dispositivo (prefsLocales === null) la
-// bandeja muestra todas las novedades: es un feed público, no hay nada privado.
-// El contador de "no leídos" compara enviado_en contra la última visita
-// (vistoLocal), que se refresca al abrir la bandeja.
+// temas del dispositivo, igual que useDestacados filtra los destacados. El
+// estado leído/oculto es POR DISPOSITIVO (localStorage): las suscripciones son
+// anónimas, no hay estado de lectura en Neon. "Borrar" oculta el aviso solo en
+// este aparato; el feed global no se toca.
 
 export function useAvisos() {
   const [todos, setTodos] = useState([])
   const [cargando, setCargando] = useState(true)
-  // Se recalcula al abrir/cerrar la bandeja para refrescar el "no leído".
-  const [visto, setVisto] = useState(() => vistoLocal())
+  const [leidos, setLeidos] = useState(() => new Set(avisosLeidos()))
+  const [ocultos, setOcultos] = useState(() => new Set(avisosOcultos()))
 
   useEffect(() => {
     let vigente = true
@@ -35,20 +40,94 @@ export function useAvisos() {
     }
   }, [])
 
+  // Al llegar el feed: migrar la primera versión (avisos anteriores a la última
+  // visita → leídos) y podar de localStorage los ids que ya no están en el feed.
+  useEffect(() => {
+    if (!todos.length) return
+    const idsVigentes = new Set(todos.map((a) => a.referencia_id))
+    const visto = vistoLegacy()
+
+    setLeidos((prev) => {
+      const next = new Set([...prev].filter((id) => idsVigentes.has(id)))
+      if (visto) {
+        for (const a of todos) if (a.enviado_en <= visto) next.add(a.referencia_id)
+      }
+      guardarLeidos([...next])
+      return next
+    })
+    setOcultos((prev) => {
+      const next = new Set([...prev].filter((id) => idsVigentes.has(id)))
+      guardarOcultos([...next])
+      return next
+    })
+    if (visto) limpiarVistoLegacy()
+  }, [todos])
+
   const prefs = prefsLocales()
 
+  // Visibles: no ocultos + coinciden con los temas del aparato (o todos si no
+  // hay suscripción hecha aquí: es un feed público, no hay nada privado).
   const avisos = useMemo(() => {
-    if (!prefs) return todos
-    return todos.filter((a) => interseca(prefs, a.temas || []))
-  }, [todos, prefs])
+    const base = todos.filter((a) => !ocultos.has(a.referencia_id))
+    const porTema = prefs ? base.filter((a) => interseca(prefs, a.temas || [])) : base
+    return porTema.map((a) => ({ ...a, leido: leidos.has(a.referencia_id) }))
+  }, [todos, ocultos, leidos, prefs])
 
-  const noLeidos = useMemo(
-    () => avisos.filter((a) => !visto || a.enviado_en > visto).length,
-    [avisos, visto],
-  )
+  const noLeidos = useMemo(() => avisos.filter((a) => !a.leido).length, [avisos])
 
-  // Llamar tras marcarVisto() para que el badge baje a 0 sin recargar.
-  const refrescarVisto = () => setVisto(vistoLocal())
+  const marcarLeido = useCallback((id) => {
+    setLeidos((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      guardarLeidos([...next])
+      return next
+    })
+  }, [])
 
-  return { avisos, noLeidos, cargando, refrescarVisto }
+  const marcarNoLeido = useCallback((id) => {
+    setLeidos((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      guardarLeidos([...next])
+      return next
+    })
+  }, [])
+
+  const marcarTodasLeidas = useCallback(() => {
+    setLeidos((prev) => {
+      const next = new Set(prev)
+      for (const a of avisos) next.add(a.referencia_id)
+      guardarLeidos([...next])
+      return next
+    })
+  }, [avisos])
+
+  const borrar = useCallback((id) => {
+    setOcultos((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      guardarOcultos([...next])
+      return next
+    })
+  }, [])
+
+  const borrarTodas = useCallback(() => {
+    setOcultos((prev) => {
+      const next = new Set(prev)
+      for (const a of avisos) next.add(a.referencia_id)
+      guardarOcultos([...next])
+      return next
+    })
+  }, [avisos])
+
+  return {
+    avisos,
+    noLeidos,
+    cargando,
+    marcarLeido,
+    marcarNoLeido,
+    marcarTodasLeidas,
+    borrar,
+    borrarTodas,
+  }
 }

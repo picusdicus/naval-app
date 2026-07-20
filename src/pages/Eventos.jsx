@@ -15,20 +15,15 @@ import MIcon from '../components/MIcon.jsx'
 import { useDestacados } from '../lib/useDestacados.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
-import DialogoBandeja from '../components/eventos/DialogoBandeja.jsx'
 import { prefsLocales } from '../lib/push.js'
-import { useAvisos } from '../lib/useAvisos.js'
 
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
   const [avisosAbierto, setAvisosAbierto] = useState(false)
-  const [bandejaAbierta, setBandejaAbierta] = useState(false)
   // Solo para pintar el botón ("Recibir avisos" vs "Avisos activados"): la
-  // copia local de las preferencias, no el estado real del servidor.
+  // copia local de las preferencias, no el estado real del servidor. La bandeja
+  // de avisos vive en la cabecera global (CentroAvisos), no aquí.
   const [avisosActivos, setAvisosActivos] = useState(() => Boolean(prefsLocales()))
-
-  // Bandeja de avisos recibidos (historial filtrado por los temas del aparato).
-  const { avisos, noLeidos, refrescarVisto } = useAvisos()
 
   // Estáticos del JSON + los que las organizaciones han publicado desde /admin.
   const { eventos: todos } = useEventosPublicos()
@@ -64,38 +59,25 @@ export default function Eventos() {
           </h1>
           <p className="mt-1 text-on-surface-variant">Descubre lo que sucede en tu comunidad.</p>
         </div>
-        {/* Campana (bandeja de avisos) + opt-in de push: solo en Eventos. */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setBandejaAbierta(true)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant transition-colors hover:bg-surface-container-high"
-            aria-label={noLeidos > 0 ? `Tus avisos (${noLeidos} sin leer)` : 'Tus avisos'}
-          >
-            <MIcon name="notifications" className="text-[20px]" />
-            {noLeidos > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-on-primary">
-                {noLeidos > 9 ? '9+' : noLeidos}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setAvisosAbierto(true)}
-            className={`nv-chip flex items-center gap-2 whitespace-nowrap transition-all ${
-              avisosActivos
-                ? 'bg-primary-container text-on-primary-container'
-                : 'bg-primary text-on-primary shadow-md hover:opacity-90'
-            }`}
-          >
-            <MIcon
-              name={avisosActivos ? 'notifications_active' : 'notifications'}
-              className="text-[18px]"
-              fill={avisosActivos}
-            />
-            {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
-          </button>
-        </div>
+        {/* Opt-in de push: CTA contextual en Eventos (la bandeja está en la
+            cabecera global). Abre el mismo diálogo de gestión que el icono de
+            ajustes de la bandeja. */}
+        <button
+          type="button"
+          onClick={() => setAvisosAbierto(true)}
+          className={`nv-chip flex items-center gap-2 whitespace-nowrap transition-all ${
+            avisosActivos
+              ? 'bg-primary-container text-on-primary-container'
+              : 'bg-primary text-on-primary shadow-md hover:opacity-90'
+          }`}
+        >
+          <MIcon
+            name={avisosActivos ? 'notifications_active' : 'notifications'}
+            className="text-[18px]"
+            fill={avisosActivos}
+          />
+          {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
+        </button>
       </header>
 
       <DialogoAvisos
@@ -104,13 +86,6 @@ export default function Eventos() {
           setAvisosAbierto(false)
           setAvisosActivos(Boolean(prefsLocales()))
         }}
-      />
-
-      <DialogoBandeja
-        abierto={bandejaAbierta}
-        avisos={avisos}
-        onLeidos={refrescarVisto}
-        onCerrar={() => setBandejaAbierta(false)}
       />
 
       {/* Selector de categorías */}

@@ -9,26 +9,65 @@
 import { validarTemas } from './temasPush.js'
 
 const CLAVE_LOCAL = 'ncv_push_temas'
-// Marca de tiempo (ISO) de la última vez que el vecino abrió la bandeja: todo
-// aviso posterior cuenta como "no leído". Vive solo en el cliente porque las
-// suscripciones son anónimas (no hay estado de lectura por dispositivo en Neon).
-const CLAVE_VISTO = 'ncv_push_visto'
+// Estado de la bandeja, POR DISPOSITIVO (las suscripciones son anónimas: no hay
+// estado de lectura en Neon). Dos listas de `referencia_id`:
+//   - leídos: avisos que el vecino ya marcó/abrió.
+//   - ocultos: avisos que borró de ESTE dispositivo (no se tocan para los demás;
+//     el aviso sigue en el feed global, solo se oculta aquí).
+const CLAVE_LEIDOS = 'ncv_avisos_leidos'
+const CLAVE_OCULTOS = 'ncv_avisos_ocultos'
+// Marca de la primera versión (timestamp de última visita); se migra una vez.
+const CLAVE_VISTO_LEGACY = 'ncv_push_visto'
 
-/** Instante de la última apertura de la bandeja (ISO), o null si nunca se abrió. */
-export function vistoLocal() {
+function leerLista(clave) {
   try {
-    return localStorage.getItem(CLAVE_VISTO)
+    const v = JSON.parse(localStorage.getItem(clave))
+    return Array.isArray(v) ? v : []
+  } catch {
+    return []
+  }
+}
+
+function guardarLista(clave, lista) {
+  try {
+    localStorage.setItem(clave, JSON.stringify(lista))
+  } catch {
+    // localStorage bloqueado: se perderá el estado de lectura, no es crítico.
+  }
+}
+
+/** Ids de avisos marcados como leídos en este dispositivo. */
+export function avisosLeidos() {
+  return leerLista(CLAVE_LEIDOS)
+}
+
+/** Ids de avisos borrados (ocultos) en este dispositivo. */
+export function avisosOcultos() {
+  return leerLista(CLAVE_OCULTOS)
+}
+
+export function guardarLeidos(lista) {
+  guardarLista(CLAVE_LEIDOS, lista)
+}
+
+export function guardarOcultos(lista) {
+  guardarLista(CLAVE_OCULTOS, lista)
+}
+
+/** Timestamp de la primera versión (o null); para migrar el estado una sola vez. */
+export function vistoLegacy() {
+  try {
+    return localStorage.getItem(CLAVE_VISTO_LEGACY)
   } catch {
     return null
   }
 }
 
-/** Marca la bandeja como leída hasta ahora (se llama al abrirla). */
-export function marcarVisto() {
+export function limpiarVistoLegacy() {
   try {
-    localStorage.setItem(CLAVE_VISTO, new Date().toISOString())
+    localStorage.removeItem(CLAVE_VISTO_LEGACY)
   } catch {
-    // localStorage bloqueado: se perderá el "no leído", no es crítico.
+    // Ídem.
   }
 }
 
