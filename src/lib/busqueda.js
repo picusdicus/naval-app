@@ -44,6 +44,27 @@ const INTENCIONES = [
   // Barbería: por keyword en nombre/tipoDisplay ("Barber", "Barbería"), para no
   // arrastrar todas las peluquerías.
   { terminos: ['barberia', 'barbero', 'barbershop'], keywords: ['barber'], especifico: false },
+
+  // --- Ocio y cultura ---
+  { terminos: ['teatro', 'teatros'], keywords: ['teatro', 'theatre'], especifico: true, categorias: ['ocio_cultura'] },
+  { terminos: ['cine', 'cines'], keywords: ['cine', 'cinema'], especifico: true, categorias: ['ocio_cultura'] },
+  { terminos: ['parque', 'parques', 'parque tematico'], keywords: ['parque'], especifico: true, categorias: ['ocio_cultura'] },
+  { terminos: ['ocio', 'entretenimiento', 'diversión'], categorias: ['ocio_cultura'], especifico: false },
+
+  // --- Educación ---
+  { terminos: ['colegio', 'colegios', 'escuela', 'escuelas', 'primaria', 'primarias'], keywords: ['colegio', 'escuela', 'primaria'], especifico: true, categorias: ['educacion'] },
+  { terminos: ['academia', 'academias'], keywords: ['academia'], especifico: true, categorias: ['educacion'] },
+  { terminos: ['danza', 'baile', 'ballet'], keywords: ['danza', 'baile', 'ballet'], especifico: true, categorias: ['educacion'] },
+  { terminos: ['autoescuela', 'escuela de manejo', 'carnet', 'conducir'], keywords: ['autoescuela'], especifico: true, categorias: ['educacion'] },
+  { terminos: ['idiomas', 'ingles', 'frances', 'aleman', 'clases', 'curso', 'cursos'], keywords: ['idiomas', 'english', 'francais', 'deutsch'], especifico: true, categorias: ['educacion'] },
+  { terminos: ['guarderia', 'guarderia infantil', 'preescolar'], keywords: ['guarderia', 'preescolar', 'daycare'], especifico: true, categorias: ['educacion'] },
+
+  // --- Deporte ---
+  { terminos: ['padel', 'pádel', 'tenis'], keywords: ['padel', 'pádel', 'tenis'], especifico: true, categorias: ['deporte'] },
+  { terminos: ['piscina', 'piscinas', 'natacion'], keywords: ['piscina', 'natacion', 'swimming'], especifico: true, categorias: ['deporte'] },
+  { terminos: ['boxeo', 'gimnasia', 'artes marciales'], keywords: ['boxeo', 'boxing', 'gimnasia'], especifico: true, categorias: ['deporte'] },
+  { terminos: ['gym', 'gimnasio', 'gimnasios', 'fitness'], keywords: ['gym', 'gimnasio', 'fitness', 'entrenamiento'], especifico: true, categorias: ['deporte'] },
+  { terminos: ['deportes', 'entrenamiento'], categorias: ['deporte'], especifico: false },
 ]
 
 // Comprueba si el término aparece en la consulta como palabra completa, con

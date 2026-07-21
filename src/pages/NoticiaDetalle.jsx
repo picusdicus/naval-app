@@ -7,14 +7,14 @@ function formatearFechaLarga(fechaISO) {
   return fecha.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function VolverLink() {
+function VolverLink({ arriba = false }) {
   return (
     <Link
       to="/noticias"
-      className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary-container"
+      className="inline-flex items-center gap-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta transition-colors hover:text-terracota"
     >
-      <MIcon name="arrow_back" className="text-[18px]" />
-      Volver a noticias
+      <MIcon name="arrow_back" className="text-[16px]" />
+      {arriba ? 'Noticias' : 'Volver a noticias'}
     </Link>
   )
 }
@@ -25,9 +25,9 @@ export default function NoticiaDetalle() {
 
   if (!noticia) {
     return (
-      <div className="space-y-6">
-        <VolverLink />
-        <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-10 text-center text-on-surface-variant">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <VolverLink arriba />
+        <div className="border border-dashed border-filete-punteado p-10 text-center font-serif-spectral text-pardo">
           No hemos encontrado esa noticia. Puede que ya no esté disponible.
         </div>
       </div>
@@ -35,51 +35,43 @@ export default function NoticiaDetalle() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <VolverLink />
+    <div className="mx-auto max-w-2xl">
+      <VolverLink arriba />
 
-      <div>
-        <span className="inline-block rounded-full bg-primary-container px-3 py-1 text-xs font-medium text-on-primary-container">
-          Ayuntamiento
-        </span>
-        <h1 className="mt-3 font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
-          {noticia.titulo}
-        </h1>
+      <div className="mt-4">
+        <span className="gz-badge-oro">Ayuntamiento</span>
+        <h1 className="mt-3 font-serif-dm text-seccion leading-tight text-tinta">{noticia.titulo}</h1>
       </div>
 
-      <dl className="grid gap-2.5 text-sm sm:grid-cols-2">
-        <div className="flex items-center gap-2 text-on-surface">
-          <MIcon name="calendar_today" className="text-[18px] text-secondary" />
-          <span>{formatearFechaLarga(noticia.fecha)}</span>
+      <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
+        <div>
+          <div className="gz-label text-mudo">Fecha</div>
+          <div className="mt-0.5 font-serif-spectral text-[15px] text-tinta">
+            {formatearFechaLarga(noticia.fecha)}
+          </div>
         </div>
         {noticia.autor && (
-          <div className="flex items-center gap-2 text-on-surface">
-            <MIcon name="person" className="text-[18px] text-secondary" />
-            <span>{noticia.autor}</span>
+          <div>
+            <div className="gz-label text-mudo">Autor</div>
+            <div className="mt-0.5 font-serif-spectral text-[15px] text-tinta">{noticia.autor}</div>
           </div>
         )}
-      </dl>
+      </div>
 
-      <div className="prose prose-invert max-w-none text-[15px] leading-relaxed text-on-surface">
-        {noticia.contenido ? (
-          <div className="space-y-4 whitespace-pre-wrap break-words">
-            {noticia.contenido}
-          </div>
-        ) : noticia.resumen ? (
-          <div className="space-y-4 whitespace-pre-wrap break-words">
-            {noticia.resumen}
-          </div>
-        ) : null}
+      <div className="mt-5 h-px bg-filete" />
+
+      <div className="mt-5 whitespace-pre-wrap break-words font-serif-spectral text-[15px] leading-relaxed text-tinta-suave">
+        {noticia.contenido || noticia.resumen || null}
       </div>
 
       {noticia.url && (
-        <div className="flex flex-col gap-3 rounded-lg bg-surface-container p-5">
+        <div className="mt-6 border border-tinta bg-papel-calido p-5">
           <div className="flex items-start gap-3">
-            <MIcon name="info" className="mt-0.5 text-[18px] text-primary" />
+            <MIcon name="info" className="mt-0.5 text-[18px] text-terracota" />
             <div>
-              <p className="text-sm font-semibold text-on-surface">Fuente original</p>
-              <p className="mt-1 text-xs text-on-surface-variant">
-                Puedes acceder al artículo completo en la web oficial del Ayuntamiento
+              <p className="font-serif-spectral text-sm font-semibold text-tinta">Fuente original</p>
+              <p className="mt-1 font-serif-spectral text-xs text-pardo">
+                Puedes acceder al artículo completo en la web oficial del Ayuntamiento.
               </p>
             </div>
           </div>
@@ -87,15 +79,15 @@ export default function NoticiaDetalle() {
             href={noticia.url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
+            className="gz-boton-tinta mt-4 inline-flex items-center justify-center gap-2"
           >
-            <MIcon name="open_in_new" className="text-[18px]" />
+            <MIcon name="open_in_new" className="text-[16px]" />
             Abrir artículo completo en web del Ayuntamiento
           </a>
         </div>
       )}
 
-      <div className="border-t border-outline-variant/40 pt-6">
+      <div className="mt-8 border-t border-filete pt-5">
         <VolverLink />
       </div>
     </div>

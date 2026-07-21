@@ -54,18 +54,18 @@ export default function DialogoBandeja({
         e.preventDefault()
         onCerrar()
       }}
-      className="w-full max-w-md rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-0 shadow-card-lg backdrop:bg-black/40"
+      className="w-full max-w-md border border-tinta bg-papel p-0 shadow-cartel backdrop:bg-tinta/40"
     >
-      <div className="flex items-center justify-between border-b border-outline-variant/20 p-4">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-on-surface">
-          <MIcon name="notifications" className="text-[22px] text-primary" />
+      <div className="flex items-center justify-between border-b border-filete p-4">
+        <h2 className="flex items-center gap-2 font-serif-dm text-xl text-tinta">
+          <MIcon name="notifications" className="text-[20px] text-terracota" />
           Tus avisos
         </h2>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={onGestionar}
-            className="rounded-full p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high"
+            className="p-2 text-pardo transition-colors hover:text-terracota"
             aria-label="Gestionar avisos"
             title="Gestionar avisos"
           >
@@ -74,7 +74,7 @@ export default function DialogoBandeja({
           <button
             type="button"
             onClick={onCerrar}
-            className="rounded-full p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high"
+            className="p-2 text-pardo transition-colors hover:text-terracota"
             aria-label="Cerrar"
           >
             <MIcon name="close" className="text-[20px]" />
@@ -84,22 +84,22 @@ export default function DialogoBandeja({
 
       {/* Acciones globales */}
       {avisos.length > 0 && (
-        <div className="flex items-center gap-2 border-b border-outline-variant/20 px-3 py-2">
+        <div className="flex items-center gap-2 border-b border-filete px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta">
           <button
             type="button"
             onClick={onMarcarTodasLeidas}
             disabled={!hayNoLeidos}
-            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:enabled:bg-surface-container-high disabled:opacity-40"
+            className="flex items-center gap-1 px-2 py-1.5 text-pardo transition-colors hover:enabled:text-tinta disabled:opacity-40"
           >
-            <MIcon name="done_all" className="text-[16px]" />
+            <MIcon name="done_all" className="text-[15px]" />
             Marcar todas como leídas
           </button>
           <button
             type="button"
             onClick={onBorrarTodas}
-            className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-surface-container-high"
+            className="ml-auto flex items-center gap-1 px-2 py-1.5 text-terracota transition-opacity hover:opacity-80"
           >
-            <MIcon name="delete_sweep" className="text-[16px]" />
+            <MIcon name="delete_sweep" className="text-[15px]" />
             Borrar todas
           </button>
         </div>
@@ -108,27 +108,23 @@ export default function DialogoBandeja({
       <div className="max-h-[60vh] overflow-y-auto p-2">
         {avisos.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-sm text-on-surface-variant">
+            <p className="font-serif-spectral text-sm text-pardo">
               No hay avisos por ahora. Cuando se publiquen eventos que coincidan con lo que sigues,
               aparecerán aquí.
             </p>
             {!suscrito && (
-              <button
-                type="button"
-                onClick={onGestionar}
-                className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
-              >
+              <button type="button" onClick={onGestionar} className="gz-boton-tinta mt-4">
                 Activar avisos
               </button>
             )}
           </div>
         ) : (
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col">
             {avisos.map((a) => (
               <li
                 key={a.referencia_id}
-                className={`flex items-start gap-1 rounded-lg ${
-                  a.leido ? '' : 'bg-primary-container/15'
+                className={`flex items-start gap-1 border-b border-filete last:border-b-0 ${
+                  a.leido ? '' : 'bg-papel-calido'
                 }`}
               >
                 <Link
@@ -137,11 +133,11 @@ export default function DialogoBandeja({
                     onMarcarLeido(a.referencia_id)
                     onCerrar()
                   }}
-                  className="flex min-w-0 flex-1 items-start gap-3 rounded-lg p-3 transition-colors hover:bg-surface-container-high"
+                  className="flex min-w-0 flex-1 items-start gap-3 p-3 transition-colors hover:bg-papel-calido/60"
                 >
                   <span
                     className={`mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full ${
-                      a.leido ? 'bg-transparent' : 'bg-primary'
+                      a.leido ? 'bg-transparent' : 'bg-terracota'
                     }`}
                     aria-hidden
                   />
@@ -149,16 +145,16 @@ export default function DialogoBandeja({
                     <p
                       className={
                         a.leido
-                          ? 'font-medium text-on-surface-variant'
-                          : 'font-semibold text-on-surface'
+                          ? 'font-serif-spectral text-tinta-apagada'
+                          : 'font-serif-spectral font-semibold text-tinta'
                       }
                     >
                       {a.titulo}
                     </p>
                     {a.cuerpo && (
-                      <p className="truncate text-sm text-on-surface-variant">{a.cuerpo}</p>
+                      <p className="truncate font-serif-spectral text-sm text-pardo">{a.cuerpo}</p>
                     )}
-                    <p className="mt-0.5 text-xs text-on-surface-variant/70">
+                    <p className="mt-0.5 font-mono-ibm text-[10px] text-mudo">
                       {cuandoLlego(a.enviado_en)}
                     </p>
                   </div>
@@ -169,19 +165,16 @@ export default function DialogoBandeja({
                     onClick={() =>
                       a.leido ? onMarcarNoLeido(a.referencia_id) : onMarcarLeido(a.referencia_id)
                     }
-                    className="rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest"
+                    className="p-1.5 text-pardo transition-colors hover:text-tinta"
                     aria-label={a.leido ? 'Marcar como no leída' : 'Marcar como leída'}
                     title={a.leido ? 'Marcar como no leída' : 'Marcar como leída'}
                   >
-                    <MIcon
-                      name={a.leido ? 'mark_email_unread' : 'done'}
-                      className="text-[18px]"
-                    />
+                    <MIcon name={a.leido ? 'mark_email_unread' : 'done'} className="text-[18px]" />
                   </button>
                   <button
                     type="button"
                     onClick={() => onBorrar(a.referencia_id)}
-                    className="rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-error"
+                    className="p-1.5 text-pardo transition-colors hover:text-terracota"
                     aria-label="Borrar aviso"
                     title="Borrar aviso"
                   >
@@ -195,7 +188,7 @@ export default function DialogoBandeja({
       </div>
 
       {!suscrito && avisos.length > 0 && (
-        <p className="border-t border-outline-variant/20 px-4 py-3 text-xs text-on-surface-variant">
+        <p className="border-t border-filete px-4 py-3 font-serif-spectral text-xs text-pardo">
           Estás viendo todas las novedades. Usa el icono de ajustes para activar los avisos en el
           móvil y filtrarlos por lo que te interesa.
         </p>

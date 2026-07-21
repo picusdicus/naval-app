@@ -30,10 +30,8 @@ function Chip({ activo, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`nv-chip whitespace-nowrap transition-all ${
-        activo
-          ? 'bg-primary text-on-primary shadow-md'
-          : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
+      className={`whitespace-nowrap px-3 py-2 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta transition-colors ${
+        activo ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
       }`}
     >
       {children}
@@ -157,23 +155,23 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
         e.preventDefault()
         if (!ocupado) onCerrar()
       }}
-      className="w-full max-w-md rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-0 shadow-card-lg backdrop:bg-black/40"
+      className="w-full max-w-md border border-tinta bg-papel p-0 shadow-cartel backdrop:bg-tinta/40"
     >
       <div className="p-6">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-container">
-          <MIcon name="notifications" className="text-[24px] text-on-primary-container" />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-tinta">
+          <MIcon name="notifications" className="text-[24px] text-oro" />
         </div>
 
-        <h2 className="font-display text-lg font-bold text-on-surface">Avisos de la agenda</h2>
-        <p className="mt-1 text-sm text-on-surface/70">
+        <h2 className="font-serif-dm text-2xl text-tinta">Avisos de la agenda</h2>
+        <p className="mt-1 font-serif-spectral text-sm text-pardo">
           Te avisamos en este dispositivo cuando haya eventos nuevos. Sin registro: elige de qué
           quieres enterarte.
         </p>
 
         {/* Ver mis preferencias: resumen de a qué está suscrito ahora este aparato. */}
         {resumenActual && !iosSinInstalar && !sinSoporte && (
-          <div className="mt-4 flex items-start gap-2 rounded-lg bg-primary-container/30 px-4 py-3 text-sm text-on-surface">
-            <MIcon name="check_circle" className="mt-0.5 text-[18px] text-primary" fill />
+          <div className="mt-4 flex items-start gap-2 border-l-2 border-verde bg-papel-calido px-4 py-3 font-serif-spectral text-sm text-tinta">
+            <MIcon name="check_circle" className="mt-0.5 text-[18px] text-verde" fill />
             <span>
               Ahora recibes: <span className="font-semibold">{resumenActual}</span>
             </span>
@@ -181,7 +179,7 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
         )}
 
         {iosSinInstalar ? (
-          <div className="mt-4 rounded-lg bg-secondary-container/60 p-4 text-sm text-on-secondary-container">
+          <div className="mt-4 border border-filete bg-papel-calido p-4 font-serif-spectral text-sm text-tinta">
             <p className="font-semibold">Primero instala la app</p>
             <p className="mt-1">
               En iPhone y iPad los avisos solo funcionan con la app en la pantalla de inicio: abre
@@ -191,19 +189,19 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
             </p>
           </div>
         ) : sinSoporte ? (
-          <div className="mt-4 rounded-lg bg-secondary-container/60 p-4 text-sm text-on-secondary-container">
+          <div className="mt-4 border border-filete bg-papel-calido p-4 font-serif-spectral text-sm text-tinta">
             Este navegador no soporta notificaciones push.
           </div>
         ) : (
           <>
-            <div className="mt-4 rounded-lg bg-primary-container/20 p-4 text-sm text-on-surface">
+            <div className="mt-4 border border-filete bg-papel-calido p-4 font-serif-spectral text-sm text-tinta-apagada">
               <p className="mb-2">
                 Guardamos un identificador anónimo de tu dispositivo y tu preferencia de temas
                 para poder enviarte avisos. No vinculamos esto a tu identidad.
               </p>
               <p>
                 Consulta nuestra{' '}
-                <Link to="/privacidad" className="text-primary font-semibold hover:underline">
+                <Link to="/privacidad" className="font-semibold text-terracota hover:underline">
                   Política de privacidad
                 </Link>{' '}
                 para más detalles.
@@ -214,10 +212,8 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
               {MODOS.map((m) => (
                 <label
                   key={m.id}
-                  className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
-                    modo === m.id
-                      ? 'border-primary bg-primary-container/40'
-                      : 'border-outline-variant/30 hover:bg-surface-container-high'
+                  className={`flex cursor-pointer items-center gap-3 border px-4 py-3 transition-colors ${
+                    modo === m.id ? 'border-tinta bg-papel-calido' : 'border-filete hover:bg-papel-calido/50'
                   }`}
                 >
                   <input
@@ -225,10 +221,10 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
                     name="modo-avisos"
                     checked={modo === m.id}
                     onChange={() => setModo(m.id)}
-                    className="accent-primary"
+                    className="accent-terracota"
                   />
-                  <MIcon name={m.icono} className="text-[20px] text-on-surface-variant" />
-                  <span className="text-sm font-semibold text-on-surface">{m.nombre}</span>
+                  <MIcon name={m.icono} className="text-[20px] text-pardo" />
+                  <span className="font-serif-spectral text-sm font-semibold text-tinta">{m.nombre}</span>
                 </label>
               ))}
             </div>
@@ -261,7 +257,7 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
               </div>
             )}
 
-            {error && <p className="mt-3 text-sm font-semibold text-error">{error}</p>}
+            {error && <p className="mt-3 font-serif-spectral text-sm font-semibold text-terracota">{error}</p>}
           </>
         )}
 
@@ -271,7 +267,7 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
               type="button"
               onClick={desactivar}
               disabled={ocupado}
-              className="rounded-lg border border-outline-variant/40 px-5 py-2.5 text-sm font-semibold text-error transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50 sm:mr-auto"
+              className="gz-boton-peligro disabled:opacity-50 sm:mr-auto"
             >
               Desactivar avisos
             </button>
@@ -280,7 +276,7 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
             type="button"
             onClick={onCerrar}
             disabled={ocupado}
-            className="rounded-lg border border-outline-variant/40 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50"
+            className="gz-boton-borde hover:bg-papel-calido disabled:opacity-50"
           >
             Cerrar
           </button>
@@ -289,7 +285,7 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
               type="button"
               onClick={activar}
               disabled={ocupado || temasElegidos.length === 0}
-              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-opacity hover:enabled:opacity-90 disabled:opacity-50"
+              className="gz-boton-tinta disabled:opacity-50"
             >
               {ocupado ? 'Activando…' : activo ? 'Guardar cambios' : 'Activar avisos'}
             </button>

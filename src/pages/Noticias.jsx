@@ -62,44 +62,33 @@ const tablon = [
 
 export default function Noticias() {
   return (
-    <div className="space-y-10">
-      <header>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
-          Muro de noticias
-        </h1>
-        <p className="mt-1 text-on-surface-variant">
-          Mantente al día de los últimos acontecimientos y avisos importantes del pueblo.
-        </p>
+    <div className="mx-auto max-w-3xl">
+      {/* Masthead */}
+      <header className="gz-filete-doble pb-3">
+        <div className="gz-label text-mudo">El muro de</div>
+        <h1 className="font-serif-dm text-seccion leading-none text-tinta">Noticias</h1>
       </header>
 
-      <section>
+      {/* Noticias oficiales */}
+      <section className="mt-6">
         <div className="mb-4 flex items-center gap-2">
-          <MIcon name="account_balance" className="text-primary" />
-          <h2 className="nv-section-title">Noticias oficiales</h2>
+          <MIcon name="account_balance" className="text-[18px] text-terracota" />
+          <h2 className="gz-eyebrow">Noticias oficiales</h2>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {oficiales.map((n) => (
-            <Link
-              key={n.id}
-              to={`/noticias/${n.id}`}
-              className="nv-card p-5 transition-shadow hover:shadow-card-lg"
-            >
+            <Link key={n.id} to={`/noticias/${n.id}`} className="gz-tarjeta-impresa p-5 transition-colors hover:bg-papel-calido">
               <article className="flex items-start gap-4">
-                <div className="rounded-lg bg-primary-container p-3 text-on-primary-container">
-                  <MIcon name={n.icono} />
+                <div className="flex h-11 w-11 flex-none items-center justify-center bg-tinta text-papel">
+                  <MIcon name={n.icono} className="text-[20px]" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-display text-base font-semibold text-on-surface">{n.titulo}</p>
-                  <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant">
+                  <p className="font-serif-dm text-lg leading-tight text-tinta">{n.titulo}</p>
+                  <p className="mt-2 line-clamp-2 font-serif-spectral text-sm text-pardo">
                     {n.contenido || n.resumen}
                   </p>
-                  <div className="mt-3 space-y-1">
-                    <p className="text-xs font-medium text-secondary">
-                      {formatearFechaLarga(n.fecha)}
-                    </p>
-                    <p className="text-xs text-on-surface-variant">
-                      {n.cuando}
-                    </p>
+                  <div className="mt-3 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+                    {formatearFechaLarga(n.fecha)} · {n.cuando}
                   </div>
                 </div>
               </article>
@@ -108,35 +97,34 @@ export default function Noticias() {
         </div>
       </section>
 
-      <section>
+      {/* Tablón vecinal */}
+      <section className="mt-8">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <MIcon name="forum" className="text-primary" />
-            <h2 className="nv-section-title">Tablón vecinal</h2>
+            <MIcon name="forum" className="text-[18px] text-terracota" />
+            <h2 className="gz-eyebrow">Tablón vecinal</h2>
           </div>
-          <button
-            type="button"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
-          >
+          <button type="button" className="gz-boton-tinta">
             Publicar aviso
           </button>
         </div>
-        <div className="flex flex-col gap-3">
-          {tablon.map((n) => (
-            <div key={n.titulo} className="nv-card flex items-start gap-4 p-4">
-              <div className="rounded-full bg-secondary-container p-2.5 text-on-secondary-container">
-                <MIcon name={n.icono} className="text-[20px]" />
-              </div>
+        <div className="border border-tinta">
+          {tablon.map((n, i) => (
+            <div
+              key={n.titulo}
+              className={`flex items-start gap-3 p-3.5 ${i > 0 ? 'border-t border-dashed border-filete-punteado' : ''}`}
+            >
+              <MIcon name={n.icono} className="mt-0.5 text-[20px] text-pardo" />
               <div>
-                <p className="text-sm font-semibold text-on-surface">{n.titulo}</p>
-                <p className="mt-1 text-xs text-on-surface-variant">
+                <p className="font-serif-spectral text-sm font-semibold text-tinta">{n.titulo}</p>
+                <p className="mt-0.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
                   {n.autor} · {n.cuando}
                 </p>
               </div>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-xs text-on-surface-variant">
+        <p className="mt-4 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
           La publicación abierta de avisos estará disponible próximamente.
         </p>
       </section>

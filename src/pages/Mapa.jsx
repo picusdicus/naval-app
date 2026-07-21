@@ -132,13 +132,9 @@ export default function Mapa() {
         ref={columnRef}
         className="hide-scrollbar flex flex-col gap-6 lg:h-full lg:w-2/5 lg:min-w-0 lg:overflow-y-auto lg:pr-2"
       >
-        <header>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
-            Comercios
-          </h1>
-          <p className="mt-1 text-on-surface-variant">
-            Encuentra los mejores rincones de Navalcarnero. Datos de OpenStreetMap.
-          </p>
+        <header className="gz-filete-doble pb-3">
+          <div className="gz-label text-mudo">El directorio de</div>
+          <h1 className="font-serif-dm text-seccion leading-none text-tinta">Comercios</h1>
         </header>
 
         <FiltrosCategoria
@@ -149,14 +145,12 @@ export default function Mapa() {
         />
 
         {categoria === 'restauracion' && cocinasDisponibles.length > 0 && (
-          <div className="hide-scrollbar flex gap-2 overflow-x-auto py-1">
+          <div className="hide-scrollbar flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
             <button
               type="button"
               onClick={() => setCocinaFiltro(null)}
-              className={`flex-none whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
-                cocinaFiltro === null
-                  ? 'bg-secondary text-on-secondary shadow-md'
-                  : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
+              className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                cocinaFiltro === null ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
               }`}
             >
               Todo tipo
@@ -166,10 +160,8 @@ export default function Mapa() {
                 key={c}
                 type="button"
                 onClick={() => setCocinaFiltro(c)}
-                className={`flex-none whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
-                  cocinaFiltro === c
-                    ? 'bg-secondary text-on-secondary shadow-md'
-                    : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
+                className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                  cocinaFiltro === c ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
                 }`}
               >
                 {etiquetaCocina(c)}
@@ -183,10 +175,7 @@ export default function Mapa() {
             selecciona la ficha en la propia página, como en la lista. */}
         {conDestacados && (
           <section>
-            <h2 className="nv-section-title mb-3 flex items-center gap-2 text-lg">
-              <MIcon name="kid_star" className="text-[20px]" fill />
-              Comercios destacados
-            </h2>
+            <h2 className="gz-eyebrow mb-3 block">Comercios destacados</h2>
             <CarruselDestacados
               items={comerciosDestacados}
               soloCarrusel
@@ -197,30 +186,30 @@ export default function Mapa() {
           </section>
         )}
 
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-on-surface-variant">
+        <div className="flex items-center justify-between border-t border-tinta pt-3">
+          <p className="gz-label text-mudo">
             {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}
           </p>
           <button
             type="button"
             onClick={() => setSugiriendo(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
+            className="flex items-center gap-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
           >
-            <MIcon name="add" className="text-[16px]" />
+            <MIcon name="add" className="text-[14px]" />
             ¿Falta un comercio?
           </button>
         </div>
 
         {esSugerencia && (
-          <p className="flex items-start gap-2 rounded-lg bg-surface-container-high px-4 py-3 text-sm text-on-surface-variant">
-            <MIcon name="lightbulb" className="mt-0.5 text-[18px] text-secondary" />
+          <p className="flex items-start gap-2 border border-filete bg-papel-calido px-4 py-3 font-serif-spectral text-sm text-tinta-apagada">
+            <MIcon name="lightbulb" className="mt-0.5 text-[18px] text-ocre" />
             <span>
               No encontramos «{termino}» exactamente. Quizá te interesen estos sitios para comer:
             </span>
           </p>
         )}
 
-        <div className="grid grid-cols-1 gap-3">
+        <div>
           {comercios.map((c) => (
             <div key={c.id}>
               <ComercioCard
@@ -229,20 +218,20 @@ export default function Mapa() {
                 onClick={() => setSeleccionado(c)}
               />
               {seleccionado?.id === c.id && (
-                <div ref={detalleRef} className="mt-3">
+                <div ref={detalleRef} className="py-3">
                   <ComercioDetalle comercio={c} onCerrar={() => setSeleccionado(null)} />
                 </div>
               )}
             </div>
           ))}
           {comercios.length === 0 && (
-            <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-8 text-center text-sm text-on-surface-variant">
+            <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
               No hay comercios que coincidan con tu búsqueda.
             </p>
           )}
         </div>
 
-        <p className="text-center text-[11px] text-on-surface-variant">
+        <p className="text-center font-mono-ibm text-[10px] text-mudo">
           Datos © colaboradores de OpenStreetMap
         </p>
       </div>

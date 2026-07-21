@@ -10,6 +10,9 @@ export const SIMBOLO_CATEGORIA = {
   hogar: 'chair',
   servicios: 'build',
   servicios_prof: 'handyman',
+  deporte: 'fitness_center',
+  ocio_cultura: 'theater_comedy',
+  educacion: 'school',
 }
 
 export function IconoCategoria({ categoria, className = '', fill = false }) {

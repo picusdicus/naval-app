@@ -9,11 +9,11 @@ export default function Asistente() {
     <div className="mx-auto flex h-[calc(100vh-190px)] max-w-3xl flex-col md:h-[calc(100vh-260px)]">
       {/* Cabecera del asistente */}
       <header className="mb-4 flex flex-col items-center text-center">
-        <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-xl bg-primary text-on-primary shadow-card">
+        <div className="mb-2 flex h-16 w-16 items-center justify-center bg-tinta text-oro">
           <MIcon name="smart_toy" className="text-[32px]" />
         </div>
-        <h1 className="font-display text-xl font-bold text-primary">PuebloGPT</h1>
-        <p className="mt-1 max-w-md text-sm text-on-surface-variant">
+        <h1 className="font-serif-dm text-2xl text-tinta">PuebloGPT</h1>
+        <p className="mt-1 max-w-md font-serif-spectral text-sm text-pardo">
           Pregunta sobre trámites, horarios, eventos o comercios de Navalcarnero.
         </p>
       </header>

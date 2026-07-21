@@ -28,6 +28,10 @@ function horarioDeHoy(horario) {
   return null
 }
 
+// Fila de comercio (La Gaceta): cuadro con la inicial sobre el color de la
+// categoría, nombre en DM Serif y meta (rating/precio/horario) en mono. Al
+// pulsar se despliega la ficha en sitio (accordion en Mapa.jsx); `activo` la
+// resalta con fondo cálido y borde de tinta.
 export default function ComercioCard({ comercio, activo, onClick }) {
   const cat = CATEGORIAS[comercio.categoria]
   const tipo = tipoComercio(comercio, cat?.nombre)
@@ -40,47 +44,43 @@ export default function ComercioCard({ comercio, activo, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`nv-card flex w-full items-center gap-3 p-3.5 text-left transition-all hover:shadow-card-lg ${
-        activo ? 'ring-2 ring-primary' : ''
+      className={`flex w-full items-start gap-3 border-b border-filete py-3.5 text-left transition-colors ${
+        activo ? 'bg-papel-calido' : 'hover:bg-papel-calido/50'
       }`}
     >
-      <span className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-primary-container text-on-primary-container">
-        <IconoCategoria categoria={comercio.categoria} className="text-[22px]" />
+      <span
+        className="flex h-11 w-11 flex-none items-center justify-center font-serif-dm text-xl text-papel"
+        style={{ backgroundColor: cat?.color || '#4a5b41' }}
+      >
+        <IconoCategoria categoria={comercio.categoria} className="text-[20px]" fill />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-on-surface">
+        <span className="block truncate font-serif-dm text-lg leading-tight text-tinta">
           {comercio.nombre}
         </span>
-        <span className="block truncate text-xs text-on-surface-variant">
+        <span className="block truncate font-serif-spectral text-[13px] text-pardo">
           {tipo}
           {comercio.direccion ? ` · ${comercio.direccion}` : ''}
         </span>
 
         {tieneMeta && (
-          <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-on-surface-variant">
+          <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 font-mono-ibm text-[10px] text-mudo">
             {comercio.rating != null && (
-              <span className="flex items-center gap-1 font-semibold text-on-surface">
-                <span className="text-amber-500">★</span>
-                <span>
-                  {comercio.rating.toFixed(1)}
-                  {comercio.totalReviews != null && (
-                    <span className="font-normal text-on-surface-variant">
-                      {' '}
-                      ({comercio.totalReviews})
-                    </span>
-                  )}
-                </span>
+              <span className="flex items-center gap-1">
+                <span className="text-ocre">★ {comercio.rating.toFixed(1)}</span>
+                {comercio.totalReviews != null && <span>({comercio.totalReviews})</span>}
               </span>
             )}
-            {precio && <span className="font-semibold text-secondary">{precio}</span>}
+            {precio && <span className="text-ocre">{precio}</span>}
             {horaHoy && (
               <span>
-                Hoy: <span className="text-on-surface">{horaHoy}</span>
+                HOY <span className="text-tinta">{horaHoy}</span>
               </span>
             )}
           </span>
         )}
       </span>
+      <span className="mt-1 flex-none font-mono-ibm text-xs text-mudo">{activo ? '▲' : '▼'}</span>
     </button>
   )
 }

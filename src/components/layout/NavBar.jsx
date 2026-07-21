@@ -1,32 +1,31 @@
 import { NavLink } from 'react-router-dom'
-import MIcon from '../MIcon.jsx'
 
 const tabs = [
-  { to: '/', label: 'Inicio', icono: 'home', end: true },
-  { to: '/eventos', label: 'Eventos', icono: 'calendar_today' },
-  { to: '/comercios', label: 'Comercios', icono: 'storefront' },
-  { to: '/noticias', label: 'Noticias', icono: 'newspaper' },
-  { to: '/asistente', label: 'IA', icono: 'smart_toy' },
+  { to: '/', label: 'Inicio', end: true },
+  { to: '/eventos', label: 'Eventos' },
+  { to: '/comercios', label: 'Comercios' },
+  { to: '/noticias', label: 'Noticias' },
+  { to: '/asistente', label: 'IA' },
 ]
 
-// Barra de navegación inferior (solo móvil), según la referencia: pestaña
-// activa como píldora verde salvia sobre superficie blanca redondeada arriba.
+// Barra de navegación inferior (solo móvil), estética "impresa" de La Gaceta:
+// papel con filete superior de tinta; pestaña activa en tinta con subrayado
+// terracota, el resto en mono apagado.
 export default function NavBar() {
   return (
-    <nav className="fixed bottom-0 z-40 flex w-full items-center justify-around rounded-t-xl bg-surface-container-lowest px-2 py-3 shadow-card-up md:hidden">
-      {tabs.map(({ to, label, icono, end }) => (
+    <nav className="fixed bottom-0 z-40 flex w-full items-center justify-between border-t-2 border-tinta bg-papel px-6 pb-6 pt-3 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta md:hidden">
+      {tabs.map(({ to, label, end }) => (
         <NavLink
           key={to}
           to={to}
           end={end}
           className={({ isActive }) =>
             isActive
-              ? 'flex scale-90 transform flex-col items-center justify-center rounded-full bg-secondary-container px-4 py-1 text-on-secondary-container transition-transform'
-              : 'flex flex-col items-center justify-center px-4 py-1 text-on-surface-variant transition-colors hover:text-primary'
+              ? 'border-b-2 border-terracota pb-0.5 text-tinta'
+              : 'pb-0.5 text-mudo transition-colors hover:text-tinta'
           }
         >
-          <MIcon name={icono} />
-          <span className="text-xs font-medium">{label}</span>
+          {label}
         </NavLink>
       ))}
     </nav>

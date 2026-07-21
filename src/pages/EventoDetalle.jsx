@@ -5,6 +5,7 @@ import { reportarVisitaEvento } from '../lib/useAnalytics.js'
 import { CATEGORIAS_EVENTO, formatearFechaLarga } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
+import { cartelDe } from '../lib/gaceta.js'
 import MIcon from '../components/MIcon.jsx'
 
 const ORIGEN = {
@@ -27,16 +28,26 @@ function horaTexto(e) {
   return e.horaFin ? `${e.hora} – ${e.horaFin}` : e.hora
 }
 
-// Enlace de vuelta a la agenda; se reutiliza arriba y abajo de la página.
-function VolverLink() {
+// Barra de contexto superior: volver a la cartelera + compartir (si el
+// navegador soporta la Web Share API; si no, no se muestra).
+function BarraContexto({ evento }) {
+  const compartir =
+    typeof navigator !== 'undefined' && navigator.share
+      ? () => navigator.share({ title: evento.titulo, url: window.location.href }).catch(() => {})
+      : null
   return (
-    <Link
-      to="/eventos"
-      className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary-container"
-    >
-      <MIcon name="arrow_back" className="text-[18px]" />
-      Volver a eventos
-    </Link>
+    <div className="flex items-center justify-between font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta">
+      <Link to="/eventos" className="inline-flex items-center gap-1 transition-colors hover:text-terracota">
+        <MIcon name="arrow_back" className="text-[16px]" />
+        Cartelera
+      </Link>
+      {compartir && (
+        <button type="button" onClick={compartir} className="inline-flex items-center gap-1 text-mudo transition-colors hover:text-terracota">
+          Compartir
+          <MIcon name="ios_share" className="text-[15px]" />
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -63,9 +74,12 @@ export default function EventoDetalle() {
     // Los eventos publicados desde /admin llegan por fetch: mientras no estén,
     // no podemos afirmar que el evento no existe.
     return (
-      <div className="space-y-6">
-        <VolverLink />
-        <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-10 text-center text-on-surface-variant">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Link to="/eventos" className="inline-flex items-center gap-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta hover:text-terracota">
+          <MIcon name="arrow_back" className="text-[16px]" />
+          Cartelera
+        </Link>
+        <div className="border border-dashed border-filete-punteado p-10 text-center font-serif-spectral text-pardo">
           {cargando ? 'Cargando evento…' : 'No hemos encontrado ese evento. Puede que ya no esté disponible.'}
         </div>
       </div>
@@ -73,93 +87,136 @@ export default function EventoDetalle() {
   }
 
   const img = imagenEvento(evento)
+  const cartel = cartelDe(evento.categoria)
   const cat = CATEGORIAS_EVENTO[evento.categoria]?.nombre || 'Evento'
   // Quien organiza dice más que el origen genérico ("Cultura · Cultura").
   const procedencia = evento.fuente || ORIGEN[evento.origen] || 'Vecinal'
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <VolverLink />
+    <div className="mx-auto max-w-2xl">
+      <BarraContexto evento={evento} />
 
-      {/* Imagen a tamaño completo (cartel real del evento si lo tiene) */}
-      <div className="relative flex max-h-[70vh] items-center justify-center overflow-hidden rounded-xl bg-inverse-surface shadow-card">
+      {/* Cartel: el póster real si lo tiene; si no, degradado + trama con el
+          título superpuesto (el título va debajo cuando hay imagen, para no
+          duplicarlo sobre un cartel que ya lo lleva impreso). */}
+      <div className="relative mt-4 aspect-[3/4] w-full overflow-hidden border border-tinta">
         {img ? (
           <img
             src={img.src}
             alt={evento.titulo}
-            className="max-h-[70vh] w-full object-contain"
+            className="h-full w-full object-cover"
             style={{ objectPosition: img.pos || '50% 50%' }}
           />
         ) : (
-          <div className="flex h-64 w-full items-center justify-center bg-gradient-to-br from-primary-container to-primary text-on-primary-container">
-            <IconoEvento categoria={evento.categoria} className="text-[120px]" />
+          <div className={`absolute inset-0 ${cartel.trama}`} style={{ background: cartel.fondo }}>
+            <div className="absolute inset-0 flex items-center justify-center opacity-20">
+              <IconoEvento categoria={evento.categoria} className="text-[140px] text-white" />
+            </div>
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 z-20 w-full p-5">
+              <span className="gz-badge-oro">{cat}</span>
+              <h1 className="mt-2.5 font-serif-dm text-hero-movil italic text-papel">{evento.titulo}</h1>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Cabecera */}
-      <div>
-        <span className="inline-block rounded-full bg-secondary-container px-3 py-1 text-xs font-medium text-on-secondary-container">
+      {/* Cabecera (título debajo cuando hay póster real) */}
+      <div className="mt-5">
+        <div className="gz-eyebrow">
           {cat} · {procedencia}
-        </span>
-        <h1 className="mt-3 font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
-          {evento.titulo}
-        </h1>
+        </div>
+        {img && <h1 className="mt-2 font-serif-dm text-4xl leading-none text-tinta">{evento.titulo}</h1>}
       </div>
 
-      {/* Datos */}
-      <dl className="grid gap-2.5 text-sm sm:grid-cols-2">
-        <div className="flex items-center gap-2 text-on-surface">
-          <MIcon name="calendar_today" className="text-[18px] text-secondary" />
-          <span>{formatearFechaLarga(evento.fecha)}</span>
+      {/* Datos en columnas */}
+      <div className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
+        <div>
+          <div className="gz-label text-mudo">Fecha</div>
+          <div className="mt-0.5 font-serif-spectral text-[15px] text-tinta">
+            {formatearFechaLarga(evento.fecha)}
+          </div>
         </div>
         {horaTexto(evento) && (
-          <div className="flex items-center gap-2 text-on-surface">
-            <MIcon name="schedule" className="text-[18px] text-secondary" />
-            <span>{horaTexto(evento)}</span>
+          <div>
+            <div className="gz-label text-mudo">Hora</div>
+            <div className="mt-0.5 font-serif-spectral text-[15px] text-tinta">{horaTexto(evento)}</div>
           </div>
         )}
         {evento.lugar && (
-          <div className="flex items-start gap-2 text-on-surface sm:col-span-2">
-            <MIcon name="location_on" className="mt-0.5 text-[18px] text-secondary" />
-            <a
-              href={enlaceGoogleMaps(evento.lugar)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-semibold text-primary underline-offset-2 hover:underline"
-            >
-              {evento.lugar}
-              <MIcon name="open_in_new" className="text-[14px]" />
-            </a>
+          <div>
+            <div className="gz-label text-mudo">Lugar</div>
+            <div className="mt-0.5 font-serif-spectral text-[15px] text-tinta">{evento.lugar}</div>
           </div>
         )}
-      </dl>
-
-      {/* Descripción completa */}
-      {evento.descripcion && (
-        <p className="whitespace-pre-line text-[15px] leading-relaxed text-on-surface">
-          {evento.descripcion}
-        </p>
-      )}
+      </div>
 
       {/* Botón de entradas: solo lo traen los eventos creados desde /admin */}
       {evento.entradas?.url && (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="mt-5 flex items-center gap-3">
           <a
             href={evento.entradas.url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-shadow hover:shadow-card-lg"
+            className="gz-boton-tinta inline-flex items-center gap-2"
           >
-            <MIcon name="local_activity" className="text-[18px]" />
+            <MIcon name="local_activity" className="text-[16px]" />
             {evento.entradas.texto}
           </a>
           {evento.entradas.precio && (
-            <span className="text-sm font-semibold text-on-surface-variant">
-              {evento.entradas.precio}
-            </span>
+            <span className="font-mono-ibm text-sm text-pardo">{evento.entradas.precio}</span>
           )}
         </div>
+      )}
+
+      {/* Descripción */}
+      {evento.descripcion && (
+        <div className="mt-6">
+          <div className="gz-label text-mudo">La función</div>
+          <p className="mt-2.5 whitespace-pre-line font-serif-spectral text-[15px] leading-relaxed text-tinta-suave">
+            {evento.descripcion}
+          </p>
+        </div>
+      )}
+
+      {/* Detalles (con los datos que el evento realmente trae) */}
+      <div className="mt-6">
+        <div className="gz-label text-mudo">Detalles</div>
+        <dl className="mt-2.5 font-serif-spectral text-sm">
+          {evento.entradas?.precio && (
+            <div className="flex justify-between border-b border-dashed border-filete-claro py-2.5">
+              <dt className="text-pardo">Precio</dt>
+              <dd className="text-tinta">{evento.entradas.precio}</dd>
+            </div>
+          )}
+          <div className="flex justify-between border-b border-dashed border-filete-claro py-2.5">
+            <dt className="text-pardo">Organiza</dt>
+            <dd className="text-tinta">{procedencia}</dd>
+          </div>
+          {evento.lugar && (
+            <div className="flex justify-between py-2.5">
+              <dt className="text-pardo">Lugar</dt>
+              <dd className="text-tinta">{evento.lugar}</dd>
+            </div>
+          )}
+        </dl>
+      </div>
+
+      {/* Mapa (placeholder): los eventos no guardan coordenadas, solo el nombre
+          de la sala; se enlaza a la búsqueda en Google Maps. */}
+      {evento.lugar && (
+        <a
+          href={enlaceGoogleMaps(evento.lugar)}
+          target="_blank"
+          rel="noreferrer"
+          className="gz-trama relative mt-6 flex aspect-[16/9] items-end overflow-hidden border border-tinta"
+          style={{ background: 'linear-gradient(135deg, #e6dcc4, #d3c7a8)' }}
+        >
+          <span className="absolute left-3 top-3 z-10 border border-filete-punteado bg-papel/70 px-2 py-0.5 font-mono-ibm text-[9px] uppercase tracking-etiqueta text-pardo">
+            Mapa · ubicación
+          </span>
+          <span className="relative z-10 p-4 font-serif-dm text-xl text-tinta">{evento.lugar}</span>
+        </a>
       )}
 
       {/* Enlace secundario a la web del ayuntamiento */}
@@ -168,15 +225,18 @@ export default function EventoDetalle() {
           href={evento.url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-outline px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-surface-container-high"
+          className="gz-boton-borde mt-6 inline-flex items-center gap-2 hover:bg-papel-calido"
         >
-          <MIcon name="open_in_new" className="text-[18px]" />
+          <MIcon name="open_in_new" className="text-[16px]" />
           Ver en la web del ayuntamiento
         </a>
       )}
 
-      <div className="border-t border-outline-variant/40 pt-6">
-        <VolverLink />
+      <div className="mt-8 border-t border-filete pt-5">
+        <Link to="/eventos" className="inline-flex items-center gap-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta hover:text-terracota">
+          <MIcon name="arrow_back" className="text-[16px]" />
+          Volver a la cartelera
+        </Link>
       </div>
     </div>
   )

@@ -24,20 +24,20 @@ export default function CentroAvisos({ variante = 'primary' }) {
     borrarTodas,
   } = useAvisos()
 
-  const colorIcono = variante === 'primary' ? 'text-primary' : 'text-on-surface-variant'
+  const colorIcono = variante === 'primary' ? 'text-tinta' : 'text-pardo'
 
   return (
     <>
       <button
         type="button"
         onClick={() => setBandeja(true)}
-        className={`relative rounded-full p-2 transition-colors hover:bg-surface-container active:scale-95 ${colorIcono}`}
+        className={`relative p-2 transition-colors hover:text-terracota active:scale-95 ${colorIcono}`}
         aria-label={noLeidos > 0 ? `Tus avisos (${noLeidos} sin leer)` : 'Tus avisos'}
         title="Tus avisos"
       >
-        <MIcon name="notifications" />
+        <MIcon name="notifications" className="text-[22px]" />
         {noLeidos > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-on-primary">
+          <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-terracota px-1 font-mono-ibm text-[10px] font-bold text-papel">
             {noLeidos > 9 ? '9+' : noLeidos}
           </span>
         )}

@@ -1,21 +1,46 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import {
-  CATEGORIAS_EVENTO,
   LISTA_CATEGORIAS_EVENTO,
   proximosEventos,
   eventosPasados,
-  formatearFechaCorta,
 } from '../lib/eventos.js'
-import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import EventoFila from '../components/eventos/EventoFila.jsx'
-import { imagenEvento, CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
+import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { useDestacados } from '../lib/useDestacados.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
 import { prefsLocales } from '../lib/push.js'
+
+// Agrupa eventos (ya ordenados asc. por fecha+hora) por día natural, en orden.
+function agruparPorDia(eventos) {
+  const grupos = []
+  const indice = new Map()
+  for (const e of eventos) {
+    if (!indice.has(e.fecha)) {
+      const g = { fecha: e.fecha, eventos: [] }
+      indice.set(e.fecha, g)
+      grupos.push(g)
+    }
+    indice.get(e.fecha).eventos.push(e)
+  }
+  return grupos
+}
+
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+
+function diaNumero(fecha) {
+  return new Date(`${fecha}T00:00:00`).getDate()
+}
+
+// "Lunes · Julio" para la cabecera de cada grupo de día.
+function diaEtiqueta(fecha) {
+  const d = new Date(`${fecha}T00:00:00`)
+  const dia = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(d)
+  const mes = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(d)
+  return `${cap(dia)} · ${cap(mes)}`
+}
 
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
@@ -39,25 +64,21 @@ export default function Eventos() {
 
   const futuros = useMemo(() => porCategoria(proximosEventos(todos)), [todos, categoria])
   const pasados = useMemo(() => porCategoria(eventosPasados(todos)), [todos, categoria])
+  const grupos = useMemo(() => agruparPorDia(futuros), [futuros])
 
-  // Eventos destacados contratados. El carrusel solo sustituye al hero en la
-  // vista sin filtrar; con un filtro activo (o sin destacados vigentes) se
-  // conserva el comportamiento clásico: el primer próximo como hero grande.
+  // Eventos destacados contratados. El carrusel aparece encima de la agenda solo
+  // en la vista sin filtrar; con un filtro activo (o sin destacados vigentes) se
+  // oculta y la agenda por día ocupa su lugar.
   const { items: destacadosEvento } = useDestacados({ eventos: todos, tipo: 'evento' })
   const conCarrusel = categoria === null && destacadosEvento.length > 0
 
-  // El carrusel realza, no quita: con él, la lista inferior muestra todos los
-  // próximos; sin él, el primero pasa a ser el hero y el resto la lista.
-  const [destacado, ...resto] = conCarrusel ? [null, ...futuros] : futuros
-
   return (
-    <div className="space-y-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
-            Agenda cultural
-          </h1>
-          <p className="mt-1 text-on-surface-variant">Descubre lo que sucede en tu comunidad.</p>
+    <div className="mx-auto max-w-3xl">
+      {/* Masthead */}
+      <header className="flex items-start justify-between gap-4">
+        <div className="gz-filete-doble flex-1 pb-3">
+          <div className="gz-label text-mudo">Qué hacer en</div>
+          <h1 className="font-serif-dm text-seccion leading-none text-tinta">La cartelera</h1>
         </div>
         {/* Opt-in de push: CTA contextual en Eventos (la bandeja está en la
             cabecera global). Abre el mismo diálogo de gestión que el icono de
@@ -65,15 +86,13 @@ export default function Eventos() {
         <button
           type="button"
           onClick={() => setAvisosAbierto(true)}
-          className={`nv-chip flex items-center gap-2 whitespace-nowrap transition-all ${
-            avisosActivos
-              ? 'bg-primary-container text-on-primary-container'
-              : 'bg-primary text-on-primary shadow-md hover:opacity-90'
+          className={`flex flex-shrink-0 items-center gap-2 px-3 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta transition-colors ${
+            avisosActivos ? 'border border-tinta text-tinta' : 'bg-tinta text-papel hover:opacity-90'
           }`}
         >
           <MIcon
             name={avisosActivos ? 'notifications_active' : 'notifications'}
-            className="text-[18px]"
+            className="text-[16px]"
             fill={avisosActivos}
           />
           {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
@@ -90,14 +109,12 @@ export default function Eventos() {
 
       {/* Selector de categorías */}
       {categoriasDisponibles.length > 0 && (
-        <div className="hide-scrollbar -mt-2 flex gap-3 overflow-x-auto py-2">
+        <div className="hide-scrollbar mt-5 flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
           <button
             type="button"
             onClick={() => setCategoria(null)}
-            className={`nv-chip whitespace-nowrap transition-all ${
-              categoria === null
-                ? 'bg-primary text-on-primary shadow-md'
-                : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
+            className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+              categoria === null ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
             }`}
           >
             Todos
@@ -107,10 +124,8 @@ export default function Eventos() {
               key={cat.id}
               type="button"
               onClick={() => setCategoria(cat.id)}
-              className={`nv-chip whitespace-nowrap transition-all ${
-                categoria === cat.id
-                  ? 'bg-primary text-on-primary shadow-md'
-                  : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
+              className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                categoria === cat.id ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
               }`}
             >
               {cat.nombre}
@@ -119,102 +134,55 @@ export default function Eventos() {
         </div>
       )}
 
-      {/* Destacados (contratados): sección propia, encima de los próximos. */}
+      {/* Destacados de cultura (contratados) */}
       {conCarrusel && (
-        <section className="space-y-6">
-          <h2 className="nv-section-title flex items-center gap-2 md:text-2xl">
-            <MIcon name="kid_star" className="text-[22px]" fill />
-            Destacados
-          </h2>
-          <CarruselDestacados items={destacadosEvento} tamano="grande" columnas={3} seccion="eventos" />
+        <section className="mt-6 animate-rise">
+          <div className="mb-3 flex items-baseline justify-between">
+            <span className="gz-eyebrow">Destacados de cultura</span>
+            <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
+              {String(Math.min(destacadosEvento.length, 3)).padStart(2, '0')} /{' '}
+              {String(destacadosEvento.length).padStart(2, '0')}
+            </span>
+          </div>
+          <CarruselDestacados items={destacadosEvento} columnas={3} seccion="eventos" />
         </section>
       )}
 
-      {/* ----------------------------- Próximos ----------------------------- */}
-      <section className="space-y-6">
-        <h2 className="nv-section-title flex items-center gap-2 md:text-2xl">
-          <MIcon name="event_upcoming" className="text-[22px]" />
-          Próximos eventos
-        </h2>
+      {/* ----------------------------- Agenda por día ----------------------------- */}
+      <div className="mt-6 h-px bg-tinta" />
 
-        {futuros.length === 0 && (
-          <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-8 text-center text-on-surface-variant">
-            No hay eventos próximos por ahora. Consulta más abajo el histórico de actividades.
-          </p>
-        )}
+      {futuros.length === 0 && (
+        <p className="mt-6 border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-pardo">
+          No hay eventos próximos por ahora. Consulta más abajo el histórico de actividades.
+        </p>
+      )}
 
-        {/* Evento destacado (fallback clásico: el primer próximo) */}
-        {destacado && (
-          <Link
-            to={`/eventos/${destacado.id}`}
-            className="relative block h-64 w-full overflow-hidden rounded-xl shadow-card transition-shadow hover:shadow-card-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary md:h-80"
-          >
-            {imagenEvento(destacado) ? (
-              <img
-                src={imagenEvento(destacado).src}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-                style={{ objectPosition: imagenEvento(destacado).pos || '50% 50%' }}
-              />
-            ) : (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-container via-primary to-[#083824]" />
-                <div className="absolute inset-0 flex items-center justify-center opacity-15">
-                  <IconoEvento categoria={destacado.categoria} className="text-[180px] text-white" />
-                </div>
-              </>
-            )}
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-            <div className="absolute bottom-0 left-0 z-20 w-full p-6">
-              <span className="mb-2 inline-block rounded-full bg-secondary-container px-3 py-1 text-xs font-medium text-on-secondary-container">
-                {CATEGORIAS_EVENTO[destacado.categoria]?.nombre || 'Evento'}
-              </span>
-              <h3 className="mb-2 font-display text-xl font-semibold text-white md:text-2xl">
-                {destacado.titulo}
-              </h3>
-              <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-white/90">
-                <div className="flex items-center gap-1">
-                  <MIcon name="calendar_today" className="text-[18px]" />
-                  <span>
-                    {formatearFechaCorta(destacado.fecha)}
-                    {destacado.hora ? `, ${destacado.hora}` : ''}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MIcon name="location_on" className="text-[18px]" />
-                  <span>{destacado.lugar}</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-        )}
-
-        {/* Resto de próximos */}
-        {resto.length > 0 && (
-          <div className="flex flex-col gap-4">
-            {resto.map((e) => (
+      {grupos.map((g) => (
+        <section key={g.fecha} className="mt-5">
+          <div className="flex items-baseline gap-2.5">
+            <span className="font-serif-dm text-3xl leading-none text-tinta">{diaNumero(g.fecha)}</span>
+            <span className="gz-label text-mudo">{diaEtiqueta(g.fecha)}</span>
+          </div>
+          <div className="mt-3.5 flex flex-col gap-3.5">
+            {g.eventos.map((e) => (
               <EventoFila key={e.id} evento={e} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      ))}
 
       {/* ---------------------------- Anteriores ---------------------------- */}
       {pasados.length > 0 && (
-        <section className="space-y-6">
-          <div className="flex items-center gap-4 pt-2">
-            <div className="h-px flex-1 bg-outline-variant/60" />
-            <h2 className="nv-section-title flex items-center gap-2 text-on-surface-variant md:text-2xl">
-              <MIcon name="history" className="text-[22px]" />
+        <section className="mt-10">
+          <div className="flex items-center gap-4">
+            <div className="h-px flex-1 bg-filete" />
+            <h2 className="flex items-center gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-mudo">
+              <MIcon name="history" className="text-[16px]" />
               Eventos anteriores
             </h2>
-            <div className="h-px flex-1 bg-outline-variant/60" />
+            <div className="h-px flex-1 bg-filete" />
           </div>
-          <p className="-mt-2 text-center text-sm text-on-surface-variant">
-            Histórico de actividades culturales que ya se han celebrado.
-          </p>
-
-          <div className="flex flex-col gap-4">
+          <div className="mt-5 flex flex-col gap-3.5">
             {pasados.map((e) => (
               <EventoFila key={e.id} evento={e} pasado />
             ))}
@@ -223,22 +191,22 @@ export default function Eventos() {
       )}
 
       {/* CTA */}
-      <section className="flex flex-col items-center rounded-xl bg-primary-container p-6 text-center text-on-primary-container md:p-10">
-        <MIcon name="campaign" className="mb-2 text-[48px] opacity-80" />
-        <h3 className="mb-2 font-display text-lg font-semibold">¿Organizas un evento?</h3>
-        <p className="mb-6 max-w-md text-sm opacity-90">
+      <section className="mt-10 flex flex-col items-center border border-tinta bg-papel-calido p-8 text-center">
+        <MIcon name="campaign" className="mb-2 text-[40px] text-terracota" />
+        <h3 className="font-serif-dm text-xl text-tinta">¿Organizas un evento?</h3>
+        <p className="mb-6 mt-2 max-w-md font-serif-spectral text-sm text-tinta-apagada">
           Si tu asociación o negocio organiza una actividad en Navalcarnero, cuéntanoslo y la
           publicaremos en la agenda vecinal.
         </p>
         <a
           href="mailto:directorio@navalcarnero.example?subject=Propuesta%20de%20evento"
-          className="rounded-full bg-secondary-container px-8 py-3 text-sm font-semibold text-on-secondary-container transition-opacity hover:opacity-90"
+          className="gz-boton-tinta"
         >
           Proponer un evento
         </a>
       </section>
 
-      <p className="text-center text-[10px] leading-relaxed text-on-surface-variant/70">
+      <p className="mt-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
         Imágenes ilustrativas vía Wikimedia Commons: {CREDITOS_FOTOS.join(' · ')}
       </p>
     </div>
