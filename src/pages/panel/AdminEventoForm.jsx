@@ -145,9 +145,9 @@ export default function AdminEventoForm() {
 
   if (cargando) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-container-low">
+      <div className="flex min-h-screen items-center justify-center bg-papel-lienzo">
         <div
-          className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
+          className="h-10 w-10 animate-spin rounded-full border-4 border-filete border-t-terracota"
           role="status"
           aria-label="Cargando evento"
         />
@@ -156,17 +156,18 @@ export default function AdminEventoForm() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-container-low pb-16">
-      <header className="border-b border-outline-variant/20 bg-surface-container-lowest">
+    <div className="min-h-screen bg-papel-lienzo pb-16">
+      <div className="h-2 bg-tinta-intensa" />
+      <header className="border-b border-filete bg-papel">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
           <Link
             to="/panel"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary-container"
+            className="inline-flex items-center gap-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
           >
-            <MIcon name="arrow_back" className="text-[18px]" />
+            <MIcon name="arrow_back" className="text-[16px]" />
             <span className="hidden sm:inline">Volver al panel</span>
           </Link>
-          <h1 className="min-w-0 flex-1 truncate text-center font-display font-bold text-on-surface sm:text-left">
+          <h1 className="min-w-0 flex-1 truncate text-center font-serif-dm text-xl text-tinta sm:text-left">
             {editando ? 'Editar evento' : 'Nuevo evento'}
           </h1>
         </div>
@@ -181,7 +182,7 @@ export default function AdminEventoForm() {
           }}
           className="space-y-6"
         >
-          <section className="nv-card space-y-5 p-5 sm:p-6">
+          <section className="gz-tarjeta-impresa space-y-5 p-5 sm:p-6">
             <CampoFormulario id="titulo" etiqueta="Título" error={errores.titulo}>
               {(props) => (
                 <input
@@ -216,10 +217,10 @@ export default function AdminEventoForm() {
             {perfilIncompleto && (
               <div
                 role="alert"
-                className="flex items-start gap-2 rounded-lg border border-tertiary-container bg-tertiary-container/40 p-4"
+                className="flex items-start gap-2 border border-ocre/40 bg-oro/15 p-4"
               >
-                <MIcon name="info" className="mt-0.5 flex-shrink-0 text-[20px] text-on-tertiary-container" />
-                <p className="text-sm font-medium text-on-surface">
+                <MIcon name="info" className="mt-0.5 flex-shrink-0 text-[20px] text-ocre" />
+                <p className="font-serif-spectral text-sm font-medium text-tinta">
                   El perfil de tu organización aún no tiene asignados la categoría y el lugar de
                   publicación — los configura el equipo de la app. Hasta entonces no podrás guardar
                   eventos: contacta con nosotros para completarlo.
@@ -302,10 +303,10 @@ export default function AdminEventoForm() {
           </section>
 
           {/* -------------------------- Entradas -------------------------- */}
-          <section className="nv-card space-y-5 p-5 sm:p-6">
+          <section className="gz-tarjeta-impresa space-y-5 p-5 sm:p-6">
             <div>
-              <h2 className="font-display font-semibold text-on-surface">Botón de entradas</h2>
-              <p className="mt-1 text-sm text-on-surface/60">
+              <h2 className="font-serif-dm text-lg text-tinta">Botón de entradas</h2>
+              <p className="mt-1 font-serif-spectral text-[12.5px] text-pardo">
                 Opcional. Si lo rellenas, aparecerá un botón de compra en la página del evento.
               </p>
             </div>
@@ -374,10 +375,10 @@ export default function AdminEventoForm() {
           {errorGeneral && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-4"
+              className="flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-4"
             >
-              <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
-              <p className="text-sm font-medium text-error">{errorGeneral}</p>
+              <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+              <p className="font-serif-spectral text-sm font-medium text-terracota">{errorGeneral}</p>
             </div>
           )}
 
@@ -387,9 +388,9 @@ export default function AdminEventoForm() {
             <button
               type="submit"
               disabled={enviando || perfilIncompleto}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-3 font-semibold text-on-primary transition-all hover:enabled:shadow-card-lg active:enabled:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="gz-boton-tinta inline-flex flex-1 items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <MIcon name={editando ? 'save' : 'publish'} className="text-[18px]" />
+              <MIcon name={editando ? 'save' : 'publish'} className="text-[16px]" />
               {enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Publicar evento'}
             </button>
 
@@ -397,9 +398,9 @@ export default function AdminEventoForm() {
               type="button"
               disabled={enviando || perfilIncompleto}
               onClick={() => guardar(accionSecundaria.estado)}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-outline-variant/40 py-3 font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+              className="gz-boton-borde inline-flex flex-1 items-center justify-center gap-2 hover:bg-papel-calido disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <MIcon name={accionSecundaria.icono} className="text-[18px]" />
+              <MIcon name={accionSecundaria.icono} className="text-[16px]" />
               {accionSecundaria.etiqueta}
             </button>
           </div>

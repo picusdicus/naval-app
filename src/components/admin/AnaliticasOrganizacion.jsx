@@ -47,7 +47,7 @@ export default function AnaliticasOrganizacion({ onNoAutenticado }) {
     return (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 animate-pulse">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-20 rounded-xl bg-surface-container-high" />
+          <div key={i} className="h-20 bg-papel-calido" />
         ))}
       </div>
     )
@@ -72,12 +72,12 @@ export default function AnaliticasOrganizacion({ onNoAutenticado }) {
   // Sin eventos no hay nada que medir: invitamos a crear el primero.
   if (ranking.length === 0) {
     return (
-      <div className="nv-card flex flex-col items-center gap-3 px-6 py-12 text-center">
-        <MIcon name="monitoring" className="text-[40px] text-on-surface/30" />
-        <p className="font-display font-semibold text-on-surface">
+      <div className="flex flex-col items-center gap-3 border border-dashed border-filete-punteado px-6 py-12 text-center">
+        <MIcon name="monitoring" className="text-[40px] text-mudo" />
+        <p className="font-serif-dm text-lg text-tinta">
           Aún no hay nada que medir
         </p>
-        <p className="max-w-sm text-sm text-on-surface/60">
+        <p className="max-w-sm font-serif-spectral text-sm text-pardo">
           Cuando publiques tu primer evento, aquí verás cuántos vecinos visitan su página y qué
           eventos despiertan más interés.
         </p>
@@ -113,12 +113,12 @@ export default function AnaliticasOrganizacion({ onNoAutenticado }) {
       </div>
 
       {totalVisitas === 0 ? (
-        <div className="nv-card flex flex-col items-center gap-3 px-6 py-12 text-center">
-          <MIcon name="hourglass_empty" className="text-[40px] text-on-surface/30" />
-          <p className="font-display font-semibold text-on-surface">
+        <div className="flex flex-col items-center gap-3 border border-dashed border-filete-punteado px-6 py-12 text-center">
+          <MIcon name="hourglass_empty" className="text-[40px] text-mudo" />
+          <p className="font-serif-dm text-lg text-tinta">
             Todavía no hay visitas registradas
           </p>
-          <p className="max-w-sm text-sm text-on-surface/60">
+          <p className="max-w-sm font-serif-spectral text-sm text-pardo">
             En cuanto los vecinos empiecen a abrir las páginas de tus eventos, verás aquí el total
             de visitas y qué evento recibe más atención. Comparte el enlace de tus eventos para
             darles un empujón.
@@ -127,20 +127,20 @@ export default function AnaliticasOrganizacion({ onNoAutenticado }) {
       ) : (
         <>
           {/* Serie diaria (14 días) */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
+          <div className="border border-tinta bg-papel p-4">
+            <p className="mb-3 font-mono-ibm text-[9px] uppercase tracking-etiqueta text-mudo">
               Visitas por día · últimos 14 días
             </p>
             <Sparkline data={puntosSerie} height={56} />
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
+            <div className="mt-1 flex justify-between font-mono-ibm text-[9px] text-mudo">
               <span>{fechaCorta(puntosSerie[0]?.x)}</span>
               <span>{fechaCorta(puntosSerie[puntosSerie.length - 1]?.x)}</span>
             </div>
           </div>
 
           {/* Comparativa entre eventos */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">
+          <div className="border border-tinta bg-papel p-4">
+            <p className="mb-3 font-mono-ibm text-[9px] uppercase tracking-etiqueta text-mudo">
               Tus eventos más visitados · últimos 30 días
             </p>
             <div className="space-y-2.5">

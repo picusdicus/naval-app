@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
+import Logo from '../Logo.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
 /**
  * Formulario de email + contraseña compartido por los dos puntos de entrada
  * del panel de gestión: /login (organizaciones, api/login.js) y /admin
  * (superadmin, api/admin/login.js). Cada uno pasa su propio endpoint, copy y
- * destino tras iniciar sesión.
+ * destino tras iniciar sesión. Estética La Gaceta (ref. 5a): tarjeta con
+ * franja superior de tinta, logo apilado y campos impresos.
+ *
+ * Contrato e2e: ids #email/#password, botón "Acceder", type="email".
  */
 export default function FormularioLogin({ titulo, subtitulo, icono, endpoint, destinoDefecto, pie }) {
   const { usuario, cargando, iniciarSesion } = useAdminAuth()
@@ -40,83 +44,93 @@ export default function FormularioLogin({ titulo, subtitulo, icono, endpoint, de
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-surface-container-low to-surface-container-high px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-papel-lienzo px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="nv-card p-6 sm:p-8">
-          <div className="mb-8 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-container">
-              <MIcon name={icono} className="text-[32px] text-on-primary" />
-            </div>
-          </div>
-
-          <h1 className="mb-2 text-center font-display text-2xl font-bold text-primary">
-            {titulo}
-          </h1>
-          <p className="mb-8 text-center text-sm text-on-surface/70">{subtitulo}</p>
-
-          <form onSubmit={enviar} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-semibold text-on-surface">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                inputMode="email"
-                autoComplete="username"
-                autoCapitalize="none"
-                spellCheck="false"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  setError('')
-                }}
-                placeholder="tu@organizacion.org"
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                disabled={enviando}
-              />
+        <div className="overflow-hidden border border-tinta bg-papel shadow-cartel">
+          <div className="h-2 bg-tinta-intensa" />
+          <div className="p-6 sm:p-10">
+            <div className="mb-5 flex flex-col items-center gap-3 text-center">
+              <Logo tamano="lg" />
+              <MIcon name={icono} className="text-[22px] text-terracota" />
             </div>
 
-            <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-semibold text-on-surface">
-                Contraseña
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setError('')
-                }}
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                disabled={enviando}
-              />
-            </div>
+            <h1 className="text-center font-serif-dm text-3xl text-tinta">{titulo}</h1>
+            <p className="mb-7 mt-1 text-center font-serif-spectral text-sm text-pardo">{subtitulo}</p>
 
-            {error && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-3"
-              >
-                <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
-                <p className="text-sm font-medium text-error">{error}</p>
+            <form onSubmit={enviar} className="space-y-4" noValidate>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    setError('')
+                  }}
+                  placeholder="tu@organizacion.org"
+                  className="gz-input"
+                  disabled={enviando}
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={enviando || !email.trim() || !password.trim()}
-              className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary transition-all hover:enabled:shadow-card-lg active:enabled:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {enviando ? 'Accediendo…' : 'Acceder'}
-            </button>
-          </form>
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo"
+                >
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setError('')
+                  }}
+                  placeholder="••••••••"
+                  className="gz-input"
+                  disabled={enviando}
+                />
+              </div>
+
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-3"
+                >
+                  <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+                  <p className="font-serif-spectral text-sm font-medium text-terracota">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={enviando || !email.trim() || !password.trim()}
+                className="gz-boton-tinta w-full disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {enviando ? 'Accediendo…' : 'Acceder'}
+              </button>
+            </form>
+          </div>
         </div>
 
-        {pie && <div className="mx-auto mt-6 max-w-xs space-y-2 text-center text-xs text-on-surface/50">{pie}</div>}
+        {pie && (
+          <div className="mx-auto mt-6 max-w-xs space-y-2 text-center font-serif-spectral text-xs text-mudo">
+            {pie}
+          </div>
+        )}
       </div>
     </div>
   )

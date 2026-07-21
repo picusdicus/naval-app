@@ -33,15 +33,15 @@ export default function DialogoConfirmacion({
         e.preventDefault()
         if (!ocupado) onCancelar()
       }}
-      className="max-w-sm rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-0 shadow-card-lg backdrop:bg-black/40"
+      className="max-w-sm border border-tinta bg-papel p-0 shadow-cartel backdrop:bg-tinta/40"
     >
       <div className="p-6">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-error/10">
-          <MIcon name="delete" className="text-[24px] text-error" />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-terracota-fondo">
+          <MIcon name="delete" className="text-[24px] text-terracota" />
         </div>
 
-        <h2 className="font-display text-lg font-bold text-on-surface">{titulo}</h2>
-        <p className="mt-2 text-sm text-on-surface/70">{mensaje}</p>
+        <h2 className="font-serif-dm text-2xl text-tinta">{titulo}</h2>
+        <p className="mt-2 font-serif-spectral text-sm text-tinta-apagada">{mensaje}</p>
 
         {/* Sin `-reverse`: el orden visual debe coincidir con el de tabulación,
             y la acción destructiva va la última en ambos. */}
@@ -50,7 +50,7 @@ export default function DialogoConfirmacion({
             type="button"
             onClick={onCancelar}
             disabled={ocupado}
-            className="rounded-lg border border-outline-variant/40 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50"
+            className="gz-boton-borde hover:enabled:bg-papel-calido disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -58,7 +58,7 @@ export default function DialogoConfirmacion({
             type="button"
             onClick={onConfirmar}
             disabled={ocupado}
-            className="rounded-lg bg-error px-5 py-2.5 text-sm font-semibold text-on-error transition-opacity hover:enabled:opacity-90 disabled:opacity-50"
+            className="bg-terracota px-4 py-3 text-center font-mono-ibm text-xs uppercase tracking-etiqueta text-papel transition-opacity hover:enabled:opacity-90 disabled:opacity-50"
           >
             {ocupado ? 'Eliminando…' : textoConfirmar}
           </button>

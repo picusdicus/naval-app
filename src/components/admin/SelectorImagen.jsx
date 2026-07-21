@@ -68,20 +68,20 @@ export default function SelectorImagen({
 
   return (
     <div>
-      <span className="mb-2 block text-sm font-semibold text-on-surface">
+      <span className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
         {etiqueta}
-        {opcional && <span className="ml-1.5 font-normal text-on-surface/50">(opcional)</span>}
+        {opcional && <span className="ml-1.5 normal-case tracking-normal text-mudo">(opcional)</span>}
       </span>
 
       {valor ? (
-        <div className="relative overflow-hidden rounded-lg border border-outline-variant/30">
+        <div className="relative overflow-hidden border border-tinta">
           <img src={valor} alt="Cartel del evento" className="max-h-56 w-full object-contain" />
           <button
             type="button"
             onClick={() => onChange('')}
-            className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/95 px-3 py-1.5 text-xs font-semibold text-error shadow-card"
+            className="absolute right-2 top-2 inline-flex items-center gap-1 bg-papel/95 px-3 py-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota"
           >
-            <MIcon name="delete" className="text-[16px]" />
+            <MIcon name="delete" className="text-[15px]" />
             Quitar
           </button>
         </div>
@@ -90,13 +90,13 @@ export default function SelectorImagen({
           type="button"
           onClick={() => entrada.current?.click()}
           disabled={subiendo}
-          className="flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-outline-variant/50 px-4 py-8 text-on-surface/60 transition-colors hover:enabled:border-primary hover:enabled:text-primary disabled:opacity-60"
+          className="flex w-full flex-col items-center gap-2 border border-dashed border-filete-punteado px-4 py-8 font-serif-spectral text-mudo transition-colors hover:enabled:border-tinta hover:enabled:text-tinta disabled:opacity-60"
         >
           <MIcon name={subiendo ? 'progress_activity' : 'add_photo_alternate'} className="text-[28px]" />
-          <span className="text-sm font-semibold">
-            {subiendo ? 'Subiendo…' : 'Subir una imagen'}
+          <span className="text-sm">{subiendo ? 'Subiendo…' : 'Subir una imagen'}</span>
+          <span className="font-mono-ibm text-[9px] uppercase tracking-etiqueta">
+            JPG · PNG · WebP — máx 3 MB
           </span>
-          <span className="text-xs">JPG, PNG o WebP · máximo 3 MB</span>
         </button>
       )}
 
@@ -109,7 +109,7 @@ export default function SelectorImagen({
       />
 
       {mensaje && (
-        <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-error">
+        <p className="mt-1.5 flex items-center gap-1 font-serif-spectral text-xs font-medium text-terracota">
           <MIcon name="error" className="text-[14px]" />
           {mensaje}
         </p>

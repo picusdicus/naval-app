@@ -17,22 +17,22 @@ import { useState, useEffect, useCallback } from "react";
 
 // --- Small helper components ---------------------------------------------------
 
-/** A single KPI card. Exported: la reutiliza AnaliticasOrganizacion. */
+/** A single KPI card (estética La Gaceta). Exported: la reutiliza AnaliticasOrganizacion. */
 export function StatCard({ label, value, sub, icon }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-start gap-3 shadow-sm">
+    <div className="flex items-start gap-3 border border-tinta bg-papel p-4">
       <span className="text-2xl">{icon}</span>
       <div className="min-w-0">
-        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide truncate">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 leading-tight">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        <p className="truncate font-mono-ibm text-[9px] uppercase tracking-etiqueta text-mudo">{label}</p>
+        <p className="font-serif-dm text-3xl leading-none text-tinta">{value}</p>
+        {sub && <p className="mt-1 font-mono-ibm text-[10px] text-pardo">{sub}</p>}
       </div>
     </div>
   );
 }
 
 /** Minimal SVG sparkline from an array of {x, y} daily values. Exported: la reutiliza AnaliticasOrganizacion. */
-export function Sparkline({ data = [], color = "#2563eb", height = 48 }) {
+export function Sparkline({ data = [], color = "#b0472f", height = 48 }) {
   if (!data.length) return null;
 
   const values = data.map((d) => d.y ?? 0);
@@ -73,16 +73,16 @@ export function Sparkline({ data = [], color = "#2563eb", height = 48 }) {
 export function RankBar({ label, value, total, rank }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="text-gray-400 w-4 text-right text-xs">{rank}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between mb-0.5">
-          <span className="text-gray-700 truncate max-w-[180px]" title={label}>{label}</span>
-          <span className="text-gray-500 text-xs ml-2 shrink-0">{value.toLocaleString("es-ES")} ({pct}%)</span>
+    <div className="flex items-center gap-2 font-serif-spectral text-sm">
+      <span className="w-4 text-right font-mono-ibm text-xs text-mudo">{rank}</span>
+      <div className="min-w-0 flex-1">
+        <div className="mb-0.5 flex justify-between">
+          <span className="max-w-[180px] truncate text-tinta" title={label}>{label}</span>
+          <span className="ml-2 shrink-0 font-mono-ibm text-[11px] text-pardo">{value.toLocaleString("es-ES")} ({pct}%)</span>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 overflow-hidden bg-filete/60">
           <div
-            className="h-full rounded-full bg-blue-500 transition-all duration-500"
+            className="h-full bg-terracota transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
