@@ -3,7 +3,7 @@ import { LISTA_CATEGORIAS } from '../../lib/categorias.js'
 import { COCINA_LABEL } from '../../lib/cocinas.js'
 import MIcon from '../MIcon.jsx'
 
-const ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT || ''
+const ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT || '/api/sugerencias'
 const EMAIL_DESTINO = 'directorio@navalcarnero.example'
 
 // Tipos de cocina para el desplegable, ordenados por su etiqueta en español.
@@ -32,7 +32,26 @@ export default function SugerirComercio({ onCerrar }) {
     setEstado('enviando')
 
     // Con backend/servicio de formularios configurado: POST. Si no, mailto.
-    if (ENDPOINT) {
+    if (ENDPOINT && ENDPOINT.includes('api')) {
+      try {
+        const payload = {
+          tipo: 'comercio',
+          nombre: datos.nombre,
+          tipoNegocio: datos.categoria,
+          direccion: datos.direccion,
+          horarios: '',
+          telefono: datos.telefono,
+        }
+        const res = await fetch(ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        setEstado(res.ok ? 'ok' : 'error')
+      } catch {
+        setEstado('error')
+      }
+    } else if (ENDPOINT) {
       try {
         const res = await fetch(ENDPOINT, {
           method: 'POST',
