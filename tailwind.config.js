@@ -4,12 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── Sistema "La Gaceta" (rediseño 2026, ver reference/gaceta/DESIGN.md) ──
-        // Conviven con los tokens "Civic Hearth" de abajo mientras dura la
-        // migración por fases; al cerrar la Fase 5 los antiguos se eliminan.
-        // Ojo con los nombres: NO usar `vino` ni `crema` — hay clases muertas
-        // (text-vino, bg-crema-dark) de una paleta anterior que hoy no resuelven
-        // y definirlas reactivaría estilos fantasma en pantallas sin migrar.
+        // ── Sistema "La Gaceta" (ver reference/gaceta/DESIGN.md) ──
+        // Ojo con los nombres: NO usar `vino` ni `crema` — hubo clases muertas
+        // (text-vino, bg-crema-dark) de una paleta anterior; definir esos
+        // nombres podría reactivar estilos fantasma si algún resto sobrevive.
         papel: {
           DEFAULT: '#f4efe1', // papel base (fondos de página)
           lienzo: '#e9e4d8', // fondo fuera del marco / canvas
@@ -49,69 +47,6 @@ export default {
           'bosque-borde': '#3f5148',
           'salvia-claro': '#9db0a4', // labels sobre verde bosque
         },
-        // ── Sistema "Civic Hearth" (Material 3) — LEGADO, eliminar en Fase 6 ──
-        // verde bosque primario, salvia secundario, fondo pergamino cálido.
-        primary: {
-          DEFAULT: '#0f5238',
-          container: '#2d6a4f',
-          fixed: '#b1f0ce',
-          'fixed-dim': '#95d4b3',
-        },
-        'on-primary': {
-          DEFAULT: '#ffffff',
-          container: '#a8e7c5',
-          fixed: '#002114',
-        },
-        secondary: {
-          DEFAULT: '#006c48',
-          container: '#92f7c3',
-          fixed: '#92f7c3',
-        },
-        'on-secondary': {
-          DEFAULT: '#ffffff',
-          container: '#00734d',
-          fixed: '#002113',
-        },
-        tertiary: {
-          DEFAULT: '#464843',
-          container: '#5e605a',
-        },
-        'on-tertiary': {
-          DEFAULT: '#ffffff',
-          container: '#d9dad3',
-        },
-        error: {
-          DEFAULT: '#ba1a1a',
-          container: '#ffdad6',
-        },
-        'on-error': {
-          DEFAULT: '#ffffff',
-          container: '#93000a',
-        },
-        background: '#fff8f2',
-        'on-background': '#1d1b18',
-        surface: {
-          DEFAULT: '#fff8f2',
-          dim: '#dfd9d3',
-          variant: '#e8e1db',
-        },
-        'surface-container': {
-          lowest: '#ffffff',
-          low: '#f9f2ec',
-          DEFAULT: '#f3ede7',
-          high: '#ede7e1',
-          highest: '#e8e1db',
-        },
-        'on-surface': {
-          DEFAULT: '#1d1b18',
-          variant: '#404943',
-        },
-        outline: {
-          DEFAULT: '#707973',
-          variant: '#bfc9c1',
-        },
-        'inverse-surface': '#33302c',
-        'inverse-on-surface': '#f6f0ea',
       },
       fontFamily: {
         // ── La Gaceta ──
@@ -119,9 +54,6 @@ export default {
         'serif-spectral': ['Spectral', 'Georgia', 'serif'], // cuerpo de texto
         'mono-ibm': ['"IBM Plex Mono"', 'ui-monospace', 'monospace'], // etiquetas, metadatos, badges
         logo: ['"Archivo Black"', 'ui-sans-serif', 'sans-serif'], // SOLO el logotipo apilado
-        // ── Civic Hearth — LEGADO, eliminar en Fase 6 ──
-        display: ['Montserrat', 'ui-sans-serif', 'sans-serif'],
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         // Escala editorial de La Gaceta (px de referencia del README de diseño)
@@ -138,10 +70,6 @@ export default {
         // ── La Gaceta (solo desktop; en móvil la estética es "impresa", sin sombra) ──
         cartel: '0 20px 40px -24px rgba(28,25,19,.5)', // tarjetas de póster desktop
         'tarjeta-gaceta': '0 20px 40px -30px rgba(28,25,19,.5)', // tarjetas de comercio desktop
-        // ── Civic Hearth — LEGADO, eliminar en Fase 6 ──
-        card: '0 4px 15px rgba(15, 82, 56, 0.05)',
-        'card-up': '0 -4px 15px rgba(15, 82, 56, 0.05)',
-        'card-lg': '0 10px 30px rgba(15, 82, 56, 0.1)',
       },
       borderRadius: {
         // lg (16px) y xl (24px) sirven a ambos sistemas: son los radios de las

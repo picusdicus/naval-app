@@ -63,15 +63,15 @@ export default function SugerirComercio({ onCerrar }) {
 
   if (estado === 'ok') {
     return (
-      <div className="nv-card p-5 text-center">
-        <p className="font-display font-semibold text-primary">¡Gracias por tu aportación!</p>
-        <p className="mt-1 text-sm text-on-surface-variant">
+      <div className="gz-tarjeta-impresa p-5 text-center">
+        <p className="font-serif-dm text-lg text-tinta">¡Gracias por tu aportación!</p>
+        <p className="mt-1 font-serif-spectral text-sm text-pardo">
           Revisaremos el comercio y lo añadiremos al directorio.
         </p>
         <button
           type="button"
           onClick={onCerrar}
-          className="mt-4 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95"
+          className="gz-boton-tinta mt-4"
         >
           Cerrar
         </button>
@@ -80,14 +80,14 @@ export default function SugerirComercio({ onCerrar }) {
   }
 
   return (
-    <div className="nv-card p-4">
+    <div className="gz-tarjeta-impresa p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-primary">Sugerir un comercio</h3>
+        <h3 className="font-serif-dm text-xl text-tinta">Sugerir un comercio</h3>
         <button
           type="button"
           onClick={onCerrar}
           aria-label="Cerrar formulario"
-          className="rounded-full p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high"
+          className="p-1 text-pardo transition-colors hover:text-terracota"
         >
           <MIcon name="close" className="text-[20px]" />
         </button>
@@ -95,21 +95,21 @@ export default function SugerirComercio({ onCerrar }) {
 
       <form onSubmit={enviar} className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-semibold text-on-surface">Nombre *</label>
+          <label className="mb-1 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Nombre *</label>
           <input
             type="text"
             required
             value={datos.nombre}
             onChange={(e) => actualizar('nombre', e.target.value)}
-            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm outline-none focus:border-primary"
+            className="w-full border border-filete bg-papel px-3 py-2 font-serif-spectral text-sm text-tinta outline-none focus:border-tinta"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold text-on-surface">Categoría</label>
+          <label className="mb-1 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Categoría</label>
           <select
             value={datos.categoria}
             onChange={(e) => actualizar('categoria', e.target.value)}
-            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm outline-none focus:border-primary"
+            className="w-full border border-filete bg-papel px-3 py-2 font-serif-spectral text-sm text-tinta outline-none focus:border-tinta"
           >
             {LISTA_CATEGORIAS.map((c) => (
               <option key={c.id} value={c.id}>
@@ -120,11 +120,11 @@ export default function SugerirComercio({ onCerrar }) {
         </div>
         {datos.categoria === 'restauracion' && (
           <div>
-            <label className="mb-1 block text-xs font-semibold text-on-surface">Tipo de cocina</label>
+            <label className="mb-1 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Tipo de cocina</label>
             <select
               value={datos.cocina}
               onChange={(e) => actualizar('cocina', e.target.value)}
-              className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm outline-none focus:border-primary"
+              className="w-full border border-filete bg-papel px-3 py-2 font-serif-spectral text-sm text-tinta outline-none focus:border-tinta"
             >
               <option value="">Sin especificar</option>
               {OPCIONES_COCINA.map((c) => (
@@ -136,41 +136,41 @@ export default function SugerirComercio({ onCerrar }) {
           </div>
         )}
         <div>
-          <label className="mb-1 block text-xs font-semibold text-on-surface">Dirección</label>
+          <label className="mb-1 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Dirección</label>
           <input
             type="text"
             value={datos.direccion}
             onChange={(e) => actualizar('direccion', e.target.value)}
-            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm outline-none focus:border-primary"
+            className="w-full border border-filete bg-papel px-3 py-2 font-serif-spectral text-sm text-tinta outline-none focus:border-tinta"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold text-on-surface">Teléfono</label>
+          <label className="mb-1 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Teléfono</label>
           <input
             type="tel"
             value={datos.telefono}
             onChange={(e) => actualizar('telefono', e.target.value)}
-            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm outline-none focus:border-primary"
+            className="w-full border border-filete bg-papel px-3 py-2 font-serif-spectral text-sm text-tinta outline-none focus:border-tinta"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold text-on-surface">Notas</label>
+          <label className="mb-1 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Notas</label>
           <textarea
             rows={2}
             value={datos.notas}
             onChange={(e) => actualizar('notas', e.target.value)}
-            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm outline-none focus:border-primary"
+            className="w-full border border-filete bg-papel px-3 py-2 font-serif-spectral text-sm text-tinta outline-none focus:border-tinta"
           />
         </div>
 
         {estado === 'error' && (
-          <p className="text-xs text-error">No se pudo enviar. Inténtalo de nuevo.</p>
+          <p className="font-serif-spectral text-xs text-terracota">No se pudo enviar. Inténtalo de nuevo.</p>
         )}
 
         <button
           type="submit"
           disabled={estado === 'enviando'}
-          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+          className="gz-boton-tinta w-full disabled:opacity-60"
         >
           {estado === 'enviando' ? 'Enviando…' : 'Enviar sugerencia'}
         </button>

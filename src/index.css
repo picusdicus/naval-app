@@ -7,7 +7,7 @@ html {
 }
 
 body {
-  @apply bg-background text-on-surface font-sans antialiased;
+  @apply bg-papel font-serif-spectral text-tinta antialiased;
 }
 
 .material-symbols-outlined {
@@ -184,21 +184,6 @@ body {
   }
 }
 
-/* ═══════════════ Sistema "Civic Hearth" — LEGADO, eliminar en Fase 6 ═══════════════ */
-
-@layer components {
-  /* Tarjeta estándar del sistema "Civic Hearth": blanca, muy redondeada,
-     sombra suave tintada de verde. */
-  .nv-card {
-    @apply rounded-xl border border-outline-variant/10 bg-surface-container-lowest shadow-card;
-  }
-  .nv-chip {
-    @apply rounded-full px-4 py-2 text-sm font-semibold;
-  }
-  .nv-section-title {
-    @apply font-display text-xl font-semibold text-primary;
-  }
-}
 
 /* Pista deslizante de la rotación de destacados (CarruselDestacados en modo
    rotatorio, solo md+; en móvil se usa el carrusel nativo con scroll): el
