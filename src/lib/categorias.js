@@ -9,6 +9,9 @@ export const CATEGORIAS = {
   hogar: { id: 'hogar', nombre: 'Hogar y otros', color: '#8A6D2F' },
   servicios: { id: 'servicios', nombre: 'Servicios', color: '#4E6A8A' },
   servicios_prof: { id: 'servicios_prof', nombre: 'Servicios profesionales', color: '#2E6E7A' },
+  deporte: { id: 'deporte', nombre: 'Deporte', color: '#D4A574' },
+  ocio_cultura: { id: 'ocio_cultura', nombre: 'Ocio y cultura', color: '#A67C52' },
+  educacion: { id: 'educacion', nombre: 'Educación', color: '#6B5B95' },
 }
 
 const SHOP_A_CATEGORIA = {
@@ -51,6 +54,25 @@ const AMENITY_A_CATEGORIA = {
   marketplace: 'alimentacion',
   post_office: 'servicios',
   atm: 'servicios',
+  fitness_centre: 'deporte',
+  fitness_center: 'deporte',
+  swimming_pool: 'deporte',
+  sports_centre: 'deporte',
+  sports_center: 'deporte',
+  swimming: 'deporte',
+  theatre: 'ocio_cultura',
+  cinema: 'ocio_cultura',
+  arts_centre: 'ocio_cultura',
+  arts_center: 'ocio_cultura',
+  library: 'ocio_cultura',
+  school: 'educacion',
+  college: 'educacion',
+  university: 'educacion',
+  kindergarten: 'educacion',
+  childcare: 'educacion',
+  preschool: 'educacion',
+  music_school: 'educacion',
+  driving_school: 'educacion',
 }
 
 // Devuelve el id de categoría para un conjunto de tags OSM.
