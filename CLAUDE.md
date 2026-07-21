@@ -195,3 +195,38 @@ Como Web Push es efímero, hay un historial navegable dentro de la app. Vive en 
 The design system is **"La Gaceta"** (editorial warm-gazette identity: DM Serif Display headlines, Spectral body, IBM Plex Mono metadata, terracota `#b0472f` accent, diagonal-hatch "carteles"), documented in `reference/gaceta/DESIGN.md` — **that file is the reference for all visual work** (note `reference/` is gitignored; the doc lives locally). Tokens live in `tailwind.config.js` (colors `papel/tinta/terracota/ocre/oro/verde/filete/pardo/mudo`, families `serif-dm`/`serif-spectral`/`mono-ibm`/`logo`) and `src/index.css` (`gz-*` base component classes, `omRise/omFade/omSlide` keyframes with `prefers-reduced-motion` guard, hatch overlays `.gz-trama`/`.gz-trama-clara`, global terracota `:focus-visible`).
 
 Key decisions: mobile uses a "printed" aesthetic (square `border-tinta` edges, no shadows) while desktop uses rounded cards — these are **separate component variants with fixed classes, not a breakpoint prop** ("Opción B"); real `imagen_url` images replace the gradient+hatch cartel fallback whenever they exist (`cartelDe()` in `src/lib/gaceta.js`); do **not** name new color tokens `vino` or `crema` (they were dead classes from a pre-Gaceta palette; defining them could resurrect phantom styling if any stray reference survives). The previous system ("Civic Hearth", Material 3 green/parchment) was fully removed in the Fase 6 cleanup — its tokens, `nv-card`/`nv-chip`/`nv-section-title` classes, Montserrat/Inter fonts, and the phantom `success` token are all gone; `.nv-pista` (the destacados sliding track) survives because it's functional, not thematic. The old `reference/{mobile,desktop,menu}/DESIGN.md` mockups describe the retired system and are historical only.
+
+### Buzón de sugerencias (formularios públicos)
+
+New public suggestion system for residents to submit ideas, events, report bugs, and request new businesses to be added to the directory.
+
+- **`src/pages/Sugerencias.jsx`** — main suggestions page (`/sugerencias`, linked in `MenuDrawer`). Flexible form with type selector: Idea, Evento, Comercio, Error. Type-specific required fields:
+  - **Generic** (Idea/Evento/Error): `titulo` (required), `detalle` (required, 500 char visible limit), `email` (optional for reply).
+  - **Comercio**: `nombre` (required), `tipoNegocio` (required, from `LISTA_CATEGORIAS`), `direccion` (required), `horarios` (required), `telefono` (optional), `foto` (optional, uploaded to Vercel Blob via `SelectorImagen`).
+  - All forms include `recaptchaToken` (obtained from browser via `useRecaptcha()` hook before submission).
+  - Confirmation screen on successful submit; fallback to `mailto:` if no `ENDPOINT` is configured.
+
+- **`api/sugerencias.js`** — Edge Function POST endpoint (`/api/sugerencias`) that receives and validates suggestions. Workflow:
+  1. **reCAPTCHA v3 verification** first (score 0.0–1.0; threshold 0.5). Returns 403 if score < threshold (bot detected).
+  2. **Rate-limiting** by IP (max 5 per hour via `_ratelimit.js`). Returns 429 if exceeded.
+  3. **Field validation** by `tipo`: commerces require `nombre`, `direccion`, `horarios`, `tipoNegocio`; others require `titulo`.
+  4. **Logging** with type, IP, and timestamp; low scores logged for analysis.
+  5. Returns 200 on success; 400/403/429 on failure.
+
+- **`src/components/directorio/SugerirComercio.jsx`** — modal form ("¿Falta un comercio?" button in `/comercios`) now sends to `/api/sugerencias` instead of mailto (if `VITE_FORM_ENDPOINT` not overridden). Maps form fields (`categoria` → `tipoNegocio`) and includes `recaptchaToken` in payload.
+
+- **`src/lib/useRecaptcha.js`** — React hook that dynamically loads the Google reCAPTCHA v3 script and exposes `getToken(action)` to obtain a verification token. Actions: `'sugerir_idea'`, `'sugerir_comercio'`. Token is always sent in the payload as `recaptchaToken`.
+
+- **Environment variables**:
+  - `VITE_RECAPTCHA_SITE_KEY` (public, loaded by browser; prefixed with `VITE_` so it's never in the backend bundle).
+  - `RECAPTCHA_SECRET_KEY` (private, server-only; added to `VARIABLES_API` in `vite.config.js` for dev).
+  - Test keys in `.env` work on `localhost` and `127.0.0.1`; in production, replace with real keys from https://www.google.com/recaptcha/admin.
+
+- **Security layers**:
+  1. reCAPTCHA v3 (invisible bot detection, score-based).
+  2. Rate-limiting by IP (form spam prevention).
+  3. CSRF protection via Origin validation.
+  4. Server-side field validation (never trust client).
+  5. Logging for suspicious patterns.
+
+- **Future work**: store suggestions in DB (new `sugerencias` table), send admin email notifications, add a superadmin review panel in `/admin`.
