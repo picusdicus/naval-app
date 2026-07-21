@@ -14,9 +14,9 @@ export default function AdminEntrada() {
 
   if (cargando) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-papel-lienzo">
         <div
-          className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
+          className="h-10 w-10 animate-spin rounded-full border-4 border-filete border-t-terracota"
           role="status"
           aria-label="Cargando"
         />

@@ -107,20 +107,20 @@ export default function TablesCodigosInvitacion() {
   const obtenerColorEstado = (estado) => {
     switch (estado) {
       case 'activo':
-        return 'bg-success/20 text-success'
+        return 'bg-verde text-papel'
       case 'agotado':
         return 'bg-warning/20 text-warning'
       case 'caducado':
-        return 'bg-error/20 text-error'
+        return 'bg-terracota-fondo text-terracota'
       default:
-        return 'bg-on-surface/10 text-on-surface/60'
+        return 'bg-filete text-tinta-apagada'
     }
   }
 
   if (cargando) {
     return (
       <div className="flex justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-filete border-t-terracota" />
       </div>
     )
   }
@@ -128,9 +128,9 @@ export default function TablesCodigosInvitacion() {
   return (
     <div>
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-3">
-          <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
-          <p className="text-sm font-medium text-error">{error}</p>
+        <div className="mb-4 flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-3">
+          <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+          <p className="font-serif-spectral text-sm font-medium text-terracota">{error}</p>
         </div>
       )}
 
@@ -139,7 +139,7 @@ export default function TablesCodigosInvitacion() {
           <div className="mb-4 flex flex-wrap gap-2">
             <button
               onClick={() => setMostrarFormulario(true)}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-on-primary hover:shadow-card-lg active:scale-[0.98]"
+              className="flex items-center gap-2 bg-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel hover:opacity-90 active:scale-[0.98]"
             >
               <MIcon name="add" className="text-[20px]" />
               Nuevo código
@@ -147,7 +147,7 @@ export default function TablesCodigosInvitacion() {
             <select
               value={filtroOrg}
               onChange={(e) => setFiltroOrg(e.target.value)}
-              className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
+              className="border border-filete bg-papel px-3 py-2 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
             >
               <option value="">Todas las organizaciones</option>
               {organizaciones.map((org) => (
@@ -158,42 +158,42 @@ export default function TablesCodigosInvitacion() {
             </select>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-outline-variant/30">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-container-high">
-                <tr className="border-b border-outline-variant/30">
-                  <th className="px-4 py-3 text-left font-semibold">Código</th>
-                  <th className="px-4 py-3 text-left font-semibold">Organización</th>
-                  <th className="px-4 py-3 text-center font-semibold">Rol</th>
-                  <th className="px-4 py-3 text-center font-semibold">Usos</th>
-                  <th className="px-4 py-3 text-center font-semibold">Expira</th>
-                  <th className="px-4 py-3 text-center font-semibold">Estado</th>
-                  <th className="px-4 py-3 text-center font-semibold">Acción</th>
+          <div className="overflow-x-auto border border-tinta">
+            <table className="w-full font-serif-spectral text-sm text-tinta">
+              <thead className="bg-papel-calido">
+                <tr className="border-b border-filete">
+                  <th className="px-4 py-3 text-left font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Código</th>
+                  <th className="px-4 py-3 text-left font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Organización</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Rol</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Usos</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Expira</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Estado</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Acción</th>
                 </tr>
               </thead>
               <tbody>
                 {codigosFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-4 py-8 text-center text-on-surface/50">
+                    <td colSpan="7" className="px-4 py-8 text-center font-serif-spectral text-pardo">
                       No hay códigos de invitación
                     </td>
                   </tr>
                 ) : (
                   codigosFiltrados.map((codigo) => (
-                    <tr key={codigo.id} className="border-b border-outline-variant/30 hover:bg-surface-container-high/50">
-                      <td className="px-4 py-3 font-mono font-bold text-primary">{codigo.codigo}</td>
-                      <td className="px-4 py-3 text-on-surface/80">
+                    <tr key={codigo.id} className="border-b border-filete hover:bg-papel-calido/60">
+                      <td className="px-4 py-3 font-mono-ibm font-medium text-verde">{codigo.codigo}</td>
+                      <td className="px-4 py-3 text-tinta-apagada">
                         {obtenerNombreOrg(codigo.organizacionId)}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-block rounded bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                        <span className="inline-block bg-papel-calido px-2 py-1 font-mono-ibm text-[10px] text-pardo">
                           {codigo.rolConcedido}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         {codigo.usosActuales}/{codigo.usosMaximos}
                       </td>
-                      <td className="px-4 py-3 text-center text-on-surface/70">
+                      <td className="px-4 py-3 text-center text-pardo">
                         {codigo.expiracion ? new Date(codigo.expiracion).toLocaleDateString('es-ES') : '—'}
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -204,7 +204,7 @@ export default function TablesCodigosInvitacion() {
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => copioCodigo(codigo.codigo)}
-                          className="text-primary hover:text-primary/80 transition-colors"
+                          className="text-terracota transition-opacity hover:opacity-80"
                           title="Copiar código"
                         >
                           <MIcon name="content_copy" className="text-[20px]" />
@@ -219,17 +219,17 @@ export default function TablesCodigosInvitacion() {
         </>
       ) : (
         <div className="max-w-2xl">
-          <h2 className="mb-4 text-xl font-bold text-on-surface">Generar nuevo código de invitación</h2>
+          <h2 className="mb-4 font-serif-dm text-2xl text-tinta">Generar nuevo código de invitación</h2>
 
           <form onSubmit={manejarEnvio} className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-semibold">Organización *</label>
+              <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Organización *</label>
               <select
                 value={formularioData.organizacionId}
                 onChange={(e) =>
                   setFormularioData({ ...formularioData, organizacionId: e.target.value })
                 }
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                 disabled={enviando}
               >
                 <option value="">Selecciona una organización</option>
@@ -245,13 +245,13 @@ export default function TablesCodigosInvitacion() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label className="mb-2 block text-sm font-semibold">Rol *</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Rol *</label>
                 <select
                   value={formularioData.rolConcedido}
                   onChange={(e) =>
                     setFormularioData({ ...formularioData, rolConcedido: e.target.value })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 >
                   <option value="admin">Admin</option>
@@ -260,7 +260,7 @@ export default function TablesCodigosInvitacion() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold">Usos máximos *</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Usos máximos *</label>
                 <input
                   type="number"
                   min="1"
@@ -271,20 +271,20 @@ export default function TablesCodigosInvitacion() {
                       usosMaximos: Math.max(1, parseInt(e.target.value) || 1),
                     })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold">Fecha de caducidad</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Fecha de caducidad</label>
                 <input
                   type="date"
                   value={formularioData.expiracion}
                   onChange={(e) =>
                     setFormularioData({ ...formularioData, expiracion: e.target.value })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 />
               </div>
@@ -294,7 +294,7 @@ export default function TablesCodigosInvitacion() {
               <button
                 type="submit"
                 disabled={enviando || !formularioData.organizacionId}
-                className="rounded-lg bg-primary px-4 py-2 font-semibold text-on-primary hover:shadow-card-lg active:scale-[0.98] disabled:opacity-50"
+                className="bg-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
               >
                 {enviando ? 'Generando…' : 'Generar código'}
               </button>
@@ -302,7 +302,7 @@ export default function TablesCodigosInvitacion() {
                 type="button"
                 onClick={cancelar}
                 disabled={enviando}
-                className="rounded-lg border border-outline-variant px-4 py-2 font-semibold hover:bg-surface-container-high"
+                className="border border-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta hover:bg-papel-calido"
               >
                 Cancelar
               </button>
