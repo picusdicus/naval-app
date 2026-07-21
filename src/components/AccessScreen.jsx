@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import MIcon from './MIcon'
 
 export default function AccessScreen({ onAccessGranted }) {
@@ -89,6 +90,16 @@ export default function AccessScreen({ onAccessGranted }) {
         <p className="text-center text-on-surface/50 text-xs mt-6 max-w-xs mx-auto">
           Portal privado para vecinos de Navalcarnero. Se requiere contraseña para acceder.
         </p>
+
+        <div className="text-center text-on-surface/50 text-xs mt-4 space-x-2 max-w-xs mx-auto">
+          <Link to="/aviso-legal" className="hover:text-on-surface/70 hover:underline">
+            Aviso legal
+          </Link>
+          <span>·</span>
+          <Link to="/privacidad" className="hover:text-on-surface/70 hover:underline">
+            Privacidad
+          </Link>
+        </div>
       </div>
     </div>
   )

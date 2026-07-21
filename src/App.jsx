@@ -15,6 +15,9 @@ import Noticias from './pages/Noticias.jsx'
 import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
 import Transporte from './pages/Transporte.jsx'
 import Asistente from './pages/Asistente.jsx'
+import AvisoLegal from './pages/legal/AvisoLegal.jsx'
+import Privacidad from './pages/legal/Privacidad.jsx'
+import Cookies from './pages/legal/Cookies.jsx'
 import Login from './pages/Login.jsx'
 import Registro from './pages/Registro.jsx'
 import AdminEntrada from './pages/admin/AdminEntrada.jsx'
@@ -111,6 +114,9 @@ export default function App() {
           <Route path="/noticias/:id" element={<NoticiaDetalle />} />
           <Route path="/transporte" element={<Transporte />} />
           <Route path="/asistente" element={<Asistente />} />
+          <Route path="/aviso-legal" element={<AvisoLegal />} />
+          <Route path="/privacidad" element={<Privacidad />} />
+          <Route path="/cookies" element={<Cookies />} />
         </Route>
 
         {/* Rutas de antes de separar los logins: una organización puede

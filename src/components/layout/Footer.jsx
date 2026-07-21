@@ -39,8 +39,21 @@ export default function Footer({ onAbrirChat }) {
           <p className="mt-1 opacity-80">L–V, 9:00 a 14:00</p>
         </div>
       </div>
-      <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
-        Proyecto vecinal no oficial · Datos de OpenStreetMap y fuentes locales
+      <div className="border-t border-white/10 px-10 py-4 text-center text-xs opacity-60">
+        <p>Proyecto vecinal no oficial · Datos de OpenStreetMap y fuentes locales</p>
+        <p className="mt-3 space-x-3">
+          <Link to="/aviso-legal" className="hover:opacity-100">
+            Aviso legal
+          </Link>
+          ·
+          <Link to="/privacidad" className="hover:opacity-100">
+            Privacidad
+          </Link>
+          ·
+          <Link to="/cookies" className="hover:opacity-100">
+            Cookies
+          </Link>
+        </p>
       </div>
     </footer>
   )

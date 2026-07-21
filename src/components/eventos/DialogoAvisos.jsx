@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
 import { LISTA_CATEGORIAS_EVENTO } from '../../lib/eventos.js'
 import { ORGANIZADORES_FIJOS } from '../../lib/temasPush.js'
@@ -195,6 +196,20 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
           </div>
         ) : (
           <>
+            <div className="mt-4 rounded-lg bg-primary-container/20 p-4 text-sm text-on-surface">
+              <p className="mb-2">
+                Guardamos un identificador anónimo de tu dispositivo y tu preferencia de temas
+                para poder enviarte avisos. No vinculamos esto a tu identidad.
+              </p>
+              <p>
+                Consulta nuestra{' '}
+                <Link to="/privacidad" className="text-primary font-semibold hover:underline">
+                  Política de privacidad
+                </Link>{' '}
+                para más detalles.
+              </p>
+            </div>
+
             <div className="mt-4 space-y-2">
               {MODOS.map((m) => (
                 <label

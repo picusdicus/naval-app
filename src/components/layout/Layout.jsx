@@ -4,6 +4,7 @@ import Header from './Header.jsx'
 import MenuDrawer from './MenuDrawer.jsx'
 import NavBar from './NavBar.jsx'
 import Footer from './Footer.jsx'
+import CookieBanner from '../CookieBanner.jsx'
 import AsistenteChatPanel from './AsistenteChatPanel.jsx'
 
 export default function Layout({ onLogout }) {
@@ -21,6 +22,7 @@ export default function Layout({ onLogout }) {
       <NavBar />
       <MenuDrawer abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} onLogout={onLogout} />
       <AsistenteChatPanel abierto={chatAbierto} onCerrar={() => setChatAbierto(false)} />
+      <CookieBanner />
     </div>
   )
 }
