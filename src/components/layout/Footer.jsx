@@ -18,9 +18,6 @@ export default function Footer({ onAbrirChat }) {
           <Link to="/comercios" className="opacity-80 hover:opacity-100 hover:underline">
             Comercios
           </Link>
-          <Link to="/transporte" className="opacity-80 hover:opacity-100 hover:underline">
-            Transporte
-          </Link>
           <Link to="/noticias" className="opacity-80 hover:opacity-100 hover:underline">
             Noticias
           </Link>
