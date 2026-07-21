@@ -16,6 +16,7 @@ import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
 import Transporte from './pages/Transporte.jsx'
 import Asistente from './pages/Asistente.jsx'
 import FAQ from './pages/FAQ.jsx'
+import Sugerencias from './pages/Sugerencias.jsx'
 import AvisoLegal from './pages/legal/AvisoLegal.jsx'
 import Privacidad from './pages/legal/Privacidad.jsx'
 import Cookies from './pages/legal/Cookies.jsx'
@@ -118,6 +119,7 @@ export default function App() {
           <Route path="/transporte" element={<Transporte />} />
           <Route path="/asistente" element={<Asistente />} />
           <Route path="/ayuda" element={<FAQ />} />
+          <Route path="/sugerencias" element={<Sugerencias />} />
           <Route path="/aviso-legal" element={<AvisoLegal />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/cookies" element={<Cookies />} />

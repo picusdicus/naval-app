@@ -9,6 +9,7 @@ const rutas = [
   { to: '/noticias', label: 'Noticias' },
   { to: '/asistente', label: 'Asistente IA' },
   { to: '/ayuda', label: 'Preguntas frecuentes' },
+  { to: '/sugerencias', label: 'Buzón de sugerencias' },
 ]
 
 // Menú lateral deslizable, estética La Gaceta: panel papel con borde de tinta,
