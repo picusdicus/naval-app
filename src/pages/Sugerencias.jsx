@@ -48,7 +48,12 @@ export default function Sugerencias() {
 
       const payload = {
         tipo: 'comercio',
-        ...datosComercio,
+        nombre: datosComercio.nombre,
+        direccion: datosComercio.direccion,
+        tipoNegocio: datosComercio.tipo,
+        horarios: datosComercio.horarios,
+        telefono: datosComercio.telefono,
+        foto: datosComercio.foto,
       }
 
       if (ENDPOINT) {
