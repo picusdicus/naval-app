@@ -8,9 +8,9 @@ const CENTRO = [40.2881, -4.0128]
 // Marcador propio (divIcon) en los verdes del tema "Civic Hearth" — evita el
 // bug conocido de las rutas de marker-icon.png de Leaflet al empaquetar con Vite.
 function iconoDe(categoria, activo) {
-  const color = activo ? '#006c48' : '#0f5238'
+  const color = activo ? '#b0472f' : '#211d15'
   const size = activo ? 30 : 22
-  const border = activo ? '#92f7c3' : '#fff8f2'
+  const border = activo ? '#f0c14b' : '#f4efe1'
   return L.divIcon({
     className: 'comercio-marker',
     html: `<span style="display:block;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;
@@ -44,7 +44,7 @@ function CentrarSeleccion({ seleccionado }) {
 
 export default function MapaComercios({ comercios, seleccionado, onSeleccionar }) {
   return (
-    <div className="h-full w-full overflow-hidden rounded-xl shadow-card">
+    <div className="h-full w-full overflow-hidden border border-tinta">
       <MapContainer
         center={CENTRO}
         zoom={14}

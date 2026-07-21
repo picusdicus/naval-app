@@ -57,10 +57,10 @@ export default function AnaliticasOrganizacion({ onNoAutenticado }) {
     return (
       <div
         role="alert"
-        className="flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-4"
+        className="flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-4"
       >
-        <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
-        <p className="text-sm font-medium text-error">{error}</p>
+        <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+        <p className="font-serif-spectral text-sm font-medium text-terracota">{error}</p>
       </div>
     )
   }
