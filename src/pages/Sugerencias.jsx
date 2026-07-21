@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LISTA_CATEGORIAS } from '../lib/categorias.js'
+import { useRecaptcha } from '../lib/useRecaptcha.js'
 import MIcon from '../components/MIcon.jsx'
 import SelectorImagen from '../components/admin/SelectorImagen.jsx'
 
@@ -14,6 +15,7 @@ const TIPOS_SUGERENCIA = [
 ]
 
 export default function Sugerencias() {
+  const { getToken } = useRecaptcha()
   const [tipo, setTipo] = useState('idea')
   const [datos, setDatos] = useState({
     titulo: '',
@@ -46,6 +48,7 @@ export default function Sugerencias() {
       if (!datosComercio.nombre.trim()) return
       setEstado('enviando')
 
+      const token = await getToken('sugerir_comercio')
       const payload = {
         tipo: 'comercio',
         nombre: datosComercio.nombre,
@@ -54,6 +57,7 @@ export default function Sugerencias() {
         horarios: datosComercio.horarios,
         telefono: datosComercio.telefono,
         foto: datosComercio.foto,
+        recaptchaToken: token,
       }
 
       if (ENDPOINT) {
@@ -87,9 +91,11 @@ export default function Sugerencias() {
       if (!datos.titulo.trim()) return
       setEstado('enviando')
 
+      const token = await getToken('sugerir_idea')
       const payload = {
         tipo,
         ...datos,
+        recaptchaToken: token,
       }
 
       if (ENDPOINT) {

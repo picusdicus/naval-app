@@ -40,6 +40,9 @@ const VARIABLES_API = [
   'VITE_VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'VAPID_SUBJECT',
+  // reCAPTCHA v3 (api/sugerencias.js). La clave pública la usa el navegador
+  // para obtener el token; la secreta solo el servidor para verificarlo.
+  'RECAPTCHA_SECRET_KEY',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LISTA_CATEGORIAS } from '../../lib/categorias.js'
 import { COCINA_LABEL } from '../../lib/cocinas.js'
+import { useRecaptcha } from '../../lib/useRecaptcha.js'
 import MIcon from '../MIcon.jsx'
 
 const ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT || '/api/sugerencias'
@@ -12,6 +13,7 @@ const OPCIONES_COCINA = Object.entries(COCINA_LABEL)
   .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, 'es'))
 
 export default function SugerirComercio({ onCerrar }) {
+  const { getToken } = useRecaptcha()
   const [datos, setDatos] = useState({
     nombre: '',
     categoria: 'alimentacion',
@@ -34,6 +36,7 @@ export default function SugerirComercio({ onCerrar }) {
     // Con backend/servicio de formularios configurado: POST. Si no, mailto.
     if (ENDPOINT && ENDPOINT.includes('api')) {
       try {
+        const token = await getToken('sugerir_comercio')
         const payload = {
           tipo: 'comercio',
           nombre: datos.nombre,
@@ -41,6 +44,7 @@ export default function SugerirComercio({ onCerrar }) {
           direccion: datos.direccion,
           horarios: '',
           telefono: datos.telefono,
+          recaptchaToken: token,
         }
         const res = await fetch(ENDPOINT, {
           method: 'POST',
