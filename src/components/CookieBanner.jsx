@@ -25,7 +25,7 @@ export default function CookieBanner() {
   if (!mostrar) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-tinta bg-papel-calido md:bottom-4 md:left-4 md:right-4 md:border">
+    <div className="fixed bottom-24 left-3 right-3 z-40 border border-tinta bg-papel-calido md:bottom-4 md:left-4 md:right-4">
       <div className="mx-auto flex max-w-4xl flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6 md:py-5">
         <div className="flex flex-1 items-start gap-3">
           <MIcon name="cookies" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
