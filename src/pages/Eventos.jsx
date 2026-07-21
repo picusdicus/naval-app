@@ -6,6 +6,7 @@ import {
   eventosPasados,
 } from '../lib/eventos.js'
 import EventoFila from '../components/eventos/EventoFila.jsx'
+import CalendarioEventos from '../components/eventos/CalendarioEventos.jsx'
 import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { useDestacados } from '../lib/useDestacados.js'
@@ -45,6 +46,7 @@ function diaEtiqueta(fecha) {
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
   const [avisosAbierto, setAvisosAbierto] = useState(false)
+  const [mesSeleccionado, setMesSeleccionado] = useState(() => new Date())
   // Solo para pintar el botón ("Recibir avisos" vs "Avisos activados"): la
   // copia local de las preferencias, no el estado real del servidor. La bandeja
   // de avisos vive en la cabecera global (CentroAvisos), no aquí.
@@ -73,142 +75,141 @@ export default function Eventos() {
   const conCarrusel = categoria === null && destacadosEvento.length > 0
 
   return (
-    <div className="mx-auto max-w-3xl">
-      {/* Masthead */}
-      <header className="flex items-start justify-between gap-4">
-        <div className="gz-filete-doble flex-1 pb-3">
-          <div className="gz-label text-mudo">Qué hacer en</div>
-          <h1 className="font-serif-dm text-seccion leading-none text-tinta">La cartelera</h1>
-        </div>
-        {/* Opt-in de push: CTA contextual en Eventos (la bandeja está en la
-            cabecera global). Abre el mismo diálogo de gestión que el icono de
-            ajustes de la bandeja. */}
-        <button
-          type="button"
-          onClick={() => setAvisosAbierto(true)}
-          className={`flex flex-shrink-0 items-center gap-2 px-3 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta transition-colors ${
-            avisosActivos ? 'border border-tinta text-tinta' : 'bg-tinta text-papel hover:opacity-90'
-          }`}
-        >
-          <MIcon
-            name={avisosActivos ? 'notifications_active' : 'notifications'}
-            className="text-[16px]"
-            fill={avisosActivos}
-          />
-          {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
-        </button>
-      </header>
-
-      <DialogoAvisos
-        abierto={avisosAbierto}
-        onCerrar={() => {
-          setAvisosAbierto(false)
-          setAvisosActivos(Boolean(prefsLocales()))
-        }}
-      />
-
-      {/* Selector de categorías */}
-      {categoriasDisponibles.length > 0 && (
-        <div className="hide-scrollbar mt-5 flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
+    <div className="flex flex-col gap-6 lg:flex-row">
+      {/* Columna izquierda: lista de eventos */}
+      <div className="flex-1 min-w-0">
+        {/* Masthead */}
+        <header className="flex items-start justify-between gap-4 mb-6">
+          <div className="gz-filete-doble flex-1 pb-3">
+            <div className="gz-label text-mudo">Qué hacer en</div>
+            <h1 className="font-serif-dm text-seccion leading-none text-tinta">La cartelera</h1>
+          </div>
+          {/* Opt-in de push */}
           <button
             type="button"
-            onClick={() => setCategoria(null)}
-            className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-              categoria === null ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
+            onClick={() => setAvisosAbierto(true)}
+            className={`flex flex-shrink-0 items-center gap-2 px-3 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta transition-colors ${
+              avisosActivos ? 'border border-tinta text-tinta' : 'bg-tinta text-papel hover:opacity-90'
             }`}
           >
-            Todos
+            <MIcon
+              name={avisosActivos ? 'notifications_active' : 'notifications'}
+              className="text-[16px]"
+              fill={avisosActivos}
+            />
+            {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
           </button>
-          {categoriasDisponibles.map((cat) => (
+        </header>
+
+        <DialogoAvisos
+          abierto={avisosAbierto}
+          onCerrar={() => {
+            setAvisosAbierto(false)
+            setAvisosActivos(Boolean(prefsLocales()))
+          }}
+        />
+
+        {/* Selector de categorías */}
+        {categoriasDisponibles.length > 0 && (
+          <div className="hide-scrollbar mb-6 flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
             <button
-              key={cat.id}
               type="button"
-              onClick={() => setCategoria(cat.id)}
+              onClick={() => setCategoria(null)}
               className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-                categoria === cat.id ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
+                categoria === null ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
               }`}
             >
-              {cat.nombre}
+              Todos
             </button>
+            {categoriasDisponibles.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategoria(cat.id)}
+                className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                  categoria === cat.id ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
+                }`}
+              >
+                {cat.nombre}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Destacados de cultura (contratados) */}
+        {conCarrusel && (
+          <section className="mb-6 animate-rise">
+            <div className="mb-3 flex items-baseline justify-between">
+              <span className="gz-eyebrow">Destacados de la semana</span>
+              <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
+                {String(Math.min(destacadosEvento.length, 3)).padStart(2, '0')} /{' '}
+                {String(destacadosEvento.length).padStart(2, '0')}
+              </span>
+            </div>
+            <CarruselDestacados items={destacadosEvento} columnas={3} seccion="eventos" />
+          </section>
+        )}
+
+        {/* ----------------------------- Agenda por día ----------------------------- */}
+        <div className="mb-6 h-px bg-tinta" />
+
+        {futuros.length === 0 && (
+          <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-pardo">
+            No hay eventos próximos por ahora. Consulta más abajo el histórico de actividades.
+          </p>
+        )}
+
+        {/* Lista de próximos eventos */}
+        <div className="space-y-4">
+          {futuros.map((e) => (
+            <EventoFila key={e.id} evento={e} />
           ))}
         </div>
-      )}
 
-      {/* Destacados de cultura (contratados) */}
-      {conCarrusel && (
-        <section className="mt-6 animate-rise">
-          <div className="mb-3 flex items-baseline justify-between">
-            <span className="gz-eyebrow">Destacados de cultura</span>
-            <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
-              {String(Math.min(destacadosEvento.length, 3)).padStart(2, '0')} /{' '}
-              {String(destacadosEvento.length).padStart(2, '0')}
-            </span>
-          </div>
-          <CarruselDestacados items={destacadosEvento} columnas={3} seccion="eventos" />
+        {/* Anteriores */}
+        {pasados.length > 0 && (
+          <section className="mt-10">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="h-px flex-1 bg-filete" />
+              <h2 className="flex items-center gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-mudo">
+                <MIcon name="history" className="text-[16px]" />
+                Eventos anteriores
+              </h2>
+              <div className="h-px flex-1 bg-filete" />
+            </div>
+            <div className="flex flex-col gap-3.5">
+              {pasados.map((e) => (
+                <EventoFila key={e.id} evento={e} pasado />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* CTA */}
+        <section className="mt-10 flex flex-col items-center border border-tinta bg-papel-calido p-8 text-center">
+          <MIcon name="campaign" className="mb-2 text-[40px] text-terracota" />
+          <h3 className="font-serif-dm text-xl text-tinta">¿Organizas un evento?</h3>
+          <p className="mb-6 mt-2 max-w-md font-serif-spectral text-sm text-tinta-apagada">
+            Si tu asociación o negocio organiza una actividad en Navalcarnero, cuéntanoslo y la
+            publicaremos en la agenda vecinal.
+          </p>
+          <a
+            href="mailto:directorio@navalcarnero.example?subject=Propuesta%20de%20evento"
+            className="gz-boton-tinta"
+          >
+            Proponer un evento
+          </a>
         </section>
-      )}
 
-      {/* ----------------------------- Agenda por día ----------------------------- */}
-      <div className="mt-6 h-px bg-tinta" />
-
-      {futuros.length === 0 && (
-        <p className="mt-6 border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-pardo">
-          No hay eventos próximos por ahora. Consulta más abajo el histórico de actividades.
+        <p className="mt-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
+          Imágenes ilustrativas vía Wikimedia Commons: {CREDITOS_FOTOS.join(' · ')}
         </p>
-      )}
+      </div>
 
-      {grupos.map((g) => (
-        <section key={g.fecha} className="mt-5">
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-serif-dm text-3xl leading-none text-tinta">{diaNumero(g.fecha)}</span>
-            <span className="gz-label text-mudo">{diaEtiqueta(g.fecha)}</span>
-          </div>
-          <div className="mt-3.5 flex flex-col gap-3.5">
-            {g.eventos.map((e) => (
-              <EventoFila key={e.id} evento={e} />
-            ))}
-          </div>
-        </section>
-      ))}
-
-      {/* ---------------------------- Anteriores ---------------------------- */}
-      {pasados.length > 0 && (
-        <section className="mt-10">
-          <div className="flex items-center gap-4">
-            <div className="h-px flex-1 bg-filete" />
-            <h2 className="flex items-center gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-mudo">
-              <MIcon name="history" className="text-[16px]" />
-              Eventos anteriores
-            </h2>
-            <div className="h-px flex-1 bg-filete" />
-          </div>
-          <div className="mt-5 flex flex-col gap-3.5">
-            {pasados.map((e) => (
-              <EventoFila key={e.id} evento={e} pasado />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* CTA */}
-      <section className="mt-10 flex flex-col items-center border border-tinta bg-papel-calido p-8 text-center">
-        <MIcon name="campaign" className="mb-2 text-[40px] text-terracota" />
-        <h3 className="font-serif-dm text-xl text-tinta">¿Organizas un evento?</h3>
-        <p className="mb-6 mt-2 max-w-md font-serif-spectral text-sm text-tinta-apagada">
-          Si tu asociación o negocio organiza una actividad en Navalcarnero, cuéntanoslo y la
-          publicaremos en la agenda vecinal.
-        </p>
-        <a
-          href="mailto:directorio@navalcarnero.example?subject=Propuesta%20de%20evento"
-          className="gz-boton-tinta"
-        >
-          Proponer un evento
-        </a>
-      </section>
-
-      <p className="mt-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
-        Imágenes ilustrativas vía Wikimedia Commons: {CREDITOS_FOTOS.join(' · ')}
-      </p>
+      {/* Columna derecha: Calendario - solo en desktop */}
+      <div className="hidden lg:block lg:w-80 flex-shrink-0">
+        <CalendarioEventos eventos={futuros} mesSeleccionado={mesSeleccionado} onMesChange={setMesSeleccionado} />
+      </div>
     </div>
   )
 }

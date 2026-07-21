@@ -6,6 +6,7 @@ import { etiquetaCocina } from '../lib/cocinas.js'
 import MapaComercios from '../components/directorio/MapaComercios.jsx'
 import FiltrosCategoria from '../components/directorio/FiltrosCategoria.jsx'
 import ComercioCard from '../components/directorio/ComercioCard.jsx'
+import ComercioTarjeta from '../components/directorio/ComercioTarjeta.jsx'
 import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
 import { buscarDirectorio } from '../lib/busqueda.js'
@@ -209,27 +210,53 @@ export default function Mapa() {
           </p>
         )}
 
-        <div>
-          {comercios.map((c) => (
-            <div key={c.id}>
-              <ComercioCard
-                comercio={c}
-                activo={seleccionado?.id === c.id}
-                onClick={() => setSeleccionado(c)}
-              />
-              {seleccionado?.id === c.id && (
-                <div ref={detalleRef} className="py-3">
-                  <ComercioDetalle comercio={c} onCerrar={() => setSeleccionado(null)} />
-                </div>
-              )}
+        {/* Grid de comercios (solo desktop) */}
+        {esDesktop && comercios.length > 0 && (
+          <>
+            <div className="grid gap-4 grid-cols-2">
+              {comercios.map((c) => (
+                <ComercioTarjeta
+                  key={c.id}
+                  comercio={c}
+                  onClick={() => setSeleccionado(c)}
+                />
+              ))}
             </div>
-          ))}
-          {comercios.length === 0 && (
-            <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
-              No hay comercios que coincidan con tu búsqueda.
-            </p>
-          )}
-        </div>
+            {seleccionado && comercios.some((c) => c.id === seleccionado.id) && (
+              <div ref={detalleRef} className="mt-6 border-t-2 border-tinta pt-6">
+                <ComercioDetalle comercio={seleccionado} onCerrar={() => setSeleccionado(null)} />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Lista de comercios (solo móvil) */}
+        {!esDesktop && (
+          <>
+            <div>
+              {comercios.map((c) => (
+                <div key={c.id}>
+                  <ComercioCard
+                    comercio={c}
+                    activo={seleccionado?.id === c.id}
+                    onClick={() => setSeleccionado(c)}
+                  />
+                  {seleccionado?.id === c.id && (
+                    <div ref={detalleRef} className="py-3">
+                      <ComercioDetalle comercio={c} onCerrar={() => setSeleccionado(null)} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {comercios.length === 0 && (
+          <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
+            No hay comercios que coincidan con tu búsqueda.
+          </p>
+        )}
 
         <p className="text-center font-mono-ibm text-[10px] text-mudo">
           Datos © colaboradores de OpenStreetMap
