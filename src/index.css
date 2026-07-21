@@ -29,6 +29,163 @@ body {
   scrollbar-width: none;
 }
 
+/* ═══════════════════ Sistema "La Gaceta" (rediseño 2026) ═══════════════════
+   Tokens y utilidades del rediseño editorial. Ver reference/gaceta/DESIGN.md.
+   Conviven con "Civic Hearth" (más abajo) hasta cerrar la Fase 6. */
+
+:root {
+  /* Radios: móvil = estética impresa (recto); desktop = tarjetas redondeadas */
+  --gz-radio-desktop-md: 1rem; /* 16px */
+  --gz-radio-desktop-lg: 1.5rem; /* 24px */
+  --gz-sombra-cartel: 0 20px 40px -24px rgba(28, 25, 19, 0.5);
+}
+
+/* Foco visible por teclado en todo el sistema nuevo: el outline nativo se
+   sustituye por uno terracota consistente, nunca se elimina sin reemplazo. */
+:focus-visible {
+  outline: 2px solid #b0472f;
+  outline-offset: 2px;
+}
+
+@keyframes omRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes omFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes omSlide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@layer utilities {
+  .animate-rise {
+    animation: omRise 0.5s both;
+  }
+  .animate-fade {
+    animation: omFade 0.25s both;
+  }
+  .animate-slide {
+    animation: omSlide 0.3s both;
+  }
+  /* Accesibilidad: sin movimiento para quien lo pide. Las animaciones de
+     entrada saltan a su estado final; los carruseles gestionan además su
+     auto-avance en JS (matchMedia), esto solo cubre la capa CSS. */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-rise,
+    .animate-fade,
+    .animate-slide {
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+    }
+  }
+
+  /* Trama diagonal de los "carteles" (fallback cuando no hay imagen real).
+     Se aplica como overlay ::after, así no pisa el degradado de fondo del
+     propio elemento. Requiere `position: relative` en el elemento. */
+  .gz-trama::after,
+  .gz-trama-clara::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .gz-trama::after {
+    /* oscura, para degradados claros (terracota, ocre) */
+    background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 9px);
+  }
+  .gz-trama-clara::after {
+    /* clara, para degradados oscuros (bosque, azul, granate) */
+    background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 9px);
+  }
+}
+
+@layer components {
+  /* Componentes base La Gaceta — decisión "Opción B": cada variante lleva sus
+     clases fijas (móvil recto / desktop redondeado); no hay prop ni clase
+     genérica de breakpoint. Móvil y desktop son composiciones distintas. */
+
+  /* Botones · variante impresa (móvil y paneles) */
+  .gz-boton-tinta {
+    @apply bg-tinta text-papel font-mono-ibm text-xs uppercase tracking-etiqueta px-4 py-3 text-center cursor-pointer;
+  }
+  .gz-boton-borde {
+    @apply border border-tinta text-tinta font-mono-ibm text-xs uppercase tracking-etiqueta px-4 py-3 text-center cursor-pointer;
+  }
+  .gz-boton-peligro {
+    @apply border border-terracota-palido text-terracota font-mono-ibm text-xs uppercase tracking-etiqueta px-4 py-3 text-center cursor-pointer;
+  }
+  /* Botones · variante pill (solo desktop público) */
+  .gz-boton-pill {
+    @apply bg-papel text-tinta font-serif-spectral font-semibold rounded-full px-6 py-3 cursor-pointer;
+  }
+  .gz-boton-pill-tinta {
+    @apply bg-tinta text-papel font-serif-spectral rounded-full px-6 py-3 cursor-pointer;
+  }
+
+  /* Tarjetas */
+  .gz-tarjeta-impresa {
+    /* móvil/paneles: borde de tinta, sin radio ni sombra */
+    @apply border border-tinta bg-papel;
+  }
+  .gz-tarjeta-suave {
+    /* desktop: redondeada con sombra suave */
+    @apply rounded-lg bg-papel shadow-tarjeta-gaceta;
+  }
+
+  /* Etiquetas y badges */
+  .gz-eyebrow {
+    @apply font-mono-ibm text-[11px] uppercase tracking-rotulo text-terracota;
+  }
+  .gz-label {
+    @apply font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo;
+  }
+  .gz-badge-oro {
+    @apply font-mono-ibm text-[9px] uppercase tracking-etiqueta bg-oro text-tinta px-2 py-0.5 font-medium;
+  }
+  .gz-badge-verde {
+    @apply font-mono-ibm text-[9px] uppercase tracking-etiqueta bg-verde text-papel px-2 py-0.5;
+  }
+  .gz-badge-error {
+    @apply font-mono-ibm text-[10px] bg-terracota-fondo text-terracota px-1.5 py-px;
+  }
+
+  /* Inputs (paneles y buscadores) */
+  .gz-input {
+    @apply w-full border border-tinta bg-papel px-3.5 py-3 font-serif-spectral text-sm text-tinta placeholder:text-mudo;
+  }
+  .gz-input-suave {
+    @apply w-full border border-filete bg-papel px-3.5 py-3 font-serif-spectral text-sm text-tinta placeholder:text-mudo;
+  }
+  /* Campo bloqueado (categoría/lugar definidos por el perfil de la org) */
+  .gz-input-bloqueado {
+    @apply w-full border border-filete bg-papel-calido px-3.5 py-3 font-serif-spectral text-sm text-tinta;
+  }
+
+  /* Filete doble de cabeceras editoriales */
+  .gz-filete-doble {
+    border-bottom: 3px double #211d15;
+  }
+}
+
+/* ═══════════════ Sistema "Civic Hearth" — LEGADO, eliminar en Fase 6 ═══════════════ */
+
 @layer components {
   /* Tarjeta estándar del sistema "Civic Hearth": blanca, muy redondeada,
      sombra suave tintada de verde. */
