@@ -5,15 +5,47 @@ import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosI
 import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
 import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
 import UmamiStats from '../../components/admin/UmamiStats.jsx'
+import DialogoInfoUsuario from '../../components/admin/DialogoInfoUsuario.jsx'
+import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
 export default function AdminSuperPanel() {
+  const { usuario, cerrarSesion } = useAdminAuth()
   const [seccionActiva, setSeccionActiva] = useState('organizaciones')
   const [umamiSummary, setUmamiSummary] = useState(null)
   const [pendientes, setPendientes] = useState(0)
+  const [dialogoInfoAbierto, setDialogoInfoAbierto] = useState(false)
+  const [ocupado, setOcupado] = useState(false)
 
   const handleStatsLoaded = useCallback((summary) => {
     setUmamiSummary(summary)
   }, [])
+
+  const handleCambiarPassword = async (credenciales) => {
+    setOcupado(true)
+    try {
+      const respuesta = await fetch('/api/admin/cambiar-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credenciales),
+      })
+
+      if (respuesta.status === 401) {
+        throw new Error('La contraseña actual es incorrecta.')
+      }
+      if (!respuesta.ok) {
+        const datos = await respuesta.json().catch(() => ({}))
+        throw new Error(datos.error || 'No se pudo cambiar la contraseña.')
+      }
+
+      setTimeout(() => {
+        setDialogoInfoAbierto(false)
+      }, 2000)
+    } catch (err) {
+      throw err
+    } finally {
+      setOcupado(false)
+    }
+  }
 
   // Solicitudes de destacado sin gestionar, para el contador del tab. Se
   // recuenta al montar y al cambiar de sección (así se refresca tras aprobar
@@ -46,11 +78,34 @@ export default function AdminSuperPanel() {
       <div className="h-2 bg-tinta-intensa" />
       <div className="mx-auto max-w-7xl p-4 sm:p-6">
         {/* Encabezado */}
-        <div className="mb-6">
-          <h1 className="font-serif-dm text-seccion text-tinta">Panel Superadmin</h1>
-          <p className="mt-1 font-serif-spectral text-sm text-pardo">
-            Gestión global de organizaciones, códigos y métricas
-          </p>
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="font-serif-dm text-seccion text-tinta">Panel Superadmin</h1>
+            <p className="mt-1 font-serif-spectral text-sm text-pardo">
+              Gestión global de organizaciones, códigos y métricas
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setDialogoInfoAbierto(true)}
+              className="inline-flex items-center gap-2 border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-papel-calido"
+              title="Información de usuario"
+            >
+              <MIcon name="account_circle" className="text-[16px]" />
+              <span className="hidden sm:inline">Usuario</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={cerrarSesion}
+              className="inline-flex items-center gap-2 border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-papel-calido"
+            >
+              <MIcon name="logout" className="text-[16px]" />
+              <span className="hidden sm:inline">Cerrar sesión</span>
+            </button>
+          </div>
         </div>
 
         {/* Tabs: con cuatro secciones ya no caben en un móvil, así que la fila
@@ -93,6 +148,14 @@ export default function AdminSuperPanel() {
             </div>
           )}
         </div>
+
+        <DialogoInfoUsuario
+          abierto={dialogoInfoAbierto}
+          usuario={usuario}
+          ocupado={ocupado}
+          onCambiarPassword={handleCambiarPassword}
+          onCerrar={() => setDialogoInfoAbierto(false)}
+        />
       </div>
     </div>
   )

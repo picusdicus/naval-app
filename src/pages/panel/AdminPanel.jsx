@@ -4,6 +4,7 @@ import MIcon from '../../components/MIcon.jsx'
 import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
 import DialogoSolicitudDestacado from '../../components/admin/DialogoSolicitudDestacado.jsx'
 import DetalleDestacado from '../../components/admin/DetalleDestacado.jsx'
+import DialogoInfoUsuario from '../../components/admin/DialogoInfoUsuario.jsx'
 import AnaliticasOrganizacion from '../../components/admin/AnaliticasOrganizacion.jsx'
 import DestacaNegocio from '../../components/admin/DestacaNegocio.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
@@ -204,6 +205,7 @@ export default function AdminPanel() {
   const [porDestacar, setPorDestacar] = useState(null) // evento cuya solicitud se está proponiendo
   const [detalleDestacado, setDetalleDestacado] = useState(null) // { destacado, titulo } abierto en el modal
   const [pestana, setPestana] = useState('eventos')
+  const [dialogoInfoAbierto, setDialogoInfoAbierto] = useState(false)
 
   // Estado de las solicitudes de destacado y el negocio vinculado (si lo hay).
   const [destacadosOrg, setDestacadosOrg] = useState([])
@@ -320,6 +322,27 @@ export default function AdminPanel() {
   const destacadoComercio =
     destacadosOrg.find((d) => d.tipo === 'comercio' && d.estado !== 'cancelado') ?? null
 
+  const handleCambiarPassword = async (credenciales) => {
+    setOcupado(true)
+
+    try {
+      const respuesta = await fetch('/api/admin/cambiar-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credenciales),
+      })
+
+      const datos = await respuesta.json().catch(() => ({}))
+
+      if (!respuesta.ok) {
+        const error = new Error(datos.error || 'No se pudo cambiar la contraseña.')
+        throw error
+      }
+    } finally {
+      setOcupado(false)
+    }
+  }
+
   const resumen = datos?.resumen
   const eventos = datos?.eventos ?? []
 
@@ -338,6 +361,16 @@ export default function AdminPanel() {
             </p>
             <p className="truncate font-mono-ibm text-[10px] text-mudo">{usuario?.email}</p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setDialogoInfoAbierto(true)}
+            className="inline-flex flex-shrink-0 items-center gap-2 border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-papel-calido sm:px-4"
+            title="Información de usuario"
+          >
+            <MIcon name="account_circle" className="text-[16px]" />
+            <span className="hidden sm:inline">Usuario</span>
+          </button>
 
           <button
             type="button"
@@ -473,6 +506,14 @@ export default function AdminPanel() {
         destacado={detalleDestacado?.destacado ?? null}
         titulo={detalleDestacado?.titulo ?? ''}
         onCerrar={() => setDetalleDestacado(null)}
+      />
+
+      <DialogoInfoUsuario
+        abierto={dialogoInfoAbierto}
+        usuario={usuario}
+        ocupado={ocupado}
+        onCambiarPassword={handleCambiarPassword}
+        onCerrar={() => setDialogoInfoAbierto(false)}
       />
     </div>
   )
