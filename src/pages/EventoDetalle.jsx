@@ -6,6 +6,8 @@ import { CATEGORIAS_EVENTO, formatearFechaLarga } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
 import { cartelDe } from '../lib/gaceta.js'
+import { coordsDeLugar } from '../lib/lugares.js'
+import MapaLugar from '../components/MapaLugar.jsx'
 import MIcon from '../components/MIcon.jsx'
 
 const ORIGEN = {
@@ -91,6 +93,9 @@ export default function EventoDetalle() {
   const cat = CATEGORIAS_EVENTO[evento.categoria]?.nombre || 'Evento'
   // Quien organiza dice más que el origen genérico ("Cultura · Cultura").
   const procedencia = evento.fuente || ORIGEN[evento.origen] || 'Vecinal'
+  // Coordenadas del lugar si está en el directorio (teatros, casas de cultura,
+  // polideportivos…); las plazas/calles no son POIs y caen al enlace de Maps.
+  const coords = evento.lugar ? coordsDeLugar(evento.lugar) : null
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -202,9 +207,27 @@ export default function EventoDetalle() {
         </dl>
       </div>
 
-      {/* Mapa (placeholder): los eventos no guardan coordenadas, solo el nombre
-          de la sala; se enlaza a la búsqueda en Google Maps. */}
-      {evento.lugar && (
+      {/* Mapa del lugar: real (Leaflet) si el sitio está en el directorio con
+          coordenadas; si no (plazas, calles), placeholder con enlace a Google
+          Maps buscando por nombre. */}
+      {evento.lugar && coords && (
+        <div className="mt-6">
+          <MapaLugar lat={coords.lat} lng={coords.lng} nombre={evento.lugar} />
+          <div className="mt-2 flex items-center justify-between">
+            <span className="font-serif-dm text-lg text-tinta">{evento.lugar}</span>
+            <a
+              href={enlaceGoogleMaps(evento.lugar)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
+            >
+              Cómo llegar
+              <MIcon name="open_in_new" className="text-[13px]" />
+            </a>
+          </div>
+        </div>
+      )}
+      {evento.lugar && !coords && (
         <a
           href={enlaceGoogleMaps(evento.lugar)}
           target="_blank"
