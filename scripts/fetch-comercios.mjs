@@ -1,9 +1,9 @@
 /**
  * fetch-comercios-google.mjs
  *
- * Fetches businesses in Navalcarnero from Google Places API (New),
- * normalizes them to the app's data shape, and writes the result
- * to src/data/comercios.json (replaces any existing content).
+ * Fetches businesses, services, sports, culture and education venues
+ * in Navalcarnero from Google Places API (New), normalizes them to the
+ * app's data shape, and writes the result to src/data/comercios.json.
  *
  * Usage:
  *   node scripts/fetch-comercios-google.mjs
@@ -11,10 +11,12 @@
  * Requires:
  *   GOOGLE_PLACES_KEY in .env (or already in process.env)
  *
- * Shape produced per comercio:
- *   id, nombre, categoria, subtipo, cocina, lat, lng,
- *   direccion, telefono, web, horario,
- *   rating, totalReviews, precioNivel
+ * Categories (10 total):
+ *   alimentacion, restauracion, salud, belleza, hogar,
+ *   servicios, servicios_prof,
+ *   deporte     ← new (moved gym/fitness from servicios)
+ *   ocio_cultura ← new (theatre, cinema, cultural centres)
+ *   educacion   ← new (schools, academies, dance, languages)
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
@@ -28,7 +30,6 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 
-/** Load .env without requiring the dotenv package */
 function loadEnv() {
   const envPath = resolve(ROOT, ".env");
   if (!existsSync(envPath)) return;
@@ -57,13 +58,8 @@ const COMERCIOS_PATH = resolve(ROOT, "src/data/comercios.json");
 // Tuning constants
 // ---------------------------------------------------------------------------
 
-/** Navalcarnero municipality center */
 const NAVALCARNERO_CENTER = { latitude: 40.2817, longitude: -4.0108 };
-
-/** Search radius that covers the whole municipality */
 const SEARCH_RADIUS_METERS = 4500;
-
-/** Milliseconds between API calls to stay comfortably under quota (60 req/min) */
 const API_THROTTLE_MS = 220;
 
 // ---------------------------------------------------------------------------
@@ -71,79 +67,162 @@ const API_THROTTLE_MS = 220;
 // ---------------------------------------------------------------------------
 
 /**
- * Maps an array of Google place types to { categoria, subtipo }.
+ * Maps Google place types to { categoria, subtipo }.
  * Order matters: first match wins.
- * subtipo mirrors OSM values used in categorias.js so the UI needs no changes.
+ *
+ * NEW categories vs previous version:
+ *   deporte      — gym/fitness moved here + new sports venues
+ *   ocio_cultura — theatre, cinema, museums, cultural centres
+ *   educacion    — schools, academies, dance, languages, driving schools
  */
 const CATEGORY_RULES = [
-  // Alimentacion
-  { types: ["supermarket"],             categoria: "alimentacion",   subtipo: "supermarket" },
-  { types: ["grocery_store"],           categoria: "alimentacion",   subtipo: "supermarket" },
-  { types: ["convenience_store"],       categoria: "alimentacion",   subtipo: "convenience" },
-  { types: ["bakery"],                  categoria: "alimentacion",   subtipo: "bakery" },
-  { types: ["butcher_shop"],            categoria: "alimentacion",   subtipo: "butcher" },
-  { types: ["deli"],                    categoria: "alimentacion",   subtipo: "deli" },
-  { types: ["greengrocer"],             categoria: "alimentacion",   subtipo: "greengrocer" },
-  { types: ["market"],                  categoria: "alimentacion",   subtipo: "marketplace" },
-  { types: ["liquor_store"],            categoria: "alimentacion",   subtipo: "alcohol" },
+  // ── Alimentacion ──────────────────────────────────────────────────────────
+  { types: ["supermarket"],              categoria: "alimentacion",   subtipo: "supermarket" },
+  { types: ["grocery_store"],            categoria: "alimentacion",   subtipo: "supermarket" },
+  { types: ["convenience_store"],        categoria: "alimentacion",   subtipo: "convenience" },
+  { types: ["bakery"],                   categoria: "alimentacion",   subtipo: "bakery" },
+  { types: ["butcher_shop"],             categoria: "alimentacion",   subtipo: "butcher" },
+  { types: ["deli"],                     categoria: "alimentacion",   subtipo: "deli" },
+  { types: ["greengrocer"],              categoria: "alimentacion",   subtipo: "greengrocer" },
+  { types: ["market"],                   categoria: "alimentacion",   subtipo: "marketplace" },
+  { types: ["liquor_store"],             categoria: "alimentacion",   subtipo: "alcohol" },
+  { types: ["candy_store"],              categoria: "alimentacion",   subtipo: "confectionery" },
+  { types: ["chocolate_factory"],        categoria: "alimentacion",   subtipo: "confectionery" },
 
-  // Restauracion
-  { types: ["restaurant"],              categoria: "restauracion",   subtipo: "restaurant" },
-  { types: ["cafe", "coffee_shop"],     categoria: "restauracion",   subtipo: "cafe" },
-  { types: ["bar"],                     categoria: "restauracion",   subtipo: "bar" },
-  { types: ["fast_food_restaurant"],    categoria: "restauracion",   subtipo: "fast_food" },
-  { types: ["pizza_restaurant"],        categoria: "restauracion",   subtipo: "pizza" },
-  { types: ["sandwich_shop"],           categoria: "restauracion",   subtipo: "sandwich" },
-  { types: ["ice_cream_shop"],          categoria: "restauracion",   subtipo: "ice_cream" },
-  { types: ["dessert_shop"],            categoria: "restauracion",   subtipo: "pastry" },
-  { types: ["meal_takeaway"],           categoria: "restauracion",   subtipo: "fast_food" },
+  // ── Restauracion ──────────────────────────────────────────────────────────
+  { types: ["restaurant"],               categoria: "restauracion",   subtipo: "restaurant" },
+  { types: ["cafe", "coffee_shop"],      categoria: "restauracion",   subtipo: "cafe" },
+  { types: ["bar"],                      categoria: "restauracion",   subtipo: "bar" },
+  { types: ["fast_food_restaurant"],     categoria: "restauracion",   subtipo: "fast_food" },
+  { types: ["pizza_restaurant"],         categoria: "restauracion",   subtipo: "pizza" },
+  { types: ["sandwich_shop"],            categoria: "restauracion",   subtipo: "sandwich" },
+  { types: ["ice_cream_shop"],           categoria: "restauracion",   subtipo: "ice_cream" },
+  { types: ["dessert_shop"],             categoria: "restauracion",   subtipo: "pastry" },
+  { types: ["meal_takeaway"],            categoria: "restauracion",   subtipo: "fast_food" },
+  { types: ["brunch_restaurant"],        categoria: "restauracion",   subtipo: "restaurant" },
+  { types: ["seafood_restaurant"],       categoria: "restauracion",   subtipo: "restaurant" },
+  { types: ["steak_house"],              categoria: "restauracion",   subtipo: "restaurant" },
+  { types: ["tapas_bar"],                categoria: "restauracion",   subtipo: "bar" },
+  { types: ["wine_bar"],                 categoria: "restauracion",   subtipo: "bar" },
 
-  // Salud
-  { types: ["pharmacy"],                categoria: "salud",          subtipo: "pharmacy" },
-  { types: ["hospital"],                categoria: "salud",          subtipo: "hospital" },
-  { types: ["doctor"],                  categoria: "salud",          subtipo: "doctors" },
-  { types: ["dentist"],                 categoria: "salud",          subtipo: "dentist" },
-  { types: ["physiotherapist"],         categoria: "salud",          subtipo: "physiotherapist" },
-  { types: ["optician"],                categoria: "salud",          subtipo: "optician" },
-  { types: ["veterinary_care"],         categoria: "salud",          subtipo: "veterinary" },
+  // ── Salud ─────────────────────────────────────────────────────────────────
+  { types: ["pharmacy"],                 categoria: "salud",          subtipo: "pharmacy" },
+  { types: ["hospital"],                 categoria: "salud",          subtipo: "hospital" },
+  { types: ["doctor"],                   categoria: "salud",          subtipo: "doctors" },
+  { types: ["dentist"],                  categoria: "salud",          subtipo: "dentist" },
+  { types: ["physiotherapist"],          categoria: "salud",          subtipo: "physiotherapist" },
+  { types: ["optician"],                 categoria: "salud",          subtipo: "optician" },
+  { types: ["veterinary_care"],          categoria: "salud",          subtipo: "veterinary" },
+  { types: ["mental_health_practitioner"], categoria: "salud",        subtipo: "doctors" },
+  { types: ["nutritionist_dietitian"],   categoria: "salud",          subtipo: "doctors" },
 
-  // Belleza
-  { types: ["hair_salon", "hair_care"], categoria: "belleza",        subtipo: "hairdresser" },
-  { types: ["beauty_salon"],            categoria: "belleza",        subtipo: "beauty" },
-  { types: ["nail_salon"],              categoria: "belleza",        subtipo: "beauty" },
-  { types: ["barber_shop"],             categoria: "belleza",        subtipo: "barber" },
-  { types: ["spa"],                     categoria: "belleza",        subtipo: "beauty" },
+  // ── Belleza ───────────────────────────────────────────────────────────────
+  { types: ["hair_salon", "hair_care"],  categoria: "belleza",        subtipo: "hairdresser" },
+  { types: ["beauty_salon"],             categoria: "belleza",        subtipo: "beauty" },
+  { types: ["nail_salon"],               categoria: "belleza",        subtipo: "beauty" },
+  { types: ["barber_shop"],              categoria: "belleza",        subtipo: "barber" },
+  { types: ["spa"],                      categoria: "belleza",        subtipo: "beauty" },
+  { types: ["massage"],                  categoria: "belleza",        subtipo: "beauty" },
+  { types: ["tattoo_parlor"],            categoria: "belleza",        subtipo: "beauty" },
 
-  // Hogar
-  { types: ["furniture_store"],         categoria: "hogar",          subtipo: "furniture" },
-  { types: ["hardware_store"],          categoria: "hogar",          subtipo: "doityourself" },
-  { types: ["home_goods_store"],        categoria: "hogar",          subtipo: "houseware" },
-  { types: ["florist"],                 categoria: "hogar",          subtipo: "florist" },
-  { types: ["garden_center"],           categoria: "hogar",          subtipo: "garden_centre" },
-  { types: ["pet_store"],               categoria: "hogar",          subtipo: "pet" },
+  // ── Hogar ─────────────────────────────────────────────────────────────────
+  { types: ["furniture_store"],          categoria: "hogar",          subtipo: "furniture" },
+  { types: ["hardware_store"],           categoria: "hogar",          subtipo: "doityourself" },
+  { types: ["home_goods_store"],         categoria: "hogar",          subtipo: "houseware" },
+  { types: ["florist"],                  categoria: "hogar",          subtipo: "florist" },
+  { types: ["garden_center"],            categoria: "hogar",          subtipo: "garden_centre" },
+  { types: ["pet_store"],                categoria: "hogar",          subtipo: "pet" },
+  { types: ["appliance_store"],          categoria: "hogar",          subtipo: "houseware" },
+  { types: ["electronics_store"],        categoria: "hogar",          subtipo: "electronics" },
+  { types: ["clothing_store"],           categoria: "hogar",          subtipo: "clothes" },
+  { types: ["shoe_store"],               categoria: "hogar",          subtipo: "shoes" },
+  { types: ["book_store"],               categoria: "hogar",          subtipo: "books" },
+  { types: ["toy_store"],                categoria: "hogar",          subtipo: "toys" },
+  { types: ["sporting_goods_store"],     categoria: "hogar",          subtipo: "sports" },
+  { types: ["pharmacy"],                 categoria: "salud",          subtipo: "pharmacy" }, // already above
 
-  // Servicios
-  { types: ["gym", "fitness_center"],   categoria: "servicios",      subtipo: "gym" },
-  { types: ["laundry", "laundromat"],   categoria: "servicios",      subtipo: "laundry" },
-  { types: ["car_wash"],                categoria: "servicios",      subtipo: "car_wash" },
-  { types: ["car_repair"],              categoria: "servicios",      subtipo: "car_repair" },
-  { types: ["car_dealer"],              categoria: "servicios",      subtipo: "car" },
-  { types: ["gas_station"],             categoria: "servicios",      subtipo: "fuel" },
-  { types: ["bank"],                    categoria: "servicios",      subtipo: "bank" },
-  { types: ["atm"],                     categoria: "servicios",      subtipo: "atm" },
-  { types: ["post_office"],             categoria: "servicios",      subtipo: "post_office" },
-  { types: ["travel_agency"],           categoria: "servicios",      subtipo: "travel_agency" },
-  { types: ["library"],                 categoria: "servicios",      subtipo: "library" },
-  { types: ["dry_cleaning"],            categoria: "servicios",      subtipo: "dry_cleaning" },
+  // ── Deporte (NEW) ─────────────────────────────────────────────────────────
+  // Gym/fitness moved from servicios to deporte
+  { types: ["gym", "fitness_center"],    categoria: "deporte",        subtipo: "gym" },
+  { types: ["sports_complex"],           categoria: "deporte",        subtipo: "sports_centre" },
+  { types: ["stadium"],                  categoria: "deporte",        subtipo: "stadium" },
+  { types: ["swimming_pool"],            categoria: "deporte",        subtipo: "swimming_pool" },
+  { types: ["golf_course"],              categoria: "deporte",        subtipo: "golf_course" },
+  { types: ["tennis_court"],             categoria: "deporte",        subtipo: "tennis" },
+  { types: ["bowling_alley"],            categoria: "deporte",        subtipo: "bowling" },
+  { types: ["ice_skating_rink"],         categoria: "deporte",        subtipo: "ice_rink" },
+  { types: ["ski_resort"],               categoria: "deporte",        subtipo: "skiing" },
+  { types: ["sports_club"],              categoria: "deporte",        subtipo: "sports_centre" },
+  { types: ["martial_arts_school"],      categoria: "deporte",        subtipo: "martial_arts" },
+  { types: ["yoga_studio"],              categoria: "deporte",        subtipo: "yoga" },
+  { types: ["climbing_gym"],             categoria: "deporte",        subtipo: "climbing" },
+  { types: ["cycling_park"],             categoria: "deporte",        subtipo: "cycling" },
 
-  // Servicios profesionales
-  { types: ["lawyer"],                  categoria: "servicios_prof", subtipo: "lawyer" },
-  { types: ["accounting"],              categoria: "servicios_prof", subtipo: "accountant" },
-  { types: ["insurance_agency"],        categoria: "servicios_prof", subtipo: "insurance" },
-  { types: ["real_estate_agency"],      categoria: "servicios_prof", subtipo: "estate_agent" },
-  { types: ["notary_public"],           categoria: "servicios_prof", subtipo: "notary" },
-  { types: ["it_company"],              categoria: "servicios_prof", subtipo: "computer" },
-  { types: ["moving_company"],          categoria: "servicios_prof", subtipo: "moving" },
+  // ── Ocio y cultura (NEW) ──────────────────────────────────────────────────
+  { types: ["performing_arts_theater"],  categoria: "ocio_cultura",   subtipo: "theatre" },
+  { types: ["movie_theater"],            categoria: "ocio_cultura",   subtipo: "cinema" },
+  { types: ["museum"],                   categoria: "ocio_cultura",   subtipo: "museum" },
+  { types: ["art_gallery"],              categoria: "ocio_cultura",   subtipo: "gallery" },
+  { types: ["cultural_center"],          categoria: "ocio_cultura",   subtipo: "cultural_centre" },
+  { types: ["concert_hall"],             categoria: "ocio_cultura",   subtipo: "theatre" },
+  { types: ["event_venue"],              categoria: "ocio_cultura",   subtipo: "venue" },
+  { types: ["convention_center"],        categoria: "ocio_cultura",   subtipo: "venue" },
+  { types: ["amusement_park"],           categoria: "ocio_cultura",   subtipo: "amusement_park" },
+  { types: ["park"],                     categoria: "ocio_cultura",   subtipo: "park" },
+  { types: ["playground"],               categoria: "ocio_cultura",   subtipo: "playground" },
+  { types: ["tourist_attraction"],       categoria: "ocio_cultura",   subtipo: "attraction" },
+  { types: ["casino"],                   categoria: "ocio_cultura",   subtipo: "casino" },
+  { types: ["night_club"],               categoria: "ocio_cultura",   subtipo: "nightclub" },
+  { types: ["karaoke"],                  categoria: "ocio_cultura",   subtipo: "nightclub" },
+  { types: ["escape_room"],              categoria: "ocio_cultura",   subtipo: "attraction" },
+
+  // ── Educacion (NEW) ───────────────────────────────────────────────────────
+  { types: ["school"],                   categoria: "educacion",      subtipo: "school" },
+  { types: ["primary_school"],           categoria: "educacion",      subtipo: "school" },
+  { types: ["secondary_school"],         categoria: "educacion",      subtipo: "school" },
+  { types: ["university"],               categoria: "educacion",      subtipo: "university" },
+  { types: ["preschool"],                categoria: "educacion",      subtipo: "kindergarten" },
+  { types: ["child_care_agency"],        categoria: "educacion",      subtipo: "kindergarten" },
+  { types: ["driving_school"],           categoria: "educacion",      subtipo: "driving_school" },
+  { types: ["language_school"],          categoria: "educacion",      subtipo: "language_school" },
+  { types: ["tutoring_center"],          categoria: "educacion",      subtipo: "academy" },
+  { types: ["dance_school"],             categoria: "educacion",      subtipo: "dance_school" },
+  { types: ["music_school"],             categoria: "educacion",      subtipo: "music_school" },
+  { types: ["art_school"],               categoria: "educacion",      subtipo: "art_school" },
+  { types: ["cooking_school"],           categoria: "educacion",      subtipo: "academy" },
+
+  // ── Servicios ─────────────────────────────────────────────────────────────
+  { types: ["laundry", "laundromat"],    categoria: "servicios",      subtipo: "laundry" },
+  { types: ["car_wash"],                 categoria: "servicios",      subtipo: "car_wash" },
+  { types: ["car_repair"],               categoria: "servicios",      subtipo: "car_repair" },
+  { types: ["car_dealer"],               categoria: "servicios",      subtipo: "car" },
+  { types: ["gas_station"],              categoria: "servicios",      subtipo: "fuel" },
+  { types: ["bank"],                     categoria: "servicios",      subtipo: "bank" },
+  { types: ["atm"],                      categoria: "servicios",      subtipo: "atm" },
+  { types: ["post_office"],              categoria: "servicios",      subtipo: "post_office" },
+  { types: ["travel_agency"],            categoria: "servicios",      subtipo: "travel_agency" },
+  { types: ["library"],                  categoria: "servicios",      subtipo: "library" },
+  { types: ["dry_cleaning"],             categoria: "servicios",      subtipo: "dry_cleaning" },
+  { types: ["lodging", "hotel"],         categoria: "servicios",      subtipo: "hotel" },
+  { types: ["hostel"],                   categoria: "servicios",      subtipo: "hotel" },
+  { types: ["parking"],                  categoria: "servicios",      subtipo: "parking" },
+  { types: ["storage"],                  categoria: "servicios",      subtipo: "storage" },
+  { types: ["courier_service"],          categoria: "servicios",      subtipo: "courier" },
+  { types: ["funeral_home"],             categoria: "servicios",      subtipo: "funeral" },
+
+  // ── Servicios profesionales ───────────────────────────────────────────────
+  { types: ["lawyer"],                   categoria: "servicios_prof", subtipo: "lawyer" },
+  { types: ["accounting"],               categoria: "servicios_prof", subtipo: "accountant" },
+  { types: ["insurance_agency"],         categoria: "servicios_prof", subtipo: "insurance" },
+  { types: ["real_estate_agency"],       categoria: "servicios_prof", subtipo: "estate_agent" },
+  { types: ["notary_public"],            categoria: "servicios_prof", subtipo: "notary" },
+  { types: ["it_company"],               categoria: "servicios_prof", subtipo: "computer" },
+  { types: ["moving_company"],           categoria: "servicios_prof", subtipo: "moving" },
+  { types: ["architect"],                categoria: "servicios_prof", subtipo: "architect" },
+  { types: ["advertising_agency"],       categoria: "servicios_prof", subtipo: "marketing" },
+  { types: ["employment_agency"],        categoria: "servicios_prof", subtipo: "employment" },
+  { types: ["photographer"],             categoria: "servicios_prof", subtipo: "photographer" },
+  { types: ["printing_store"],           categoria: "servicios_prof", subtipo: "printing" },
 ];
 
 function mapGoogleTypes(googleTypes = []) {
@@ -154,6 +233,9 @@ function mapGoogleTypes(googleTypes = []) {
   }
   if (googleTypes.some((t) => t.includes("food") || t.includes("restaurant"))) {
     return { categoria: "restauracion", subtipo: "restaurant" };
+  }
+  if (googleTypes.some((t) => t.includes("school") || t.includes("academy"))) {
+    return { categoria: "educacion", subtipo: "academy" };
   }
   if (googleTypes.some((t) => t.includes("store") || t.includes("shop"))) {
     return { categoria: "hogar", subtipo: "shop" };
@@ -168,10 +250,6 @@ function mapGoogleTypes(googleTypes = []) {
 const PLACES_BASE = "https://places.googleapis.com/v1";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * POST /places:searchText
- * Lightweight fields only — cheapest SKU, used just to collect place IDs.
- */
 async function searchText(query, pageToken = null) {
   const body = {
     textQuery: query,
@@ -200,15 +278,10 @@ async function searchText(query, pageToken = null) {
   return { places: data.places || [], nextPageToken: data.nextPageToken || null };
 }
 
-/**
- * GET /places/{id}
- * Full details per place: contact info, hours, rating, price level.
- */
 async function getDetails(placeId) {
   const res = await fetch(`${PLACES_BASE}/places/${placeId}`, {
     headers: {
       "X-Goog-Api-Key": API_KEY,
-      // All fields we want — adding rating, userRatingCount, priceLevel
       "X-Goog-FieldMask":
         "id,displayName,types,location,formattedAddress," +
         "nationalPhoneNumber,websiteUri,regularOpeningHours," +
@@ -220,43 +293,41 @@ async function getDetails(placeId) {
   return res.json();
 }
 
-/**
- * Converts Google's regularOpeningHours to a readable Spanish string.
- * Example: "Lunes: 09:00–21:30 | Martes: 09:00–21:30 | ..."
- */
 function formatHours(regularOpeningHours) {
   if (!regularOpeningHours?.weekdayDescriptions?.length) return "";
   return regularOpeningHours.weekdayDescriptions.join(" | ");
 }
 
-/**
- * Converts Google's priceLevel enum to a short token.
- * PRICE_LEVEL_FREE → "FREE", PRICE_LEVEL_MODERATE → "MODERATE", etc.
- */
 function formatPriceLevel(priceLevel) {
   if (!priceLevel) return "";
-  // Google returns e.g. "PRICE_LEVEL_MODERATE" — strip the prefix
   return priceLevel.replace("PRICE_LEVEL_", "");
 }
 
 // ---------------------------------------------------------------------------
-// Search queries — broad coverage, low cost
+// Search queries — 11 queries covering all 10 categories
 // ---------------------------------------------------------------------------
 
-/**
- * 8 broad queries cover all commercial categories in Navalcarnero.
- * Google returns up to 20 results per page; locationBias keeps them local.
- * Estimated total: ~8 search calls + ~150-200 detail calls (~$3-4 one-time).
- */
 const SEARCH_QUERIES = [
+  // Existing categories
   "restaurantes bares cafeterias Navalcarnero Madrid",
   "supermercados tiendas alimentacion Navalcarnero Madrid",
   "farmacias clinicas medicos dentistas Navalcarnero Madrid",
-  "peluquerias belleza estetica Navalcarnero Madrid",
-  "ferreterias muebles hogar Navalcarnero Madrid",
-  "bancos gasolineras servicios Navalcarnero Madrid",
-  "gimnasios lavanderia talleres Navalcarnero Madrid",
+  "peluquerias belleza estetica barberia Navalcarnero Madrid",
+  "ferreterias muebles ropa tiendas hogar Navalcarnero Madrid",
+  "bancos gasolineras lavanderias talleres Navalcarnero Madrid",
   "abogados gestoras inmobiliarias seguros Navalcarnero Madrid",
+
+  // New: Deporte
+  "gimnasios deportes padel piscinas boxing Navalcarnero Madrid",
+
+  // New: Ocio y cultura
+  "teatro cine museo parque infantil centro cultural ocio Navalcarnero Madrid",
+
+  // New: Educacion
+  "colegio academia escuela danza autoescuela idiomas guarderia Navalcarnero Madrid",
+
+  // Extra sweep to catch anything missed
+  "servicios locales Navalcarnero Madrid",
 ];
 
 // ---------------------------------------------------------------------------
@@ -264,12 +335,12 @@ const SEARCH_QUERIES = [
 // ---------------------------------------------------------------------------
 
 async function main() {
-  console.log("En Navalcarnero — Google Places fetch script");
-  console.log("=".repeat(55));
+  console.log("Navalcarnero Vecinal — Google Places fetch script (10 categorias)");
+  console.log("=".repeat(65));
 
-  // ── Phase 1: collect unique place IDs via text search ─────────────────────
+  // ── Phase 1: collect unique place IDs ─────────────────────────────────────
   console.log("\nPhase 1 — Text search");
-  const rawPlaces = new Map(); // googleId => basic place object
+  const rawPlaces = new Map();
   let searchCalls = 0;
 
   for (const query of SEARCH_QUERIES) {
@@ -303,7 +374,7 @@ async function main() {
   console.log(`\n  Total unique places found: ${rawPlaces.size}`);
   console.log(`  Search calls used: ${searchCalls}\n`);
 
-  // ── Phase 2: fetch full details for every unique place ────────────────────
+  // ── Phase 2: fetch full details ────────────────────────────────────────────
   console.log("Phase 2 — Place details");
   const comercios = [];
   let detailCalls = 0;
@@ -322,30 +393,26 @@ async function main() {
       const lat = d.location?.latitude  ?? 0;
       const lng = d.location?.longitude ?? 0;
 
-      // Skip places without valid coordinates — can't be shown on map
       if (!lat || !lng) { skipped++; continue; }
 
       const { categoria, subtipo } = mapGoogleTypes(d.types || []);
 
       comercios.push({
-        id:          `gpl_${googleId}`,
-        nombre:      d.displayName?.text || rawPlaces.get(googleId)?.displayName?.text || "",
+        id:           `gpl_${googleId}`,
+        nombre:       d.displayName?.text || rawPlaces.get(googleId)?.displayName?.text || "",
         categoria,
         subtipo,
-        cocina:      [],   // Google has no cuisine tags; kept for UI shape compatibility
+        cocina:       [],
         lat,
         lng,
-        direccion:   d.formattedAddress        || "",
-        telefono:    d.nationalPhoneNumber      || "",
-        web:         d.websiteUri               || "",
-        horario:     formatHours(d.regularOpeningHours),
-        // New fields
-        rating:      d.rating                  ?? null,
+        direccion:    d.formattedAddress        || "",
+        telefono:     d.nationalPhoneNumber      || "",
+        web:          d.websiteUri               || "",
+        horario:      formatHours(d.regularOpeningHours),
+        rating:       d.rating                  ?? null,
         totalReviews: d.userRatingCount         ?? null,
-        precioNivel: formatPriceLevel(d.priceLevel),
-        // Human-readable type label in Spanish, e.g. "Pizzería", "Supermercado", "Peluquería"
-        // Used for semantic search without needing manual keyword mappings.
-        tipoDisplay: d.primaryTypeDisplayName?.text || "",
+        precioNivel:  formatPriceLevel(d.priceLevel),
+        tipoDisplay:  d.primaryTypeDisplayName?.text || "",
       });
 
       await sleep(API_THROTTLE_MS);
@@ -355,9 +422,9 @@ async function main() {
     }
   }
 
-  console.log(`  Detail calls: ${detailCalls}  |  errors: ${detailErrors}  |  skipped (no coords): ${skipped}\n`);
+  console.log(`  Detail calls: ${detailCalls}  |  errors: ${detailErrors}  |  skipped: ${skipped}\n`);
 
-  // ── Phase 3: sort and write ───────────────────────────────────────────────
+  // ── Phase 3: sort and write ────────────────────────────────────────────────
   comercios.sort((a, b) => {
     if (a.categoria !== b.categoria)
       return a.categoria.localeCompare(b.categoria, "es");
@@ -367,9 +434,9 @@ async function main() {
   mkdirSync(dirname(COMERCIOS_PATH), { recursive: true });
   writeFileSync(COMERCIOS_PATH, JSON.stringify(comercios, null, 2) + "\n", "utf-8");
 
-  // ── Summary ───────────────────────────────────────────────────────────────
+  // ── Summary ────────────────────────────────────────────────────────────────
   const totalCalls = searchCalls + detailCalls;
-  console.log("=".repeat(55));
+  console.log("=".repeat(65));
   console.log(`Done!  ${comercios.length} comercios written to src/data/comercios.json`);
   console.log("\nBy category:");
   const byCat = comercios.reduce((acc, c) => {
@@ -379,11 +446,10 @@ async function main() {
     .sort(([, a], [, b]) => b - a)
     .forEach(([cat, n]) => console.log(`  ${cat.padEnd(22)} ${n}`));
 
-  // Stats on enriched fields
-  const withPhone   = comercios.filter(c => c.telefono).length;
-  const withWeb     = comercios.filter(c => c.web).length;
-  const withHours   = comercios.filter(c => c.horario).length;
-  const withRating  = comercios.filter(c => c.rating).length;
+  const withPhone  = comercios.filter(c => c.telefono).length;
+  const withWeb    = comercios.filter(c => c.web).length;
+  const withHours  = comercios.filter(c => c.horario).length;
+  const withRating = comercios.filter(c => c.rating).length;
   console.log("\nField coverage:");
   console.log(`  telefono     ${withPhone}/${comercios.length}`);
   console.log(`  web          ${withWeb}/${comercios.length}`);
