@@ -40,19 +40,9 @@ export default function CookieBanner() {
             </p>
           </div>
         </div>
-        <div className="flex flex-shrink-0 items-center gap-2">
-          <button type="button" onClick={handleCerrar} className="gz-boton-tinta flex-1 md:flex-none">
-            Entendido
-          </button>
-          <button
-            type="button"
-            onClick={handleCerrar}
-            aria-label="Cerrar aviso de cookies"
-            className="flex-shrink-0 p-2 text-pardo transition-colors hover:text-terracota"
-          >
-            <MIcon name="close" className="text-[20px]" />
-          </button>
-        </div>
+        <button type="button" onClick={handleCerrar} className="gz-boton-tinta flex-shrink-0">
+          Entendido
+        </button>
       </div>
     </div>
   )
