@@ -23,7 +23,7 @@ import Registro from './pages/Registro.jsx'
 import AdminEntrada from './pages/admin/AdminEntrada.jsx'
 import AdminPanel from './pages/panel/AdminPanel.jsx'
 import AdminEventoForm from './pages/panel/AdminEventoForm.jsx'
-import CookieBanner from './components/CookieBanner.jsx'
+// import CookieBanner from './components/CookieBanner.jsx'
 
 function ProveedorAdmin() {
   return (
@@ -88,7 +88,7 @@ export default function App() {
       <ScrollManager />
       <OfflineIndicator />
       <InstallPrompt />
-      <CookieBanner />
+      {/* <CookieBanner /> */}
       <Routes>
         <Route element={<ProveedorAdmin />}>
           <Route path="/login" element={<Login />} />
