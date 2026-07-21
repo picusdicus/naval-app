@@ -7,6 +7,9 @@
  * only ever sees the aggregated JSON.
  *
  * GET /api/analytics/umami-stats?period=7d   (7d | 30d | 90d)
+ * GET /api/analytics/umami-stats?period=7d&pais=ES
+ *   — modo desglose: devuelve solo { regiones: [{x, y}] } del país indicado
+ *     (metrics type=region filtrado por country), para el drill-down del panel.
  *
  * Required env vars (server-side, no VITE_ prefix):
  *   UMAMI_API_URL     — e.g. https://umami-navalcarnero.vercel.app
@@ -137,11 +140,54 @@ export default async function handler(req) {
 
   const url = new URL(req.url);
   const period = url.searchParams.get("period") || "7d";
+  // País para el desglose por regiones (código ISO de 2 letras, p. ej. "ES").
+  const pais = (url.searchParams.get("pais") || "").toUpperCase();
   const { startAt, endAt } = getPeriodRange(period);
   const qs = `?startAt=${startAt}&endAt=${endAt}`;
 
+  if (pais && !/^[A-Z]{2}$/.test(pais)) {
+    return new Response(JSON.stringify({ error: "Parámetro pais inválido" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     let token = await getToken(apiUrl, UMAMI_USERNAME, UMAMI_PASSWORD);
+
+    // Modo desglose: solo las regiones del país pedido. Umami v3 llama al
+    // metric `region` (subdivisión ISO 3166-2, p. ej. "ES-MD") y admite el
+    // filtro `country`; si esta instancia usara otro nombre, probamos
+    // `subdivision1` (el alias de versiones anteriores) antes de rendirnos.
+    if (pais) {
+      const pedirRegiones = async (tk) => {
+        const base = `/api/websites/${UMAMI_WEBSITE_ID}/metrics${qs}&country=${pais}&limit=15`;
+        try {
+          return await umamiGet(apiUrl, `${base}&type=region`, tk);
+        } catch (err) {
+          if (err.status !== 400) throw err;
+          return umamiGet(apiUrl, `${base}&type=subdivision1`, tk);
+        }
+      };
+
+      let regiones;
+      try {
+        regiones = await pedirRegiones(token);
+      } catch (err) {
+        if (err.status !== 401 && err.status !== 403) throw err;
+        cachedToken = null;
+        token = await getToken(apiUrl, UMAMI_USERNAME, UMAMI_PASSWORD);
+        regiones = await pedirRegiones(token);
+      }
+
+      return new Response(JSON.stringify({ period, pais, regiones }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=300",
+        },
+      });
+    }
 
     let results;
     try {

@@ -136,7 +136,7 @@ export default function TablesOrganizaciones() {
   if (cargando) {
     return (
       <div className="flex justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-filete border-t-terracota" />
       </div>
     )
   }
@@ -144,9 +144,9 @@ export default function TablesOrganizaciones() {
   return (
     <div>
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-3">
-          <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
-          <p className="text-sm font-medium text-error">{error}</p>
+        <div className="mb-4 flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-3">
+          <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+          <p className="font-serif-spectral text-sm font-medium text-terracota">{error}</p>
         </div>
       )}
 
@@ -154,55 +154,55 @@ export default function TablesOrganizaciones() {
         <>
           <button
             onClick={() => setMostrarFormulario(true)}
-            className="mb-4 flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-on-primary hover:shadow-card-lg active:scale-[0.98]"
+            className="mb-4 flex items-center gap-2 bg-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel hover:opacity-90 active:scale-[0.98]"
           >
             <MIcon name="add" className="text-[20px]" />
             Nueva organización
           </button>
 
-          <div className="overflow-x-auto rounded-lg border border-outline-variant/30">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-container-high">
-                <tr className="border-b border-outline-variant/30">
-                  <th className="px-4 py-3 text-left font-semibold">Nombre</th>
-                  <th className="px-4 py-3 text-left font-semibold">Slug</th>
-                  <th className="px-4 py-3 text-center font-semibold">Usuarios</th>
-                  <th className="px-4 py-3 text-center font-semibold">Eventos</th>
-                  <th className="px-4 py-3 text-center font-semibold">Códigos</th>
-                  <th className="px-4 py-3 text-center font-semibold">Estado</th>
-                  <th className="px-4 py-3 text-center font-semibold">Acciones</th>
+          <div className="overflow-x-auto border border-tinta">
+            <table className="w-full font-serif-spectral text-sm text-tinta">
+              <thead className="bg-papel-calido">
+                <tr className="border-b border-filete">
+                  <th className="px-4 py-3 text-left font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Nombre</th>
+                  <th className="px-4 py-3 text-left font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Slug</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Usuarios</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Eventos</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Códigos</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Estado</th>
+                  <th className="px-4 py-3 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {organizaciones.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-4 py-8 text-center text-on-surface/50">
+                    <td colSpan="7" className="px-4 py-8 text-center font-serif-spectral text-pardo">
                       No hay organizaciones registradas
                     </td>
                   </tr>
                 ) : (
                   organizaciones.map((org) => (
-                    <tr key={org.id} className="border-b border-outline-variant/30 hover:bg-surface-container-high/50">
+                    <tr key={org.id} className="border-b border-filete hover:bg-papel-calido/60">
                       <td className="px-4 py-3 font-medium">
                         {org.nombre}
                         {org.comercioId && (
-                          <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-on-surface/50">
+                          <span className="mt-0.5 flex items-center gap-1 font-mono-ibm text-[10px] normal-case tracking-normal text-mudo">
                             <MIcon name="storefront" className="text-[14px]" />
                             {COMERCIOS_POR_ID.get(org.comercioId)?.nombre || org.comercioId}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-on-surface/70">{org.slug}</td>
+                      <td className="px-4 py-3 text-pardo">{org.slug}</td>
                       <td className="px-4 py-3 text-center">{org.usuariosCount}</td>
                       <td className="px-4 py-3 text-center">{org.eventosCount}</td>
                       <td className="px-4 py-3 text-center">{org.codigosActivosCount}</td>
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => cambiarEstado(org.id, !org.activa)}
-                          className={`rounded px-3 py-1 text-xs font-semibold transition-colors ${
+                          className={`px-3 py-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta transition-opacity ${
                             org.activa
-                              ? 'bg-success/20 text-success hover:bg-success/30'
-                              : 'bg-error/20 text-error hover:bg-error/30'
+                              ? 'bg-verde text-papel hover:opacity-80'
+                              : 'bg-terracota-fondo text-terracota hover:opacity-80'
                           }`}
                         >
                           {org.activa ? 'Activa' : 'Inactiva'}
@@ -211,7 +211,7 @@ export default function TablesOrganizaciones() {
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => abrirEdicion(org)}
-                          className="text-primary hover:text-primary/80 transition-colors"
+                          className="text-terracota transition-opacity hover:opacity-80"
                         >
                           <MIcon name="edit" className="text-[20px]" />
                         </button>
@@ -225,46 +225,46 @@ export default function TablesOrganizaciones() {
         </>
       ) : (
         <div className="max-w-2xl">
-          <h2 className="mb-4 text-xl font-bold text-on-surface">
+          <h2 className="mb-4 font-serif-dm text-2xl text-tinta">
             {editandoId ? 'Editar organización' : 'Nueva organización'}
           </h2>
 
           <form onSubmit={manejarEnvio} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold">Nombre</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Nombre</label>
                 <input
                   type="text"
                   value={formularioData.nombre}
                   onChange={(e) =>
                     setFormularioData({ ...formularioData, nombre: e.target.value })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold">Slug</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Slug</label>
                 <input
                   type="text"
                   value={formularioData.slug}
                   onChange={(e) =>
                     setFormularioData({ ...formularioData, slug: e.target.value })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold">Descripción</label>
+              <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Descripción</label>
               <textarea
                 value={formularioData.descripcion}
                 onChange={(e) =>
                   setFormularioData({ ...formularioData, descripcion: e.target.value })
                 }
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                 rows="3"
                 disabled={enviando}
               />
@@ -272,38 +272,38 @@ export default function TablesOrganizaciones() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label className="mb-2 block text-sm font-semibold">Email de contacto</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Email de contacto</label>
                 <input
                   type="email"
                   value={formularioData.emailContacto}
                   onChange={(e) =>
                     setFormularioData({ ...formularioData, emailContacto: e.target.value })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold">Teléfono</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Teléfono</label>
                 <input
                   type="tel"
                   value={formularioData.telefono}
                   onChange={(e) =>
                     setFormularioData({ ...formularioData, telefono: e.target.value })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold">Sitio web</label>
+                <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Sitio web</label>
                 <input
                   type="url"
                   value={formularioData.web}
                   onChange={(e) =>
                     setFormularioData({ ...formularioData, web: e.target.value })
                   }
-                  className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                   disabled={enviando}
                 />
               </div>
@@ -315,19 +315,19 @@ export default function TablesOrganizaciones() {
             <div>
               <p className="mb-2 text-sm font-semibold">
                 Perfil de eventos
-                <span className="ml-1.5 font-normal text-on-surface/50">
+                <span className="ml-1.5 normal-case tracking-normal text-mudo">
                   (sin categoría y lugar, la organización no puede publicar eventos)
                 </span>
               </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-semibold">Categoría por defecto</label>
+                  <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Categoría por defecto</label>
                   <select
                     value={formularioData.categoriaDefecto}
                     onChange={(e) =>
                       setFormularioData({ ...formularioData, categoriaDefecto: e.target.value })
                     }
-                    className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                    className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                     disabled={enviando}
                   >
                     <option value="">— Sin asignar —</option>
@@ -339,7 +339,7 @@ export default function TablesOrganizaciones() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-semibold">Lugar por defecto</label>
+                  <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">Lugar por defecto</label>
                   <input
                     type="text"
                     value={formularioData.lugarDefecto}
@@ -347,7 +347,7 @@ export default function TablesOrganizaciones() {
                       setFormularioData({ ...formularioData, lugarDefecto: e.target.value })
                     }
                     placeholder="P. ej. Teatro Centro, Navalcarnero"
-                    className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                    className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                     disabled={enviando}
                   />
                 </div>
@@ -357,16 +357,16 @@ export default function TablesOrganizaciones() {
             {/* Vincula la cuenta con su ficha del directorio: habilita que la
                 organización solicite destacar su negocio desde /panel. */}
             <div>
-              <label className="mb-2 block text-sm font-semibold">
+              <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                 Negocio vinculado
-                <span className="ml-1.5 font-normal text-on-surface/50">(opcional)</span>
+                <span className="ml-1.5 normal-case tracking-normal text-mudo">(opcional)</span>
               </label>
               {formularioData.comercioId ? (
-                <div className="flex items-center justify-between rounded-lg border border-outline-variant/30 bg-surface-container-high px-4 py-2">
+                <div className="flex items-center justify-between border border-filete bg-papel-calido px-4 py-2">
                   <span className="inline-flex items-center gap-2 text-sm font-medium">
-                    <MIcon name="storefront" className="text-[18px] text-primary" />
+                    <MIcon name="storefront" className="text-[18px] text-terracota" />
                     {COMERCIOS_POR_ID.get(formularioData.comercioId)?.nombre || (
-                      <span className="text-error" title={formularioData.comercioId}>
+                      <span className="text-terracota" title={formularioData.comercioId}>
                         Referencia no encontrada
                       </span>
                     )}
@@ -374,7 +374,7 @@ export default function TablesOrganizaciones() {
                   <button
                     type="button"
                     onClick={() => setFormularioData({ ...formularioData, comercioId: '' })}
-                    className="text-on-surface/50 hover:text-error"
+                    className="text-mudo hover:text-terracota"
                     title="Desvincular"
                     disabled={enviando}
                   >
@@ -388,11 +388,11 @@ export default function TablesOrganizaciones() {
                     value={busquedaComercio}
                     onChange={(e) => setBusquedaComercio(e.target.value)}
                     placeholder="Escribe para buscar en el directorio y elige uno…"
-                    className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+                    className="w-full border border-filete bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
                     disabled={enviando}
                   />
                   {candidatosComercio.length > 0 && (
-                    <ul className="mt-1 divide-y divide-outline-variant/20 overflow-hidden rounded-lg border border-outline-variant/30">
+                    <ul className="mt-1 divide-y divide-filete overflow-hidden border border-filete">
                       {candidatosComercio.map((c) => (
                         <li key={c.id}>
                           <button
@@ -401,10 +401,10 @@ export default function TablesOrganizaciones() {
                               setFormularioData({ ...formularioData, comercioId: c.id })
                               setBusquedaComercio('')
                             }}
-                            className="flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-surface-container-high"
+                            className="flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left font-serif-spectral text-sm hover:bg-papel-calido"
                           >
                             <span className="font-medium">{c.nombre}</span>
-                            <span className="shrink-0 text-xs text-on-surface/50">{c.detalle}</span>
+                            <span className="shrink-0 font-mono-ibm text-[10px] text-mudo">{c.detalle}</span>
                           </button>
                         </li>
                       ))}
@@ -418,7 +418,7 @@ export default function TablesOrganizaciones() {
               <button
                 type="submit"
                 disabled={enviando || !formularioData.nombre || !formularioData.slug}
-                className="rounded-lg bg-primary px-4 py-2 font-semibold text-on-primary hover:shadow-card-lg active:scale-[0.98] disabled:opacity-50"
+                className="bg-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
               >
                 {enviando ? 'Guardando…' : 'Guardar'}
               </button>
@@ -426,7 +426,7 @@ export default function TablesOrganizaciones() {
                 type="button"
                 onClick={cancelar}
                 disabled={enviando}
-                className="rounded-lg border border-outline-variant px-4 py-2 font-semibold hover:bg-surface-container-high"
+                className="border border-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta hover:bg-papel-calido"
               >
                 Cancelar
               </button>
