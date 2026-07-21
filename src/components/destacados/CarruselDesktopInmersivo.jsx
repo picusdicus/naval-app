@@ -20,12 +20,17 @@ function Slide({ d, seccion }) {
 
   return (
     <div className="min-w-full">
-      <div className="relative flex min-h-[440px] items-end overflow-hidden">
+      <div className="relative min-h-[440px] overflow-hidden">
+        {/* Fondo: los carteles son verticales; en vez de recortarlos a sangre
+            (queda feo), se usa una versión ampliada y desenfocada como ambiente
+            y el cartel real se muestra entero a la derecha. Sin foto: degradado
+            de cartel con el símbolo de la categoría. */}
         {d.imagen ? (
           <img
             src={d.imagen}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl"
             style={{ objectPosition: d.imagenPos || '50% 50%' }}
           />
         ) : (
@@ -35,17 +40,27 @@ function Slide({ d, seccion }) {
             </div>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/50" />
         <span className="gz-badge-oro absolute left-7 top-7 z-20">{d.badge}</span>
 
-        <div className="relative z-10 flex w-full items-end justify-between gap-10 p-11">
-          <div className="max-w-[640px]">
+        <div className="relative z-10 flex min-h-[440px] items-center gap-10 p-11">
+          <div className="max-w-[600px] flex-1">
             <div className="font-mono-ibm text-[12px] uppercase tracking-rotulo text-papel/80">{d.badge}</div>
             <h2 className="mt-2.5 font-serif-dm text-[64px] italic leading-[0.85] text-papel">{d.titulo}</h2>
             {desc && (
               <p className="mt-4 max-w-xl font-serif-spectral text-[17px] leading-relaxed text-papel/85">
                 {desc.length > 180 ? `${desc.slice(0, 180)}…` : desc}
               </p>
+            )}
+            {d.lineas.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel/70">
+                {d.lineas.map((linea) => (
+                  <span key={`${linea.icono}-${linea.texto}`} className="inline-flex items-center gap-1">
+                    <MIcon name={linea.icono} className="text-[13px]" />
+                    {linea.texto}
+                  </span>
+                ))}
+              </div>
             )}
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
@@ -64,19 +79,15 @@ function Slide({ d, seccion }) {
             </div>
           </div>
 
-          {d.lineas.length > 0 && (
-            <div className="hidden flex-shrink-0 items-stretch gap-4 font-mono-ibm text-papel/85 lg:flex">
-              {d.lineas.slice(0, 2).map((linea, i) => (
-                <div key={`${linea.icono}-${linea.texto}`} className="flex items-stretch gap-4">
-                  {i > 0 && <div className="w-px bg-papel/30" />}
-                  <div className="text-right">
-                    <div className="text-[10px] uppercase tracking-etiqueta text-papel/55">
-                      <MIcon name={linea.icono} className="text-[14px]" />
-                    </div>
-                    <div className="mt-1 text-[15px]">{linea.texto}</div>
-                  </div>
-                </div>
-              ))}
+          {/* Cartel real, entero (vertical), solo cuando hay foto y hay espacio. */}
+          {d.imagen && (
+            <div className="hidden flex-shrink-0 lg:block">
+              <img
+                src={d.imagen}
+                alt=""
+                className="max-h-[360px] w-auto rounded-lg shadow-cartel"
+                style={{ objectPosition: d.imagenPos || '50% 50%' }}
+              />
             </div>
           )}
         </div>
