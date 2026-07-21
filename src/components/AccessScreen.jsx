@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from './MIcon'
+import Logo from './Logo.jsx'
 
 export default function AccessScreen({ onAccessGranted }) {
   const [password, setPassword] = useState('')
@@ -35,68 +36,70 @@ export default function AccessScreen({ onAccessGranted }) {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-surface-container-low to-surface-container-high">
-      <div className="w-full max-w-md px-6">
-        <div className="nv-card p-8">
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center">
-              <MIcon name="location_city" className="text-primary text-[32px]" />
-            </div>
-          </div>
-
-          <h1 className="font-display text-2xl font-bold text-center text-primary mb-2">
-            Navalcarnero
-          </h1>
-          <p className="text-center text-on-surface/70 text-sm mb-8">
-            Bienvenido al portal vecinal
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-on-surface mb-2">
-                Contraseña
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setError('')
-                }}
-                placeholder="Ingresa la contraseña"
-                className="w-full px-4 py-3 rounded-lg border border-outline-variant/30 bg-surface-container-lowest text-on-surface placeholder-on-surface/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                disabled={isLoading}
-              />
+    <div className="flex min-h-screen items-center justify-center bg-papel-lienzo px-6">
+      <div className="w-full max-w-md">
+        <div className="overflow-hidden border border-tinta bg-papel shadow-cartel">
+          <div className="h-2 bg-tinta-intensa" />
+          <div className="p-8 text-center">
+            <div className="mb-6 flex justify-center">
+              <Logo tamano="xl" />
             </div>
 
-            {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-error/10 border border-error/20">
-                <MIcon name="error" className="text-error text-[20px] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-error font-medium">{error}</p>
+            <h1 className="font-serif-dm text-2xl text-tinta">Bienvenido al portal vecinal</h1>
+            <p className="mt-1 font-serif-spectral text-sm text-pardo">
+              Accede con la contraseña compartida
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-7 space-y-4 text-left">
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo"
+                >
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setError('')
+                  }}
+                  placeholder="Ingresa la contraseña"
+                  className="gz-input"
+                  disabled={isLoading}
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={isLoading || !password.trim()}
-              className="w-full py-3 rounded-lg bg-primary text-on-primary font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:shadow-card-lg active:enabled:scale-98"
-            >
-              {isLoading ? 'Verificando...' : 'Acceder'}
-            </button>
-          </form>
+              {error && (
+                <div className="flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-3">
+                  <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+                  <p className="font-serif-spectral text-sm font-medium text-terracota">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading || !password.trim()}
+                className="gz-boton-tinta w-full disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isLoading ? 'Verificando...' : 'Acceder'}
+              </button>
+            </form>
+          </div>
         </div>
 
-        <p className="text-center text-on-surface/50 text-xs mt-6 max-w-xs mx-auto">
+        <p className="mx-auto mt-6 max-w-xs text-center font-serif-spectral text-xs text-mudo">
           Portal privado para vecinos de Navalcarnero. Se requiere contraseña para acceder.
         </p>
 
-        <div className="text-center text-on-surface/50 text-xs mt-4 space-x-2 max-w-xs mx-auto">
-          <Link to="/aviso-legal" className="hover:text-on-surface/70 hover:underline">
+        <div className="mx-auto mt-4 max-w-xs space-x-2 text-center font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+          <Link to="/aviso-legal" className="hover:text-terracota hover:underline">
             Aviso legal
           </Link>
           <span>·</span>
-          <Link to="/privacidad" className="hover:text-on-surface/70 hover:underline">
+          <Link to="/privacidad" className="hover:text-terracota hover:underline">
             Privacidad
           </Link>
         </div>

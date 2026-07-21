@@ -95,18 +95,16 @@ export default function AsistenteChat({ className = '' }) {
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${className}`}>
       {/* Conversación */}
-      <div className="nv-card hide-scrollbar flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="gz-tarjeta-impresa hide-scrollbar flex-1 space-y-3 overflow-y-auto p-4">
         {mensajes.map((m, i) => (
           <div key={i} className={`flex ${m.autor === 'usuario' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm ${
-                m.autor === 'usuario'
-                  ? 'rounded-br-md bg-primary text-on-primary'
-                  : 'rounded-bl-md bg-surface-container text-on-surface'
+              className={`max-w-[85%] whitespace-pre-wrap px-4 py-2.5 font-serif-spectral text-sm ${
+                m.autor === 'usuario' ? 'bg-tinta text-papel' : 'border border-filete bg-papel-calido text-tinta'
               }`}
             >
               {m.texto || (
-                <span className="inline-flex gap-1 text-on-surface-variant">
+                <span className="inline-flex gap-1 text-pardo">
                   <span className="animate-pulse">Escribiendo…</span>
                 </span>
               )}
@@ -119,7 +117,7 @@ export default function AsistenteChat({ className = '' }) {
       {/* Sugerencias frecuentes */}
       {sinConversacion && (
         <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+          <p className="mb-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
             Sugerencias frecuentes
           </p>
           <div className="flex flex-col gap-2">
@@ -128,9 +126,9 @@ export default function AsistenteChat({ className = '' }) {
                 key={s.texto}
                 type="button"
                 onClick={() => preguntar(s.texto)}
-                className="flex items-center gap-3 rounded-lg bg-surface-container-lowest px-4 py-3 text-left text-sm text-on-surface shadow-card transition-colors hover:bg-surface-container"
+                className="flex items-center gap-3 border border-tinta px-4 py-3 text-left font-serif-spectral text-sm text-tinta transition-colors hover:bg-papel-calido"
               >
-                <MIcon name={s.icono} className="text-[18px] text-secondary" />
+                <MIcon name={s.icono} className="text-[18px] text-terracota" />
                 {s.texto}
               </button>
             ))}
@@ -140,22 +138,22 @@ export default function AsistenteChat({ className = '' }) {
 
       {/* Entrada */}
       <form onSubmit={enviar} className="mt-4 flex items-center gap-2">
-        <div className="flex flex-1 items-center gap-2 rounded-full bg-surface-container-lowest px-4 py-1.5 shadow-card">
-          <MIcon name="add_circle" className="text-[22px] text-on-surface-variant" />
+        <div className="flex flex-1 items-center gap-2 border border-tinta bg-papel px-4">
+          <MIcon name="add_circle" className="text-[22px] text-mudo" />
           <input
             type="text"
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Pregunta algo sobre el pueblo…"
             disabled={enviando}
-            className="w-full bg-transparent py-2 text-sm text-on-surface outline-none placeholder:text-on-surface-variant/70 disabled:opacity-60"
+            className="w-full bg-transparent py-3 font-serif-spectral text-sm text-tinta outline-none placeholder:text-mudo disabled:opacity-60"
           />
         </div>
         <button
           type="submit"
           disabled={enviando}
           aria-label="Enviar"
-          className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary text-on-primary transition-all hover:bg-primary-container active:scale-95 disabled:opacity-60"
+          className="flex h-12 w-12 flex-none items-center justify-center bg-tinta text-papel transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
         >
           <MIcon name="send" className="text-[20px]" />
         </button>

@@ -45,41 +45,35 @@ export default function InstallPrompt() {
   if (!show) return null
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-40 lg:bottom-6 lg:right-6 lg:w-auto lg:max-w-sm animate-in slide-in-from-bottom duration-300">
-      <div className="nv-card p-4 shadow-card-lg">
+    <div className="animate-rise fixed bottom-24 left-4 right-4 z-40 lg:bottom-6 lg:right-6 lg:w-auto lg:max-w-sm">
+      <div className="border border-tinta bg-papel-calido p-4 shadow-cartel">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 pt-0.5">
-            <MIcon name="mobile_screen_share" className="text-primary text-[24px]" />
+            <MIcon name="mobile_screen_share" className="text-[24px] text-terracota" />
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-display font-bold text-primary mb-1">Instalar En Navalcarnero</h3>
-            <p className="text-sm text-on-surface-variant">
+          <div className="min-w-0 flex-1">
+            <h3 className="mb-1 font-serif-dm text-lg leading-tight text-tinta">
+              Instalar En Navalcarnero
+            </h3>
+            <p className="font-serif-spectral text-sm text-tinta-apagada">
               Accede rápidamente a la app desde tu pantalla de inicio. Funciona offline.
             </p>
           </div>
           <button
             type="button"
             onClick={handleDismiss}
-            className="flex-shrink-0 rounded-full p-1 text-on-surface-variant hover:bg-surface-container transition-colors"
+            className="flex-shrink-0 p-1 text-pardo transition-colors hover:text-terracota"
             aria-label="Descartar"
           >
             <MIcon name="close" className="text-[20px]" />
           </button>
         </div>
 
-        <div className="flex gap-2 mt-3">
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors"
-          >
+        <div className="mt-3 flex gap-2">
+          <button type="button" onClick={handleDismiss} className="gz-boton-borde flex-1 hover:bg-papel">
             No ahora
           </button>
-          <button
-            type="button"
-            onClick={handleInstall}
-            className="flex-1 px-3 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:shadow-card-lg transition-all active:scale-95"
-          >
+          <button type="button" onClick={handleInstall} className="gz-boton-tinta flex-1">
             Instalar
           </button>
         </div>

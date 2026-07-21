@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
+import Logo from '../Logo.jsx'
 import CentroAvisos from '../avisos/CentroAvisos.jsx'
 
 const enlaces = [
@@ -12,19 +13,21 @@ const enlaces = [
 
 export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
   return (
-    <header className="sticky top-0 z-40 bg-background md:bg-surface md:shadow-card">
+    <header className="sticky top-0 z-40 bg-papel md:border-b md:border-filete">
       {/* Barra móvil */}
-      <div className="flex h-16 items-center justify-between px-5 md:hidden">
-        <div className="flex items-center gap-2">
+      <div className="flex h-16 items-center justify-between border-b border-filete px-5 md:hidden">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onAbrirMenu}
             aria-label="Abrir menú"
-            className="rounded-full p-2 text-primary transition-colors hover:bg-surface-container active:scale-95"
+            className="p-1 text-tinta transition-transform active:scale-95"
           >
-            <MIcon name="menu" />
+            <MIcon name="menu" className="text-[22px]" />
           </button>
-          <h1 className="font-display text-xl font-bold text-primary">En Navalcarnero</h1>
+          <Link to="/" aria-label="Inicio">
+            <Logo tamano="sm" />
+          </Link>
         </div>
         <div className="flex items-center gap-1">
           <CentroAvisos />
@@ -32,21 +35,18 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
             type="button"
             onClick={onLogout}
             aria-label="Cerrar sesión"
-            className="rounded-full p-2 text-primary transition-colors hover:bg-surface-container active:scale-95"
+            className="p-2 text-tinta transition-transform hover:text-terracota active:scale-95"
             title="Cerrar sesión"
           >
-            <MIcon name="logout" />
+            <MIcon name="logout" className="text-[22px]" />
           </button>
-          <div className="h-10 w-10 overflow-hidden rounded-full border-2 border-primary-fixed bg-surface-container-high">
-            <img src="/logo.png" alt="Escudo de En Navalcarnero" className="h-full w-full object-contain p-1" />
-          </div>
         </div>
       </div>
 
       {/* Barra de escritorio */}
       <div className="mx-auto hidden w-full max-w-[1440px] items-center justify-between px-10 py-4 md:flex">
-        <Link to="/" className="font-display text-xl font-extrabold text-primary">
-          En Navalcarnero
+        <Link to="/" aria-label="Inicio">
+          <Logo tamano="md" />
         </Link>
         <div className="flex items-center gap-8">
           {enlaces.map((e) => (
@@ -56,8 +56,8 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
               end={e.end}
               className={({ isActive }) =>
                 isActive
-                  ? 'border-b-2 border-primary pb-1 text-sm font-semibold text-primary'
-                  : 'rounded-lg px-2 py-1 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary'
+                  ? 'border-b-2 border-terracota pb-1 font-serif-spectral text-base font-semibold text-tinta'
+                  : 'font-serif-spectral text-base text-pardo transition-colors hover:text-terracota'
               }
             >
               {e.label}
@@ -69,7 +69,7 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
           <button
             type="button"
             onClick={onAbrirChat}
-            className="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-on-primary transition-all duration-200 ease-in-out hover:bg-primary-container active:scale-95"
+            className="rounded-full bg-tinta px-6 py-2 font-serif-spectral text-sm font-medium text-papel transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95"
           >
             Asistente IA
           </button>
@@ -77,10 +77,10 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
             type="button"
             onClick={onLogout}
             aria-label="Cerrar sesión"
-            className="rounded-lg px-3 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary active:scale-95"
+            className="p-2 text-pardo transition-colors hover:text-terracota active:scale-95"
             title="Cerrar sesión"
           >
-            <MIcon name="logout" />
+            <MIcon name="logout" className="text-[22px]" />
           </button>
         </div>
       </div>

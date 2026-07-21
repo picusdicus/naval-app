@@ -14,29 +14,31 @@ export default function AsistenteChatPanel({ abierto, onCerrar }) {
       aria-hidden={!abierto}
     >
       {/* Scrim */}
-      <div className="absolute inset-0 bg-on-surface/40" onClick={onCerrar} />
+      <div className="absolute inset-0 bg-tinta/40" onClick={onCerrar} />
 
       {/* Panel */}
       <aside
-        className={`relative ml-auto flex h-full w-full max-w-md transform flex-col bg-surface p-4 shadow-card-lg transition-transform duration-300 ease-out ${
+        className={`relative ml-auto flex h-full w-full max-w-md transform flex-col border-l-2 border-tinta bg-papel p-4 transition-transform duration-300 ease-out ${
           abierto ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="mb-4 flex items-center justify-between border-b border-surface-container-high pb-4">
+        <div className="mb-4 flex items-center justify-between border-b border-filete pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary shadow-card">
+            <div className="flex h-10 w-10 items-center justify-center bg-tinta text-oro">
               <MIcon name="smart_toy" className="text-[22px]" />
             </div>
             <div>
-              <h2 className="font-display text-base font-bold text-primary">PuebloGPT</h2>
-              <p className="text-xs text-on-surface-variant">Asistente vecinal de Navalcarnero</p>
+              <h2 className="font-serif-dm text-lg leading-tight text-tinta">PuebloGPT</h2>
+              <p className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+                Asistente vecinal de Navalcarnero
+              </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar asistente"
-            className="rounded-full p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
+            className="p-2 text-pardo transition-colors hover:text-terracota"
           >
             <MIcon name="close" />
           </button>
