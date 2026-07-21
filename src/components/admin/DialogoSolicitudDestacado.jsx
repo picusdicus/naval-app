@@ -13,22 +13,26 @@ export function CamposPropuestaDestacado({ fechaInicio, duracionDias, onCambio, 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <label className="mb-2 block text-sm font-semibold">Inicio propuesto</label>
+        <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+          Inicio propuesto
+        </label>
         <input
           type="date"
           min={hoyISO()}
           value={fechaInicio}
           onChange={(e) => onCambio({ fechaInicio: e.target.value })}
-          className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+          className="w-full border border-tinta bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:outline-none"
           disabled={deshabilitado}
         />
       </div>
       <div>
-        <label className="mb-2 block text-sm font-semibold">Duración</label>
+        <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+          Duración
+        </label>
         <select
           value={duracionDias}
           onChange={(e) => onCambio({ duracionDias: Number(e.target.value) })}
-          className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-2 text-on-surface focus:border-primary focus:outline-none"
+          className="w-full border border-tinta bg-papel px-3.5 py-2.5 font-serif-spectral text-sm text-tinta focus:outline-none"
           disabled={deshabilitado}
         >
           {PRESETS_DURACION.map((n) => (
@@ -37,7 +41,7 @@ export function CamposPropuestaDestacado({ fechaInicio, duracionDias, onCambio, 
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-on-surface/60">
+        <p className="mt-1 font-mono-ibm text-[10px] text-mudo">
           Fin: {fechaInicio ? sumarDias(fechaInicio, duracionDias - 1) : '—'}
         </p>
       </div>
@@ -77,15 +81,15 @@ export default function DialogoSolicitudDestacado({ abierto, titulo, ocupado = f
         e.preventDefault()
         if (!ocupado) onCancelar()
       }}
-      className="w-full max-w-md rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-0 shadow-card-lg backdrop:bg-black/40"
+      className="w-full max-w-md border border-tinta bg-papel p-0 shadow-cartel backdrop:bg-tinta/40"
     >
       <div className="p-6">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-container">
-          <MIcon name="star" className="text-[24px] text-on-primary" />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-tinta">
+          <MIcon name="star" className="text-[24px] text-oro" fill />
         </div>
 
-        <h2 className="font-display text-lg font-bold text-on-surface">Solicitar destacado</h2>
-        {titulo && <p className="mt-1 text-sm text-on-surface/70">{titulo}</p>}
+        <h2 className="font-serif-dm text-2xl text-tinta">Solicitar destacado</h2>
+        {titulo && <p className="mt-1 font-serif-spectral text-sm italic text-pardo">{titulo}</p>}
 
         <div className="mt-4">
           <CamposPropuestaDestacado
@@ -99,7 +103,7 @@ export default function DialogoSolicitudDestacado({ abierto, titulo, ocupado = f
           />
         </div>
 
-        <p className="mt-3 text-xs text-on-surface/60">
+        <p className="mt-3 font-serif-spectral text-xs leading-relaxed text-pardo">
           Las fechas son una propuesta: te contactaremos para confirmar las condiciones y el pago
           antes de activar el destacado.
         </p>
@@ -109,7 +113,7 @@ export default function DialogoSolicitudDestacado({ abierto, titulo, ocupado = f
             type="button"
             onClick={onCancelar}
             disabled={ocupado}
-            className="rounded-lg border border-outline-variant/40 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50"
+            className="gz-boton-borde hover:enabled:bg-papel-calido disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -117,7 +121,7 @@ export default function DialogoSolicitudDestacado({ abierto, titulo, ocupado = f
             type="button"
             onClick={() => onConfirmar({ fechaInicio, duracionDias })}
             disabled={ocupado || !propuestaValida}
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-opacity hover:enabled:opacity-90 disabled:opacity-50"
+            className="gz-boton-tinta disabled:opacity-50"
           >
             {ocupado ? 'Enviando…' : 'Solicitar destacado'}
           </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
+import Logo from '../components/Logo.jsx'
 import { useAdminAuth } from '../lib/adminAuth.jsx'
 
 export default function Registro() {
@@ -63,25 +64,26 @@ export default function Registro() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-surface-container-low to-surface-container-high px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-papel-lienzo px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="nv-card p-6 sm:p-8">
-          <div className="mb-8 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-container">
-              <MIcon name="app_registration" className="text-[32px] text-on-primary" />
-            </div>
+        <div className="overflow-hidden border border-tinta bg-papel shadow-cartel">
+          <div className="h-2 bg-tinta-intensa" />
+          <div className="p-6 sm:p-10">
+          <div className="mb-5 flex flex-col items-center gap-3 text-center">
+            <Logo tamano="lg" />
+            <MIcon name="app_registration" className="text-[22px] text-terracota" />
           </div>
 
-          <h1 className="mb-2 text-center font-display text-2xl font-bold text-primary">
+          <h1 className="text-center font-serif-dm text-3xl text-tinta">
             Registro de organización
           </h1>
-          <p className="mb-8 text-center text-sm text-on-surface/70">
+          <p className="mb-7 mt-1 text-center font-serif-spectral text-sm text-pardo">
             Introduce tu código de invitación para crear tu cuenta
           </p>
 
           <form onSubmit={enviar} className="space-y-4" noValidate>
             <div>
-              <label htmlFor="codigo" className="mb-2 block text-sm font-semibold text-on-surface">
+              <label htmlFor="codigo" className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                 Código de invitación
               </label>
               <input
@@ -95,13 +97,13 @@ export default function Registro() {
                   setError('')
                 }}
                 placeholder="EJEMPLO-1234"
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="gz-input"
                 disabled={enviando}
               />
             </div>
 
             <div>
-              <label htmlFor="nombre" className="mb-2 block text-sm font-semibold text-on-surface">
+              <label htmlFor="nombre" className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                 Nombre completo
               </label>
               <input
@@ -114,13 +116,13 @@ export default function Registro() {
                   setError('')
                 }}
                 placeholder="Tu nombre"
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="gz-input"
                 disabled={enviando}
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-semibold text-on-surface">
+              <label htmlFor="email" className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                 Email
               </label>
               <input
@@ -136,13 +138,13 @@ export default function Registro() {
                   setError('')
                 }}
                 placeholder="tu@organizacion.org"
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="gz-input"
                 disabled={enviando}
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-semibold text-on-surface">
+              <label htmlFor="password" className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                 Contraseña
               </label>
               <input
@@ -155,13 +157,13 @@ export default function Registro() {
                   setError('')
                 }}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="gz-input"
                 disabled={enviando}
               />
             </div>
 
             <div>
-              <label htmlFor="confirmar" className="mb-2 block text-sm font-semibold text-on-surface">
+              <label htmlFor="confirmar" className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                 Confirmar contraseña
               </label>
               <input
@@ -174,7 +176,7 @@ export default function Registro() {
                   setError('')
                 }}
                 placeholder="Repite tu contraseña"
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-base text-on-surface transition-all placeholder:text-on-surface/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="gz-input"
                 disabled={enviando}
               />
             </div>
@@ -182,27 +184,31 @@ export default function Registro() {
             {error && (
               <div
                 role="alert"
-                className="flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-3"
+                className="flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-3"
               >
-                <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
-                <p className="text-sm font-medium text-error">{error}</p>
+                <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+                <p className="font-serif-spectral text-sm font-medium text-terracota">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={enviando || !codigo.trim() || !email.trim() || !nombre.trim() || !password.trim() || !confirmar.trim()}
-              className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary transition-all hover:enabled:shadow-card-lg active:enabled:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="gz-boton-tinta w-full disabled:cursor-not-allowed disabled:opacity-50"
             >
               {enviando ? 'Registrando…' : 'Registrarse'}
             </button>
           </form>
 
-          <div className="mt-6 flex items-center gap-2 rounded-lg border border-outline-variant/20 bg-surface-container-lowest p-3">
-            <MIcon name="info" className="flex-shrink-0 text-[20px] text-on-surface/60" />
-            <p className="text-xs text-on-surface/60">
-              ¿Ya tienes cuenta? <a href="/login" className="font-semibold text-primary hover:underline">Accede aquí</a>
+          <div className="mt-6 flex items-center gap-2 border border-filete bg-papel-calido p-3">
+            <MIcon name="info" className="flex-shrink-0 text-[20px] text-pardo" />
+            <p className="font-serif-spectral text-xs text-pardo">
+              ¿Ya tienes cuenta?{' '}
+              <a href="/login" className="font-semibold text-terracota hover:underline">
+                Accede aquí
+              </a>
             </p>
+          </div>
           </div>
         </div>
       </div>

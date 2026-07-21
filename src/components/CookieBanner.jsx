@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import MIcon from './MIcon'
+
+// El aviso es del portal vecinal: en las rutas de gestión (login/registro/
+// paneles) no se muestra — allí además el banner fijo tapaba botones de
+// formularios ("Acceder", "Publicar evento") e impedía pulsarlos.
+const RUTAS_GESTION = ['/admin', '/panel', '/login', '/registro']
 
 // Banner informativo de cookies (técnicas, no requieren consentimiento previo).
 // Se muestra hasta que el vecino pulsa "Entendido"; la decisión se guarda en
@@ -8,6 +13,7 @@ import MIcon from './MIcon'
 // entre sesiones, a diferencia de sessionStorage).
 export default function CookieBanner() {
   const [mostrar, setMostrar] = useState(false)
+  const { pathname } = useLocation()
 
   useEffect(() => {
     // Solo mostrar si no se ha aceptado nunca en este dispositivo.
@@ -22,7 +28,8 @@ export default function CookieBanner() {
     setMostrar(false)
   }
 
-  if (!mostrar) return null
+  const esGestion = RUTAS_GESTION.some((r) => pathname === r || pathname.startsWith(`${r}/`))
+  if (!mostrar || esGestion) return null
 
   return (
     <div className="fixed bottom-24 left-3 right-3 z-40 border border-tinta bg-papel-calido md:bottom-4 md:left-4 md:right-4">

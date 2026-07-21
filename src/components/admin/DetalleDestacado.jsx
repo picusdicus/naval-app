@@ -6,15 +6,15 @@ import { duracionDe } from '../../lib/fechas.js'
 import { tarifaDe } from '../../lib/tarifasDestacados.js'
 
 const ETIQUETA_ESTADO = {
-  pendiente: { icono: 'hourglass_top', texto: 'Solicitud pendiente', clases: 'bg-tertiary-container text-on-tertiary-container' },
-  activo: { icono: 'kid_star', texto: 'Destacado activo', clases: 'bg-secondary-container text-on-secondary-container' },
+  pendiente: { icono: 'hourglass_top', texto: 'Solicitud pendiente', clases: 'bg-oro text-tinta' },
+  activo: { icono: 'kid_star', texto: 'Destacado activo', clases: 'bg-tinta text-oro' },
 }
 
 function Linea({ etiqueta, children }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-outline-variant/20 py-2 last:border-b-0">
-      <dt className="text-sm text-on-surface/60">{etiqueta}</dt>
-      <dd className="text-right text-sm font-semibold text-on-surface">{children}</dd>
+    <div className="flex items-baseline justify-between gap-4 border-b border-dashed border-filete-claro py-2 last:border-b-0">
+      <dt className="font-serif-spectral text-sm text-pardo">{etiqueta}</dt>
+      <dd className="text-right font-serif-spectral text-sm text-tinta">{children}</dd>
     </div>
   )
 }
@@ -44,7 +44,7 @@ export default function DetalleDestacado({ destacado, titulo, onCerrar }) {
       : null
   const tarifa = duracion ? tarifaDe(duracion) : null
   const estado = finalizada
-    ? { icono: 'kid_star', texto: 'Destacado finalizado', clases: 'bg-surface-container-high text-on-surface/60' }
+    ? { icono: 'kid_star', texto: 'Destacado finalizado', clases: 'bg-filete text-tinta-apagada' }
     : ETIQUETA_ESTADO[destacado?.estado]
 
   return (
@@ -54,19 +54,19 @@ export default function DetalleDestacado({ destacado, titulo, onCerrar }) {
         e.preventDefault()
         onCerrar()
       }}
-      className="w-full max-w-md rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-0 shadow-card-lg backdrop:bg-black/40"
+      className="w-full max-w-md border border-tinta bg-papel p-0 shadow-cartel backdrop:bg-tinta/40"
     >
       {destacado && (
         <div className="p-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="font-display text-lg font-bold text-on-surface">Tu destacado</h2>
-              {titulo && <p className="mt-1 truncate text-sm text-on-surface/70">{titulo}</p>}
+              <h2 className="font-serif-dm text-2xl text-tinta">Tu destacado</h2>
+              {titulo && <p className="mt-1 truncate font-serif-spectral text-sm italic text-pardo">{titulo}</p>}
             </div>
             <button
               type="button"
               onClick={onCerrar}
-              className="rounded-full p-1 text-on-surface/50 transition-colors hover:bg-surface-container-high hover:text-on-surface"
+              className="p-1 text-pardo transition-colors hover:text-terracota"
               title="Cerrar"
             >
               <MIcon name="close" className="text-[20px]" />
@@ -74,7 +74,7 @@ export default function DetalleDestacado({ destacado, titulo, onCerrar }) {
           </div>
 
           {estado && (
-            <span className={`mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${estado.clases}`}>
+            <span className={`mt-3 inline-flex items-center gap-1 px-2 py-0.5 font-mono-ibm text-[9px] uppercase tracking-etiqueta ${estado.clases}`}>
               <MIcon name={estado.icono} className="text-[14px]" fill={destacado.estado === 'activo' && !finalizada} />
               {estado.texto}
               {dias !== null && ` · ${textoCaducidad(dias)}`}
@@ -96,11 +96,11 @@ export default function DetalleDestacado({ destacado, titulo, onCerrar }) {
             <img
               src={destacado.imagenUrl}
               alt=""
-              className="mt-4 max-h-40 w-full rounded-lg object-cover"
+              className="mt-4 max-h-40 w-full border border-filete object-cover"
             />
           )}
 
-          <p className="mt-4 text-xs text-on-surface/60">
+          <p className="mt-4 font-serif-spectral text-xs leading-relaxed text-pardo">
             {destacado.estado === 'pendiente'
               ? 'Fechas propuestas por ti, pendientes de confirmación. Te contactaremos para cerrar condiciones y pago.'
               : 'El pago y las renovaciones se gestionan directamente con el equipo de la app.'}

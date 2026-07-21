@@ -214,7 +214,16 @@ export default function EventoDetalle() {
         <div className="mt-6">
           <MapaLugar lat={coords.lat} lng={coords.lng} nombre={evento.lugar} />
           <div className="mt-2 flex items-center justify-between">
-            <span className="font-serif-dm text-lg text-tinta">{evento.lugar}</span>
+            {/* El nombre del lugar es el enlace a Google Maps (lo asume también
+                el e2e de perfil-organizacion: link accesible con el nombre). */}
+            <a
+              href={enlaceGoogleMaps(evento.lugar)}
+              target="_blank"
+              rel="noreferrer"
+              className="font-serif-dm text-lg text-tinta underline-offset-2 transition-colors hover:text-terracota hover:underline"
+            >
+              {evento.lugar}
+            </a>
             <a
               href={enlaceGoogleMaps(evento.lugar)}
               target="_blank"

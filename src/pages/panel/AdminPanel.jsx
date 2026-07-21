@@ -12,9 +12,9 @@ import { campanaFinalizada, diasParaCaducar, textoCaducidad } from '../../lib/de
 import { hoyISO } from '../../lib/fechas.js'
 
 const ESTADOS = {
-  publicado: { etiqueta: 'Publicado', clases: 'bg-secondary-container text-on-secondary-container' },
-  borrador: { etiqueta: 'Borrador', clases: 'bg-surface-container-high text-on-surface-variant' },
-  archivado: { etiqueta: 'Archivado', clases: 'bg-error-container text-on-error-container' },
+  publicado: { etiqueta: 'Publicado', clases: 'bg-verde text-papel' },
+  borrador: { etiqueta: 'Borrador', clases: 'bg-filete text-tinta-apagada' },
+  archivado: { etiqueta: 'Archivado', clases: 'bg-terracota-fondo text-terracota' },
 }
 
 function formatearFecha(iso) {
@@ -31,13 +31,11 @@ function Estadistica({ icono, valor, etiqueta }) {
   // En móvil no caben icono y texto en la misma línea sin recortar la
   // etiqueta, así que se apilan; a partir de `sm` van en fila.
   return (
-    <div className="nv-card flex flex-col items-start gap-2 p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-4">
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-container sm:h-10 sm:w-10">
-        <MIcon name={icono} className="text-[20px] text-on-primary" />
-      </div>
+    <div className="gz-tarjeta-impresa flex flex-col items-start gap-2 p-3 sm:p-4">
+      <MIcon name={icono} className="text-[18px] text-pardo" />
       <div className="min-w-0">
-        <p className="font-display text-xl font-bold leading-tight text-on-surface">{valor}</p>
-        <p className="text-xs text-on-surface/60">{etiqueta}</p>
+        <p className="font-serif-dm text-3xl leading-none text-terracota">{valor}</p>
+        <p className="gz-label mt-1.5 text-pardo">{etiqueta}</p>
       </div>
     </div>
   )
@@ -51,20 +49,20 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
   const destacable = publicado && evento.fecha >= hoyISO() && !destacado
 
   return (
-    <li className="nv-card p-4 sm:p-5">
+    <li className="gz-tarjeta-impresa p-4 sm:p-5">
       <div className="flex gap-4">
         {evento.imagen && (
           <img
             src={evento.imagen}
             alt=""
-            className="h-14 w-14 flex-shrink-0 rounded-lg object-cover sm:h-20 sm:w-20"
+            className="h-14 w-14 flex-shrink-0 border border-filete object-cover sm:h-20 sm:w-20"
           />
         )}
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display font-semibold text-on-surface">{evento.titulo}</h3>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${estado.clases}`}>
+            <h3 className="font-serif-dm text-lg leading-tight text-tinta">{evento.titulo}</h3>
+            <span className={`px-2 py-0.5 font-mono-ibm text-[9px] uppercase tracking-etiqueta ${estado.clases}`}>
               {estado.etiqueta}
             </span>
             {/* Los badges de destacado abren el detalle (fechas, tarifa…). */}
@@ -73,7 +71,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
                 type="button"
                 onClick={() => onVerDestacado(destacado, evento.titulo)}
                 title="Ver detalle del destacado"
-                className="inline-flex items-center gap-1 rounded-full bg-tertiary-container px-2.5 py-0.5 text-xs font-semibold text-on-tertiary-container transition-opacity hover:opacity-80"
+                className="inline-flex items-center gap-1 bg-oro px-2 py-0.5 font-mono-ibm text-[9px] uppercase tracking-etiqueta text-tinta transition-opacity hover:opacity-80"
               >
                 <MIcon name="hourglass_top" className="text-[14px]" />
                 Destacado solicitado
@@ -85,7 +83,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
                 type="button"
                 onClick={() => onVerDestacado(destacado, evento.titulo)}
                 title="Ver detalle del destacado"
-                className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-semibold text-on-surface/60 transition-opacity hover:opacity-80"
+                className="inline-flex items-center gap-1 bg-filete px-2 py-0.5 font-mono-ibm text-[9px] uppercase tracking-etiqueta text-tinta-apagada transition-opacity hover:opacity-80"
               >
                 <MIcon name="kid_star" className="text-[14px]" />
                 Destacado finalizado
@@ -96,10 +94,10 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
                 type="button"
                 onClick={() => onVerDestacado(destacado, evento.titulo)}
                 title="Ver detalle del destacado"
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80 ${
+                className={`inline-flex items-center gap-1 px-2 py-0.5 font-mono-ibm text-[9px] uppercase tracking-etiqueta transition-opacity hover:opacity-80 ${
                   diasParaCaducar(destacado) !== null
-                    ? 'bg-tertiary-container text-on-tertiary-container'
-                    : 'bg-secondary-container text-on-secondary-container'
+                    ? 'bg-tinta text-oro'
+                    : 'bg-tinta text-oro'
                 }`}
               >
                 <MIcon name="kid_star" className="text-[14px]" fill />
@@ -110,7 +108,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
             )}
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-on-surface/70">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta text-pardo">
             <span className="inline-flex items-center gap-1">
               <MIcon name="calendar_today" className="text-[16px]" />
               {formatearFecha(evento.fecha)}
@@ -139,10 +137,10 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
       </div>
 
       {/* Acciones: en móvil ocupan el ancho completo bajo los datos. */}
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-outline-variant/20 pt-3">
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-filete pt-3">
         <Link
           to={`/panel/eventos/${evento.id}/editar`}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high sm:flex-none"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-papel-calido sm:flex-none"
         >
           <MIcon name="edit" className="text-[16px]" />
           Editar
@@ -152,7 +150,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
           type="button"
           disabled={ocupado}
           onClick={() => onCambiarEstado(evento, publicado ? 'borrador' : 'publicado')}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50 sm:flex-none"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:enabled:bg-papel-calido disabled:opacity-50 sm:flex-none"
         >
           <MIcon name={publicado ? 'visibility_off' : 'publish'} className="text-[16px]" />
           {publicado ? 'Pasar a borrador' : 'Publicar'}
@@ -163,7 +161,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
             type="button"
             disabled={ocupado}
             onClick={() => onDestacar(evento)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50 sm:flex-none"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:enabled:bg-papel-calido disabled:opacity-50 sm:flex-none"
           >
             <MIcon name="star" className="text-[16px]" />
             Destacar
@@ -175,7 +173,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
             type="button"
             disabled={ocupado}
             onClick={() => onRetirarDestacado(destacado)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:enabled:bg-surface-container-high disabled:opacity-50 sm:flex-none"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:enabled:bg-papel-calido disabled:opacity-50 sm:flex-none"
           >
             <MIcon name="star_half" className="text-[16px]" />
             Retirar solicitud
@@ -186,7 +184,7 @@ function FilaEvento({ evento, destacado, ocupado, onCambiarEstado, onEliminar, o
           type="button"
           disabled={ocupado}
           onClick={() => onEliminar(evento)}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-error/30 px-3 py-2 text-sm font-semibold text-error transition-colors hover:enabled:bg-error/10 disabled:opacity-50 sm:flex-none"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border border-terracota-palido px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-colors hover:enabled:bg-terracota-fondo disabled:opacity-50 sm:flex-none"
         >
           <MIcon name="delete" className="text-[16px]" />
           Eliminar
@@ -326,26 +324,27 @@ export default function AdminPanel() {
   const eventos = datos?.eventos ?? []
 
   return (
-    <div className="min-h-screen bg-surface-container-low pb-16">
-      <header className="border-b border-outline-variant/20 bg-surface-container-lowest">
+    <div className="min-h-screen bg-papel-lienzo pb-16">
+      <div className="h-2 bg-tinta-intensa" />
+      <header className="border-b border-filete bg-papel">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-container">
-            <MIcon name="admin_panel_settings" className="text-[20px] text-on-primary" />
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-verde-salvia font-serif-dm text-lg text-papel">
+            {(datos?.organizacion?.nombre ?? 'P').charAt(0)}
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display font-bold leading-tight text-primary">
+            <p className="truncate font-serif-dm text-lg leading-tight text-tinta">
               {datos?.organizacion?.nombre ?? 'Panel de gestión'}
             </p>
-            <p className="truncate text-xs text-on-surface/60">{usuario?.email}</p>
+            <p className="truncate font-mono-ibm text-[10px] text-mudo">{usuario?.email}</p>
           </div>
 
           <button
             type="button"
             onClick={cerrarSesion}
-            className="inline-flex flex-shrink-0 items-center gap-2 rounded-full border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high sm:px-4"
+            className="inline-flex flex-shrink-0 items-center gap-2 border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-papel-calido sm:px-4"
           >
-            <MIcon name="logout" className="text-[18px]" />
+            <MIcon name="logout" className="text-[16px]" />
             <span className="hidden sm:inline">Cerrar sesión</span>
           </button>
         </div>
@@ -353,7 +352,7 @@ export default function AdminPanel() {
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Pestañas: eventos (gestión) y analíticas (visitas propias en Neon). */}
-        <div className="mb-6 flex gap-1 rounded-full bg-surface-container-high p-1 sm:w-fit">
+        <div className="mb-6 flex gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta sm:w-fit">
           {[
             ['eventos', 'event', 'Mis eventos'],
             ['analiticas', 'monitoring', 'Mis analíticas'],
@@ -362,13 +361,13 @@ export default function AdminPanel() {
               key={clave}
               type="button"
               onClick={() => setPestana(clave)}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:flex-none ${
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 transition-colors sm:flex-none ${
                 pestana === clave
-                  ? 'bg-primary text-on-primary shadow-card'
-                  : 'text-on-surface/70 hover:text-on-surface'
+                  ? 'bg-tinta text-papel'
+                  : 'border border-filete text-pardo hover:text-tinta'
               }`}
             >
-              <MIcon name={icono} className="text-[18px]" />
+              <MIcon name={icono} className="text-[15px]" />
               {etiqueta}
             </button>
           ))}
@@ -378,26 +377,23 @@ export default function AdminPanel() {
 
         <div className={pestana === 'eventos' ? '' : 'hidden'}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-2xl font-bold text-on-surface">Tus eventos</h1>
+          <h1 className="font-serif-dm text-seccion-sm text-tinta">Tus eventos</h1>
 
-          <Link
-            to="/panel/eventos/nuevo"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-shadow hover:shadow-card-lg"
-          >
-            <MIcon name="add" className="text-[18px]" />
+          <Link to="/panel/eventos/nuevo" className="gz-boton-tinta inline-flex items-center gap-2">
+            <MIcon name="add" className="text-[16px]" />
             Nuevo evento
           </Link>
         </div>
 
-        {cargando && <p className="text-sm text-on-surface/60">Cargando eventos…</p>}
+        {cargando && <p className="font-serif-spectral text-sm text-pardo">Cargando eventos…</p>}
 
         {error && (
           <div
             role="alert"
-            className="mb-6 flex items-start gap-2 rounded-lg border border-error/20 bg-error/10 p-4"
+            className="mb-6 flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-4"
           >
-            <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-error" />
-            <p className="text-sm font-medium text-error">{error}</p>
+            <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
+            <p className="font-serif-spectral text-sm font-medium text-terracota">{error}</p>
           </div>
         )}
 
@@ -422,12 +418,10 @@ export default function AdminPanel() {
             )}
 
             {eventos.length === 0 ? (
-              <div className="nv-card flex flex-col items-center gap-3 px-6 py-12 text-center">
-                <MIcon name="event_busy" className="text-[40px] text-on-surface/30" />
-                <p className="font-display font-semibold text-on-surface">
-                  Todavía no tienes eventos
-                </p>
-                <p className="max-w-sm text-sm text-on-surface/60">
+              <div className="flex flex-col items-center gap-3 border border-dashed border-filete-punteado px-6 py-12 text-center">
+                <MIcon name="event_busy" className="text-[40px] text-mudo" />
+                <p className="font-serif-dm text-lg text-tinta">Todavía no tienes eventos</p>
+                <p className="max-w-sm font-serif-spectral text-sm text-pardo">
                   Crea el primero: los borradores solo los ves tú, y los publicados aparecen en la
                   agenda del municipio.
                 </p>

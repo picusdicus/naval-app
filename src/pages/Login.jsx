@@ -12,10 +12,13 @@ export default function Login() {
       pie={
         <>
           <p>
-            ¿Eres una organización nueva? <a href="/registro" className="font-semibold text-primary hover:underline">Regístrate aquí</a>
+            ¿Eres una organización nueva?{' '}
+            <a href="/registro" className="font-semibold text-terracota hover:underline">
+              Regístrate aquí
+            </a>
           </p>
-          <p className="text-on-surface/40">
-            Acceso restringido. Solo para organizaciones con código de invitación.
+          <p className="font-mono-ibm text-[10px] uppercase tracking-etiqueta">
+            Acceso restringido · solo con código de invitación
           </p>
         </>
       }
