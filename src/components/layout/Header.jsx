@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
 import Logo from '../Logo.jsx'
 import CentroAvisos from '../avisos/CentroAvisos.jsx'
+import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
 // Transporte se oculta del menú de escritorio (sigue accesible desde el menú
 // móvil, la NavBar inferior y su ruta directa /transporte).
@@ -13,6 +14,8 @@ const enlaces = [
 ]
 
 export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
+  const { usuario } = useAdminAuth()
+
   return (
     <header className="sticky top-0 z-40 bg-papel md:border-b md:border-filete">
       {/* Barra móvil */}
@@ -74,6 +77,14 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
           >
             Asistente IA
           </button>
+          {!usuario && (
+            <Link
+              to="/login"
+              className="rounded-full border-2 border-tinta bg-papel px-6 py-2 font-serif-spectral text-sm font-medium text-tinta transition-all hover:bg-terracota/10 active:scale-95"
+            >
+              Área de gestión
+            </Link>
+          )}
           <button
             type="button"
             onClick={onLogout}

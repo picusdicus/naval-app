@@ -27,14 +27,6 @@ import AdminPanel from './pages/panel/AdminPanel.jsx'
 import AdminEventoForm from './pages/panel/AdminEventoForm.jsx'
 import CookieBanner from './components/CookieBanner.jsx'
 
-function ProveedorAdmin() {
-  return (
-    <AdminAuthProvider>
-      <Outlet />
-    </AdminAuthProvider>
-  )
-}
-
 // Redirección que conserva la query string: /mapa?comercio=X debe seguir
 // abriendo la ficha en /comercios?comercio=X (enlaces y accesos antiguos).
 function RedirigirConQuery({ a }) {
@@ -86,13 +78,13 @@ export default function App() {
   }
 
   return (
-    <>
-      <ScrollManager />
-      <OfflineIndicator />
-      <InstallPrompt />
-      <CookieBanner />
-      <Routes>
-        <Route element={<ProveedorAdmin />}>
+    <AdminAuthProvider>
+      <>
+        <ScrollManager />
+        <OfflineIndicator />
+        <InstallPrompt />
+        <CookieBanner />
+        <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           {/* Superadmin: login y su panel fusionados en la misma ruta. */}
@@ -107,37 +99,37 @@ export default function App() {
                 sin sesión se redirige al login, con sesión al panel. */}
             <Route path="*" element={<Navigate to="/panel" replace />} />
           </Route>
-        </Route>
 
-        <Route element={<Layout onLogout={handleLogout} />}>
-          <Route path="/" element={<Inicio />} />
-          <Route path="/eventos" element={<Eventos />} />
-          <Route path="/eventos/:id" element={<EventoDetalle />} />
-          <Route path="/comercios" element={<Mapa />} />
-          <Route path="/noticias" element={<Noticias />} />
-          <Route path="/noticias/:id" element={<NoticiaDetalle />} />
-          <Route path="/transporte" element={<Transporte />} />
-          <Route path="/asistente" element={<Asistente />} />
-          <Route path="/ayuda" element={<FAQ />} />
-          <Route path="/sugerencias" element={<Sugerencias />} />
-          <Route path="/aviso-legal" element={<AvisoLegal />} />
-          <Route path="/privacidad" element={<Privacidad />} />
-          <Route path="/cookies" element={<Cookies />} />
-        </Route>
+          <Route element={<Layout onLogout={handleLogout} />}>
+            <Route path="/" element={<Inicio />} />
+            <Route path="/eventos" element={<Eventos />} />
+            <Route path="/eventos/:id" element={<EventoDetalle />} />
+            <Route path="/comercios" element={<Mapa />} />
+            <Route path="/noticias" element={<Noticias />} />
+            <Route path="/noticias/:id" element={<NoticiaDetalle />} />
+            <Route path="/transporte" element={<Transporte />} />
+            <Route path="/asistente" element={<Asistente />} />
+            <Route path="/ayuda" element={<FAQ />} />
+            <Route path="/sugerencias" element={<Sugerencias />} />
+            <Route path="/aviso-legal" element={<AvisoLegal />} />
+            <Route path="/privacidad" element={<Privacidad />} />
+            <Route path="/cookies" element={<Cookies />} />
+          </Route>
 
-        {/* Rutas de antes de separar los logins: una organización puede
-            tenerlas en favoritos. Redirigen en vez de dejar la página en
-            blanco. `replace` evita que la URL rota quede en el historial. */}
-        <Route path="/mapa" element={<RedirigirConQuery a="/comercios" />} />
-        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
-        <Route path="/admin/registro" element={<Navigate to="/registro" replace />} />
-        <Route path="/admin/super" element={<Navigate to="/admin" replace />} />
+          {/* Rutas de antes de separar los logins: una organización puede
+              tenerlas en favoritos. Redirigen en vez de dejar la página en
+              blanco. `replace` evita que la URL rota quede en el historial. */}
+          <Route path="/mapa" element={<RedirigirConQuery a="/comercios" />} />
+          <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+          <Route path="/admin/registro" element={<Navigate to="/registro" replace />} />
+          <Route path="/admin/super" element={<Navigate to="/admin" replace />} />
 
-        {/* Lo que no capturó ningún <Route> anterior. React Router elige por
-            especificidad, no por orden: este `*` de raíz es el menos
-            específico, así que nunca le roba nada al `*` de /panel. */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
+          {/* Lo que no capturó ningún <Route> anterior. React Router elige por
+              especificidad, no por orden: este `*` de raíz es el menos
+              específico, así que nunca le roba nada al `*` de /panel. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </>
+    </AdminAuthProvider>
   )
 }

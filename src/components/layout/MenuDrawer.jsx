@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
 import Logo from '../Logo.jsx'
+import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
 const rutas = [
   { to: '/', label: 'Inicio', end: true },
@@ -16,6 +17,7 @@ const rutas = [
 // logotipo apilado + filete doble, ítem activo en terracota. Estado (abierto) y
 // cierre los controla Layout; la animación es CSS pura sobre `abierto`.
 export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
+  const { usuario } = useAdminAuth()
   return (
     <div
       className={`fixed inset-0 z-50 flex transition-opacity duration-300 ${
@@ -73,6 +75,39 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
           >
             Ayuntamiento
           </a>
+
+          {!usuario && (
+            <>
+              <div className="border-t border-filete my-2" />
+              <div className="px-3.5 py-2.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo font-semibold">
+                Para gestores
+              </div>
+              <NavLink
+                to="/login"
+                end={false}
+                onClick={onCerrar}
+                className={({ isActive }) =>
+                  isActive
+                    ? 'block bg-terracota px-3.5 py-2.5 text-papel'
+                    : 'block px-3.5 py-2.5 text-tinta transition-colors hover:bg-papel-calido'
+                }
+              >
+                Panel de organizaciones
+              </NavLink>
+              <NavLink
+                to="/admin"
+                end={false}
+                onClick={onCerrar}
+                className={({ isActive }) =>
+                  isActive
+                    ? 'block bg-terracota px-3.5 py-2.5 text-papel'
+                    : 'block px-3.5 py-2.5 text-tinta transition-colors hover:bg-papel-calido'
+                }
+              >
+                Superadministración
+              </NavLink>
+            </>
+          )}
         </nav>
 
         {/* Pie */}
