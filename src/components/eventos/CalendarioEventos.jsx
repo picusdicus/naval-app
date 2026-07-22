@@ -46,7 +46,7 @@ export default function CalendarioEventos({ eventos = [], mesSeleccionado, onMes
   }
 
   return (
-    <div className="sticky top-20 border-2 border-tinta bg-papel p-4">
+    <div className="border-2 border-tinta bg-papel p-4 h-fit">
       {/* Encabezado mes/año */}
       <div className="flex items-center justify-between mb-4">
         <button

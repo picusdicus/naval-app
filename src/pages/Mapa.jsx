@@ -131,7 +131,7 @@ export default function Mapa() {
           desktop; flujo normal de la página en móvil). */}
       <div
         ref={columnRef}
-        className="hide-scrollbar flex flex-col gap-6 lg:h-full lg:w-2/5 lg:min-w-0 lg:overflow-y-auto lg:pr-2"
+        className="hide-scrollbar flex flex-col gap-6 lg:h-full lg:w-3/5 lg:min-w-0 lg:overflow-y-auto lg:pr-2"
       >
         <header className="gz-filete-doble pb-3">
           <div className="gz-label text-mudo">El directorio de</div>
@@ -213,7 +213,7 @@ export default function Mapa() {
         {/* Grid de comercios (solo desktop) */}
         {esDesktop && comercios.length > 0 && (
           <>
-            <div className="grid gap-4 grid-cols-2">
+            <div className="grid gap-4 grid-cols-3">
               {comercios.map((c) => (
                 <ComercioTarjeta
                   key={c.id}
@@ -265,7 +265,7 @@ export default function Mapa() {
 
       {/* Columna derecha: mapa fijo, solo en escritorio. */}
       {esDesktop && (
-        <div className="lg:h-full lg:w-3/5">
+        <div className="lg:h-full lg:w-2/5 lg:flex-shrink-0">
           <MapaComercios
             comercios={enMapa}
             seleccionado={seleccionado}

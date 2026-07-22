@@ -75,9 +75,9 @@ export default function Eventos() {
   const conCarrusel = categoria === null && destacadosEvento.length > 0
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
+    <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-7rem)]">
       {/* Columna izquierda: lista de eventos */}
-      <div className="flex-1 min-w-0">
+      <div className="hide-scrollbar flex flex-1 flex-col min-w-0 lg:overflow-y-auto lg:pr-4">
         {/* Masthead */}
         <header className="flex items-start justify-between gap-4 mb-6">
           <div className="gz-filete-doble flex-1 pb-3">
@@ -207,7 +207,7 @@ export default function Eventos() {
       </div>
 
       {/* Columna derecha: Calendario - solo en desktop */}
-      <div className="hidden lg:block lg:w-80 flex-shrink-0">
+      <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
         <CalendarioEventos eventos={futuros} mesSeleccionado={mesSeleccionado} onMesChange={setMesSeleccionado} />
       </div>
     </div>
