@@ -94,18 +94,6 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
               >
                 Panel de organizaciones
               </NavLink>
-              <NavLink
-                to="/admin"
-                end={false}
-                onClick={onCerrar}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'block bg-terracota px-3.5 py-2.5 text-papel'
-                    : 'block px-3.5 py-2.5 text-tinta transition-colors hover:bg-papel-calido'
-                }
-              >
-                Superadministración
-              </NavLink>
             </>
           )}
         </nav>

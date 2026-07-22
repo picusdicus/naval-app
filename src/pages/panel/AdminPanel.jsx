@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
 import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
 import DialogoSolicitudDestacado from '../../components/admin/DialogoSolicitudDestacado.jsx'
@@ -371,6 +371,15 @@ export default function AdminPanel() {
             <MIcon name="account_circle" className="text-[16px]" />
             <span className="hidden sm:inline">Usuario</span>
           </button>
+
+          <Link
+            to="/"
+            className="inline-flex flex-shrink-0 items-center gap-2 border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-papel-calido sm:px-4"
+            title="Volver a la app pública"
+          >
+            <MIcon name="home" className="text-[16px]" />
+            <span className="hidden sm:inline">Volver a la app</span>
+          </Link>
 
           <button
             type="button"

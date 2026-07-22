@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
@@ -87,6 +88,15 @@ export default function AdminSuperPanel() {
           </div>
 
           <div className="flex gap-2">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 border border-tinta px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-papel-calido"
+              title="Volver a la app pública"
+            >
+              <MIcon name="home" className="text-[16px]" />
+              <span className="hidden sm:inline">Volver a la app</span>
+            </Link>
+
             <button
               type="button"
               onClick={() => setDialogoInfoAbierto(true)}
