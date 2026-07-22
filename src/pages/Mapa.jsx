@@ -213,7 +213,7 @@ export default function Mapa() {
         {/* Grid de comercios (solo desktop) */}
         {esDesktop && comercios.length > 0 && (
           <>
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
               {comercios.map((c) => (
                 <ComercioTarjeta
                   key={c.id}
