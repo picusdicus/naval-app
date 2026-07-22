@@ -160,8 +160,8 @@ export default function Eventos() {
           </p>
         )}
 
-        {/* Lista de próximos eventos */}
-        <div className="space-y-4">
+        {/* Grid de próximos eventos */}
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           {futuros.map((e) => (
             <EventoFilaNueva key={e.id} evento={e} />
           ))}
