@@ -10,6 +10,25 @@ import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { neon } from '@neondatabase/serverless'
+import crypto from 'node:crypto'
+
+// Hash password function similar to api/_auth.js
+const PBKDF2_ITERACIONES = 310000
+
+function bytesAB64(arr) {
+  return Buffer.from(arr).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16)
+  const derivado = await new Promise((resolve, reject) => {
+    crypto.pbkdf2(password, salt, PBKDF2_ITERACIONES, 32, 'sha256', (err, result) => {
+      if (err) reject(err)
+      else resolve(result)
+    })
+  })
+  return `pbkdf2$${PBKDF2_ITERACIONES}$${bytesAB64(salt)}$${bytesAB64(derivado)}`
+}
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -69,6 +88,8 @@ const ORG_PRUEBA = {
 }
 
 const CODIGO_PRUEBA = 'TYLTYL-2026'
+const EMAIL_TYL_TYL = 'admin@tyltyl.org'
+const PASSWORD_TYL_TYL = 'tyltyl' // Contraseña por defecto (cambiarla en el panel)
 
 async function sembrar() {
   const [org] = await sql`
@@ -84,6 +105,17 @@ async function sembrar() {
     RETURNING id, nombre, slug, categoria_defecto, lugar_defecto
   `
 
+  // Crear usuario admin para TYL TYL
+  const passwordHash = await hashPassword(PASSWORD_TYL_TYL)
+  await sql`
+    INSERT INTO usuarios (email, nombre, password_hash, rol, organizacion_id, activo)
+    VALUES (${EMAIL_TYL_TYL}, 'Admin TYL TYL', ${passwordHash}, 'admin', ${org.id}, true)
+    ON CONFLICT (email) DO UPDATE SET
+      password_hash = EXCLUDED.password_hash,
+      organizacion_id = EXCLUDED.organizacion_id,
+      activo = true
+  `
+
   const [codigo] = await sql`
     INSERT INTO codigos_invitacion (codigo, organizacion_id, rol_concedido, usos_maximos)
     VALUES (${CODIGO_PRUEBA}, ${org.id}, 'admin', 5)
@@ -94,6 +126,9 @@ async function sembrar() {
   console.log(
     `Organización de prueba: ${org.nombre} (${org.slug}) — ` +
       `categoría "${org.categoria_defecto}", lugar "${org.lugar_defecto}"`
+  )
+  console.log(
+    `Usuario admin: ${EMAIL_TYL_TYL} / ${PASSWORD_TYL_TYL} (cambiar en el panel)`
   )
   console.log(
     `Código de invitación: ${codigo.codigo} — ${codigo.usos_actuales}/${codigo.usos_maximos} usos, activo: ${codigo.activo}`

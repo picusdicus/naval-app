@@ -1,7 +1,6 @@
-// POST /api/login — login de usuarios de organización (admin/editor):
-// primero el admin de entorno (single-tenant), luego la tabla `usuarios`. El
-// login del superadmin vive en /api/admin/login.
-import { credencialesValidas, usuarioDeEntorno, passwordCorrecto, necesitaRehash, hashPassword, responderConSesion } from './_auth.js'
+// POST /api/login — login de usuarios de organización (admin/editor).
+// El login del superadmin vive en /api/admin/login.
+import { passwordCorrecto, necesitaRehash, hashPassword, responderConSesion } from './_auth.js'
 import { obtenerSql } from './_db.js'
 import { json, leerJson, csrfInvalido, rechazoCsrf } from './_http.js'
 import { limitar, obtenerIp, respuesta429 } from './_ratelimit.js'
@@ -28,16 +27,7 @@ export default async function handler(req) {
     if (!limite.ok) return respuesta429(limite.resetEnS)
   }
 
-  // Intentar credenciales de entorno (usuario admin de la app).
-  try {
-    if (await credencialesValidas(email, password)) {
-      return await responderConSesion(usuarioDeEntorno())
-    }
-  } catch (error) {
-    console.error('Error checking admin credentials:', error)
-  }
-
-  // Intentar buscar usuario en la BD con password hash.
+  // Buscar usuario en la BD con password hash.
   try {
     const sql = obtenerSql()
     const usuarios = await sql`
