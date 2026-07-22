@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import {
   LISTA_CATEGORIAS_EVENTO,
@@ -37,6 +37,26 @@ function diaNumero(fecha) {
   return new Date(`${fecha}T00:00:00`).getDate()
 }
 
+// Cuántos eventos ya celebrados se muestran de entrada, y de cuántos en cuántos
+// se amplía la lista al pulsar "Ver más".
+const PASADOS_INICIALES = 12
+const PASADOS_INCREMENTO = 24
+
+// Rótulo que separa los meses dentro de la agenda. Las filas solo muestran el
+// número de día, así que sin esto el salto del 31 al 1 parece un desorden.
+function SeparadorMes({ fecha }) {
+  const d = new Date(`${fecha}T00:00:00`)
+  const etiqueta = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(d)
+  return (
+    <div className="flex items-center gap-4 pt-2">
+      <h3 className="font-mono-ibm text-[11px] uppercase tracking-etiqueta text-terracota">
+        {cap(etiqueta)}
+      </h3>
+      <div className="h-px flex-1 bg-filete" />
+    </div>
+  )
+}
+
 // "Lunes · Julio" para la cabecera de cada grupo de día.
 function diaEtiqueta(fecha) {
   const d = new Date(`${fecha}T00:00:00`)
@@ -53,6 +73,9 @@ export default function Eventos() {
   // copia local de las preferencias, no el estado real del servidor. La bandeja
   // de avisos vive en la cabecera global (CentroAvisos), no aquí.
   const [avisosActivos, setAvisosActivos] = useState(() => Boolean(prefsLocales()))
+  // La agenda arrastra el histórico completo (la del Ayuntamiento se vuelca por
+  // trimestres), así que "Eventos anteriores" se corta y se amplía a petición.
+  const [pasadosVisibles, setPasadosVisibles] = useState(PASADOS_INICIALES)
 
   // Estáticos del JSON + los que las organizaciones han publicado desde /admin.
   const { eventos: todos } = useEventosPublicos()
@@ -68,6 +91,9 @@ export default function Eventos() {
 
   const futuros = useMemo(() => porCategoria(proximosEventos(todos)), [todos, categoria])
   const pasados = useMemo(() => porCategoria(eventosPasados(todos)), [todos, categoria])
+  // Al cambiar de filtro se vuelve al corte inicial: si no, un filtro nuevo
+  // heredaría la lista ya expandida del anterior.
+  useEffect(() => setPasadosVisibles(PASADOS_INICIALES), [categoria])
   const grupos = useMemo(() => agruparPorDia(futuros), [futuros])
 
   // Eventos destacados contratados. El carrusel aparece encima de la agenda solo
@@ -178,11 +204,18 @@ export default function Eventos() {
           </p>
         )}
 
-        {/* Lista de próximos eventos */}
+        {/* Lista de próximos eventos, con un rótulo cada vez que cambia el mes */}
         <div className="space-y-4">
-          {futuros.map((e) => (
-            <EventoFilaNueva key={e.id} evento={e} />
-          ))}
+          {futuros.map((e, i) => {
+            const mes = e.fecha.slice(0, 7)
+            const cambiaMes = i === 0 || futuros[i - 1].fecha.slice(0, 7) !== mes
+            return (
+              <Fragment key={e.id}>
+                {cambiaMes && <SeparadorMes fecha={e.fecha} />}
+                <EventoFilaNueva evento={e} />
+              </Fragment>
+            )
+          })}
         </div>
 
         {/* Anteriores */}
@@ -197,10 +230,21 @@ export default function Eventos() {
               <div className="h-px flex-1 bg-filete" />
             </div>
             <div className="flex flex-col gap-3.5">
-              {pasados.map((e) => (
+              {pasados.slice(0, pasadosVisibles).map((e) => (
                 <EventoFila key={e.id} evento={e} pasado />
               ))}
             </div>
+            {pasados.length > pasadosVisibles && (
+              <div className="mt-5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setPasadosVisibles((n) => n + PASADOS_INCREMENTO)}
+                  className="border border-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-tinta hover:text-papel"
+                >
+                  Ver más ({pasados.length - pasadosVisibles})
+                </button>
+              </div>
+            )}
           </section>
         )}
 
