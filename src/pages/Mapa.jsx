@@ -131,13 +131,27 @@ export default function Mapa() {
           desktop; flujo normal de la página en móvil). */}
       <div
         ref={columnRef}
-        className="hide-scrollbar flex flex-col gap-6 lg:h-full lg:w-3/5 lg:min-w-0 lg:overflow-y-auto lg:pr-2"
+        className="hide-scrollbar flex flex-col gap-6 lg:w-3/5 lg:min-w-0 lg:pr-2"
       >
         <header className="gz-filete-doble pb-3">
           <div className="gz-label text-mudo">El directorio de</div>
           <h1 className="font-serif-dm text-seccion leading-none text-tinta">Comercios</h1>
         </header>
 
+        {/* Franja de comercios destacados - ENCIMA del buscador y filtros */}
+        {conDestacados && (
+          <section className="mb-6">
+            <h2 className="gz-eyebrow mb-3 block">Comercios destacados</h2>
+            <CarruselDestacados
+              items={comerciosDestacados}
+              columnas={3}
+              seccion="comercios"
+              onItemClick={(comercio) => setSeleccionado(comercio)}
+            />
+          </section>
+        )}
+
+        {/* Buscador y filtros - DEBAJO de destacados */}
         <FiltrosCategoria
           categoria={categoria}
           onCategoria={elegirCategoria}
@@ -169,22 +183,6 @@ export default function Mapa() {
               </button>
             ))}
           </div>
-        )}
-
-        {/* Franja de comercios destacados: carrusel en todos los tamaños, la
-            columna es estrecha incluso en escritorio (lg:w-2/5). El clic
-            selecciona la ficha en la propia página, como en la lista. */}
-        {conDestacados && (
-          <section>
-            <h2 className="gz-eyebrow mb-3 block">Comercios destacados</h2>
-            <CarruselDestacados
-              items={comerciosDestacados}
-              soloCarrusel
-              visibles={6}
-              seccion="comercios"
-              onItemClick={(comercio) => setSeleccionado(comercio)}
-            />
-          </section>
         )}
 
         <div className="flex items-center justify-between border-t border-tinta pt-3">
@@ -265,7 +263,7 @@ export default function Mapa() {
 
       {/* Columna derecha: mapa fijo, solo en escritorio. */}
       {esDesktop && (
-        <div className="lg:h-full lg:w-2/5 lg:flex-shrink-0">
+        <div className="lg:h-96 lg:w-2/5 lg:flex-shrink-0 lg:sticky lg:top-0">
           <MapaComercios
             comercios={enMapa}
             seleccionado={seleccionado}
