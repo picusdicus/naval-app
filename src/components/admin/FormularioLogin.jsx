@@ -38,7 +38,6 @@ export default function FormularioLogin({ titulo, subtitulo, icono, endpoint, de
       navegar(destino, { replace: true })
     } catch (err) {
       setError(err.message)
-      setPassword('')
     } finally {
       setEnviando(false)
     }
