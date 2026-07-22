@@ -62,21 +62,24 @@ function Slide({ d, seccion }) {
                 ))}
               </div>
             )}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                to={d.to}
-                onClick={seccion ? () => reportarClicDestacado(d, seccion) : undefined}
-                className="gz-boton-pill"
-              >
-                {d.tipo === 'comercio' ? 'Ver ficha' : 'Ver detalles'}
-              </Link>
-              <Link
-                to={secundario.to}
-                className="rounded-full border border-papel/50 px-6 py-3 font-serif-spectral text-papel transition-colors hover:bg-papel/10"
-              >
-                {secundario.texto}
-              </Link>
-            </div>
+            {/* Botones solo para eventos; los comercios se muestran sin CTA. */}
+            {d.tipo !== 'comercio' && (
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  to={d.to}
+                  onClick={seccion ? () => reportarClicDestacado(d, seccion) : undefined}
+                  className="gz-boton-pill"
+                >
+                  Ver detalles
+                </Link>
+                <Link
+                  to={secundario.to}
+                  className="rounded-full border border-papel/50 px-6 py-3 font-serif-spectral text-papel transition-colors hover:bg-papel/10"
+                >
+                  {secundario.texto}
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Cartel real, entero (vertical), solo cuando hay foto y hay espacio. */}
