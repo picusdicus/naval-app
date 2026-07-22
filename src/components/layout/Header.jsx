@@ -3,11 +3,12 @@ import MIcon from '../MIcon.jsx'
 import Logo from '../Logo.jsx'
 import CentroAvisos from '../avisos/CentroAvisos.jsx'
 
+// Transporte se oculta del menú de escritorio (sigue accesible desde el menú
+// móvil, la NavBar inferior y su ruta directa /transporte).
 const enlaces = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/eventos', label: 'Eventos' },
   { to: '/comercios', label: 'Comercios' },
-  { to: '/transporte', label: 'Transporte' },
   { to: '/noticias', label: 'Noticias' },
 ]
 

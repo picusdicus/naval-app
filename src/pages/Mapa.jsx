@@ -13,6 +13,7 @@ import { buscarDirectorio } from '../lib/busqueda.js'
 import { useDestacados } from '../lib/useDestacados.js'
 import { useLazyLoad } from '../lib/useLazyLoad.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
+import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
 import MIcon from '../components/MIcon.jsx'
 
 // Hook: ¿el viewport cumple el media query? Se usa para montar el mapa solo en
@@ -139,23 +140,34 @@ export default function Mapa() {
         </header>
       </div>
 
-      {/* Franja de comercios destacados - FULL WIDTH */}
+      {/* Franja de comercios destacados - FULL WIDTH.
+          Móvil: carrusel nativo con scroll-snap (todas las tarjetas).
+          Escritorio: hero editorial con tarjetas grandes, cabecera y flechas. */}
       {conDestacados && (
         <section className="mb-6 px-4 lg:px-0">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="gz-eyebrow">Comercios destacados</h2>
-            <div className="flex items-center gap-2">
-              <button className="px-4 py-1.5 border-2 border-tinta text-tinta hover:bg-papel-calido transition font-mono-ibm text-[10px] font-bold uppercase tracking-etiqueta rounded-full">
-                ✦ Anúnciate aquí
-              </button>
+          {/* Móvil */}
+          <div className="md:hidden">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="gz-eyebrow">Comercios destacados</h2>
             </div>
+            <CarruselDestacados
+              items={comerciosDestacados}
+              columnas={3}
+              seccion="comercios"
+              onItemClick={setSeleccionado}
+            />
           </div>
-          <div style={{display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '1.5rem'}}>
-            {comerciosDestacados.slice(0, 3).map((item) => (
-              <div key={item.id} onClick={() => setSeleccionado(item)} className="cursor-pointer">
-                <CarruselDestacados items={[item]} columnas={1} seccion="comercios" />
-              </div>
-            ))}
+
+          {/* Escritorio */}
+          <div className="hidden md:block">
+            <HeroDestacadosDesktop
+              items={comerciosDestacados}
+              eyebrow="Comercios destacados"
+              titulo="Los negocios que dan vida al pueblo"
+              onSeleccionar={setSeleccionado}
+              onAnunciar={() => setSugiriendo(true)}
+              seccion="comercios"
+            />
           </div>
         </section>
       )}

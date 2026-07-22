@@ -7,30 +7,47 @@ export default function Footer({ onAbrirChat }) {
     <footer className="hidden bg-papel md:block">
       <div className="mx-auto w-full max-w-[1440px] px-10">
         <div className="gz-filete-doble" />
-        <div className="grid grid-cols-3 gap-10 py-12">
+        <div className="grid grid-cols-4 gap-10 py-12">
           <div>
             <p className="font-serif-dm text-xl text-tinta">En Navalcarnero</p>
             <p className="mt-2 font-serif-spectral text-sm text-pardo">
               Tu conexión directa con los servicios municipales y la vida vecinal.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 font-serif-spectral text-sm text-pardo">
-            <Link to="/eventos" className="transition-colors hover:text-terracota">
-              Eventos
-            </Link>
-            <Link to="/comercios" className="transition-colors hover:text-terracota">
-              Comercios
-            </Link>
-            <Link to="/noticias" className="transition-colors hover:text-terracota">
-              Noticias
-            </Link>
-            <button
-              type="button"
-              onClick={onAbrirChat}
-              className="text-left transition-colors hover:text-terracota"
-            >
-              Asistente IA
-            </button>
+          <div className="font-serif-spectral text-sm text-pardo">
+            <p className="gz-label text-mudo">Explora</p>
+            <div className="mt-3 flex flex-col gap-2.5">
+              <Link to="/eventos" className="transition-colors hover:text-terracota">
+                Eventos
+              </Link>
+              <Link to="/comercios" className="transition-colors hover:text-terracota">
+                Comercios
+              </Link>
+              <Link to="/noticias" className="transition-colors hover:text-terracota">
+                Noticias
+              </Link>
+              <Link to="/transporte" className="transition-colors hover:text-terracota">
+                Transporte
+              </Link>
+            </div>
+          </div>
+          <div className="font-serif-spectral text-sm text-pardo">
+            <p className="gz-label text-mudo">Ayuda</p>
+            <div className="mt-3 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={onAbrirChat}
+                className="text-left transition-colors hover:text-terracota"
+              >
+                Asistente IA
+              </button>
+              <Link to="/ayuda" className="transition-colors hover:text-terracota">
+                Preguntas frecuentes
+              </Link>
+              <Link to="/sugerencias" className="transition-colors hover:text-terracota">
+                Buzón de sugerencias
+              </Link>
+            </div>
           </div>
           <div className="font-serif-spectral text-sm text-pardo">
             <p className="gz-label text-mudo">Atención ciudadana</p>

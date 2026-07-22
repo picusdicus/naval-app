@@ -72,19 +72,25 @@ export default function EventoFilaNueva({ evento: e, pasado = false }) {
           <span className="truncate">{e.lugar}</span>
         </div>
 
-        {/* Botones */}
+        {/* Botones. La fila entera ya enlaza al detalle: "Ver ficha" deja
+            burbujear el clic al Link (sin preventDefault). "Reservar" solo
+            aparece si el evento trae enlace de entradas y abre ese enlace
+            externo sin disparar la navegación de la fila. */}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={(e) => e.preventDefault()}
             className="px-4 py-1.5 border border-tinta text-tinta hover:bg-papel-calido transition-colors font-mono-ibm text-[10px] font-bold uppercase tracking-etiqueta"
           >
             Ver ficha
           </button>
-          {!pasado && (
+          {!pasado && e.entradas?.url && (
             <button
               type="button"
-              onClick={(e) => e.preventDefault()}
+              onClick={(ev) => {
+                ev.preventDefault()
+                ev.stopPropagation()
+                window.open(e.entradas.url, '_blank', 'noopener,noreferrer')
+              }}
               className="px-4 py-1.5 border border-tinta text-tinta hover:bg-papel-calido transition-colors font-mono-ibm text-[10px] font-bold uppercase tracking-etiqueta"
             >
               Reservar

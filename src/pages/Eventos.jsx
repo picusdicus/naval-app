@@ -12,6 +12,7 @@ import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { useDestacados } from '../lib/useDestacados.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
+import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
 import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
 import { prefsLocales } from '../lib/push.js'
 
@@ -76,43 +77,45 @@ export default function Eventos() {
   const conCarrusel = categoria === null && destacadosEvento.length > 0
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-7rem)]">
-      {/* Columna izquierda: lista de eventos */}
-      <div className="hide-scrollbar flex flex-1 flex-col min-w-0 lg:overflow-y-auto lg:pr-4">
-        {/* Masthead */}
-        <header className="flex items-start justify-between gap-4 mb-6">
-          <div className="gz-filete-doble flex-1 pb-3">
-            <div className="gz-label text-mudo">Qué hacer en</div>
-            <h1 className="font-serif-dm text-seccion leading-none text-tinta">La cartelera</h1>
-          </div>
-          {/* Opt-in de push */}
-          <button
-            type="button"
-            onClick={() => setAvisosAbierto(true)}
-            className={`flex flex-shrink-0 items-center gap-2 px-3 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta transition-colors ${
-              avisosActivos ? 'border border-tinta text-tinta' : 'bg-tinta text-papel hover:opacity-90'
-            }`}
-          >
-            <MIcon
-              name={avisosActivos ? 'notifications_active' : 'notifications'}
-              className="text-[16px]"
-              fill={avisosActivos}
-            />
-            {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
-          </button>
-        </header>
+    <div className="flex flex-col">
+      {/* Masthead - FULL WIDTH */}
+      <header className="flex items-start justify-between gap-4 mb-6">
+        <div className="gz-filete-doble flex-1 pb-3">
+          <div className="gz-label text-mudo">Qué hacer en</div>
+          <h1 className="font-serif-dm text-seccion leading-none text-tinta">La cartelera</h1>
+        </div>
+        {/* Opt-in de push */}
+        <button
+          type="button"
+          onClick={() => setAvisosAbierto(true)}
+          className={`flex flex-shrink-0 items-center gap-2 px-3 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta transition-colors ${
+            avisosActivos ? 'border border-tinta text-tinta' : 'bg-tinta text-papel hover:opacity-90'
+          }`}
+        >
+          <MIcon
+            name={avisosActivos ? 'notifications_active' : 'notifications'}
+            className="text-[16px]"
+            fill={avisosActivos}
+          />
+          {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
+        </button>
+      </header>
 
-        <DialogoAvisos
-          abierto={avisosAbierto}
-          onCerrar={() => {
-            setAvisosAbierto(false)
-            setAvisosActivos(Boolean(prefsLocales()))
-          }}
-        />
+      <DialogoAvisos
+        abierto={avisosAbierto}
+        onCerrar={() => {
+          setAvisosAbierto(false)
+          setAvisosActivos(Boolean(prefsLocales()))
+        }}
+      />
 
-        {/* Destacados de cultura (contratados) - ENCIMA de los filtros */}
-        {conCarrusel && (
-          <section className="mb-6 animate-rise">
+      {/* Destacados (contratados) - FULL WIDTH.
+          Móvil: carrusel nativo con scroll-snap; escritorio: hero editorial
+          con tarjetas grandes, cabecera y flechas (igual que Comercios). */}
+      {conCarrusel && (
+        <section className="mb-6 animate-rise">
+          {/* Móvil */}
+          <div className="md:hidden">
             <div className="mb-3 flex items-baseline justify-between">
               <span className="gz-eyebrow">Destacados de la semana</span>
               <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
@@ -120,10 +123,25 @@ export default function Eventos() {
                 {String(destacadosEvento.length).padStart(2, '0')}
               </span>
             </div>
-            <CarruselDestacados items={destacadosEvento} columnas={2} seccion="eventos" />
-          </section>
-        )}
+            <CarruselDestacados items={destacadosEvento} columnas={3} seccion="eventos" />
+          </div>
 
+          {/* Escritorio */}
+          <div className="hidden md:block">
+            <HeroDestacadosDesktop
+              items={destacadosEvento}
+              eyebrow="Destacados de la semana"
+              titulo="Lo que no te puedes perder"
+              seccion="eventos"
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Cuerpo: agenda (izquierda) + calendario (lateral sticky) */}
+      <div className="flex flex-col gap-6 lg:flex-row">
+        {/* Columna izquierda: filtros + lista de eventos */}
+        <div className="flex flex-1 flex-col min-w-0">
         {/* Selector de categorías - DEBAJO de destacados */}
         {categoriasDisponibles.length > 0 && (
           <div className="hide-scrollbar mb-6 flex flex-wrap gap-2 py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
@@ -207,9 +225,16 @@ export default function Eventos() {
         </p>
       </div>
 
-      {/* Columna derecha: Calendario - solo en desktop */}
-      <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
-        <CalendarioEventos eventos={futuros} mesSeleccionado={mesSeleccionado} onMesChange={setMesSeleccionado} />
+        {/* Columna derecha (lateral): Calendario sticky - solo en desktop */}
+        <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
+          <div className="lg:sticky lg:top-28">
+            <CalendarioEventos
+              eventos={futuros}
+              mesSeleccionado={mesSeleccionado}
+              onMesChange={setMesSeleccionado}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
