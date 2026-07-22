@@ -15,8 +15,11 @@ import crypto from 'node:crypto'
 // Hash password function similar to api/_auth.js
 const PBKDF2_ITERACIONES = 310000
 
+// btoa-compatible base64 encoding para Uint8Array
 function bytesAB64(arr) {
-  return Buffer.from(arr).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+  let bin = ''
+  for (const b of arr) bin += String.fromCharCode(b)
+  return Buffer.from(bin, 'binary').toString('base64')
 }
 
 async function hashPassword(password) {
