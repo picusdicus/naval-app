@@ -1,4 +1,7 @@
-const CACHE_NAME = 'vecinal-v2'
+// Subir esta versión en cada despliegue que cambie assets: el handler de
+// `activate` borra las cachés cuyo nombre no coincida, así que es lo único que
+// purga los ficheros viejos servidos por la estrategia cache-first.
+const CACHE_NAME = 'vecinal-v3'
 const STATIC_ASSETS = [
   '/',
   '/index.html',
