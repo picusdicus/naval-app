@@ -147,7 +147,7 @@ export default function Eventos() {
                 {String(destacadosEvento.length).padStart(2, '0')}
               </span>
             </div>
-            <CarruselDestacados items={destacadosEvento} columnas={3} seccion="eventos" />
+            <CarruselDestacados items={destacadosEvento} columnas={2} seccion="eventos" />
           </section>
         )}
 
