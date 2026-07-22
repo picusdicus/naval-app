@@ -43,8 +43,10 @@ export default function TarjetaDestacado({ destacado, tamano = 'normal', onClick
         </div>
       )}
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-      {/* Badge oro arriba-izquierda */}
-      <span className="gz-badge-oro absolute left-3 top-3 z-20">{destacado.badge}</span>
+      {/* Badge dorado con estrella */}
+      <span className="absolute left-3 top-3 z-20 bg-oro px-3 py-1.5 rounded-full font-mono-ibm text-[10px] font-bold uppercase tracking-etiqueta text-tinta">
+        ✦ {destacado.badge}
+      </span>
       <div className={`absolute bottom-0 left-0 z-20 w-full ${grande ? 'p-5' : 'p-4'}`}>
         <h3
           className={`font-serif-dm italic leading-[0.9] text-papel ${

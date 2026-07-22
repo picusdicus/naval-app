@@ -6,7 +6,7 @@ import { etiquetaCocina } from '../lib/cocinas.js'
 import MapaComercios from '../components/directorio/MapaComercios.jsx'
 import FiltrosCategoria from '../components/directorio/FiltrosCategoria.jsx'
 import ComercioCard from '../components/directorio/ComercioCard.jsx'
-import ComercioTarjeta from '../components/directorio/ComercioTarjeta.jsx'
+import ComercioFila from '../components/directorio/ComercioFila.jsx'
 import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
 import { buscarDirectorio } from '../lib/busqueda.js'
@@ -140,14 +140,22 @@ export default function Mapa() {
 
         {/* Franja de comercios destacados - FULL WIDTH */}
         {conDestacados && (
-          <section>
-            <h2 className="gz-eyebrow mb-3 block">Comercios destacados</h2>
-            <CarruselDestacados
-              items={comerciosDestacados}
-              columnas={3}
-              seccion="comercios"
-              onItemClick={(comercio) => setSeleccionado(comercio)}
-            />
+          <section className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="gz-eyebrow">Comercios destacados</h2>
+              <div className="flex items-center gap-2">
+                <button className="px-4 py-1.5 border-2 border-tinta text-tinta hover:bg-papel-calido transition font-mono-ibm text-[10px] font-bold uppercase tracking-etiqueta rounded-full">
+                  ✦ Anúnciate aquí
+                </button>
+              </div>
+            </div>
+            <div style={{display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '1.5rem'}}>
+              {comerciosDestacados.slice(0, 3).map((item) => (
+                <div key={item.id} onClick={() => setSeleccionado(item)} className="cursor-pointer">
+                  <CarruselDestacados items={[item]} columnas={1} seccion="comercios" />
+                </div>
+              ))}
+            </div>
           </section>
         )}
       </div>
@@ -216,12 +224,12 @@ export default function Mapa() {
             </p>
           )}
 
-          {/* Grid de comercios (solo desktop) */}
+          {/* Lista de comercios (solo desktop) */}
           {esDesktop && comercios.length > 0 && (
             <>
-              <div className="grid gap-4 grid-cols-3">
+              <div className="space-y-0">
                 {comerciosVisibles.map((c) => (
-                  <ComercioTarjeta
+                  <ComercioFila
                     key={c.id}
                     comercio={c}
                     onClick={() => setSeleccionado(c)}
