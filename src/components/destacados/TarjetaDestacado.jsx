@@ -70,7 +70,7 @@ export default function TarjetaDestacado({ destacado, tamano = 'normal', onClick
   )
 
   const clases = `group relative block w-full overflow-hidden border border-tinta transition-shadow md:rounded-lg md:border-0 md:shadow-cartel md:hover:shadow-tarjeta-gaceta ${
-    grande ? 'h-72 md:h-80' : 'aspect-[3/4] md:aspect-auto md:h-56'
+    grande ? 'h-80 md:h-96' : 'h-72 md:h-80'
   }`
 
   if (onClick) {
