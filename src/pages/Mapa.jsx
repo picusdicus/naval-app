@@ -131,76 +131,79 @@ export default function Mapa() {
 
   return (
     <div className="flex flex-col">
-      {/* Cabecera y destacados - FULL WIDTH */}
-      <div className="flex flex-col gap-6 px-4 py-6 lg:px-0">
+      {/* Cabecera - FULL WIDTH */}
+      <div className="flex flex-col gap-6 px-4 py-6 lg:px-0 lg:mb-6">
         <header className="gz-filete-doble pb-3">
           <div className="gz-label text-mudo">El directorio de</div>
           <h1 className="font-serif-dm text-seccion leading-none text-tinta">Comercios</h1>
         </header>
+      </div>
 
-        {/* Franja de comercios destacados - FULL WIDTH */}
-        {conDestacados && (
-          <section className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="gz-eyebrow">Comercios destacados</h2>
-              <div className="flex items-center gap-2">
-                <button className="px-4 py-1.5 border-2 border-tinta text-tinta hover:bg-papel-calido transition font-mono-ibm text-[10px] font-bold uppercase tracking-etiqueta rounded-full">
-                  ✦ Anúnciate aquí
-                </button>
+      {/* Franja de comercios destacados - FULL WIDTH */}
+      {conDestacados && (
+        <section className="mb-6 px-4 lg:px-0">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="gz-eyebrow">Comercios destacados</h2>
+            <div className="flex items-center gap-2">
+              <button className="px-4 py-1.5 border-2 border-tinta text-tinta hover:bg-papel-calido transition font-mono-ibm text-[10px] font-bold uppercase tracking-etiqueta rounded-full">
+                ✦ Anúnciate aquí
+              </button>
+            </div>
+          </div>
+          <div style={{display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '1.5rem'}}>
+            {comerciosDestacados.slice(0, 3).map((item) => (
+              <div key={item.id} onClick={() => setSeleccionado(item)} className="cursor-pointer">
+                <CarruselDestacados items={[item]} columnas={1} seccion="comercios" />
               </div>
-            </div>
-            <div style={{display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '1.5rem'}}>
-              {comerciosDestacados.slice(0, 3).map((item) => (
-                <div key={item.id} onClick={() => setSeleccionado(item)} className="cursor-pointer">
-                  <CarruselDestacados items={[item]} columnas={1} seccion="comercios" />
-                </div>
-              ))}
-            </div>
-          </section>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Buscador y filtros - FULL WIDTH, ENCIMA de listado */}
+      <div className="px-4 lg:px-0 py-6 border-y border-tinta">
+        <FiltrosCategoria
+          categoria={categoria}
+          onCategoria={elegirCategoria}
+          busqueda={busqueda}
+          onBusqueda={setBusqueda}
+        />
+
+        {categoria === 'restauracion' && cocinasDisponibles.length > 0 && (
+          <div className="hide-scrollbar flex gap-2 overflow-x-auto py-3 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
+            <button
+              type="button"
+              onClick={() => setCocinaFiltro(null)}
+              className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                cocinaFiltro === null ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
+              }`}
+            >
+              Todo tipo
+            </button>
+            {cocinasDisponibles.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCocinaFiltro(c)}
+                className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                  cocinaFiltro === c ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
+                }`}
+              >
+                {etiquetaCocina(c)}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Contenedor principal: buscador/filtros + grid + mapa sidebar */}
-      <div className="flex flex-col lg:flex-row lg:gap-6 lg:px-0 px-4">
+      {/* Contenedor principal: listado + mapa sidebar */}
+      <div className="flex flex-col lg:flex-row lg:gap-6 lg:px-0 px-4 pt-6">
         {/* Columna izquierda: buscador + lista de comercios */}
         <div
           ref={columnRef}
           className="hide-scrollbar flex flex-col gap-6 flex-1 lg:min-w-0"
         >
-          {/* Buscador y filtros */}
-          <FiltrosCategoria
-            categoria={categoria}
-            onCategoria={elegirCategoria}
-            busqueda={busqueda}
-            onBusqueda={setBusqueda}
-          />
-
-          {categoria === 'restauracion' && cocinasDisponibles.length > 0 && (
-            <div className="hide-scrollbar flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
-              <button
-                type="button"
-                onClick={() => setCocinaFiltro(null)}
-                className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-                  cocinaFiltro === null ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
-                }`}
-              >
-                Todo tipo
-              </button>
-              {cocinasDisponibles.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCocinaFiltro(c)}
-                  className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-                    cocinaFiltro === c ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
-                  }`}
-                >
-                  {etiquetaCocina(c)}
-                </button>
-              ))}
-            </div>
-          )}
-
+  
           <div className="flex items-center justify-between border-t border-tinta pt-3">
             <p className="gz-label text-mudo">
               {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}

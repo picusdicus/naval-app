@@ -23,36 +23,36 @@ function horarioDeHoy(horario) {
   return null
 }
 
-// Iconos SVG por categoría (stroke blanco)
+// Iconos SVG por categoría (stroke blanco, 2.5px stroke para claridad)
 const IconosPorCategoria = {
   alimentacion: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-      <path d="M4 9h16M6 5h12c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9h12M3 13h18M5 3h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2z" />
     </svg>
   ),
   salud: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-      <path d="M12 5v14M5 12h14" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14M5 12h14M12 2c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" />
     </svg>
   ),
   belleza: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-      <path d="M6 18c0 0 0-7 6-7s6 7 6 7M12 3l2 5h5l-4 3 2 5-5-3-5 3 2-5-4-3h5l2-5z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2M6 12h12M12 6v12" />
     </svg>
   ),
   restauracion: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-      <path d="M3 2v6c0 1.1.9 2 2 2h2v8c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2v-8h2c1.1 0 2-.9 2-2V2M9 2v8" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 2l6 18M21 2l-6 18M3 10h18" />
     </svg>
   ),
   hogar: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22v-8h6v8" />
     </svg>
   ),
   servicios: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-      <path d="M7 6h10M7 11h10M7 16h10" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18M3 12h18M3 18h18" />
     </svg>
   ),
 }
