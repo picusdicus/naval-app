@@ -14,7 +14,7 @@ const enlaces = [
 ]
 
 export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
-  const { usuario } = useAdminAuth()
+  const { usuario, cargando } = useAdminAuth()
 
   return (
     <header className="sticky top-0 z-40 bg-papel md:border-b md:border-filete">
@@ -77,7 +77,7 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
           >
             Asistente IA
           </button>
-          {!usuario && (
+          {!cargando && !usuario && (
             <Link
               to="/login"
               className="rounded-full border-2 border-tinta bg-papel px-6 py-2 font-serif-spectral text-sm font-medium text-tinta transition-all hover:bg-terracota/10 active:scale-95"

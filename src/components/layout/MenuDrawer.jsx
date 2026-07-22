@@ -17,7 +17,7 @@ const rutas = [
 // logotipo apilado + filete doble, ítem activo en terracota. Estado (abierto) y
 // cierre los controla Layout; la animación es CSS pura sobre `abierto`.
 export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
-  const { usuario } = useAdminAuth()
+  const { usuario, cargando } = useAdminAuth()
   return (
     <div
       className={`fixed inset-0 z-50 flex transition-opacity duration-300 ${
@@ -76,7 +76,7 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
             Ayuntamiento
           </a>
 
-          {!usuario && (
+          {!cargando && !usuario && (
             <>
               <div className="border-t border-filete my-2" />
               <div className="px-3.5 py-2.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo font-semibold">
