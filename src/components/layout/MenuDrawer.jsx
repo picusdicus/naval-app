@@ -76,11 +76,13 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
             Ayuntamiento
           </a>
 
-          {!cargando && !usuario && (
+          {!cargando && (
             <>
               <div className="border-t border-filete my-2" />
+              {/* Con sesión abierta el enlace lleva al panel que le toca al rol:
+                  en el móvil este menú es la única vía de vuelta a la gestión. */}
               <NavLink
-                to="/login"
+                to={usuario ? (usuario.rol === 'superadmin' ? '/admin' : '/panel') : '/login'}
                 end={false}
                 onClick={onCerrar}
                 className={({ isActive }) =>
@@ -89,7 +91,7 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
                     : 'block px-3.5 py-2.5 text-tinta transition-colors hover:bg-papel-calido'
                 }
               >
-                Login
+                {usuario ? 'Mi panel' : 'Login'}
               </NavLink>
             </>
           )}

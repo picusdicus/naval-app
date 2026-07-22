@@ -77,14 +77,24 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
           >
             Asistente IA
           </button>
-          {!cargando && !usuario && (
-            <Link
-              to="/login"
-              className="font-serif-spectral text-base text-pardo transition-colors hover:text-terracota"
-            >
-              Login
-            </Link>
-          )}
+          {!cargando &&
+            (usuario ? (
+              // Con sesión abierta el enlace lleva al panel que le toca al rol;
+              // si no, no habría forma de volver a la gestión desde el portal.
+              <Link
+                to={usuario.rol === 'superadmin' ? '/admin' : '/panel'}
+                className="font-serif-spectral text-base text-pardo transition-colors hover:text-terracota"
+              >
+                Mi panel
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="font-serif-spectral text-base text-pardo transition-colors hover:text-terracota"
+              >
+                Login
+              </Link>
+            ))}
           <button
             type="button"
             onClick={onLogout}
