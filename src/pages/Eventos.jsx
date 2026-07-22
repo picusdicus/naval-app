@@ -6,6 +6,7 @@ import {
   eventosPasados,
 } from '../lib/eventos.js'
 import EventoFila from '../components/eventos/EventoFila.jsx'
+import EventoFilaNueva from '../components/eventos/EventoFilaNueva.jsx'
 import CalendarioEventos from '../components/eventos/CalendarioEventos.jsx'
 import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
@@ -162,7 +163,7 @@ export default function Eventos() {
         {/* Lista de próximos eventos */}
         <div className="space-y-4">
           {futuros.map((e) => (
-            <EventoFila key={e.id} evento={e} />
+            <EventoFilaNueva key={e.id} evento={e} />
           ))}
         </div>
 
