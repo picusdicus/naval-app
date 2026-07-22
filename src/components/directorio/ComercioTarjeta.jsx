@@ -36,7 +36,7 @@ export default function ComercioTarjeta({ comercio, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col overflow-hidden rounded-lg border-2 border-tinta bg-papel transition-transform hover:shadow-md text-left group"
+      className="flex flex-col overflow-hidden border-2 border-tinta bg-papel transition-transform hover:shadow-lg text-left group"
     >
       {/* Imagen o fondo de color */}
       <div
@@ -48,26 +48,21 @@ export default function ComercioTarjeta({ comercio, onClick }) {
             <IconoCategoria categoria={comercio.categoria} className="text-[56px] text-white" fill />
           </div>
         )}
-        {/* Gradiente oscuro para el texto */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-
         {/* Badge de categoría */}
-        <div className="absolute left-0 top-0 bg-terracota px-2 py-1 font-mono-ibm text-[9px] font-bold uppercase tracking-etiqueta text-papel">
+        <div className="absolute left-0 top-0 bg-ocre px-2 py-0.5 font-mono-ibm text-[9px] font-bold uppercase tracking-etiqueta text-tinta">
           • {cat?.nombre || 'Comercio'}
-        </div>
-
-        {/* Nombre prominente en la parte inferior de la imagen */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="font-serif-dm text-lg font-bold leading-tight text-white truncate">
-            {comercio.nombre}
-          </h3>
         </div>
       </div>
 
       {/* Información */}
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        {/* Tipo */}
-        <p className="text-[10px] text-pardo line-clamp-1">{tipo}</p>
+      <div className="flex flex-1 flex-col gap-1.5 p-3">
+        {/* Nombre */}
+        <div>
+          <h3 className="font-serif-dm text-sm font-bold leading-tight text-tinta">
+            {comercio.nombre}
+          </h3>
+          <p className="text-[10px] text-pardo mt-0.5">{tipo}</p>
+        </div>
 
         {/* Dirección */}
         {comercio.direccion && (
@@ -78,25 +73,23 @@ export default function ComercioTarjeta({ comercio, onClick }) {
         )}
 
         {/* Meta: rating, precio, horario */}
-        {(comercio.rating != null || precio || horaHoy) && (
-          <div className="flex flex-wrap gap-1.5 text-[9px] text-mudo font-mono-ibm uppercase tracking-wider mt-auto pt-2 border-t border-filete">
-            {comercio.rating != null && (
-              <span className="flex items-center gap-0.5">
-                <span className="text-ocre">★ {comercio.rating.toFixed(1)}</span>
-                {comercio.totalReviews != null && <span>({comercio.totalReviews})</span>}
-              </span>
-            )}
-            {precio && <span className="text-ocre">{precio}</span>}
-            {horaHoy && (
-              <span>
-                HOY <span className="text-tinta text-[9px]">{horaHoy}</span>
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-1.5 text-[9px] text-mudo font-mono-ibm uppercase tracking-wider mt-auto">
+          {comercio.rating != null && (
+            <span className="flex items-center gap-0.5">
+              <span className="text-ocre">★ {comercio.rating.toFixed(1)}</span>
+              {comercio.totalReviews != null && <span>({comercio.totalReviews})</span>}
+            </span>
+          )}
+          {precio && <span className="text-ocre">{precio}</span>}
+          {horaHoy && (
+            <span>
+              HOY <span className="text-tinta text-[9px]">{horaHoy}</span>
+            </span>
+          )}
+        </div>
 
-        {/* Botón Ver ficha */}
-        <div className="mt-auto pt-2 border-t border-filete">
+        {/* Botón */}
+        <div className="mt-1.5 pt-1.5 border-t border-filete">
           <span className="inline-block font-mono-ibm text-[9px] font-bold uppercase tracking-etiqueta text-terracota group-hover:text-tinta transition-colors">
             Ver ficha
           </span>
