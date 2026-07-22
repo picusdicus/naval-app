@@ -20,6 +20,7 @@ export default function FormularioLogin({ titulo, subtitulo, icono, endpoint, de
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [verContraseña, setVerContraseña] = useState(false)
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
@@ -90,19 +91,30 @@ export default function FormularioLogin({ titulo, subtitulo, icono, endpoint, de
                 >
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setError('')
-                  }}
-                  placeholder="••••••••"
-                  className="gz-input"
-                  disabled={enviando}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={verContraseña ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setError('')
+                    }}
+                    placeholder="••••••••"
+                    className="gz-input pr-10"
+                    disabled={enviando}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setVerContraseña(!verContraseña)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-pardo transition-colors hover:text-tinta disabled:opacity-50"
+                    disabled={enviando}
+                    title={verContraseña ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    <MIcon name={verContraseña ? 'visibility_off' : 'visibility'} className="text-[20px]" />
+                  </button>
+                </div>
               </div>
 
               {error && (
