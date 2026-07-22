@@ -126,7 +126,7 @@ export default function Eventos() {
 
         {/* Selector de categorías - DEBAJO de destacados */}
         {categoriasDisponibles.length > 0 && (
-          <div className="hide-scrollbar mb-6 flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
+          <div className="hide-scrollbar mb-6 flex flex-wrap gap-2 py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
             <button
               type="button"
               onClick={() => setCategoria(null)}
