@@ -76,14 +76,11 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
             Ayuntamiento
           </a>
 
-          {!cargando && (
+          {!cargando && !usuario && (
             <>
               <div className="border-t border-filete my-2" />
-              <div className="px-3.5 py-2.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo font-semibold">
-                {usuario ? 'Tu panel' : 'Para gestores'}
-              </div>
               <NavLink
-                to={usuario ? '/panel' : '/login'}
+                to="/login"
                 end={false}
                 onClick={onCerrar}
                 className={({ isActive }) =>
@@ -92,7 +89,7 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
                     : 'block px-3.5 py-2.5 text-tinta transition-colors hover:bg-papel-calido'
                 }
               >
-                {usuario ? `${usuario.rol === 'superadmin' ? 'Panel Superadmin' : 'Mi panel'}` : 'Panel de organizaciones'}
+                Login
               </NavLink>
             </>
           )}
