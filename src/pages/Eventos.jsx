@@ -110,7 +110,21 @@ export default function Eventos() {
           }}
         />
 
-        {/* Selector de categorías */}
+        {/* Destacados de cultura (contratados) - ENCIMA de los filtros */}
+        {conCarrusel && (
+          <section className="mb-6 animate-rise">
+            <div className="mb-3 flex items-baseline justify-between">
+              <span className="gz-eyebrow">Destacados de la semana</span>
+              <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
+                {String(Math.min(destacadosEvento.length, 3)).padStart(2, '0')} /{' '}
+                {String(destacadosEvento.length).padStart(2, '0')}
+              </span>
+            </div>
+            <CarruselDestacados items={destacadosEvento} columnas={2} seccion="eventos" />
+          </section>
+        )}
+
+        {/* Selector de categorías - DEBAJO de destacados */}
         {categoriasDisponibles.length > 0 && (
           <div className="hide-scrollbar mb-6 flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
             <button
@@ -135,20 +149,6 @@ export default function Eventos() {
               </button>
             ))}
           </div>
-        )}
-
-        {/* Destacados de cultura (contratados) */}
-        {conCarrusel && (
-          <section className="mb-6 animate-rise">
-            <div className="mb-3 flex items-baseline justify-between">
-              <span className="gz-eyebrow">Destacados de la semana</span>
-              <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
-                {String(Math.min(destacadosEvento.length, 3)).padStart(2, '0')} /{' '}
-                {String(destacadosEvento.length).padStart(2, '0')}
-              </span>
-            </div>
-            <CarruselDestacados items={destacadosEvento} columnas={2} seccion="eventos" />
-          </section>
         )}
 
         {/* ----------------------------- Agenda por día ----------------------------- */}
