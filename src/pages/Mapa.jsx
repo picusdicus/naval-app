@@ -11,6 +11,7 @@ import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
 import { buscarDirectorio } from '../lib/busqueda.js'
 import { useDestacados } from '../lib/useDestacados.js'
+import { useLazyLoad } from '../lib/useLazyLoad.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import MIcon from '../components/MIcon.jsx'
 
@@ -99,6 +100,9 @@ export default function Mapa() {
   const { items: comerciosDestacados } = useDestacados({ tipo: 'comercio' })
   const conDestacados = !categoria && !busqueda && comerciosDestacados.length > 0
 
+  // Lazy loading: mostrar 12 iniciales, cargar 12 más al hacer scroll
+  const { items: comerciosVisibles, observerRef } = useLazyLoad(comercios, 12)
+
   // Al seleccionar un comercio, scroll la ficha a la vista dentro del contenedor de la
   // columna izquierda. En desktop el scroll es dentro del contenedor (lg:overflow-y-auto),
   // en móvil se usa scrollIntoView normal.
@@ -126,21 +130,17 @@ export default function Mapa() {
   }, [seleccionado, esDesktop])
 
   return (
-    <div className="lg:flex lg:h-[calc(100vh-7rem)] lg:gap-6">
-      {/* Columna izquierda: buscador + chips + lista (scroll independiente en
-          desktop; flujo normal de la página en móvil). */}
-      <div
-        ref={columnRef}
-        className="hide-scrollbar flex flex-col gap-6 lg:w-3/5 lg:min-w-0 lg:pr-2"
-      >
+    <div className="flex flex-col">
+      {/* Cabecera y destacados - FULL WIDTH */}
+      <div className="flex flex-col gap-6 px-4 py-6 lg:px-0">
         <header className="gz-filete-doble pb-3">
           <div className="gz-label text-mudo">El directorio de</div>
           <h1 className="font-serif-dm text-seccion leading-none text-tinta">Comercios</h1>
         </header>
 
-        {/* Franja de comercios destacados - ENCIMA del buscador y filtros */}
+        {/* Franja de comercios destacados - FULL WIDTH */}
         {conDestacados && (
-          <section className="mb-6">
+          <section>
             <h2 className="gz-eyebrow mb-3 block">Comercios destacados</h2>
             <CarruselDestacados
               items={comerciosDestacados}
@@ -150,127 +150,145 @@ export default function Mapa() {
             />
           </section>
         )}
-
-        {/* Buscador y filtros - DEBAJO de destacados */}
-        <FiltrosCategoria
-          categoria={categoria}
-          onCategoria={elegirCategoria}
-          busqueda={busqueda}
-          onBusqueda={setBusqueda}
-        />
-
-        {categoria === 'restauracion' && cocinasDisponibles.length > 0 && (
-          <div className="hide-scrollbar flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
-            <button
-              type="button"
-              onClick={() => setCocinaFiltro(null)}
-              className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-                cocinaFiltro === null ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
-              }`}
-            >
-              Todo tipo
-            </button>
-            {cocinasDisponibles.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCocinaFiltro(c)}
-                className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-                  cocinaFiltro === c ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
-                }`}
-              >
-                {etiquetaCocina(c)}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between border-t border-tinta pt-3">
-          <p className="gz-label text-mudo">
-            {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}
-          </p>
-          <button
-            type="button"
-            onClick={() => setSugiriendo(true)}
-            className="flex items-center gap-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
-          >
-            <MIcon name="add" className="text-[14px]" />
-            ¿Falta un comercio?
-          </button>
-        </div>
-
-        {esSugerencia && (
-          <p className="flex items-start gap-2 border border-filete bg-papel-calido px-4 py-3 font-serif-spectral text-sm text-tinta-apagada">
-            <MIcon name="lightbulb" className="mt-0.5 text-[18px] text-ocre" />
-            <span>
-              No encontramos «{termino}» exactamente. Quizá te interesen estos sitios para comer:
-            </span>
-          </p>
-        )}
-
-        {/* Grid de comercios (solo desktop) */}
-        {esDesktop && comercios.length > 0 && (
-          <>
-            <div className="grid gap-4 grid-cols-3">
-              {comercios.map((c) => (
-                <ComercioTarjeta
-                  key={c.id}
-                  comercio={c}
-                  onClick={() => setSeleccionado(c)}
-                />
-              ))}
-            </div>
-            {seleccionado && comercios.some((c) => c.id === seleccionado.id) && (
-              <div ref={detalleRef} className="mt-6 border-t-2 border-tinta pt-6">
-                <ComercioDetalle comercio={seleccionado} onCerrar={() => setSeleccionado(null)} />
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Lista de comercios (solo móvil) */}
-        {!esDesktop && (
-          <>
-            <div>
-              {comercios.map((c) => (
-                <div key={c.id}>
-                  <ComercioCard
-                    comercio={c}
-                    activo={seleccionado?.id === c.id}
-                    onClick={() => setSeleccionado(c)}
-                  />
-                  {seleccionado?.id === c.id && (
-                    <div ref={detalleRef} className="py-3">
-                      <ComercioDetalle comercio={c} onCerrar={() => setSeleccionado(null)} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {comercios.length === 0 && (
-          <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
-            No hay comercios que coincidan con tu búsqueda.
-          </p>
-        )}
-
-        <p className="text-center font-mono-ibm text-[10px] text-mudo">
-          Datos © colaboradores de OpenStreetMap
-        </p>
       </div>
 
-      {/* Columna derecha: mapa fijo, solo en escritorio. */}
-      {esDesktop && (
-        <div className="lg:h-96 lg:w-2/5 lg:flex-shrink-0 lg:sticky lg:top-0">
-          <MapaComercios
-            comercios={enMapa}
-            seleccionado={seleccionado}
-            onSeleccionar={setSeleccionado}
+      {/* Contenedor principal: buscador/filtros + grid + mapa sidebar */}
+      <div className="flex flex-col lg:flex-row lg:gap-6 lg:px-0 px-4">
+        {/* Columna izquierda: buscador + lista de comercios */}
+        <div
+          ref={columnRef}
+          className="hide-scrollbar flex flex-col gap-6 flex-1 lg:min-w-0"
+        >
+          {/* Buscador y filtros */}
+          <FiltrosCategoria
+            categoria={categoria}
+            onCategoria={elegirCategoria}
+            busqueda={busqueda}
+            onBusqueda={setBusqueda}
           />
+
+          {categoria === 'restauracion' && cocinasDisponibles.length > 0 && (
+            <div className="hide-scrollbar flex gap-2 overflow-x-auto py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
+              <button
+                type="button"
+                onClick={() => setCocinaFiltro(null)}
+                className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                  cocinaFiltro === null ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
+                }`}
+              >
+                Todo tipo
+              </button>
+              {cocinasDisponibles.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCocinaFiltro(c)}
+                  className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
+                    cocinaFiltro === c ? 'bg-terracota text-papel' : 'border border-filete text-pardo hover:bg-papel-calido'
+                  }`}
+                >
+                  {etiquetaCocina(c)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between border-t border-tinta pt-3">
+            <p className="gz-label text-mudo">
+              {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSugiriendo(true)}
+              className="flex items-center gap-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
+            >
+              <MIcon name="add" className="text-[14px]" />
+              ¿Falta un comercio?
+            </button>
+          </div>
+
+          {esSugerencia && (
+            <p className="flex items-start gap-2 border border-filete bg-papel-calido px-4 py-3 font-serif-spectral text-sm text-tinta-apagada">
+              <MIcon name="lightbulb" className="mt-0.5 text-[18px] text-ocre" />
+              <span>
+                No encontramos «{termino}» exactamente. Quizá te interesen estos sitios para comer:
+              </span>
+            </p>
+          )}
+
+          {/* Grid de comercios (solo desktop) */}
+          {esDesktop && comercios.length > 0 && (
+            <>
+              <div className="grid gap-4 grid-cols-3">
+                {comerciosVisibles.map((c) => (
+                  <ComercioTarjeta
+                    key={c.id}
+                    comercio={c}
+                    onClick={() => setSeleccionado(c)}
+                  />
+                ))}
+              </div>
+              {/* Sentinel para lazy load */}
+              <div ref={observerRef} className="h-4" />
+              {seleccionado && comercios.some((c) => c.id === seleccionado.id) && (
+                <div ref={detalleRef} className="mt-6 border-t-2 border-tinta pt-6">
+                  <ComercioDetalle comercio={seleccionado} onCerrar={() => setSeleccionado(null)} />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Lista de comercios (solo móvil) */}
+          {!esDesktop && (
+            <>
+              <div>
+                {comerciosVisibles.map((c) => (
+                  <div key={c.id}>
+                    <ComercioCard
+                      comercio={c}
+                      activo={seleccionado?.id === c.id}
+                      onClick={() => setSeleccionado(c)}
+                    />
+                    {seleccionado?.id === c.id && (
+                      <div ref={detalleRef} className="py-3">
+                        <ComercioDetalle comercio={c} onCerrar={() => setSeleccionado(null)} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {/* Sentinel para lazy load */}
+              <div ref={observerRef} className="h-4" />
+            </>
+          )}
+
+          {comercios.length === 0 && (
+            <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
+              No hay comercios que coincidan con tu búsqueda.
+            </p>
+          )}
+
+          {/* Footer - sticky inferior */}
+          <div className="mt-auto pt-6 border-t border-tinta">
+            <p className="text-center font-mono-ibm text-[10px] text-mudo mb-3">
+              Datos © colaboradores de OpenStreetMap
+            </p>
+          </div>
         </div>
-      )}
+
+        {/* Sidebar derecha: mapa sticky */}
+        {esDesktop && (
+          <div className="lg:w-2/5 lg:flex-shrink-0">
+            <div className="lg:sticky lg:top-28 lg:h-96 border-2 border-tinta rounded">
+              <MapaComercios
+                comercios={enMapa}
+                seleccionado={seleccionado}
+                onSeleccionar={setSeleccionado}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       {sugiriendo && <SugerirComercio onCerrar={() => setSugiriendo(false)} />}
     </div>
