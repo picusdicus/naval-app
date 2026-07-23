@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
-import { prefsLocales } from '../../lib/push.js'
 
 // Fecha/hora legible del momento en que se envió el aviso.
 function cuandoLlego(iso) {
@@ -19,14 +18,16 @@ function cuandoLlego(iso) {
 
 /**
  * Bandeja de avisos: historial de notificaciones push, filtrado por los temas
- * del dispositivo (lo hace useAvisos). Distingue leídos de no leídos, permite
- * marcar (una / todas) y borrar (una / todas) en este dispositivo, y da acceso
- * a la gestión de suscripción con el icono de ajustes. NO marca nada como leído
- * al abrirse: el estado de lectura es explícito.
+ * del dispositivo (lo hace useAvisos; sin suscripción llega vacía a propósito).
+ * Distingue leídos de no leídos, permite marcar (una / todas) y borrar (una /
+ * todas) en este dispositivo, y da acceso a la gestión de suscripción con el
+ * icono de ajustes. NO marca nada como leído al abrirse: el estado de lectura
+ * es explícito.
  */
 export default function DialogoBandeja({
   abierto,
   avisos,
+  suscrito,
   onCerrar,
   onGestionar,
   onMarcarLeido,
@@ -44,7 +45,6 @@ export default function DialogoBandeja({
     if (!abierto && elemento.open) elemento.close()
   }, [abierto])
 
-  const suscrito = Boolean(prefsLocales())
   const hayNoLeidos = avisos.some((a) => !a.leido)
 
   return (
@@ -108,14 +108,22 @@ export default function DialogoBandeja({
       <div className="max-h-[60vh] overflow-y-auto p-2">
         {avisos.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="font-serif-spectral text-sm text-pardo">
-              No hay avisos por ahora. Cuando se publiquen eventos que coincidan con lo que sigues,
-              aparecerán aquí.
-            </p>
-            {!suscrito && (
-              <button type="button" onClick={onGestionar} className="gz-boton-tinta mt-4">
-                Activar avisos
-              </button>
+            {suscrito ? (
+              <p className="font-serif-spectral text-sm text-pardo">
+                No hay avisos por ahora. Cuando se publiquen eventos que coincidan con lo que
+                sigues, aparecerán aquí.
+              </p>
+            ) : (
+              <>
+                <MIcon name="notifications_off" className="text-[32px] text-mudo" />
+                <p className="mt-3 font-serif-spectral text-sm text-pardo">
+                  Los avisos están desactivados en este dispositivo. Actívalos y aquí verás las
+                  novedades de la agenda que te interesan.
+                </p>
+                <button type="button" onClick={onGestionar} className="gz-boton-tinta mt-4">
+                  Activar avisos
+                </button>
+              </>
             )}
           </div>
         ) : (
@@ -187,12 +195,6 @@ export default function DialogoBandeja({
         )}
       </div>
 
-      {!suscrito && avisos.length > 0 && (
-        <p className="border-t border-filete px-4 py-3 font-serif-spectral text-xs text-pardo">
-          Estás viendo todas las novedades. Usa el icono de ajustes para activar los avisos en el
-          móvil y filtrarlos por lo que te interesa.
-        </p>
-      )}
     </dialog>
   )
 }

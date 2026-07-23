@@ -187,7 +187,7 @@ export default function Inicio() {
                 Ver todo →
               </Link>
             </div>
-            <div className="grid grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
               {semana.map((e) => {
                 const img = imagenEvento(e)
                 const cartel = cartelDe(e.categoria)
@@ -241,7 +241,7 @@ export default function Inicio() {
               Explorar los comercios →
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {comerciosBanda.map((c) => {
               const cat = CATEGORIAS[c.categoria]
               return (
@@ -280,7 +280,7 @@ export default function Inicio() {
               ✓ Todo operativo
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {AVISOS_MUNICIPIO.map((a) => (
               <div
                 key={a.titulo}

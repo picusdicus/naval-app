@@ -14,7 +14,7 @@ export default function Layout({ onLogout }) {
   return (
     <div className="flex min-h-screen flex-col bg-papel">
       <Header onAbrirMenu={() => setMenuAbierto(true)} onAbrirChat={abrirChat} onLogout={onLogout} />
-      <main className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-4 md:px-10 md:pb-16 md:pt-8">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-4 md:px-10 md:pt-8 lg:pb-16">
         <Outlet context={{ abrirChat }} />
       </main>
       <Footer onAbrirChat={abrirChat} />

@@ -91,6 +91,22 @@ export function esPWAInstalada() {
   )
 }
 
+/**
+ * ¿Este navegador tiene una suscripción push real? Es la fuente de verdad del
+ * estado "activado": la copia de localStorage solo pinta los temas, y si se
+ * borra (limpieza del navegador) la baja debe seguir siendo posible.
+ */
+export async function haySuscripcionReal() {
+  try {
+    if (!soportaPush()) return false
+    const registro = await navigator.serviceWorker.getRegistration()
+    const suscripcion = await registro?.pushManager.getSubscription()
+    return Boolean(suscripcion)
+  } catch {
+    return false
+  }
+}
+
 /** Temas guardados localmente (o null si no hay suscripción hecha desde aquí). */
 export function prefsLocales() {
   try {

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 
 // Pie de página (solo escritorio), estética La Gaceta: papel con filete doble,
-// marca en DM Serif, etiquetas mono. El público-móvil usa el NavBar inferior.
+// marca en DM Serif, etiquetas mono. Móvil y tablet usan el NavBar inferior
+// fijo, que taparía el pie — por eso aparece a partir de lg.
 export default function Footer({ onAbrirChat }) {
   return (
-    <footer className="hidden bg-papel md:block">
+    <footer className="hidden bg-papel lg:block">
       <div className="mx-auto w-full max-w-[1440px] px-10">
         <div className="gz-filete-doble" />
         <div className="grid grid-cols-4 gap-10 py-12">

@@ -17,6 +17,7 @@ export default function CentroAvisos({ variante = 'primary' }) {
   const {
     avisos,
     noLeidos,
+    suscrito,
     marcarLeido,
     marcarNoLeido,
     marcarTodasLeidas,
@@ -46,6 +47,7 @@ export default function CentroAvisos({ variante = 'primary' }) {
       <DialogoBandeja
         abierto={bandeja}
         avisos={avisos}
+        suscrito={suscrito}
         onCerrar={() => setBandeja(false)}
         onGestionar={() => {
           setBandeja(false)

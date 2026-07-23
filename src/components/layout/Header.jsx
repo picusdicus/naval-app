@@ -17,9 +17,10 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
   const { usuario, cargando } = useAdminAuth()
 
   return (
-    <header className="sticky top-0 z-40 bg-papel md:border-b md:border-filete">
-      {/* Barra móvil */}
-      <div className="flex h-16 items-center justify-between border-b border-filete px-5 md:hidden">
+    <header className="sticky top-0 z-40 bg-papel lg:border-b lg:border-filete">
+      {/* Barra móvil y tablet: la de escritorio no cabe por debajo de lg
+          (logo + enlaces + acciones desbordan y el menú se rompe). */}
+      <div className="flex h-16 items-center justify-between border-b border-filete px-5 lg:hidden">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -48,7 +49,7 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
       </div>
 
       {/* Barra de escritorio */}
-      <div className="mx-auto hidden w-full max-w-[1440px] items-center justify-between px-10 py-4 md:flex">
+      <div className="mx-auto hidden w-full max-w-[1440px] items-center justify-between px-10 py-4 lg:flex">
         <Link to="/" aria-label="Inicio">
           <Logo tamano="md" />
         </Link>

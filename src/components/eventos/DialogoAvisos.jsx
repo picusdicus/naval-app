@@ -8,6 +8,7 @@ import {
   esIOS,
   esPWAInstalada,
   prefsLocales,
+  haySuscripcionReal,
   suscribir,
   desuscribir,
 } from '../../lib/push.js'
@@ -80,6 +81,12 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
       setOrganizadores((temas || []).filter((t) => t.startsWith('org:')).map((t) => t.slice(4)))
       setError('')
       elemento.showModal()
+      // La suscripción real del navegador manda sobre la copia local: si
+      // localStorage se borró pero el aparato sigue suscrito, hay que seguir
+      // ofreciendo la baja ("Desactivar avisos").
+      haySuscripcionReal().then((hay) => {
+        if (hay) setActivo(true)
+      })
     }
     if (!abierto && elemento.open) elemento.close()
   }, [abierto])
@@ -167,6 +174,18 @@ export default function DialogoAvisos({ abierto, onCerrar }) {
           Te avisamos en este dispositivo cuando haya eventos nuevos. Sin registro: elige de qué
           quieres enterarte.
         </p>
+
+        {/* Estado explícito: sin suscripción no hay nada que cancelar, y decirlo
+            evita buscar un botón de baja que no aplica. */}
+        {!activo && !iosSinInstalar && !sinSoporte && (
+          <div className="mt-4 flex items-start gap-2 border-l-2 border-filete bg-papel-calido px-4 py-3 font-serif-spectral text-sm text-pardo">
+            <MIcon name="notifications_off" className="mt-0.5 text-[18px]" />
+            <span>
+              Los avisos están <span className="font-semibold">desactivados</span> en este
+              dispositivo. Cuando los actives, desde aquí podrás cambiarlos o cancelarlos.
+            </span>
+          </div>
+        )}
 
         {/* Ver mis preferencias: resumen de a qué está suscrito ahora este aparato. */}
         {resumenActual && !iosSinInstalar && !sinSoporte && (

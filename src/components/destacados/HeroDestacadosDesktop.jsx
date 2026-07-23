@@ -6,17 +6,19 @@ import { reportarClicDestacado } from '../../lib/useAnalytics.js'
 // Hero de destacados para ESCRITORIO (mockup Comercios / Eventos): cabecera con
 // título editorial + CTA opcional y flechas, y una fila de tarjetas grandes a
 // sangre (color de categoría con trama diagonal o foto real), badge oro, título
-// en DM Serif itálica, meta en mono y botones de acción. Pagina de 3 en 3 con
-// flechas, puntos y autoavance (pausa al pasar el ratón, respeta
-// prefers-reduced-motion). Solo se monta en md+; en móvil manda el carrusel
+// en DM Serif itálica, meta en mono y botones de acción. Pagina con flechas,
+// puntos y autoavance (pausa al pasar el ratón, respeta
+// prefers-reduced-motion): 2 tarjetas por página en tablet (md) y 3 en lg+ —
+// el corte de página y las columnas del grid salen del MISMO media query de
+// 1024px, no desincronizar. Solo se monta en md+; en móvil manda el carrusel
 // nativo de <CarruselDestacados>. Consume la forma `tarjeta` de useDestacados
 // (`.item` es el comercio/evento real) y sirve a ambos tipos:
 //   - comercio: "Ver ficha" selecciona la ficha en la propia página
 //     (onSeleccionar) + "Cómo llegar" (si hay coordenadas).
 //   - evento: "Ver detalles" enlaza a la página del evento (d.to).
 
-const POR_PAGINA = 3
 const AVANCE_MS = 7000
+const MQ_TRES_COLUMNAS = '(min-width: 1024px)'
 
 // Dirección corta: "C. de la Libertad, 39, 28600 Navalcarnero…" → "C. de la
 // Libertad, 39" (calle + número, sin CP ni municipio).
@@ -51,7 +53,7 @@ function TarjetaHero({ d, onSeleccionar, seccion }) {
   const registrarClic = seccion ? () => reportarClicDestacado(d, seccion) : undefined
 
   const claseCarta =
-    'group relative block h-[440px] overflow-hidden rounded-lg shadow-cartel'
+    'group relative block h-[380px] overflow-hidden rounded-lg shadow-cartel lg:h-[440px]'
 
   // Fondo común (foto o trama de categoría), degradado y badge.
   const fondo = (
@@ -82,7 +84,7 @@ function TarjetaHero({ d, onSeleccionar, seccion }) {
 
   const encabezado = (
     <>
-      <h3 className="font-serif-dm text-4xl italic leading-[0.9] text-papel">{d.titulo}</h3>
+      <h3 className="font-serif-dm text-3xl italic leading-[0.9] text-papel lg:text-4xl">{d.titulo}</h3>
       {meta.length > 0 && (
         <p className="mt-3 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-papel/80">
           {meta.join(' · ')}
@@ -153,8 +155,22 @@ export default function HeroDestacadosDesktop({
 }) {
   const [pagina, setPagina] = useState(0)
   const [pausado, setPausado] = useState(false)
+  const [tresColumnas, setTresColumnas] = useState(() => window.matchMedia(MQ_TRES_COLUMNAS).matches)
   const total = items?.length ?? 0
-  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA))
+  const porPagina = tresColumnas ? 3 : 2
+  const paginas = Math.max(1, Math.ceil(total / porPagina))
+
+  useEffect(() => {
+    const mq = window.matchMedia(MQ_TRES_COLUMNAS)
+    const alCambiar = (e) => setTresColumnas(e.matches)
+    mq.addEventListener('change', alCambiar)
+    return () => mq.removeEventListener('change', alCambiar)
+  }, [])
+
+  // Al pasar de 2 a 3 por página hay menos páginas: recolocar el índice.
+  useEffect(() => {
+    setPagina((p) => Math.min(p, paginas - 1))
+  }, [paginas])
 
   useEffect(() => {
     if (paginas <= 1 || pausado) return undefined
@@ -171,7 +187,7 @@ export default function HeroDestacadosDesktop({
       <div className="mb-6 flex items-end justify-between gap-6">
         <div>
           <span className="gz-eyebrow">{eyebrow}</span>
-          <h2 className="mt-1 font-serif-dm text-4xl leading-none text-tinta">{titulo}</h2>
+          <h2 className="mt-1 font-serif-dm text-3xl leading-none text-tinta lg:text-4xl">{titulo}</h2>
         </div>
         <div className="flex flex-shrink-0 items-center gap-4">
           {onAnunciar && (
@@ -212,8 +228,8 @@ export default function HeroDestacadosDesktop({
           style={{ transform: `translateX(-${pagina * 100}%)` }}
         >
           {Array.from({ length: paginas }, (_, p) => (
-            <div key={p} className="grid min-w-full grid-cols-3 gap-6">
-              {items.slice(p * POR_PAGINA, p * POR_PAGINA + POR_PAGINA).map((d) => (
+            <div key={p} className="grid min-w-full grid-cols-2 gap-6 lg:grid-cols-3">
+              {items.slice(p * porPagina, p * porPagina + porPagina).map((d) => (
                 <TarjetaHero key={d.id} d={d} onSeleccionar={onSeleccionar} seccion={seccion} />
               ))}
             </div>

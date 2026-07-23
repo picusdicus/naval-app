@@ -5,11 +5,12 @@ import { cartelDe } from '../../lib/gaceta.js'
 import { reportarClicDestacado } from '../../lib/useAnalytics.js'
 
 // Carrusel inmersivo de destacados para el Inicio de escritorio (mockup 4a):
-// slides a sangre completa (min 440px) con la foto o un degradado de cartel,
-// título enorme en DM Serif itálica, un extracto y dos botones pill; a la
-// derecha, la meta (fecha/lugar u horario). Índice controlado con flechas y
-// puntos, autoavance cada 6s con pausa al pasar el ratón y respeto de
-// prefers-reduced-motion. Consume la forma `tarjeta` de useDestacados.
+// slides a sangre completa (min 340px en tablet, 440px en lg+) con la foto o
+// un degradado de cartel, título enorme en DM Serif itálica, un extracto y dos
+// botones pill; a la derecha, la meta (fecha/lugar u horario). Índice
+// controlado con flechas y puntos, autoavance cada 6s con pausa al pasar el
+// ratón y respeto de prefers-reduced-motion. Consume la forma `tarjeta` de
+// useDestacados.
 const AVANCE_MS = 6000
 
 function Slide({ d, seccion }) {
@@ -20,7 +21,7 @@ function Slide({ d, seccion }) {
 
   return (
     <div className="min-w-full">
-      <div className="relative min-h-[440px] overflow-hidden">
+      <div className="relative min-h-[340px] overflow-hidden lg:min-h-[440px]">
         {/* Fondo: los carteles son verticales; en vez de recortarlos a sangre
             (queda feo), se usa una versión ampliada y desenfocada como ambiente
             y el cartel real se muestra entero a la derecha. Sin foto: degradado
@@ -43,10 +44,10 @@ function Slide({ d, seccion }) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/50" />
         <span className="gz-badge-oro absolute left-7 top-7 z-20">{d.badge}</span>
 
-        <div className="relative z-10 flex min-h-[440px] items-center gap-10 p-11">
-          <div className="max-w-[600px] flex-1">
+        <div className="relative z-10 flex min-h-[340px] items-center gap-7 p-7 lg:min-h-[440px] lg:gap-10 lg:p-11">
+          <div className="min-w-0 max-w-[600px] flex-1">
             <div className="font-mono-ibm text-[12px] uppercase tracking-rotulo text-papel/80">{d.badge}</div>
-            <h2 className="mt-2.5 font-serif-dm text-[64px] italic leading-[0.85] text-papel">{d.titulo}</h2>
+            <h2 className="mt-2.5 font-serif-dm text-[40px] italic leading-[0.85] text-papel lg:text-[64px]">{d.titulo}</h2>
             {desc && (
               <p className="mt-4 max-w-xl font-serif-spectral text-[17px] leading-relaxed text-papel/85">
                 {desc.length > 180 ? `${desc.slice(0, 180)}…` : desc}
@@ -82,13 +83,16 @@ function Slide({ d, seccion }) {
             )}
           </div>
 
-          {/* Cartel real, entero (vertical), solo cuando hay foto y hay espacio. */}
+          {/* Cartel real, entero (vertical), cuando hay foto: sin él, el fondo
+              desenfocado queda como una mancha sin imagen. En tablet (md) se
+              muestra más pequeño; solo en móvil desaparece (ahí manda el
+              carrusel nativo, este componente ni se monta). */}
           {d.imagen && (
-            <div className="hidden flex-shrink-0 lg:block">
+            <div className="hidden flex-shrink-0 md:block">
               <img
                 src={d.imagen}
                 alt=""
-                className="max-h-[360px] w-auto rounded-lg shadow-cartel"
+                className="max-h-[250px] w-auto rounded-lg shadow-cartel lg:max-h-[360px]"
                 style={{ objectPosition: d.imagenPos || '50% 50%' }}
               />
             </div>

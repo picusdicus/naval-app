@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { interseca } from './temasPush.js'
 import {
   prefsLocales,
+  haySuscripcionReal,
   avisosLeidos,
   avisosOcultos,
   guardarLeidos,
@@ -11,8 +12,11 @@ import {
 } from './push.js'
 
 // Lee el historial de avisos (GET /api/avisos) y lo filtra CLIENT-SIDE por los
-// temas del dispositivo, igual que useDestacados filtra los destacados. El
-// estado leído/oculto es POR DISPOSITIVO (localStorage): las suscripciones son
+// temas del dispositivo, igual que useDestacados filtra los destacados. SIN
+// suscripción la bandeja va vacía: un dispositivo que no ha activado los
+// avisos no debe ver "notificaciones" que nadie le ha enviado (el feed sigue
+// siendo público en /api/avisos, esto es solo presentación). El estado
+// leído/oculto es POR DISPOSITIVO (localStorage): las suscripciones son
 // anónimas, no hay estado de lectura en Neon. "Borrar" oculta el aviso solo en
 // este aparato; el feed global no se toca.
 
@@ -21,6 +25,19 @@ export function useAvisos() {
   const [cargando, setCargando] = useState(true)
   const [leidos, setLeidos] = useState(() => new Set(avisosLeidos()))
   const [ocultos, setOcultos] = useState(() => new Set(avisosOcultos()))
+  // La suscripción real del navegador cubre el caso "localStorage borrado pero
+  // el aparato sigue suscrito" (misma robustez que DialogoAvisos).
+  const [suscripcionReal, setSuscripcionReal] = useState(false)
+
+  useEffect(() => {
+    let vigente = true
+    haySuscripcionReal().then((hay) => {
+      if (vigente) setSuscripcionReal(hay)
+    })
+    return () => {
+      vigente = false
+    }
+  }, [])
 
   useEffect(() => {
     let vigente = true
@@ -63,15 +80,19 @@ export function useAvisos() {
     if (visto) limpiarVistoLegacy()
   }, [todos])
 
+  // Se relee en cada render a propósito: al activar los avisos desde el
+  // diálogo de gestión (sin recargar), el cierre re-renderiza y esto se actualiza.
   const prefs = prefsLocales()
+  const suscrito = Boolean(prefs) || suscripcionReal
 
-  // Visibles: no ocultos + coinciden con los temas del aparato (o todos si no
-  // hay suscripción hecha aquí: es un feed público, no hay nada privado).
+  // Visibles: solo con suscripción, no ocultos + coincidentes con los temas del
+  // aparato (todos si hay suscripción real pero se perdió la copia de temas).
   const avisos = useMemo(() => {
+    if (!suscrito) return []
     const base = todos.filter((a) => !ocultos.has(a.referencia_id))
     const porTema = prefs ? base.filter((a) => interseca(prefs, a.temas || [])) : base
     return porTema.map((a) => ({ ...a, leido: leidos.has(a.referencia_id) }))
-  }, [todos, ocultos, leidos, prefs])
+  }, [todos, ocultos, leidos, prefs, suscrito])
 
   const noLeidos = useMemo(() => avisos.filter((a) => !a.leido).length, [avisos])
 
@@ -123,6 +144,7 @@ export function useAvisos() {
   return {
     avisos,
     noLeidos,
+    suscrito,
     cargando,
     marcarLeido,
     marcarNoLeido,
