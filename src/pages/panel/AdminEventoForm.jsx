@@ -382,8 +382,9 @@ export default function AdminEventoForm() {
             </div>
           )}
 
-          {/* Dos acciones, un mismo formulario: el estado lo decide el botón.
-              Al editar, el principal conserva el estado actual del evento. */}
+          {/* Tres acciones, un mismo formulario: el estado lo decide el botón
+              (al editar, el principal conserva el estado actual del evento) y
+              "Cancelar" descarta los cambios y devuelve al panel sin guardar. */}
           <div className="flex flex-col gap-3 sm:flex-row-reverse">
             <button
               type="submit"
@@ -402,6 +403,18 @@ export default function AdminEventoForm() {
             >
               <MIcon name={accionSecundaria.icono} className="text-[16px]" />
               {accionSecundaria.etiqueta}
+            </button>
+
+            {/* Sin disabled por perfilIncompleto: salir siempre tiene que ser
+                posible, aunque el formulario esté bloqueado. */}
+            <button
+              type="button"
+              disabled={enviando}
+              onClick={() => navegar('/panel')}
+              className="inline-flex flex-1 items-center justify-center gap-2 border border-filete px-4 py-3 font-mono-ibm text-xs uppercase tracking-etiqueta text-pardo transition-colors hover:bg-papel-calido hover:text-tinta disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <MIcon name="close" className="text-[16px]" />
+              Cancelar
             </button>
           </div>
         </form>
