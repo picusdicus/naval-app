@@ -13,7 +13,7 @@ import { obtenerSql } from '../_db.js'
 import { requerirSesionEdge } from '../_auth.js'
 import { organizacionDeSesion } from '../_organizacion.js'
 import { json, leerJson, csrfInvalido, rechazoCsrf } from '../_http.js'
-import { validarEvento, normalizarEvento, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
+import { validarEvento, normalizarEvento, fechasDelCiclo, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
 
 export const config = { runtime: 'edge' }
 
@@ -156,20 +156,29 @@ async function crear(sql, organizacion, cuerpoRecibido) {
 
   const e = normalizarEvento(cuerpo)
 
-  const [creado] = await sql`
-    INSERT INTO eventos_usuario (
-      organizacion_id, titulo, descripcion, categoria, lugar,
-      fecha_inicio, hora, hora_fin, imagen_url,
-      entradas_texto, entradas_url, precio, estado
-    ) VALUES (
-      ${organizacion.id}, ${e.titulo}, ${e.descripcion}, ${e.categoria}, ${e.lugar},
-      ${e.fecha}, ${e.hora}, ${e.horaFin}, ${e.imagen},
-      ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}
-    )
-    RETURNING id, titulo, estado
-  `
+  // Un ciclo (fechaFin presente) se materializa como una copia independiente
+  // por día — no hay columna de fecha de fin: cada copia se edita, publica o
+  // borra por separado desde el panel. El driver HTTP de Neon ejecuta una
+  // sentencia por petición, de ahí el bucle secuencial (acotado por
+  // MAX_DIAS_CICLO en la validación).
+  const creados = []
+  for (const fecha of fechasDelCiclo(e.fecha, e.fechaFin)) {
+    const [creado] = await sql`
+      INSERT INTO eventos_usuario (
+        organizacion_id, titulo, descripcion, categoria, lugar,
+        fecha_inicio, hora, hora_fin, imagen_url,
+        entradas_texto, entradas_url, precio, estado
+      ) VALUES (
+        ${organizacion.id}, ${e.titulo}, ${e.descripcion}, ${e.categoria}, ${e.lugar},
+        ${fecha}, ${e.hora}, ${e.horaFin}, ${e.imagen},
+        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}
+      )
+      RETURNING id, titulo, estado
+    `
+    creados.push(creado)
+  }
 
-  return json({ evento: creado }, 201)
+  return json({ evento: creados[0], creados: creados.length }, 201)
 }
 
 async function actualizar(sql, organizacion, id, cuerpoRecibido) {
@@ -194,7 +203,28 @@ async function actualizar(sql, organizacion, id, cuerpoRecibido) {
   `
 
   if (!actualizado) return json({ error: 'Ese evento no existe.' }, 404)
-  return json({ evento: actualizado })
+
+  // Editar con fecha de fin convierte el evento en un ciclo: la fila editada
+  // se queda con la fecha de inicio y se crean copias nuevas para el resto de
+  // días. Repetir la operación crea más copias — el panel las muestra todas,
+  // así que el gestor ve (y puede borrar) cualquier duplicado.
+  let creados = 0
+  for (const fecha of fechasDelCiclo(e.fecha, e.fechaFin).slice(1)) {
+    await sql`
+      INSERT INTO eventos_usuario (
+        organizacion_id, titulo, descripcion, categoria, lugar,
+        fecha_inicio, hora, hora_fin, imagen_url,
+        entradas_texto, entradas_url, precio, estado
+      ) VALUES (
+        ${organizacion.id}, ${e.titulo}, ${e.descripcion}, ${e.categoria}, ${e.lugar},
+        ${fecha}, ${e.hora}, ${e.horaFin}, ${e.imagen},
+        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}
+      )
+    `
+    creados += 1
+  }
+
+  return json({ evento: actualizado, creados })
 }
 
 async function cambiarEstado(sql, organizacion, id, cuerpoRecibido) {

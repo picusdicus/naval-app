@@ -25,6 +25,9 @@ export default function AdminEventoForm() {
   const editando = Boolean(id)
 
   const [valores, setValores] = useState(VALORES_INICIALES)
+  // Ciclo: evento que se repite a diario entre dos fechas. Solo controla la
+  // UI — el servidor decide por la presencia de fechaFin en el cuerpo.
+  const [ciclo, setCiclo] = useState(false)
   const [organizacion, setOrganizacion] = useState(null)
   const [errores, setErrores] = useState({})
   const [errorGeneral, setErrorGeneral] = useState('')
@@ -86,9 +89,13 @@ export default function AdminEventoForm() {
   }
 
   const guardar = async (estado) => {
-    const candidato = { ...valores, estado }
+    // Con la casilla desmarcada, la fecha de fin nunca viaja (evento normal).
+    const candidato = { ...valores, fechaFin: ciclo ? valores.fechaFin : '', estado }
 
     const encontrados = validarEvento(candidato)
+    if (ciclo && !candidato.fechaFin && !encontrados.fechaFin) {
+      encontrados.fechaFin = 'Indica la fecha de fin del ciclo.'
+    }
     if (Object.keys(encontrados).length > 0) {
       setErrores(encontrados)
       setErrorGeneral('Revisa los campos marcados en rojo.')
@@ -257,8 +264,34 @@ export default function AdminEventoForm() {
               </CampoFormulario>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-3">
-              <CampoFormulario id="fecha" etiqueta="Fecha" error={errores.fecha}>
+            <label className="flex items-start gap-2.5 font-serif-spectral text-sm text-tinta">
+              <input
+                type="checkbox"
+                checked={ciclo}
+                onChange={(e) => {
+                  setCiclo(e.target.checked)
+                  if (!e.target.checked) {
+                    setValores((previos) => ({ ...previos, fechaFin: '' }))
+                    setErrores(({ fechaFin: _, ...resto }) => resto)
+                  }
+                }}
+                className="mt-0.5 h-4 w-4 accent-terracota"
+              />
+              <span>
+                Este evento es un ciclo (se repite varios días)
+                <span className="block font-serif-spectral text-[12.5px] text-pardo">
+                  Se creará una copia independiente del evento por cada día, de la fecha de inicio
+                  a la de fin (ambas incluidas). Luego podrás editar o borrar cada día por separado.
+                </span>
+              </span>
+            </label>
+
+            <div className={`grid gap-5 ${ciclo ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
+              <CampoFormulario
+                id="fecha"
+                etiqueta={ciclo ? 'Fecha de inicio' : 'Fecha'}
+                error={errores.fecha}
+              >
                 {(props) => (
                   <input
                     {...props}
@@ -269,6 +302,21 @@ export default function AdminEventoForm() {
                   />
                 )}
               </CampoFormulario>
+
+              {ciclo && (
+                <CampoFormulario id="fechaFin" etiqueta="Fecha de fin" error={errores.fechaFin}>
+                  {(props) => (
+                    <input
+                      {...props}
+                      id="fechaFin"
+                      type="date"
+                      min={valores.fecha || undefined}
+                      value={valores.fechaFin}
+                      onChange={cambiar('fechaFin')}
+                    />
+                  )}
+                </CampoFormulario>
+              )}
 
               <CampoFormulario id="hora" etiqueta="Hora de inicio" error={errores.hora}>
                 {(props) => (

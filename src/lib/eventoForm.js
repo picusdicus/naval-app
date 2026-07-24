@@ -3,8 +3,14 @@
 // una única definición de qué es un evento válido.
 
 import { CATEGORIAS_EVENTO } from './eventos.js'
+import { sumarDias, duracionDe } from './fechas.js'
 
 export const ESTADOS_EVENTO = ['borrador', 'publicado']
+
+// Un ciclo (evento repetido a diario entre dos fechas) se guarda como una
+// copia independiente por día; este tope evita que un error de tecleo en la
+// fecha de fin genere cientos de filas.
+export const MAX_DIAS_CICLO = 31
 
 export const VALORES_INICIALES = {
   titulo: '',
@@ -12,6 +18,7 @@ export const VALORES_INICIALES = {
   categoria: '',
   lugar: '',
   fecha: '',
+  fechaFin: '',
   hora: '',
   horaFin: '',
   imagen: '',
@@ -69,6 +76,18 @@ export function validarEvento(valores) {
   if (!v('fecha')) errores.fecha = 'La fecha es obligatoria.'
   else if (!FECHA_ISO.test(v('fecha'))) errores.fecha = 'Formato de fecha no válido.'
 
+  // La fecha de fin convierte el evento en un ciclo: opcional, y si se indica
+  // debe ser posterior al inicio y de duración acotada.
+  if (v('fechaFin')) {
+    if (!FECHA_ISO.test(v('fechaFin'))) errores.fechaFin = 'Formato de fecha no válido.'
+    else if (FECHA_ISO.test(v('fecha'))) {
+      if (v('fechaFin') <= v('fecha'))
+        errores.fechaFin = 'Debe ser posterior a la fecha de inicio.'
+      else if (duracionDe(v('fecha'), v('fechaFin')) > MAX_DIAS_CICLO)
+        errores.fechaFin = `Un ciclo puede durar como máximo ${MAX_DIAS_CICLO} días.`
+    }
+  }
+
   if (!v('hora')) errores.hora = 'Indica la hora de inicio.'
   else if (!HORA_HHMM.test(v('hora'))) errores.hora = 'Usa el formato HH:MM.'
 
@@ -113,6 +132,7 @@ export function normalizarEvento(valores) {
     categoria: v('categoria'),
     lugar: v('lugar'),
     fecha: v('fecha'),
+    fechaFin: v('fechaFin') || null,
     hora: v('hora'),
     horaFin: v('horaFin') || null,
     imagen: v('imagen') || null,
@@ -121,4 +141,17 @@ export function normalizarEvento(valores) {
     precio: hayEntradas ? v('precio') || null : null,
     estado: valores.estado,
   }
+}
+
+/**
+ * Todas las fechas de un ciclo, ambos extremos incluidos. Sin fecha de fin
+ * devuelve solo la de inicio (evento normal). Presupone valores ya validados.
+ */
+export function fechasDelCiclo(fecha, fechaFin) {
+  if (!fechaFin || fechaFin <= fecha) return [fecha]
+  const fechas = []
+  for (let dia = fecha; dia <= fechaFin && fechas.length < MAX_DIAS_CICLO; dia = sumarDias(dia, 1)) {
+    fechas.push(dia)
+  }
+  return fechas
 }
