@@ -27,6 +27,14 @@ export default function TablesOrganizaciones() {
   const [busquedaComercio, setBusquedaComercio] = useState('')
   const [editandoId, setEditandoId] = useState(null)
   const [enviando, setEnviando] = useState(false)
+  // Sección "Usuarios y acceso" de la edición: usuarios de la organización y
+  // restablecimiento de contraseña por el superadmin.
+  const [usuariosOrg, setUsuariosOrg] = useState([])
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(false)
+  const [resetUsuarioId, setResetUsuarioId] = useState(null)
+  const [nuevaPassword, setNuevaPassword] = useState('')
+  const [guardandoPassword, setGuardandoPassword] = useState(false)
+  const [avisoPassword, setAvisoPassword] = useState('')
 
   // Candidatos del buscador de "Negocio vinculado" (mismo patrón que el
   // formulario de destacados): filtra el directorio por el texto tecleado.
@@ -108,6 +116,42 @@ export default function TablesOrganizaciones() {
     }
   }
 
+  const cargarUsuariosOrg = async (orgId) => {
+    setCargandoUsuarios(true)
+    setUsuariosOrg([])
+    try {
+      const res = await fetch(`/api/super/usuarios?organizacionId=${orgId}`)
+      const datos = await res.json()
+      if (res.ok) setUsuariosOrg(datos.usuarios || [])
+    } catch {
+      // La sección de acceso es secundaria: si falla, el resto del formulario sigue siendo útil.
+    } finally {
+      setCargandoUsuarios(false)
+    }
+  }
+
+  const restablecerPassword = async (usuario) => {
+    setGuardandoPassword(true)
+    setError('')
+    setAvisoPassword('')
+    try {
+      const res = await fetch(`/api/super/usuarios?id=${usuario.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: nuevaPassword }),
+      })
+      const datos = await res.json()
+      if (!res.ok) throw new Error(datos.error || 'No se pudo restablecer la contraseña.')
+      setAvisoPassword(`Contraseña de ${usuario.email} actualizada. Recuerda hacérsela llegar al gestor.`)
+      setResetUsuarioId(null)
+      setNuevaPassword('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setGuardandoPassword(false)
+    }
+  }
+
   const abrirEdicion = (org) => {
     setFormularioData({
       nombre: org.nombre,
@@ -122,7 +166,11 @@ export default function TablesOrganizaciones() {
     })
     setEditandoId(org.id)
     setBusquedaComercio('')
+    setResetUsuarioId(null)
+    setNuevaPassword('')
+    setAvisoPassword('')
     setMostrarFormulario(true)
+    cargarUsuariosOrg(org.id)
   }
 
   const cancelar = () => {
@@ -131,6 +179,10 @@ export default function TablesOrganizaciones() {
     setFormularioData(FORMULARIO_VACIO)
     setBusquedaComercio('')
     setError('')
+    setUsuariosOrg([])
+    setResetUsuarioId(null)
+    setNuevaPassword('')
+    setAvisoPassword('')
   }
 
   if (cargando) {
@@ -432,6 +484,80 @@ export default function TablesOrganizaciones() {
               </button>
             </div>
           </form>
+
+          {/* Fuera del <form> a propósito: así el Enter en el campo de la
+              nueva contraseña no dispara el guardado de la organización. */}
+          {editandoId && (
+            <div className="mt-8 border-t border-filete pt-6">
+              <h3 className="mb-1 font-serif-dm text-xl text-tinta">Usuarios y acceso</h3>
+              <p className="mb-4 font-serif-spectral text-sm text-pardo">
+                Restablece la contraseña de un gestor que no puede entrar. No se envía
+                ningún email: la nueva contraseña se la haces llegar tú.
+              </p>
+
+              {avisoPassword && (
+                <div className="mb-4 flex items-start gap-2 border border-verde/30 bg-papel-calido p-3">
+                  <MIcon name="check_circle" className="mt-0.5 flex-shrink-0 text-[20px] text-verde" />
+                  <p className="font-serif-spectral text-sm font-medium text-verde">{avisoPassword}</p>
+                </div>
+              )}
+
+              {cargandoUsuarios ? (
+                <p className="font-serif-spectral text-sm text-mudo">Cargando usuarios…</p>
+              ) : usuariosOrg.length === 0 ? (
+                <p className="font-serif-spectral text-sm text-pardo">
+                  Esta organización no tiene usuarios registrados. Crea un código en la
+                  pestaña «Códigos de invitación» para que su gestor se dé de alta en /registro.
+                </p>
+              ) : (
+                <ul className="divide-y divide-filete border border-filete">
+                  {usuariosOrg.map((u) => (
+                    <li key={u.id} className="px-4 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="font-serif-spectral text-sm font-medium text-tinta">{u.email}</p>
+                          <p className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+                            {u.nombre} · {u.rol}
+                            {!u.activo && ' · inactivo'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResetUsuarioId(resetUsuarioId === u.id ? null : u.id)
+                            setNuevaPassword('')
+                          }}
+                          className="border border-tinta px-3 py-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta hover:bg-papel-calido"
+                        >
+                          {resetUsuarioId === u.id ? 'Cerrar' : 'Restablecer contraseña'}
+                        </button>
+                      </div>
+                      {resetUsuarioId === u.id && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <input
+                            type="text"
+                            value={nuevaPassword}
+                            onChange={(e) => setNuevaPassword(e.target.value)}
+                            placeholder="Nueva contraseña (mínimo 8 caracteres)"
+                            className="min-w-[220px] flex-1 border border-filete bg-papel px-3.5 py-2 font-serif-spectral text-sm text-tinta focus:border-tinta focus:outline-none"
+                            disabled={guardandoPassword}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => restablecerPassword(u)}
+                            disabled={guardandoPassword || nuevaPassword.length < 8}
+                            className="bg-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+                          >
+                            {guardandoPassword ? 'Guardando…' : 'Guardar'}
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
