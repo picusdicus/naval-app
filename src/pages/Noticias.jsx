@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
-import noticias from '../data/noticias.json'
+import { cartelDe } from '../lib/gaceta.js'
+import { useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 
 // Iconos por defecto para noticias (podrían mejorarse según categoría)
 function obtenerIcono(titulo) {
@@ -39,12 +41,6 @@ function formatearCuando(fechaISO) {
   return `hace ${Math.floor(diasDif / 30)} meses`
 }
 
-const oficiales = noticias.slice(0, 6).map(n => ({
-  ...n,
-  icono: obtenerIcono(n.titulo),
-  cuando: formatearCuando(n.fecha),
-}))
-
 const tablon = [
   {
     titulo: 'Se busca: perdida gata atigrada zona El Soto',
@@ -61,6 +57,20 @@ const tablon = [
 ]
 
 export default function Noticias() {
+  const { noticias } = useNoticiasPublicas()
+  const oficiales = useMemo(
+    () =>
+      noticias.slice(0, 6).map((n) => ({
+        ...n,
+        icono: n.urgente ? 'warning' : obtenerIcono(n.titulo),
+        cuando: formatearCuando(n.fecha),
+        // Fallback visual cuando la noticia no trae foto (las del RSS): mismo
+        // degradado + trama que el cartel de un evento, terracota si es alerta.
+        cartel: cartelDe(n.urgente ? 'terracota' : 'bosque'),
+      })),
+    [noticias]
+  )
+
   return (
     <div className="mx-auto max-w-3xl">
       {/* Masthead */}
@@ -75,17 +85,42 @@ export default function Noticias() {
           <MIcon name="account_balance" className="text-[18px] text-terracota" />
           <h2 className="gz-eyebrow">Noticias oficiales</h2>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {oficiales.map((n) => (
-            <Link key={n.id} to={`/noticias/${n.id}`} className="gz-tarjeta-impresa p-5 transition-colors hover:bg-papel-calido">
-              <article className="flex items-start gap-4">
-                <div className="flex h-11 w-11 flex-none items-center justify-center bg-tinta text-papel">
-                  <MIcon name={n.icono} className="text-[20px]" />
+            <Link
+              key={n.id}
+              to={`/noticias/${n.id}`}
+              className="group gz-tarjeta-impresa overflow-hidden transition-colors hover:bg-papel-calido"
+            >
+              <article>
+                {/* Foto a sangre arriba (estilo periódico); sin foto, cartel de
+                    degradado + trama con el icono, como los eventos. */}
+                <div
+                  className={`relative aspect-[16/10] overflow-hidden ${n.imagen ? '' : n.cartel.trama}`}
+                  style={n.imagen ? undefined : { background: n.cartel.fondo }}
+                >
+                  {n.imagen ? (
+                    <img
+                      src={n.imagen}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-25">
+                      <MIcon name={n.icono} className="text-[56px] text-white" />
+                    </div>
+                  )}
+                  {n.urgente && (
+                    <span className="absolute left-3 top-3 bg-terracota px-2 py-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-papel">
+                      Urgente
+                    </span>
+                  )}
                 </div>
-                <div className="flex-1">
+                <div className="p-5">
                   <p className="font-serif-dm text-lg leading-tight text-tinta">{n.titulo}</p>
                   <p className="mt-2 line-clamp-2 font-serif-spectral text-sm text-pardo">
-                    {n.contenido || n.resumen}
+                    {n.resumen || n.contenido}
                   </p>
                   <div className="mt-3 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
                     {formatearFechaLarga(n.fecha)} · {n.cuando}

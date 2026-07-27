@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
-import noticias from '../data/noticias.json'
 import MIcon from '../components/MIcon.jsx'
+import { ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 
 function formatearFechaLarga(fechaISO) {
   const fecha = new Date(fechaISO)
@@ -21,25 +21,36 @@ function VolverLink({ arriba = false }) {
 
 export default function NoticiaDetalle() {
   const { id } = useParams()
+  const { noticias, cargando } = useNoticiasPublicas()
   const noticia = noticias.find((n) => n.id === id)
 
   if (!noticia) {
+    // Las de Instagram llegan async: mientras cargan, un deep-link a
+    // /noticias/ig-… no debe mostrar un flash de "no encontrada".
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <VolverLink arriba />
         <div className="border border-dashed border-filete-punteado p-10 text-center font-serif-spectral text-pardo">
-          No hemos encontrado esa noticia. Puede que ya no esté disponible.
+          {cargando
+            ? 'Cargando la noticia…'
+            : 'No hemos encontrado esa noticia. Puede que ya no esté disponible.'}
         </div>
       </div>
     )
   }
+
+  const esInstagram = noticia.id.startsWith('ig-')
 
   return (
     <div className="mx-auto max-w-2xl">
       <VolverLink arriba />
 
       <div className="mt-4">
-        <span className="gz-badge-oro">Ayuntamiento</span>
+        {noticia.urgente ? (
+          <span className="gz-badge-error">Alerta · {ETIQUETAS_ALERTA[noticia.tipoAlerta] || 'Aviso'}</span>
+        ) : (
+          <span className="gz-badge-oro">Ayuntamiento</span>
+        )}
         <h1 className="mt-3 font-serif-dm text-seccion leading-tight text-tinta">{noticia.titulo}</h1>
       </div>
 
@@ -60,6 +71,14 @@ export default function NoticiaDetalle() {
 
       <div className="mt-5 h-px bg-filete" />
 
+      {noticia.imagen && (
+        <img
+          src={noticia.imagen}
+          alt=""
+          className="mt-5 max-h-[420px] w-full border border-tinta object-cover"
+        />
+      )}
+
       <div className="mt-5 whitespace-pre-wrap break-words font-serif-spectral text-[15px] leading-relaxed text-tinta-suave">
         {noticia.contenido || noticia.resumen || null}
       </div>
@@ -71,7 +90,9 @@ export default function NoticiaDetalle() {
             <div>
               <p className="font-serif-spectral text-sm font-semibold text-tinta">Fuente original</p>
               <p className="mt-1 font-serif-spectral text-xs text-pardo">
-                Puedes acceder al artículo completo en la web oficial del Ayuntamiento.
+                {esInstagram
+                  ? 'Puedes ver la publicación original en el Instagram del Ayuntamiento.'
+                  : 'Puedes acceder al artículo completo en la web oficial del Ayuntamiento.'}
               </p>
             </div>
           </div>
@@ -82,7 +103,7 @@ export default function NoticiaDetalle() {
             className="gz-boton-tinta mt-4 inline-flex items-center justify-center gap-2"
           >
             <MIcon name="open_in_new" className="text-[16px]" />
-            Abrir artículo completo en web del Ayuntamiento
+            {esInstagram ? 'Abrir la publicación en Instagram' : 'Abrir artículo completo en web del Ayuntamiento'}
           </a>
         </div>
       )}

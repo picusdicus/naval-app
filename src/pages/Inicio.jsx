@@ -7,6 +7,7 @@ import { imagenEvento } from '../lib/imagenesEvento.js'
 import { cartelDe } from '../lib/gaceta.js'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { useDestacados } from '../lib/useDestacados.js'
+import { ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 import { useWeather } from '../hooks/useWeather.js'
 import { CATEGORIAS } from '../lib/categorias.js'
 import comerciosData from '../data/comercios.json'
@@ -26,24 +27,14 @@ function fechaMasthead() {
   return `${cap(dia)} · ${num} ${cap(mes)}`
 }
 
-// Avisos del municipio (estáticos por ahora; no hay fuente de datos detrás —
-// mismos dos que la referencia de diseño). Marcador § terracota/verde.
-const AVISOS_MUNICIPIO = [
-  {
-    color: 'text-terracota',
-    titulo: 'Corte de agua programado',
-    detalle: 'Bº de la Estación · martes 8:00–14:00',
-  },
-  {
-    color: 'text-verde',
-    titulo: 'Obras finalizadas',
-    detalle: 'Av. del Parque · abierta al tráfico',
-  },
-]
-
 export default function Inicio() {
   const { abrirChat } = useOutletContext()
   const weather = useWeather()
+
+  // Alertas urgentes vigentes del Ayuntamiento (Instagram → Neon), filtradas
+  // client-side en el hook: sin ninguna activa, la sección móvil se oculta y
+  // la de escritorio muestra "Todo operativo".
+  const { alertas } = useNoticiasPublicas()
 
   // Las tres fuentes de la agenda: los dos JSON y los eventos publicados desde
   // /admin, que llegan por fetch. Se recalcula cuando llegan, no al cargar el
@@ -146,25 +137,30 @@ export default function Inicio() {
           </section>
         )}
 
-        {/* Del municipio */}
-        <section className="mt-8">
-          <div className="mb-3 h-px bg-tinta" />
-          <span className="gz-label text-mudo">Del municipio</span>
-          <div className="mt-3 border border-tinta">
-            {AVISOS_MUNICIPIO.map((a, i) => (
-              <div
-                key={a.titulo}
-                className={`flex gap-2.5 p-3.5 ${i > 0 ? 'border-t border-dashed border-filete-punteado' : ''}`}
-              >
-                <span className={`font-serif-dm text-xl leading-none ${a.color}`}>§</span>
-                <div>
-                  <div className="font-serif-spectral text-sm font-semibold text-tinta">{a.titulo}</div>
-                  <div className="font-serif-spectral text-[12.5px] text-tinta-apagada">{a.detalle}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Del municipio: solo con alertas urgentes vigentes */}
+        {alertas.length > 0 && (
+          <section className="mt-8">
+            <div className="mb-3 h-px bg-tinta" />
+            <span className="gz-label text-mudo">Del municipio</span>
+            <div className="mt-3 border border-tinta">
+              {alertas.map((a, i) => (
+                <Link
+                  key={a.id}
+                  to={`/noticias/${a.id}`}
+                  className={`flex gap-2.5 p-3.5 transition-colors hover:bg-papel-calido ${i > 0 ? 'border-t border-dashed border-filete-punteado' : ''}`}
+                >
+                  <span className="font-serif-dm text-xl leading-none text-terracota">§</span>
+                  <div>
+                    <div className="font-serif-spectral text-sm font-semibold text-tinta">{a.titulo}</div>
+                    <div className="line-clamp-2 font-serif-spectral text-[12.5px] text-tinta-apagada">
+                      {a.resumen || ETIQUETAS_ALERTA[a.tipoAlerta]}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* ═════════════ Escritorio · La Gaceta (ref. 4a) ═════════════ */}
@@ -272,24 +268,34 @@ export default function Inicio() {
           </div>
         </section>
 
-        {/* Estado del municipio + tiempo */}
+        {/* Estado del municipio + tiempo. La sección se mantiene siempre (la
+            tarjeta de clima vive aquí); solo las alertas son condicionales. */}
         <section>
           <div className="mb-6 flex items-center justify-between">
             <h2 className="font-serif-dm text-seccion text-tinta">Estado del municipio</h2>
-            <span className="bg-verde px-3 py-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel">
-              ✓ Todo operativo
-            </span>
+            {alertas.length > 0 ? (
+              <span className="bg-terracota px-3 py-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel">
+                ⚠ {alertas.length} {alertas.length === 1 ? 'aviso activo' : 'avisos activos'}
+              </span>
+            ) : (
+              <span className="bg-verde px-3 py-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel">
+                ✓ Todo operativo
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {AVISOS_MUNICIPIO.map((a) => (
-              <div
-                key={a.titulo}
-                className={`border-l-4 bg-papel-claro p-6 ${a.color === 'text-terracota' ? 'border-terracota' : 'border-verde'}`}
+            {alertas.slice(0, 2).map((a) => (
+              <Link
+                key={a.id}
+                to={`/noticias/${a.id}`}
+                className="border-l-4 border-terracota bg-papel-claro p-6 transition-colors hover:bg-papel-calido"
               >
-                <div className={`gz-label ${a.color}`}>Aviso</div>
+                <div className="gz-label text-terracota">{ETIQUETAS_ALERTA[a.tipoAlerta] || 'Aviso'}</div>
                 <h3 className="mt-2 font-serif-dm text-xl leading-tight text-tinta">{a.titulo}</h3>
-                <p className="mt-1.5 font-serif-spectral text-sm text-tinta-apagada">{a.detalle}</p>
-              </div>
+                <p className="mt-1.5 line-clamp-3 font-serif-spectral text-sm text-tinta-apagada">
+                  {a.resumen}
+                </p>
+              </Link>
             ))}
             {/* Tarjeta de clima */}
             <div className="flex flex-col justify-between overflow-hidden bg-verde-bosque p-6 text-papel">

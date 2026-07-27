@@ -47,6 +47,9 @@ const VARIABLES_API = [
   // autenticación del webhook de Apify y token para leer sus datasets.
   'INSTAGRAM_SYNC_SECRET',
   'APIFY_TOKEN',
+  // Webhook de noticias de Instagram (api/sync-instagram-noticias.js): secreto
+  // propio para poder rotarlo sin tocar el de eventos.
+  'NOTICIAS_SYNC_SECRET',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni

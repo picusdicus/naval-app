@@ -32,4 +32,5 @@ export const TABLAS = [
   'destacados',
   'push_suscripciones',
   'push_avisos',
+  'noticias_instagram',
 ]

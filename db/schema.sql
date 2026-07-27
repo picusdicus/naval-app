@@ -214,3 +214,32 @@ CREATE INDEX IF NOT EXISTS idx_push_avisos_fecha ON push_avisos (enviado_en DESC
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS origen_externo_id text;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_eventos_origen_externo ON eventos_usuario (origen_externo_id) WHERE origen_externo_id IS NOT NULL;
+
+-- Noticias y alertas del Ayuntamiento sincronizadas desde Instagram
+-- (api/sync-instagram-noticias.js). Conviven con src/data/noticias.json (RSS):
+-- van a Neon porque una alerta urgente no puede esperar al ciclo
+-- commit→redeploy que regenera los JSON. origen_externo_id = 'ig-<shortCode>';
+-- aquí la columna es NOT NULL, así que el UNIQUE va directo en la columna (no
+-- hace falta el índice parcial de eventos_usuario) y el upsert usa
+-- ON CONFLICT (origen_externo_id) a secas. Las alertas vigentes se filtran
+-- CLIENT-SIDE (urgente + expira_en > now), sin cron: al caducar simplemente
+-- dejan de mostrarse.
+CREATE TABLE IF NOT EXISTS noticias_instagram (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  origen_externo_id text NOT NULL UNIQUE,
+  titulo            text NOT NULL,
+  resumen           text,
+  cuerpo            text,
+  imagen_url        text,
+  url               text,
+  usuario           text,
+  urgente           boolean NOT NULL DEFAULT false,
+  tipo_alerta       text CHECK (tipo_alerta IN ('incendio', 'corte_agua', 'corte_luz', 'trafico', 'emergencia', 'general')),
+  publicado_en      timestamptz NOT NULL,
+  expira_en         timestamptz,
+  creado_en         timestamptz NOT NULL DEFAULT now(),
+  actualizado_en    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT alerta_coherente CHECK ((urgente AND tipo_alerta IS NOT NULL) OR (NOT urgente AND tipo_alerta IS NULL))
+);
+
+CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado ON noticias_instagram (publicado_en DESC);
