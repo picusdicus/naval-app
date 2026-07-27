@@ -1,6 +1,7 @@
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
 import { enviarDigest } from './_push-send.js'
+import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
@@ -32,6 +33,32 @@ async function leerEventosDesdeGitHub() {
   } catch (err) {
     console.warn(`No se pudo leer eventos desde GitHub: ${err.message}`)
     return []
+  }
+}
+
+// Leer un archivo del repo como TEXTO crudo (para comparar sin reserializar,
+// p. ej. noticias.json y detectar si realmente cambió). null si no existe.
+async function leerTextoDeGitHub(ruta) {
+  if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPO) return null
+  try {
+    const [owner, repo] = process.env.GITHUB_REPO.split('/')
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${ruta}`,
+      {
+        headers: {
+          Authorization: `token ${process.env.GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github.v3.raw',
+        },
+      },
+    )
+    if (!res.ok) {
+      if (res.status === 404) return null
+      throw new Error(`GitHub API respondio ${res.status}`)
+    }
+    return await res.text()
+  } catch (err) {
+    console.warn(`No se pudo leer ${ruta} desde GitHub: ${err.message}`)
+    return null
   }
 }
 
@@ -343,133 +370,69 @@ function combinarSinDuplicados(...listas) {
   return resultado
 }
 
-// Hacer commit a GitHub si hay cambios
-async function hacerCommitSiHayCambios(eventosPrevios, eventosNuevos) {
+// Commit de uno o más archivos al repo en un ÚNICO commit (Git Data API).
+// `archivos` = [{ path, contenido }] — solo los que han cambiado. Devuelve true
+// si commiteó. Fail-soft: cualquier error se loguea y devuelve false, nunca lanza.
+async function commitArchivos(archivos, mensaje) {
+  if (!archivos.length) return false
   if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPO) {
     console.log('⚠️  No se pudo hacer commit: falta GITHUB_TOKEN o GITHUB_REPO')
     return false
   }
 
-  const prevJson = JSON.stringify(eventosPrevios, null, 2)
-  const newJson = JSON.stringify(eventosNuevos, null, 2)
-
-  if (prevJson === newJson) {
-    console.log('✓ Sin cambios en eventos-externos.json')
-    return false
+  const [owner, repo] = process.env.GITHUB_REPO.split('/')
+  const base = `https://api.github.com/repos/${owner}/${repo}`
+  const cabeceras = {
+    Authorization: `token ${process.env.GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github.v3+json',
   }
 
-  const [owner, repo] = process.env.GITHUB_REPO.split('/')
-
   try {
-    // Obtener ref actual de main
-    const refRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/main`,
-      {
-        headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      },
-    )
+    // Ref y árbol base actuales de main
+    const refRes = await fetch(`${base}/git/refs/heads/main`, { headers: cabeceras })
     if (!refRes.ok) throw new Error(`No se pudo obtener ref de main: ${refRes.status}`)
-    const refData = await refRes.json()
-    const mainSha = refData.object.sha
+    const mainSha = (await refRes.json()).object.sha
 
-    // Obtener el commit actual
-    const commitRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/commits/${mainSha}`,
-      {
-        headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      },
-    )
+    const commitRes = await fetch(`${base}/git/commits/${mainSha}`, { headers: cabeceras })
     if (!commitRes.ok) throw new Error(`No se pudo obtener commit: ${commitRes.status}`)
-    const commitData = await commitRes.json()
-    const treeSha = commitData.tree.sha
+    const treeSha = (await commitRes.json()).tree.sha
 
-    // Crear blob para el nuevo archivo
-    const blobRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/blobs`,
-      {
+    // Un blob por archivo cambiado
+    const tree = []
+    for (const a of archivos) {
+      const blobRes = await fetch(`${base}/git/blobs`, {
         method: 'POST',
-        headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-        body: JSON.stringify({
-          content: newJson,
-          encoding: 'utf-8',
-        }),
-      },
-    )
-    if (!blobRes.ok) throw new Error(`No se pudo crear blob: ${blobRes.status}`)
-    const blobData = await blobRes.json()
+        headers: cabeceras,
+        body: JSON.stringify({ content: a.contenido, encoding: 'utf-8' }),
+      })
+      if (!blobRes.ok) throw new Error(`No se pudo crear blob (${a.path}): ${blobRes.status}`)
+      tree.push({ path: a.path, mode: '100644', type: 'blob', sha: (await blobRes.json()).sha })
+    }
 
-    // Crear nuevo árbol con el blob actualizado
-    const treeRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/trees`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-        body: JSON.stringify({
-          base_tree: treeSha,
-          tree: [
-            {
-              path: 'src/data/eventos-externos.json',
-              mode: '100644',
-              type: 'blob',
-              sha: blobData.sha,
-            },
-          ],
-        }),
-      },
-    )
+    const treeRes = await fetch(`${base}/git/trees`, {
+      method: 'POST',
+      headers: cabeceras,
+      body: JSON.stringify({ base_tree: treeSha, tree }),
+    })
     if (!treeRes.ok) throw new Error(`No se pudo crear árbol: ${treeRes.status}`)
-    const treeData = await treeRes.json()
+    const nuevoTree = (await treeRes.json()).sha
 
-    // Crear nuevo commit
-    const now = new Date().toISOString()
-    const newCommitRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/commits`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-        body: JSON.stringify({
-          message: `chore: sync events from external sources at ${now}`,
-          tree: treeData.sha,
-          parents: [mainSha],
-        }),
-      },
-    )
+    const newCommitRes = await fetch(`${base}/git/commits`, {
+      method: 'POST',
+      headers: cabeceras,
+      body: JSON.stringify({ message: mensaje, tree: nuevoTree, parents: [mainSha] }),
+    })
     if (!newCommitRes.ok) throw new Error(`No se pudo crear commit: ${newCommitRes.status}`)
-    const newCommitData = await newCommitRes.json()
+    const nuevoCommit = (await newCommitRes.json()).sha
 
-    // Actualizar ref de main
-    const updateRefRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/main`,
-      {
-        method: 'PATCH',
-        headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-        body: JSON.stringify({
-          sha: newCommitData.sha,
-          force: false,
-        }),
-      },
-    )
+    const updateRefRes = await fetch(`${base}/git/refs/heads/main`, {
+      method: 'PATCH',
+      headers: cabeceras,
+      body: JSON.stringify({ sha: nuevoCommit, force: false }),
+    })
     if (!updateRefRes.ok) throw new Error(`No se pudo actualizar ref: ${updateRefRes.status}`)
 
-    console.log('✓ Commit realizado a GitHub')
+    console.log(`✓ Commit a GitHub: ${archivos.map((a) => a.path).join(', ')}`)
     return true
   } catch (err) {
     console.error('❌ Error al hacer commit:', err.message)
@@ -581,8 +544,38 @@ export default async function handler(req, res) {
       }
     }
 
-    // Hacer commit a GitHub si hay cambios (NO escribir en el disco)
-    const commitRealizado = await hacerCommitSiHayCambios(eventosPrevios, eventosNuevos)
+    // Preparar los archivos que cambian (eventos + noticias de prensa) para un
+    // ÚNICO commit a GitHub (NO se escribe en disco: EROFS en el runtime).
+    const archivos = []
+
+    const eventosNuevoJson = JSON.stringify(eventosNuevos, null, 2)
+    if (eventosNuevoJson !== JSON.stringify(eventosPrevios, null, 2)) {
+      archivos.push({ path: 'src/data/eventos-externos.json', contenido: eventosNuevoJson })
+    } else {
+      console.log('✓ Sin cambios en eventos-externos.json')
+    }
+
+    // Noticias de prensa (RSS del Ayuntamiento). Fail-soft en su propio try:
+    // un fallo aquí se anota en `errores` pero jamás tumba la sync de eventos
+    // ni el digest push. Se compara contra el texto crudo del repo para no
+    // commitear si no cambió (mismo formato que escribe fetch-noticias.mjs).
+    try {
+      const noticias = await obtenerNoticiasPrensa()
+      resultado.estadisticas = { ...resultado.estadisticas, noticias: noticias.length }
+      const noticiasNuevoJson = JSON.stringify(noticias, null, 2) + '\n'
+      if (noticias.length > 0 && (await leerTextoDeGitHub('src/data/noticias.json')) !== noticiasNuevoJson) {
+        archivos.push({ path: 'src/data/noticias.json', contenido: noticiasNuevoJson })
+      } else {
+        console.log('✓ Sin cambios en noticias.json')
+      }
+    } catch (err) {
+      resultado.errores.push(`Noticias prensa: ${err.message}`)
+    }
+
+    const commitRealizado = await commitArchivos(
+      archivos,
+      `chore: sync events + noticias from external sources at ${new Date().toISOString()}`,
+    )
     resultado.commitRealizado = commitRealizado
 
     // Paso 5: digest push. Cualquier fallo aquí se loguea y se anota en

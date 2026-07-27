@@ -133,7 +133,7 @@ Static JSON is still the store for the read-only content below (events, news, di
 - `servicios-locales.json` — hand-curated directory entries not covered by Google Places (plumbers, renovation services, etc.).
 - `eventos.json` — hand-curated event agenda (municipal + neighborhood).
 - `eventos-externos.json` — **generated**, regenerate with `npm run fetch:eventos` (pulls from the Teatro TYL TYL WordPress "The Events Calendar" API + Ayuntamiento cultura RSS). The UI and assistant merge this with `eventos.json`. Also updated automatically via a Vercel Cron Job (see **Automatic event sync** below).
-- `noticias.json` — **generated**, regenerate with `npm run fetch:noticias` (pulls from Ayuntamiento press RSS feed at `https://navalcarnero.es/navalcarnero/prensa/feed/`). Contains title, date, summary, full content, URL, and author for each news item. Used by Noticias page and assistant's knowledge base.
+- `noticias.json` — **generated**, regenerate with `npm run fetch:noticias` (pulls from Ayuntamiento press RSS feed at `https://navalcarnero.es/navalcarnero/prensa/feed/`). Contains title, date, summary, full content, URL, and author for each news item. Used by Noticias page and assistant's knowledge base. **Auto-updated daily by the `sync-events` cron** (see **Automatic event sync**), so it no longer goes stale; the fetch/parse logic lives in the shared `api/_noticias-feed.js` (`obtenerNoticiasPrensa()`), imported by both the script and the cron.
 - `horarios-bus.json` — **generated**, regenerate with `npm run fetch:transporte` (CRTM GTFS data). Bus line data with schedules.
 
 ### AI assistant (`api/chat.js`, `api/_knowledge.js`)
@@ -154,9 +154,10 @@ Static JSON is still the store for the read-only content below (events, news, di
     4. Compare fetched events with the current version
     5. If changes detected, commit to GitHub via GitHub API
   - Accepts both GET (from Vercel Cron) and POST methods.
-  - **Does not write to the local filesystem** — reads from GitHub API instead (avoids EROFS read-only filesystem in Vercel runtime).
+  - **Also regenerates `noticias.json`** (press RSS) in the same run: fetches the press feed via `obtenerNoticiasPrensa()` (`api/_noticias-feed.js`, article content fetched in batches so it doesn't blow the function time), compares against the current file's raw text, and stages it if it changed. Fail-soft in its own try — a noticias failure is logged in `errores` but never breaks the events sync or the push digest.
+  - **Does not write to the local filesystem** — reads from GitHub API instead (avoids EROFS read-only filesystem in Vercel runtime). Both changed files (`eventos-externos.json` and/or `noticias.json`) go in a **single commit** via `commitArchivos()` (Git Data API, multiple blobs in one tree).
   - If the fetch fails for either source, logs the error but still commits (preserves any partial updates).
-  - Returns a summary: `{ timestamp, agregados, actualizados, eliminados, estadisticas, commitRealizado, errores }`.
+  - Returns a summary: `{ timestamp, agregados, actualizados, eliminados, estadisticas, commitRealizado, errores }` (`estadisticas.noticias` = count fetched).
   - Vercel detects the commit and redeploys automatically, at which point the new JSON becomes available on disk.
 - Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
 - Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).
