@@ -67,7 +67,17 @@ Descarta:
 - Felicitaciones, saludos institucionales, efemérides y posts sin información práctica.
 - Sorteos y contenido puramente promocional.
 
-Marca urgente=true SOLO si el post avisa de algo que afecta AHORA a la seguridad o a los servicios: incendios, cortes de agua o de luz, cortes de tráfico o de vías, emergencias (meteorológicas, sanitarias, de protección civil). tipoAlerta: la opción más apropiada de la lista; "general" si es urgente pero no encaja en ninguna. Si el post NO es urgente, tipoAlerta = "".
+Marca urgente=true SOLO si el post comunica una INTERRUPCIÓN CONCRETA de un servicio o una INSTRUCCIÓN DE SEGURIDAD ACCIONABLE que el vecino debe tener en cuenta ahora o en los próximos días. Es decir, algo que cambia lo que el vecino puede o debe hacer hoy:
+- Cortes concretos: "la calle X estará cortada el día Y de 7:30 a 13:30", "corte de agua en el barrio Z mañana de 8 a 14 h", "corte de luz previsto...".
+- Instrucciones de protección civil: "mantengan puertas y ventanas cerradas por el humo", "eviten la zona X", "se recomienda evacuar...".
+- Emergencia activa con una acción o precaución concreta para el vecino.
+
+NO es urgente (va como noticia normal, urgente=false) todo lo informativo o institucional, aunque hable de incendios o emergencias:
+- Cómo se está gestionando una situación: "se ha instalado el puesto de mando avanzado", "visita de los ministros", "se habilitan pabellones por si fueran necesarios".
+- Consejos genéricos de prevención sin una incidencia concreta en curso: "consejos ante las altas temperaturas", "recomendaciones de civismo en verano", "servicio de custodia de llaves".
+- Balances, agradecimientos y actualizaciones de estado sin una acción concreta para el vecino.
+
+En caso de duda, urgente=false (es una noticia). tipoAlerta: la opción más apropiada de la lista solo si urgente=true; "general" si es urgente pero no encaja en ninguna. Si el post NO es urgente, tipoAlerta = "".
 
 expiraEn: si el caption indica cuándo termina la incidencia ("hasta las 14:00", "corte de 8 a 14 h"), devuélvelo como YYYY-MM-DDTHH:MM resolviendo fechas relativas con el campo "publicado" del post; si no se indica o el post no es urgente, "".
 
