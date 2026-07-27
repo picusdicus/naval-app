@@ -38,7 +38,11 @@ export function useDestacados({ eventos = [], tipo = null } = {}) {
 
     const hoy = new Date()
     hoy.setHours(0, 0, 0, 0)
-    const eventosPorId = new Map(eventos.map((e) => [e.id, e]))
+    // Un evento fusionado por combinarEventos responde también por los ids de
+    // sus duplicados (una referencia de destacado puede apuntar al 'bd-…').
+    const eventosPorId = new Map(
+      eventos.flatMap((e) => [[e.id, e], ...(e.idsSecundarios || []).map((s) => [s, e])])
+    )
 
     return crudos
       .filter((d) => !tipo || d.tipo === tipo)

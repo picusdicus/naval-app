@@ -59,7 +59,9 @@ function BarraContexto({ evento }) {
 export default function EventoDetalle() {
   const { id } = useParams()
   const { eventos, cargando } = useEventosPublicos()
-  const evento = eventos.find((e) => e.id === id)
+  // idsSecundarios: ids de duplicados fusionados por combinarEventos — un deep
+  // link al id de Neon ('bd-…') debe abrir el evento fusionado.
+  const evento = eventos.find((e) => e.id === id || e.idsSecundarios?.includes(id))
 
   // Solo los eventos de la base de datos (prefijo 'bd-') tienen una
   // organización dueña que pueda ver la visita en "Mis analíticas". El ref
