@@ -71,11 +71,11 @@ export default function Noticias() {
     () =>
       noticias.slice(0, visibles).map((n) => ({
         ...n,
-        icono: n.urgente ? 'warning' : obtenerIcono(n.titulo),
+        icono: obtenerIcono(n.titulo),
         cuando: formatearCuando(n.fecha),
         // Fallback visual cuando la noticia no trae foto (las del RSS): mismo
-        // degradado + trama que el cartel de un evento, terracota si es alerta.
-        cartel: cartelDe(n.urgente ? 'terracota' : 'bosque'),
+        // degradado + trama que el cartel de un evento.
+        cartel: cartelDe('bosque'),
       })),
     [noticias, visibles]
   )
@@ -134,11 +134,6 @@ export default function Noticias() {
                     <div className="absolute inset-0 flex items-center justify-center opacity-25">
                       <MIcon name={n.icono} className="text-[56px] text-white" />
                     </div>
-                  )}
-                  {n.urgente && (
-                    <span className="absolute left-3 top-3 bg-terracota px-2 py-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-papel">
-                      Urgente
-                    </span>
                   )}
                 </div>
                 <div className="p-5">

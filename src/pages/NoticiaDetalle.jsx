@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
-import { ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
+import { useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 
 function formatearFechaLarga(fechaISO) {
   const fecha = new Date(fechaISO)
@@ -46,11 +46,7 @@ export default function NoticiaDetalle() {
       <VolverLink arriba />
 
       <div className="mt-4">
-        {noticia.urgente ? (
-          <span className="gz-badge-error">Alerta · {ETIQUETAS_ALERTA[noticia.tipoAlerta] || 'Aviso'}</span>
-        ) : (
-          <span className="gz-badge-oro">Ayuntamiento</span>
-        )}
+        <span className="gz-badge-oro">Ayuntamiento</span>
         <h1 className="mt-3 font-serif-dm text-seccion leading-tight text-tinta">{noticia.titulo}</h1>
       </div>
 
@@ -83,16 +79,16 @@ export default function NoticiaDetalle() {
         {noticia.contenido || noticia.resumen || null}
       </div>
 
-      {noticia.url && (
+      {/* Enlace a la fuente solo para noticias del RSS (artículo completo en la
+          web del Ayuntamiento). En las de Instagram no se muestra. */}
+      {noticia.url && !esInstagram && (
         <div className="mt-6 border border-tinta bg-papel-calido p-5">
           <div className="flex items-start gap-3">
             <MIcon name="info" className="mt-0.5 text-[18px] text-terracota" />
             <div>
               <p className="font-serif-spectral text-sm font-semibold text-tinta">Fuente original</p>
               <p className="mt-1 font-serif-spectral text-xs text-pardo">
-                {esInstagram
-                  ? 'Puedes ver la publicación original en el Instagram del Ayuntamiento.'
-                  : 'Puedes acceder al artículo completo en la web oficial del Ayuntamiento.'}
+                Puedes acceder al artículo completo en la web oficial del Ayuntamiento.
               </p>
             </div>
           </div>
@@ -103,7 +99,7 @@ export default function NoticiaDetalle() {
             className="gz-boton-tinta mt-4 inline-flex items-center justify-center gap-2"
           >
             <MIcon name="open_in_new" className="text-[16px]" />
-            {esInstagram ? 'Abrir la publicación en Instagram' : 'Abrir artículo completo en web del Ayuntamiento'}
+            Abrir artículo completo en web del Ayuntamiento
           </a>
         </div>
       )}
