@@ -1,28 +1,36 @@
 import { Link, useParams } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
-import { ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
+import { ETIQUETAS_ACTIVIDAD, ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 
 function formatearFechaLarga(fechaISO) {
   const fecha = new Date(fechaISO)
   return fecha.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function VolverLink({ arriba = false }) {
+function VolverLink({ arriba = false, actividad = false }) {
   return (
     <Link
-      to="/noticias"
+      to={actividad ? '/actividades' : '/noticias'}
       className="inline-flex items-center gap-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta transition-colors hover:text-terracota"
     >
       <MIcon name="arrow_back" className="text-[16px]" />
-      {arriba ? 'Noticias' : 'Volver a noticias'}
+      {arriba
+        ? actividad
+          ? 'Actividades'
+          : 'Noticias'
+        : actividad
+          ? 'Volver a actividades'
+          : 'Volver a noticias'}
     </Link>
   )
 }
 
 export default function NoticiaDetalle() {
   const { id } = useParams()
-  const { noticias, cargando } = useNoticiasPublicas()
-  const noticia = noticias.find((n) => n.id === id)
+  const { noticias, actividades, cargando } = useNoticiasPublicas()
+  // Las actividades no están en `noticias` (viven en /actividades), pero sus
+  // deep links ig-… se resuelven igual desde esta página de detalle.
+  const noticia = noticias.find((n) => n.id === id) || actividades.find((n) => n.id === id)
 
   if (!noticia) {
     // Las de Instagram llegan async: mientras cargan, un deep-link a
@@ -40,14 +48,19 @@ export default function NoticiaDetalle() {
   }
 
   const esInstagram = noticia.id.startsWith('ig-')
+  const esActividad = noticia.tipo === 'actividad'
 
   return (
     <div className="mx-auto max-w-2xl">
-      <VolverLink arriba />
+      <VolverLink arriba actividad={esActividad} />
 
       <div className="mt-4">
         {noticia.urgente ? (
           <span className="gz-badge-error">Aviso · {ETIQUETAS_ALERTA[noticia.tipoAlerta] || 'Municipio'}</span>
+        ) : esActividad ? (
+          <span className="gz-badge-oro">
+            Actividad · {ETIQUETAS_ACTIVIDAD[noticia.categoria] || 'General'}
+          </span>
         ) : (
           <span className="gz-badge-oro">Ayuntamiento</span>
         )}
@@ -61,6 +74,14 @@ export default function NoticiaDetalle() {
             {formatearFechaLarga(noticia.fecha)}
           </div>
         </div>
+        {esActividad && noticia.fechaLimite && (
+          <div>
+            <div className="gz-label text-mudo">Plazo</div>
+            <div className="mt-0.5 font-serif-spectral text-[15px] text-tinta">
+              Hasta el {formatearFechaLarga(noticia.fechaLimite)}
+            </div>
+          </div>
+        )}
         {noticia.autor && (
           <div>
             <div className="gz-label text-mudo">Autor</div>
@@ -109,7 +130,7 @@ export default function NoticiaDetalle() {
       )}
 
       <div className="mt-8 border-t border-filete pt-5">
-        <VolverLink />
+        <VolverLink actividad={esActividad} />
       </div>
     </div>
   )

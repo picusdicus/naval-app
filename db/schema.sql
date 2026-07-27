@@ -215,6 +215,12 @@ ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS origen_externo_id text;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_eventos_origen_externo ON eventos_usuario (origen_externo_id) WHERE origen_externo_id IS NOT NULL;
 
+-- Subcategoría de un evento de cultura (teatro, cine, musica, danza,
+-- exposicion, otros): la rellena api/sync-instagram.js (whitelist en
+-- src/lib/eventos.js, SUBCATEGORIAS_CULTURA) y permite los sub-filtros de la
+-- página Eventos. NULL para el resto de categorías o si no está clara.
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS subcategoria text;
+
 -- Noticias y alertas del Ayuntamiento sincronizadas desde Instagram
 -- (api/sync-instagram-noticias.js). Conviven con src/data/noticias.json (RSS):
 -- van a Neon porque una alerta urgente no puede esperar al ciclo
@@ -233,6 +239,9 @@ CREATE TABLE IF NOT EXISTS noticias_instagram (
   imagen_url        text,
   url               text,
   usuario           text,
+  tipo              text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad')),
+  categoria         text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general')),
+  fecha_limite      date,
   urgente           boolean NOT NULL DEFAULT false,
   tipo_alerta       text CHECK (tipo_alerta IN ('incendio', 'corte_agua', 'corte_luz', 'trafico', 'emergencia', 'general')),
   publicado_en      timestamptz NOT NULL,
@@ -243,3 +252,16 @@ CREATE TABLE IF NOT EXISTS noticias_instagram (
 );
 
 CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado ON noticias_instagram (publicado_en DESC);
+
+-- Triaje noticia|actividad (api/sync-instagram-noticias.js). Una 'actividad'
+-- es un post de inscripciones/plazos (talleres, escuelas deportivas, ayudas…):
+-- no es noticia pura ni evento de agenda. `categoria` y `fecha_limite` solo
+-- aplican a actividades (el webhook fuerza NULL en noticias y urgente=false en
+-- actividades); al pasar `fecha_limite` la actividad deja de mostrarse, sin
+-- cron. El CHECK va inline en la columna: ADD CONSTRAINT no admite IF NOT
+-- EXISTS y este fichero debe ser re-aplicable.
+ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad'));
+
+ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS categoria text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general'));
+
+ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS fecha_limite date;

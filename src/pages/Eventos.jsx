@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import {
   LISTA_CATEGORIAS_EVENTO,
+  LISTA_SUBCATEGORIAS_CULTURA,
   proximosEventos,
   eventosPasados,
 } from '../lib/eventos.js'
@@ -67,6 +68,9 @@ function diaEtiqueta(fecha) {
 
 export default function Eventos() {
   const [categoria, setCategoria] = useState(null)
+  // Sub-filtro dentro de Cultura (teatro, cine, música…). Se resetea al
+  // cambiar de categoría: un sub-filtro solo tiene sentido bajo su paraguas.
+  const [subcategoria, setSubcategoria] = useState(null)
   const [avisosAbierto, setAvisosAbierto] = useState(false)
   const [mesSeleccionado, setMesSeleccionado] = useState(() => new Date())
   // Solo para pintar el botón ("Recibir avisos" vs "Avisos activados"): la
@@ -86,14 +90,39 @@ export default function Eventos() {
     return LISTA_CATEGORIAS_EVENTO.filter((c) => presentes.has(c.id))
   }, [todos])
 
-  const porCategoria = (lista) =>
-    categoria ? lista.filter((e) => e.categoria === categoria) : lista
+  // Sub-chips de Cultura: solo las subcategorías con algún evento etiquetado.
+  // Los eventos de cultura sin subcategoría siguen visibles bajo "Todo cultura".
+  const subcategoriasDisponibles = useMemo(() => {
+    const presentes = new Set(
+      todos.filter((e) => e.categoria === 'cultura').map((e) => e.subcategoria)
+    )
+    return LISTA_SUBCATEGORIAS_CULTURA.filter((s) => presentes.has(s.id))
+  }, [todos])
 
-  const futuros = useMemo(() => porCategoria(proximosEventos(todos)), [todos, categoria])
-  const pasados = useMemo(() => porCategoria(eventosPasados(todos)), [todos, categoria])
+  const porCategoria = (lista) => {
+    let filtrada = categoria ? lista.filter((e) => e.categoria === categoria) : lista
+    if (categoria === 'cultura' && subcategoria) {
+      filtrada = filtrada.filter((e) => e.subcategoria === subcategoria)
+    }
+    return filtrada
+  }
+
+  const futuros = useMemo(
+    () => porCategoria(proximosEventos(todos)),
+    [todos, categoria, subcategoria]
+  )
+  const pasados = useMemo(
+    () => porCategoria(eventosPasados(todos)),
+    [todos, categoria, subcategoria]
+  )
   // Al cambiar de filtro se vuelve al corte inicial: si no, un filtro nuevo
-  // heredaría la lista ya expandida del anterior.
-  useEffect(() => setPasadosVisibles(PASADOS_INICIALES), [categoria])
+  // heredaría la lista ya expandida del anterior. El sub-filtro de cultura
+  // tampoco sobrevive a un cambio de categoría.
+  useEffect(() => {
+    setPasadosVisibles(PASADOS_INICIALES)
+    setSubcategoria(null)
+  }, [categoria])
+  useEffect(() => setPasadosVisibles(PASADOS_INICIALES), [subcategoria])
   const grupos = useMemo(() => agruparPorDia(futuros), [futuros])
 
   // Eventos destacados contratados. El carrusel aparece encima de la agenda solo
@@ -190,6 +219,38 @@ export default function Eventos() {
                 }`}
               >
                 {cat.nombre}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Sub-filtros de Cultura (teatro, cine, música…): solo con el filtro
+            Cultura activo y si hay eventos etiquetados con subcategoría. */}
+        {categoria === 'cultura' && subcategoriasDisponibles.length > 0 && (
+          <div className="hide-scrollbar -mt-3 mb-6 flex flex-wrap gap-2 py-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta">
+            <button
+              type="button"
+              onClick={() => setSubcategoria(null)}
+              className={`flex-none whitespace-nowrap px-2.5 py-1.5 transition-colors ${
+                subcategoria === null
+                  ? 'bg-terracota text-papel'
+                  : 'border border-terracota text-terracota hover:bg-terracota-fondo'
+              }`}
+            >
+              Todo cultura
+            </button>
+            {subcategoriasDisponibles.map((sub) => (
+              <button
+                key={sub.id}
+                type="button"
+                onClick={() => setSubcategoria(sub.id)}
+                className={`flex-none whitespace-nowrap px-2.5 py-1.5 transition-colors ${
+                  subcategoria === sub.id
+                    ? 'bg-terracota text-papel'
+                    : 'border border-terracota text-terracota hover:bg-terracota-fondo'
+                }`}
+              >
+                {sub.nombre}
               </button>
             ))}
           </div>

@@ -8,6 +8,7 @@ const rutas = [
   { to: '/eventos', label: 'Eventos' },
   { to: '/comercios', label: 'Comercios' },
   { to: '/noticias', label: 'Noticias' },
+  { to: '/actividades', label: 'Actividades' },
   { to: '/asistente', label: 'Asistente IA' },
   { to: '/ayuda', label: 'Preguntas frecuentes' },
   { to: '/sugerencias', label: 'Buzón de sugerencias' },

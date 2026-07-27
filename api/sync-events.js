@@ -233,6 +233,9 @@ async function eventosTyltyl() {
         hora,
         lugar,
         categoria: 'cultura',
+        // Todo el catálogo del TYL TYL es teatro: se fija sin IA, y así sus
+        // funciones entran en el sub-filtro "Teatro" de la agenda.
+        subcategoria: 'teatro',
         origen: 'cultural',
         descripcion: limpiarTexto(ev.excerpt || ev.description, 220),
         url: ev.url || '',

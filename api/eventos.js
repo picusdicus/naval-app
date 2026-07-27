@@ -25,7 +25,7 @@ export default async function handler(req) {
     // `fecha_inicio` se formatea en SQL: el driver devuelve las columnas `date`
     // como objetos Date, y convertirlas en JS arrastra la zona horaria.
     const filas = await sql`
-      SELECT e.id, e.titulo, e.descripcion, e.categoria, e.lugar,
+      SELECT e.id, e.titulo, e.descripcion, e.categoria, e.subcategoria, e.lugar,
              to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
              e.hora, e.hora_fin, e.imagen_url,
              e.entradas_texto, e.entradas_url, e.precio,
@@ -42,6 +42,7 @@ export default async function handler(req) {
       titulo: e.titulo,
       descripcion: e.descripcion,
       categoria: e.categoria,
+      subcategoria: e.subcategoria || null,
       lugar: e.lugar,
       fecha: e.fecha,
       hora: e.hora,

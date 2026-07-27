@@ -28,14 +28,18 @@ export default async function handler(req) {
     const sql = obtenerSql()
     // to_char para no dejar que el driver convierta timestamptz a Date de JS
     // (arrastraría la zona horaria), mismo patrón que api/avisos.js.
+    // El OR mantiene visibles fuera de la ventana de historial tanto una
+    // alerta vigente como una actividad cuyo plazo sigue abierto.
     const filas = await sql`
       SELECT origen_externo_id, titulo, resumen, cuerpo, imagen_url, url, usuario,
-             urgente, tipo_alerta,
+             tipo, categoria, urgente, tipo_alerta,
+             to_char(fecha_limite, 'YYYY-MM-DD') AS fecha_limite,
              to_char(publicado_en, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS publicado_en,
              to_char(expira_en, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS expira_en
       FROM noticias_instagram
       WHERE publicado_en >= now() - (${DIAS_HISTORIAL} || ' days')::interval
          OR (urgente AND expira_en > now())
+         OR (tipo = 'actividad' AND fecha_limite >= CURRENT_DATE)
       ORDER BY publicado_en DESC
       LIMIT ${LIMITE}
     `
@@ -51,6 +55,9 @@ export default async function handler(req) {
       url: f.url || '',
       autor: 'Ayuntamiento de Navalcarnero',
       imagen: f.imagen_url || '',
+      tipo: f.tipo || 'noticia',
+      categoria: f.categoria,
+      fechaLimite: f.fecha_limite,
       urgente: f.urgente,
       tipoAlerta: f.tipo_alerta,
       expiraEn: f.expira_en,

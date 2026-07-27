@@ -12,6 +12,7 @@
 // venir de Instagram (el RSS no marca urgencia) y no dependen del corte de un mes.
 import { useEffect, useMemo, useState } from 'react'
 import noticiasRss from '../data/noticias.json'
+import { hoyISO } from './fechas.js'
 
 export const ETIQUETAS_ALERTA = {
   incendio: 'Incendio',
@@ -20,6 +21,19 @@ export const ETIQUETAS_ALERTA = {
   trafico: 'Tráfico',
   emergencia: 'Emergencia',
   general: 'Aviso',
+}
+
+// Categorías de actividad (misma whitelist que api/sync-instagram-noticias.js
+// y el CHECK de la tabla). El orden decide el de los chips de /actividades.
+export const ETIQUETAS_ACTIVIDAD = {
+  deporte: 'Deporte',
+  talleres: 'Talleres y cursos',
+  infantil: 'Infantil',
+  mayores: 'Mayores',
+  educacion: 'Educación',
+  ayudas: 'Ayudas y becas',
+  empleo: 'Empleo',
+  general: 'General',
 }
 
 const ESTATICAS = [...noticiasRss]
@@ -58,11 +72,28 @@ export function useNoticiasPublicas() {
 
   // Mezcla RSS + Instagram, descarta lo de más de un mes y ordena por fecha
   // descendente (sin el sort, las de Instagram quedarían detrás del RSS).
+  // Las actividades (tipo 'actividad') no son noticias: viven en /actividades.
   const noticias = useMemo(() => {
     const limite = fechaLimiteUnMes()
     return [...ESTATICAS, ...deLaBase]
+      .filter((n) => n.tipo !== 'actividad')
       .filter((n) => (n.fecha || '') >= limite)
       .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
+  }, [deLaBase])
+
+  // Actividades con el plazo abierto (o sin plazo conocido, mientras sigan en
+  // la ventana de historial del GET): plazo más cercano primero, las de plazo
+  // desconocido al final. Al pasar fecha_limite desaparecen solas, sin cron.
+  const actividades = useMemo(() => {
+    const hoy = hoyISO()
+    return deLaBase
+      .filter((n) => n.tipo === 'actividad' && (!n.fechaLimite || n.fechaLimite >= hoy))
+      .sort((a, b) => {
+        if (a.fechaLimite && b.fechaLimite) return a.fechaLimite.localeCompare(b.fechaLimite)
+        if (a.fechaLimite) return -1
+        if (b.fechaLimite) return 1
+        return (b.fecha || '').localeCompare(a.fecha || '')
+      })
   }, [deLaBase])
 
   // Avisos del municipio: las urgentes vigentes (urgente + no caducadas).
@@ -74,5 +105,5 @@ export function useNoticiasPublicas() {
     return deLaBase.filter((n) => n.urgente && n.expiraEn && Date.parse(n.expiraEn) > ahora)
   }, [deLaBase])
 
-  return { noticias, alertas, cargando }
+  return { noticias, actividades, alertas, cargando }
 }

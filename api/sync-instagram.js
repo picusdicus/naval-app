@@ -25,11 +25,17 @@ import Anthropic from '@anthropic-ai/sdk'
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
 import { MAX_POSTS, normalizarPost, obtenerPosts, subirImagen } from './_instagram.js'
+import { SUBCATEGORIAS_CULTURA } from '../src/lib/eventos.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
 // Misma taxonomía que eventos.json / la UI de la agenda.
 const CATEGORIAS = ['cultura', 'deporte', 'fiestas', 'gastronomia', 'infantil', 'mercado']
+
+// Subcategorías DENTRO de cultura (teatro, cine, …): afinan los filtros de la
+// agenda sin trocear la categoría paraguas (los temas de push 'cat:cultura' y
+// el perfil de las orgs no se tocan). Whitelist compartida con la UI.
+const SUBCATEGORIAS = Object.keys(SUBCATEGORIAS_CULTURA)
 
 // Atribución por autor: ownerUsername del post → organización de la agenda
 // (el "Organiza" de la ficha y la `fuente` del GET público salen del nombre de
@@ -81,7 +87,7 @@ const ESQUEMA_EXTRACCION = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['shortCode', 'titulo', 'fecha', 'hora', 'lugar', 'categoria', 'descripcion'],
+        required: ['shortCode', 'titulo', 'fecha', 'hora', 'lugar', 'categoria', 'subcategoria', 'descripcion'],
         properties: {
           shortCode: { type: 'string' },
           titulo: { type: 'string' },
@@ -89,6 +95,8 @@ const ESQUEMA_EXTRACCION = {
           hora: { type: 'string' },
           lugar: { type: 'string' },
           categoria: { enum: CATEGORIAS },
+          // '' = sin subcategoría (no es cultura, o no está clara).
+          subcategoria: { enum: [...SUBCATEGORIAS, ''] },
           descripcion: { type: 'string' },
         },
       },
@@ -107,6 +115,7 @@ Para cada evento devuelve:
 - hora: HH:MM en formato 24 h.
 - lugar: el nombre del sitio tal como aparece (sin ", Navalcarnero").
 - categoria: la más apropiada de la lista permitida.
+- subcategoria: SOLO si categoria es "cultura", el tipo concreto de acto: "teatro", "cine", "musica" (conciertos, recitales), "danza", "exposicion", u "otros" si es cultural pero no encaja en ninguno. Para cualquier otra categoria, "".
 - descripcion: el caption limpio de hashtags y menciones, máximo 400 caracteres.
 
 Devuelve solo los posts que son eventos; si ninguno lo es, devuelve la lista vacía.`
@@ -156,6 +165,12 @@ function validarExtraccion(eventos, postsPorShortCode) {
       hora: ev.hora,
       lugar: ev.lugar.trim().slice(0, 120),
       categoria: ev.categoria,
+      // Solo tiene sentido bajo cultura; fuera de la whitelist queda NULL (un
+      // evento sin subcategoría clara simplemente no entra en los sub-filtros).
+      subcategoria:
+        ev.categoria === 'cultura' && SUBCATEGORIAS.includes(ev.subcategoria)
+          ? ev.subcategoria
+          : null,
       descripcion: String(ev.descripcion || '').trim().slice(0, 1000),
       url: post.url,
       imagenOrigen: post.imagen,
@@ -170,6 +185,7 @@ async function asegurarColumnaOrigen(sql) {
   await sql`ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS origen_externo_id text`
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_eventos_origen_externo
             ON eventos_usuario (origen_externo_id) WHERE origen_externo_id IS NOT NULL`
+  await sql`ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS subcategoria text`
 }
 
 /** Auto-provisiona (idempotente) la organización de un autor; devuelve su id. */
@@ -266,18 +282,19 @@ export default async function handler(req, res) {
         // previa se conserva si esta vez no se pudo subir.
         const filas = await sql`
           INSERT INTO eventos_usuario
-            (organizacion_id, titulo, descripcion, categoria, fecha_inicio, hora,
-             lugar, url, imagen_url, estado, origen_externo_id)
+            (organizacion_id, titulo, descripcion, categoria, subcategoria,
+             fecha_inicio, hora, lugar, url, imagen_url, estado, origen_externo_id)
           VALUES
             (${organizacionId}, ${ev.titulo}, ${ev.descripcion}, ${ev.categoria},
-             ${ev.fecha}, ${ev.hora}, ${ev.lugar}, ${ev.url}, ${imagenUrl},
-             'publicado', ${`ig-${ev.shortCode}`})
+             ${ev.subcategoria}, ${ev.fecha}, ${ev.hora}, ${ev.lugar}, ${ev.url},
+             ${imagenUrl}, 'publicado', ${`ig-${ev.shortCode}`})
           ON CONFLICT (origen_externo_id) WHERE origen_externo_id IS NOT NULL
           DO UPDATE SET
             organizacion_id = EXCLUDED.organizacion_id,
             titulo = EXCLUDED.titulo,
             descripcion = EXCLUDED.descripcion,
             categoria = EXCLUDED.categoria,
+            subcategoria = EXCLUDED.subcategoria,
             fecha_inicio = EXCLUDED.fecha_inicio,
             hora = EXCLUDED.hora,
             lugar = EXCLUDED.lugar,

@@ -1,10 +1,18 @@
 // POST /api/sync-instagram-noticias — webhook de Apify: convierte posts de
-// Instagram de ayuntamientonavalcarnero en noticias y alertas urgentes.
+// Instagram municipales (ayuntamientonavalcarnero y cultura_navalcarnero) en
+// noticias, alertas urgentes y ACTIVIDADES (inscripciones/plazos).
 //
-// Flujo: Apify termina su scrape → llama aquí → Claude identifica los posts
-// que son noticias o alertas municipales (y descarta eventos de agenda, que ya
-// cubre api/sync-instagram.js) → la imagen se sube a Vercel Blob → upsert en
-// noticias_instagram por origen_externo_id ('ig-<shortCode>').
+// Flujo: Apify termina su scrape → llama aquí → Claude hace el triaje de cada
+// post: 'noticia' (información municipal; puede ser alerta urgente) o
+// 'actividad' (algo a lo que apuntarse: talleres, escuelas deportivas,
+// campamentos, ayudas… con su fecha_limite si el post la indica). Los eventos
+// de agenda se descartan (ya los cubre api/sync-instagram.js) → la imagen se
+// sube a Vercel Blob → upsert en noticias_instagram por origen_externo_id
+// ('ig-<shortCode>').
+//
+// Las actividades alimentan la página /actividades; las noticias, la sección
+// Noticias. Una actividad caduca sola al pasar fecha_limite (filtro en
+// lectura, sin cron) y nunca es urgente (el servidor lo fuerza).
 //
 // Las noticias van a Neon y no a src/data/noticias.json a propósito: una
 // alerta urgente ("corte de agua ahora") no puede esperar al ciclo
@@ -28,6 +36,19 @@ const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 // Misma whitelist que el CHECK de noticias_instagram en db/schema.sql.
 const TIPOS_ALERTA = ['incendio', 'corte_agua', 'corte_luz', 'trafico', 'emergencia', 'general']
 
+// Categorías de una actividad (misma whitelist que el CHECK de la tabla y que
+// ETIQUETAS_ACTIVIDAD en src/lib/useNoticiasPublicas.js).
+const CATEGORIAS_ACTIVIDAD = [
+  'deporte',
+  'talleres',
+  'infantil',
+  'mayores',
+  'educacion',
+  'ayudas',
+  'empleo',
+  'general',
+]
+
 // Una alerta urgente sin hora de fin conocida caduca sola a las 24 h de
 // publicarse: una incidencia que dura más se re-anuncia con otro post.
 const HORAS_EXPIRACION_DEFECTO = 24
@@ -45,12 +66,16 @@ const ESQUEMA_EXTRACCION = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['shortCode', 'titulo', 'resumen', 'cuerpo', 'urgente', 'tipoAlerta', 'expiraEn'],
+        required: ['shortCode', 'tipo', 'titulo', 'resumen', 'cuerpo', 'categoria', 'fechaLimite', 'urgente', 'tipoAlerta', 'expiraEn'],
         properties: {
           shortCode: { type: 'string' },
+          tipo: { enum: ['noticia', 'actividad'] },
           titulo: { type: 'string' },
           resumen: { type: 'string' },
           cuerpo: { type: 'string' },
+          // Solo para actividades; '' en noticias.
+          categoria: { enum: [...CATEGORIAS_ACTIVIDAD, ''] },
+          fechaLimite: { type: 'string' },
           urgente: { type: 'boolean' },
           tipoAlerta: { enum: [...TIPOS_ALERTA, ''] },
           expiraEn: { type: 'string' },
@@ -60,12 +85,20 @@ const ESQUEMA_EXTRACCION = {
   },
 }
 
-const INSTRUCCIONES = `Analiza posts de Instagram del Ayuntamiento de Navalcarnero (Madrid) e identifica cuáles son NOTICIAS o ALERTAS municipales de interés práctico para un vecino.
+const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Navalcarnero (Madrid) — el Ayuntamiento y la concejalía de cultura — e identifica cuáles son NOTICIAS, ALERTAS o ACTIVIDADES de interés práctico para un vecino, y clasifica cada uno en "tipo":
+
+- tipo "actividad": el contenido principal es algo a lo que el vecino puede APUNTARSE o SOLICITAR — inscripciones a talleres, cursos, campamentos, escuelas deportivas, viajes organizados, ayudas, becas, subvenciones, bolsas de empleo público. Suele haber un plazo ("inscripciones hasta el 15", "plazo abierto del 1 al 30").
+- tipo "noticia": el resto de información municipal (obras, comunicados, gestión de emergencias, balances). Puede ser además una alerta urgente (ver abajo).
 
 Descarta:
-- Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a una actividad con fecha, hora y lugar — esos datos pueden estar en el caption o en el texto del cartel, campo "alt"): ya los cubre la agenda de la app.
+- Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a un acto puntual con fecha, hora y lugar — esos datos pueden estar en el caption o en el texto del cartel, campo "alt"): ya los cubre la agenda de la app. Ojo: si el post anuncia el PLAZO DE INSCRIPCIÓN a una actividad continuada (un taller trimestral, la escuela de fútbol), NO es un evento de agenda: es tipo "actividad".
 - Felicitaciones, saludos institucionales, efemérides y posts sin información práctica.
 - Sorteos y contenido puramente promocional.
+
+Para las actividades devuelve además:
+- categoria: la más apropiada de la lista permitida ("talleres" para cursos y talleres culturales o formativos, "ayudas" para subvenciones y becas, "general" si ninguna encaja). En noticias, "".
+- fechaLimite: la fecha en que termina el plazo de inscripción o solicitud, como YYYY-MM-DD, resolviendo fechas relativas con el campo "publicado" del post; si el post no la indica (o es una noticia), "".
+Una actividad nunca es urgente: en actividades, urgente=false, tipoAlerta="" y expiraEn="".
 
 Marca urgente=true SOLO si el post comunica una INTERRUPCIÓN CONCRETA de un servicio o una INSTRUCCIÓN DE SEGURIDAD ACCIONABLE que el vecino debe tener en cuenta ahora o en los próximos días. Es decir, algo que cambia lo que el vecino puede o debe hacer hoy:
 - Cortes concretos: "la calle X estará cortada el día Y de 7:30 a 13:30", "corte de agua en el barrio Z mañana de 8 a 14 h", "corte de luz previsto...".
@@ -81,13 +114,13 @@ En caso de duda, urgente=false (es una noticia). tipoAlerta: la opción más apr
 
 expiraEn: si el caption indica cuándo termina la incidencia ("hasta las 14:00", "corte de 8 a 14 h"), devuélvelo como YYYY-MM-DDTHH:MM resolviendo fechas relativas con el campo "publicado" del post; si no se indica o el post no es urgente, "".
 
-Para cada noticia devuelve además:
+Para cada item (noticia o actividad) devuelve además:
 - shortCode: el del post, copiado tal cual.
 - titulo: corto y legible en español (sin mayúsculas gritadas).
 - resumen: una o dos frases, máximo 200 caracteres.
 - cuerpo: el caption limpio de hashtags y menciones, máximo 1500 caracteres.
 
-Devuelve solo los posts que son noticias o alertas; si ninguno lo es, devuelve la lista vacía.`
+Devuelve solo los posts que son noticias, alertas o actividades; si ninguno lo es, devuelve la lista vacía.`
 
 async function extraerNoticias(posts) {
   const client = new Anthropic()
@@ -134,7 +167,10 @@ function validarExtraccion(noticias, postsPorShortCode) {
     vistos.add(n.shortCode)
 
     const publicadoEn = fechaPublicacion(post)
-    const urgente = n.urgente === true
+    const tipo = n.tipo === 'actividad' ? 'actividad' : 'noticia'
+    // Solo una noticia puede ser urgente: una actividad con plazo no es una
+    // alerta aunque el modelo la marque (coherencia forzada en servidor).
+    const urgente = tipo === 'noticia' && n.urgente === true
     let tipoAlerta = null
     let expiraEn = null
     if (urgente) {
@@ -145,12 +181,23 @@ function validarExtraccion(noticias, postsPorShortCode) {
             Date.parse(publicadoEn) + HORAS_EXPIRACION_DEFECTO * 3600 * 1000
           ).toISOString()
     }
+    // categoria/fechaLimite solo aplican a actividades. Sin fecha límite la
+    // actividad se muestra mientras siga en la ventana de historial del GET.
+    let categoria = null
+    let fechaLimite = null
+    if (tipo === 'actividad') {
+      categoria = CATEGORIAS_ACTIVIDAD.includes(n.categoria) ? n.categoria : 'general'
+      fechaLimite = /^\d{4}-\d{2}-\d{2}$/.test(n.fechaLimite) ? n.fechaLimite : null
+    }
 
     validas.push({
       shortCode: n.shortCode,
+      tipo,
       titulo: n.titulo.trim().slice(0, 200),
       resumen: String(n.resumen || '').trim().slice(0, 300),
       cuerpo: String(n.cuerpo || '').trim().slice(0, 2000),
+      categoria,
+      fechaLimite,
       urgente,
       tipoAlerta,
       expiraEn,
@@ -174,6 +221,9 @@ async function asegurarTabla(sql) {
     imagen_url        text,
     url               text,
     usuario           text,
+    tipo              text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad')),
+    categoria         text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general')),
+    fecha_limite      date,
     urgente           boolean NOT NULL DEFAULT false,
     tipo_alerta       text CHECK (tipo_alerta IN ('incendio', 'corte_agua', 'corte_luz', 'trafico', 'emergencia', 'general')),
     publicado_en      timestamptz NOT NULL,
@@ -184,6 +234,11 @@ async function asegurarTabla(sql) {
   )`
   await sql`CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado
             ON noticias_instagram (publicado_en DESC)`
+  // Migración para bases que ya tenían la tabla (CREATE TABLE IF NOT EXISTS no
+  // añade columnas); mismos ALTER que db/schema.sql.
+  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad'))`
+  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS categoria text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general'))`
+  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS fecha_limite date`
 }
 
 export default async function handler(req, res) {
@@ -259,20 +314,24 @@ export default async function handler(req, res) {
         // corrección del post en Instagram debe reflejarse aquí).
         const filas = await sql`
           INSERT INTO noticias_instagram
-            (origen_externo_id, titulo, resumen, cuerpo, imagen_url, url, usuario,
-             urgente, tipo_alerta, publicado_en, expira_en)
+            (origen_externo_id, tipo, titulo, resumen, cuerpo, imagen_url, url,
+             usuario, categoria, fecha_limite, urgente, tipo_alerta,
+             publicado_en, expira_en)
           VALUES
-            (${`ig-${n.shortCode}`}, ${n.titulo}, ${n.resumen}, ${n.cuerpo}, ${imagenUrl},
-             ${n.url}, ${n.usuario}, ${n.urgente}, ${n.tipoAlerta}, ${n.publicadoEn},
-             ${n.expiraEn})
+            (${`ig-${n.shortCode}`}, ${n.tipo}, ${n.titulo}, ${n.resumen}, ${n.cuerpo},
+             ${imagenUrl}, ${n.url}, ${n.usuario}, ${n.categoria}, ${n.fechaLimite},
+             ${n.urgente}, ${n.tipoAlerta}, ${n.publicadoEn}, ${n.expiraEn})
           ON CONFLICT (origen_externo_id)
           DO UPDATE SET
+            tipo = EXCLUDED.tipo,
             titulo = EXCLUDED.titulo,
             resumen = EXCLUDED.resumen,
             cuerpo = EXCLUDED.cuerpo,
             imagen_url = COALESCE(EXCLUDED.imagen_url, noticias_instagram.imagen_url),
             url = EXCLUDED.url,
             usuario = EXCLUDED.usuario,
+            categoria = EXCLUDED.categoria,
+            fecha_limite = EXCLUDED.fecha_limite,
             urgente = EXCLUDED.urgente,
             tipo_alerta = EXCLUDED.tipo_alerta,
             publicado_en = EXCLUDED.publicado_en,

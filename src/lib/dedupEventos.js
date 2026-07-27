@@ -72,6 +72,7 @@ export function combinarEventos(estaticos, deLaBase) {
       lugar: base.lugar || evento.lugar,
       url: base.url || evento.url,
       entradas: base.entradas || evento.entradas,
+      subcategoria: base.subcategoria || evento.subcategoria,
       idsSecundarios: [...(base.idsSecundarios || []), evento.id],
     }
   }

@@ -11,6 +11,22 @@ export const CATEGORIAS_EVENTO = {
 
 export const LISTA_CATEGORIAS_EVENTO = Object.values(CATEGORIAS_EVENTO)
 
+// Subcategorías DENTRO de 'cultura' (no son categorías hermanas a propósito:
+// los temas de push 'cat:cultura', los filtros y el perfil de las orgs siguen
+// funcionando como paraguas). Las rellena el webhook de Instagram
+// (api/sync-instagram.js las importa de aquí) y el TYL TYL se fija a 'teatro'
+// sin IA. Opcionales: un evento de cultura sin subcategoría clara la deja null.
+export const SUBCATEGORIAS_CULTURA = {
+  teatro: { id: 'teatro', nombre: 'Teatro' },
+  cine: { id: 'cine', nombre: 'Cine' },
+  musica: { id: 'musica', nombre: 'Música' },
+  danza: { id: 'danza', nombre: 'Danza' },
+  exposicion: { id: 'exposicion', nombre: 'Exposiciones' },
+  otros: { id: 'otros', nombre: 'Otros' },
+}
+
+export const LISTA_SUBCATEGORIAS_CULTURA = Object.values(SUBCATEGORIAS_CULTURA)
+
 // Convierte 'YYYY-MM-DD' en Date local (sin desfase de zona horaria).
 function aFecha(iso) {
   return new Date(`${iso}T00:00:00`)
