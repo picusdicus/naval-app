@@ -11,6 +11,18 @@
 
 import comercios from '../data/comercios.json'
 
+// Plazas, parques y espacios públicos donde se celebran eventos y que no son
+// POIs de Google Places (no están en comercios.json). Curados a mano con
+// coordenadas de OpenStreetMap/Nominatim; añadir aquí los que vayan saliendo
+// en la agenda. Van ANTES que el directorio en el índice para ganar los
+// empates de puntuación.
+const LUGARES_FIJOS = [
+  { nombre: 'Plaza de Francisco Sandoval', lat: 40.2906258, lng: -4.0163167 },
+  { nombre: 'Plaza de Segovia', lat: 40.2876685, lng: -4.0142827 },
+  { nombre: 'Plaza de la Veracruz', lat: 40.2881244, lng: -4.0147148 },
+  { nombre: 'Parque de San Sebastián', lat: 40.2874484, lng: -4.0204771 },
+]
+
 // Palabras de relleno que no aportan a la identificación del lugar.
 const VACIAS = new Set(['en', 'el', 'la', 'los', 'las', 'de', 'del', 'y', 'a', 'al', 'salida'])
 
@@ -24,8 +36,9 @@ function tokens(texto) {
     .filter((t) => t.length >= 3 && !VACIAS.has(t))
 }
 
-// Índice precalculado: solo los sitios con coordenadas numéricas.
-const INDICE = comercios
+// Índice precalculado: lugares fijos primero, luego los sitios del directorio
+// con coordenadas numéricas.
+const INDICE = [...LUGARES_FIJOS, ...comercios]
   .filter((c) => typeof c.lat === 'number' && typeof c.lng === 'number')
   .map((c) => ({ comercio: c, toks: new Set(tokens(c.nombre)) }))
 

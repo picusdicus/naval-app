@@ -206,3 +206,11 @@ CREATE TABLE IF NOT EXISTS push_avisos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_push_avisos_fecha ON push_avisos (enviado_en DESC);
+
+-- Identificador del contenido de origen para eventos sincronizados desde
+-- fuentes externas (api/sync-instagram.js guarda 'ig-<shortCode>'). El índice
+-- único parcial soporta el upsert: re-ejecutar la sincronización actualiza la
+-- fila en vez de duplicarla. Los eventos creados desde el panel lo dejan NULL.
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS origen_externo_id text;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_eventos_origen_externo ON eventos_usuario (origen_externo_id) WHERE origen_externo_id IS NOT NULL;

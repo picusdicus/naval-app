@@ -43,6 +43,10 @@ const VARIABLES_API = [
   // reCAPTCHA v3 (api/sugerencias.js). La clave pública la usa el navegador
   // para obtener el token; la secreta solo el servidor para verificarlo.
   'RECAPTCHA_SECRET_KEY',
+  // Webhook de sincronización de Instagram (api/sync-instagram.js): secreto de
+  // autenticación del webhook de Apify y token para leer sus datasets.
+  'INSTAGRAM_SYNC_SECRET',
+  'APIFY_TOKEN',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni
