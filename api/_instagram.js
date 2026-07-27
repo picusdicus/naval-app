@@ -45,6 +45,10 @@ export function normalizarPost(post) {
   return {
     shortCode,
     caption,
+    // Texto alternativo de la imagen que genera Instagram (OCR del cartel):
+    // los posts municipales suelen poner fecha/hora/lugar solo en el cartel,
+    // así que sin este campo Claude no puede reconocerlos como eventos.
+    alt: typeof post.alt === 'string' ? post.alt.trim() : '',
     // La fecha de publicación ancla las fechas relativas ("este sábado 18").
     publicado: post.timestamp || '',
     url: post.url || `https://www.instagram.com/p/${shortCode}/`,

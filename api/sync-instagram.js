@@ -1,5 +1,6 @@
 // POST /api/sync-instagram — webhook de Apify: convierte posts de Instagram de
-// cultura_navalcarnero en eventos de la agenda.
+// cultura_navalcarnero (y de ayuntamientonavalcarnero, cuya task de noticias
+// también apunta aquí con un segundo webhook) en eventos de la agenda.
 //
 // Flujo: Apify termina su ejecución semanal → llama aquí → se identifican con
 // Claude los posts que anuncian un evento real (fecha + hora + lugar en el
@@ -44,8 +45,21 @@ const ORG_CULTURA = {
   lugarDefecto: 'Navalcarnero',
 }
 
+// El slug 'ayuntamiento' coincide con ORG_POR_FUENTE/ORGANIZADORES_FIJOS de
+// src/lib/temasPush.js: los eventos quedan bajo el tema org:ayuntamiento ya
+// existente en el selector de avisos.
+const ORG_AYUNTAMIENTO = {
+  nombre: 'Ayuntamiento de Navalcarnero',
+  slug: 'ayuntamiento',
+  descripcion:
+    'Eventos publicados en Instagram por ayuntamientonavalcarnero y sincronizados automáticamente.',
+  categoriaDefecto: 'cultura',
+  lugarDefecto: 'Navalcarnero',
+}
+
 const ORG_POR_USUARIO = {
   cultura_navalcarnero: ORG_CULTURA,
+  ayuntamientonavalcarnero: ORG_AYUNTAMIENTO,
 }
 
 function orgDeUsuario(usuario) {
@@ -82,9 +96,9 @@ const ESQUEMA_EXTRACCION = {
   },
 }
 
-const INSTRUCCIONES = `Analiza posts de Instagram de la concejalía de cultura de Navalcarnero (Madrid) e identifica cuáles anuncian un EVENTO REAL al que un vecino puede asistir.
+const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Navalcarnero (Madrid) — la concejalía de cultura y el Ayuntamiento — e identifica cuáles anuncian un EVENTO REAL al que un vecino puede asistir.
 
-Un post es un evento SOLO si su caption menciona explícitamente las tres cosas: una fecha concreta, una hora y un lugar. Descarta aperturas de plazos de inscripción, bases de concursos, noticias, agradecimientos, y actos fuera de Navalcarnero.
+Un post es un evento SOLO si menciona explícitamente las tres cosas: una fecha concreta, una hora y un lugar. Pueden aparecer en el caption o en el texto del cartel (campo "alt", la descripción automática de la imagen) — es habitual que el caption sea solo la sinopsis y los datos prácticos estén en el cartel. Descarta aperturas de plazos de inscripción, bases de concursos, noticias, agradecimientos, y actos fuera de Navalcarnero.
 
 Para cada evento devuelve:
 - shortCode: el del post, copiado tal cual.
@@ -220,7 +234,7 @@ export default async function handler(req, res) {
 
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const extraidos = await extraerEventos(
-      posts.map(({ shortCode, caption, publicado }) => ({ shortCode, caption, publicado }))
+      posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
     )
     const { validos, descartados } = validarExtraccion(extraidos, postsPorShortCode)
     resumen.eventos = validos.length

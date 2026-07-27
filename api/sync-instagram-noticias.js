@@ -63,7 +63,7 @@ const ESQUEMA_EXTRACCION = {
 const INSTRUCCIONES = `Analiza posts de Instagram del Ayuntamiento de Navalcarnero (Madrid) e identifica cuáles son NOTICIAS o ALERTAS municipales de interés práctico para un vecino.
 
 Descarta:
-- Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a una actividad con fecha, hora y lugar): ya los cubre la agenda de la app.
+- Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a una actividad con fecha, hora y lugar — esos datos pueden estar en el caption o en el texto del cartel, campo "alt"): ya los cubre la agenda de la app.
 - Felicitaciones, saludos institucionales, efemérides y posts sin información práctica.
 - Sorteos y contenido puramente promocional.
 
@@ -237,7 +237,7 @@ export default async function handler(req, res) {
 
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const extraidas = await extraerNoticias(
-      posts.map(({ shortCode, caption, publicado }) => ({ shortCode, caption, publicado }))
+      posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
     )
     const { validas, descartadas } = validarExtraccion(extraidas, postsPorShortCode)
     resumen.noticias = validas.length
