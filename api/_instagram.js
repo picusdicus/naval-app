@@ -15,19 +15,31 @@ export const TIPOS_IMAGEN = {
 export const MAX_IMAGEN_BYTES = 4 * 1024 * 1024
 export const MAX_POSTS = 50
 
-/** Primera foto del post: carrusel (childPosts/images) o imagen única. */
+/** Primera foto del post: carrusel (childPosts/images) o imagen única. Los
+ * actores de Instagram no coinciden en el nombre del campo, así que se prueban
+ * varios (instagram-scraper usa displayUrl/images; otros, imageUrl/thumbnail). */
 export function primeraImagen(post) {
   if (Array.isArray(post.images) && post.images[0]) return post.images[0]
   if (Array.isArray(post.childPosts) && post.childPosts[0]?.displayUrl) {
     return post.childPosts[0].displayUrl
   }
-  return post.displayUrl || ''
+  return post.displayUrl || post.imageUrl || post.thumbnailUrl || post.image || ''
+}
+
+/** shortCode del post: campo directo o, si el actor no lo da (p. ej.
+ * instagram-post-scraper), extraído de la url /p/<code>/ o /reel/<code>/. */
+export function shortCodeDe(post) {
+  if (typeof post.shortCode === 'string' && post.shortCode.trim()) {
+    return post.shortCode.trim()
+  }
+  const m = String(post.url || '').match(/\/(?:p|reel|tv)\/([^/?#]+)/)
+  return m ? m[1] : ''
 }
 
 /** Reduce un post de Apify a lo que Claude necesita para decidir. */
 export function normalizarPost(post) {
   if (!post || typeof post !== 'object') return null
-  const shortCode = typeof post.shortCode === 'string' ? post.shortCode.trim() : ''
+  const shortCode = shortCodeDe(post)
   const caption = typeof post.caption === 'string' ? post.caption.trim() : ''
   if (!shortCode || !caption) return null
   return {
