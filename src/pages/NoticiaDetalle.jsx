@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
-import { useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
+import { ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 
 function formatearFechaLarga(fechaISO) {
   const fecha = new Date(fechaISO)
@@ -46,7 +46,11 @@ export default function NoticiaDetalle() {
       <VolverLink arriba />
 
       <div className="mt-4">
-        <span className="gz-badge-oro">Ayuntamiento</span>
+        {noticia.urgente ? (
+          <span className="gz-badge-error">Aviso · {ETIQUETAS_ALERTA[noticia.tipoAlerta] || 'Municipio'}</span>
+        ) : (
+          <span className="gz-badge-oro">Ayuntamiento</span>
+        )}
         <h1 className="mt-3 font-serif-dm text-seccion leading-tight text-tinta">{noticia.titulo}</h1>
       </div>
 

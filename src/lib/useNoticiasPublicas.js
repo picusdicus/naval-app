@@ -53,11 +53,14 @@ export function useNoticiasPublicas() {
     [deLaBase]
   )
 
-  // Alertas urgentes DESACTIVADAS de momento: no se muestra el badge "Urgente"
-  // ni la franja de alertas en la portada. El endpoint sigue devolviendo el
-  // campo `urgente`; para reactivarlo, restaurar el filtro por
-  // `n.urgente && n.expiraEn > ahora`.
-  const alertas = []
+  // Avisos del municipio: las urgentes vigentes (urgente + no caducadas).
+  // Filtro client-side, sin cron: al pasar `expiraEn` dejan de aparecer.
+  // Alimentan la sección "Avisos" de la portada (Inicio) y de Noticias; el
+  // listado general de Noticias las excluye para no duplicarlas.
+  const alertas = useMemo(() => {
+    const ahora = Date.now()
+    return deLaBase.filter((n) => n.urgente && n.expiraEn && Date.parse(n.expiraEn) > ahora)
+  }, [deLaBase])
 
   return { noticias, alertas, cargando }
 }

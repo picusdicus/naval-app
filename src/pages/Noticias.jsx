@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
 import { cartelDe } from '../lib/gaceta.js'
-import { useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
+import { ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 
 // Scroll infinito: se muestran LOTE al principio y otro LOTE cada vez que el
 // centinela del final entra en pantalla. Todo en cliente (el hook ya trae
@@ -62,14 +62,21 @@ const tablon = [
 ]
 
 export default function Noticias() {
-  const { noticias } = useNoticiasPublicas()
+  const { noticias, alertas } = useNoticiasPublicas()
   const [visibles, setVisibles] = useState(LOTE)
   const centinelaRef = useRef(null)
 
-  const hayMas = visibles < noticias.length
+  // El listado general excluye los avisos activos: viven en su propia sección
+  // "Avisos del municipio" (arriba), no mezclados con las noticias.
+  const listado = useMemo(() => {
+    const idsAviso = new Set(alertas.map((a) => a.id))
+    return noticias.filter((n) => !idsAviso.has(n.id))
+  }, [noticias, alertas])
+
+  const hayMas = visibles < listado.length
   const oficiales = useMemo(
     () =>
-      noticias.slice(0, visibles).map((n) => ({
+      listado.slice(0, visibles).map((n) => ({
         ...n,
         icono: obtenerIcono(n.titulo),
         cuando: formatearCuando(n.fecha),
@@ -77,7 +84,7 @@ export default function Noticias() {
         // degradado + trama que el cartel de un evento.
         cartel: cartelDe('bosque'),
       })),
-    [noticias, visibles]
+    [listado, visibles]
   )
 
   // Al asomar el centinela, revelar otro lote. Se re-observa cuando cambia
@@ -102,6 +109,37 @@ export default function Noticias() {
         <div className="gz-label text-mudo">El muro de</div>
         <h1 className="font-serif-dm text-seccion leading-none text-tinta">Noticias</h1>
       </header>
+
+      {/* Avisos del municipio: alertas activas (cortes, incendios, emergencias),
+          separadas de las noticias. Solo se muestra si hay alguna vigente. */}
+      {alertas.length > 0 && (
+        <section className="mt-6">
+          <div className="mb-4 flex items-center gap-2">
+            <MIcon name="warning" className="text-[18px] text-terracota" />
+            <h2 className="gz-eyebrow text-terracota">Avisos del municipio</h2>
+          </div>
+          <div className="border border-terracota bg-terracota-fondo">
+            {alertas.map((a, i) => (
+              <Link
+                key={a.id}
+                to={`/noticias/${a.id}`}
+                className={`flex items-start gap-3 p-4 transition-colors hover:bg-terracota/10 ${i > 0 ? 'border-t border-terracota/30' : ''}`}
+              >
+                <MIcon name="warning" className="mt-0.5 flex-none text-[20px] text-terracota" />
+                <div className="min-w-0">
+                  <div className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
+                    {ETIQUETAS_ALERTA[a.tipoAlerta] || 'Aviso'}
+                  </div>
+                  <p className="mt-0.5 font-serif-dm text-lg leading-tight text-tinta">{a.titulo}</p>
+                  {a.resumen && (
+                    <p className="mt-1 line-clamp-2 font-serif-spectral text-sm text-pardo">{a.resumen}</p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Noticias oficiales */}
       <section className="mt-6">
