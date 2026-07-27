@@ -6,9 +6,10 @@
 // misma noticia publicada en ambos canales puede salir dos veces (ids
 // distintos, no rompe nada) — revisar solo si en la práctica resulta ruidoso.
 //
+// `noticias` se limita al último mes (el RSS arrastra items muy antiguos).
 // `alertas` son las urgentes vigentes (urgente + expiraEn > ahora), filtradas
 // aquí en cliente — no hay cron: al caducar dejan de aparecer. Solo pueden
-// venir de Instagram (el RSS no marca urgencia).
+// venir de Instagram (el RSS no marca urgencia) y no dependen del corte de un mes.
 import { useEffect, useMemo, useState } from 'react'
 import noticiasRss from '../data/noticias.json'
 
@@ -22,6 +23,16 @@ export const ETIQUETAS_ALERTA = {
 }
 
 const ESTATICAS = [...noticiasRss]
+
+// Solo se muestran noticias del último mes: el RSS de prensa arrastra items
+// antiguos (hasta de años atrás) que ensucian el listado. Fecha límite en
+// formato YYYY-MM-DD para comparar directamente con `fecha`. Los avisos
+// urgentes vigentes se calculan aparte y no dependen de este corte.
+function fechaLimiteUnMes() {
+  const d = new Date()
+  d.setMonth(d.getMonth() - 1)
+  return d.toISOString().slice(0, 10)
+}
 
 export function useNoticiasPublicas() {
   const [deLaBase, setDeLaBase] = useState([])
@@ -45,13 +56,14 @@ export function useNoticiasPublicas() {
     }
   }, [])
 
-  // Orden por fecha descendente: sin él, las de Instagram quedarían siempre
-  // detrás del RSS y el slice(0, 6) de la página Noticias no las mostraría.
-  const noticias = useMemo(
-    () =>
-      [...ESTATICAS, ...deLaBase].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')),
-    [deLaBase]
-  )
+  // Mezcla RSS + Instagram, descarta lo de más de un mes y ordena por fecha
+  // descendente (sin el sort, las de Instagram quedarían detrás del RSS).
+  const noticias = useMemo(() => {
+    const limite = fechaLimiteUnMes()
+    return [...ESTATICAS, ...deLaBase]
+      .filter((n) => (n.fecha || '') >= limite)
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
+  }, [deLaBase])
 
   // Avisos del municipio: las urgentes vigentes (urgente + no caducadas).
   // Filtro client-side, sin cron: al pasar `expiraEn` dejan de aparecer.
