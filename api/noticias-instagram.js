@@ -17,7 +17,7 @@ import { obtenerSql } from './_db.js'
 import { json } from './_http.js'
 
 const DIAS_HISTORIAL = 60
-const LIMITE = 50
+const LIMITE = 100
 
 export default async function handler(req) {
   if (req.method !== 'GET') {

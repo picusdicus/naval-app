@@ -1,8 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
 import { cartelDe } from '../lib/gaceta.js'
 import { useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
+
+// Scroll infinito: se muestran LOTE al principio y otro LOTE cada vez que el
+// centinela del final entra en pantalla. Todo en cliente (el hook ya trae
+// todas las noticias en memoria), así que no hay peticiones extra.
+const LOTE = 8
 
 // Iconos por defecto para noticias (podrían mejorarse según categoría)
 function obtenerIcono(titulo) {
@@ -58,9 +63,13 @@ const tablon = [
 
 export default function Noticias() {
   const { noticias } = useNoticiasPublicas()
+  const [visibles, setVisibles] = useState(LOTE)
+  const centinelaRef = useRef(null)
+
+  const hayMas = visibles < noticias.length
   const oficiales = useMemo(
     () =>
-      noticias.slice(0, 6).map((n) => ({
+      noticias.slice(0, visibles).map((n) => ({
         ...n,
         icono: n.urgente ? 'warning' : obtenerIcono(n.titulo),
         cuando: formatearCuando(n.fecha),
@@ -68,8 +77,23 @@ export default function Noticias() {
         // degradado + trama que el cartel de un evento, terracota si es alerta.
         cartel: cartelDe(n.urgente ? 'terracota' : 'bosque'),
       })),
-    [noticias]
+    [noticias, visibles]
   )
+
+  // Al asomar el centinela, revelar otro lote. Se re-observa cuando cambia
+  // `hayMas` para desconectar al llegar al final.
+  useEffect(() => {
+    const nodo = centinelaRef.current
+    if (!nodo || !hayMas) return
+    const obs = new IntersectionObserver(
+      (entradas) => {
+        if (entradas[0].isIntersecting) setVisibles((v) => v + LOTE)
+      },
+      { rootMargin: '200px' }
+    )
+    obs.observe(nodo)
+    return () => obs.disconnect()
+  }, [hayMas])
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -130,6 +154,14 @@ export default function Noticias() {
             </Link>
           ))}
         </div>
+        {/* Centinela del scroll infinito: al entrar en pantalla carga más. */}
+        {hayMas && (
+          <div ref={centinelaRef} className="mt-6 flex justify-center">
+            <span className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+              Cargando más noticias…
+            </span>
+          </div>
+        )}
       </section>
 
       {/* Tablón vecinal */}
