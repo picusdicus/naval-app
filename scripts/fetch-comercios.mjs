@@ -143,12 +143,14 @@ const CATEGORY_RULES = [
   { types: ["pet_store"],                categoria: "hogar",          subtipo: "pet" },
   { types: ["appliance_store"],          categoria: "hogar",          subtipo: "houseware" },
   { types: ["electronics_store"],        categoria: "hogar",          subtipo: "electronics" },
-  { types: ["clothing_store"],           categoria: "hogar",          subtipo: "clothes" },
-  { types: ["shoe_store"],               categoria: "hogar",          subtipo: "shoes" },
   { types: ["book_store"],               categoria: "hogar",          subtipo: "books" },
   { types: ["toy_store"],                categoria: "hogar",          subtipo: "toys" },
   { types: ["sporting_goods_store"],     categoria: "hogar",          subtipo: "sports" },
-  { types: ["jewelry_store"],            categoria: "hogar",          subtipo: "jewelry" },
+
+  // ── Moda y complementos ───────────────────────────────────────────────────
+  { types: ["clothing_store"],           categoria: "moda",           subtipo: "clothes" },
+  { types: ["shoe_store"],               categoria: "moda",           subtipo: "shoes" },
+  { types: ["jewelry_store"],            categoria: "moda",           subtipo: "jewelry" },
   { types: ["gift_shop"],                categoria: "hogar",          subtipo: "gift" },
   { types: ["cell_phone_store"],         categoria: "hogar",          subtipo: "electronics" },
   { types: ["bicycle_store"],            categoria: "hogar",          subtipo: "sports" },
@@ -333,6 +335,18 @@ const REFINO_POR_TIPO_DISPLAY = [
 ];
 
 const SUBTIPOS_GENERICOS = new Set(["shop", "service"]);
+
+// En restauración el type genérico `restaurant` de Google eclipsa a bar/cafe
+// (casi todos los locales llevan ambos); el primaryTypeDisplayName en español
+// ("Bar", "Cafetería", "Bar restaurante"…) sí distingue el tipo de local.
+function subtipoRestauracion(tipoDisplay = "", actual) {
+  if (!tipoDisplay) return actual;
+  if (/helader/i.test(tipoDisplay)) return "ice_cream";
+  if (/cafeter|caf[eé]\b|reposter|pasteler/i.test(tipoDisplay)) return "cafe";
+  if (/^bar\b|bar restaurante|cervecer|taberna|pub/i.test(tipoDisplay)) return "bar";
+  if (/comida r[aá]pida|pizzer|hamburgues|bocadill|sandwich/i.test(tipoDisplay)) return "fast_food";
+  return actual;
+}
 
 function refinarGenerico(categoria, subtipo, tipoDisplay) {
   if (!SUBTIPOS_GENERICOS.has(subtipo) || !tipoDisplay) return { categoria, subtipo };
@@ -545,6 +559,9 @@ async function main() {
 
       let { categoria, subtipo } = mapGoogleTypes(d.types || []);
       ({ categoria, subtipo } = refinarGenerico(categoria, subtipo, d.primaryTypeDisplayName?.text));
+      if (categoria === "restauracion") {
+        subtipo = subtipoRestauracion(d.primaryTypeDisplayName?.text, subtipo);
+      }
 
       const nombrePlace = d.displayName?.text || "";
       if (RE_PAQUETERIA.test(nombrePlace)) {
