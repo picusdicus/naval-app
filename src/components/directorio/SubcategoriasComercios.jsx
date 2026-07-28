@@ -53,7 +53,7 @@ export default function SubcategoriasComercios({ categoria, subtipos, onBuscar }
           </Link>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4">
           {subtipos.map(({ subtipo, total }) => {
             const info = infoSubtipo(subtipo)
             return (
