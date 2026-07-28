@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import comerciosData from '../data/comercios.json'
 import serviciosLocales from '../data/servicios-locales.json'
+import { CATEGORIAS } from '../lib/categorias.js'
 import { etiquetaCocina } from '../lib/cocinas.js'
 import MapaComercios from '../components/directorio/MapaComercios.jsx'
 import FiltrosCategoria from '../components/directorio/FiltrosCategoria.jsx'
@@ -9,6 +10,9 @@ import ComercioCard from '../components/directorio/ComercioCard.jsx'
 import ComercioFila from '../components/directorio/ComercioFila.jsx'
 import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
+import LandingComercios from '../components/directorio/LandingComercios.jsx'
+import SubcategoriasComercios from '../components/directorio/SubcategoriasComercios.jsx'
+import { infoSubtipo } from '../lib/subtipos.js'
 import { buscarDirectorio } from '../lib/busqueda.js'
 import { useDestacados } from '../lib/useDestacados.js'
 import { useLazyLoad } from '../lib/useLazyLoad.js'
@@ -33,9 +37,7 @@ function useMediaQuery(query) {
 }
 
 export default function Mapa() {
-  const [categoria, setCategoria] = useState(null)
   const [cocinaFiltro, setCocinaFiltro] = useState(null)
-  const [busqueda, setBusqueda] = useState('')
   const [seleccionado, setSeleccionado] = useState(null)
   const [sugiriendo, setSugiriendo] = useState(false)
   const detalleRef = useRef(null)
@@ -47,20 +49,87 @@ export default function Mapa() {
   // OSM (con coordenadas) + servicios locales curados (sin ubicación fija).
   const todos = useMemo(() => [...comerciosData, ...serviciosLocales], [])
 
-  // ?comercio=<id> abre la ficha directamente (lo usan las tarjetas de
-  // destacados de la portada para aterrizar en el comercio concreto).
-  const [searchParams] = useSearchParams()
-  useEffect(() => {
-    const id = searchParams.get('comercio')
-    if (!id) return
-    const comercio = todos.find((c) => c.id === id)
-    if (comercio) setSeleccionado(comercio)
-  }, [searchParams, todos])
+  // La vista se deriva de la URL (nada de estado duplicado):
+  //   /comercios                          → landing por tipo de negocio
+  //   /comercios?categoria=<id>           → tarjetas de subcategoría de esa categoría
+  //   /comercios?categoria=<id>&sub=<s>   → listado de esa subcategoría
+  //   /comercios?categoria=<id>&ver=todos → listado completo de la categoría
+  //   /comercios?ver=todos[&q=…]          → listado completo (con búsqueda opcional)
+  //   /comercios?comercio=<id>            → listado con la ficha abierta (deep-link)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const categoriaParam = searchParams.get('categoria')
+  const categoria = CATEGORIAS[categoriaParam] ? categoriaParam : null
+  const sub = categoria ? searchParams.get('sub') : null
+  const busqueda = searchParams.get('q') ?? ''
+  const verTodos = searchParams.get('ver') === 'todos'
+  const comercioParam = searchParams.get('comercio')
+  const vista =
+    !categoria && !verTodos && !busqueda && !comercioParam
+      ? 'landing'
+      : categoria && !sub && !verTodos && !busqueda && !comercioParam
+        ? 'subcategorias'
+        : 'listado'
 
-  // Al cambiar de categoría, se descarta el sub-filtro de tipo de cocina.
-  function elegirCategoria(cat) {
-    setCategoria(cat)
+  // ?comercio=<id> abre la ficha directamente (lo usan las tarjetas de
+  // destacados para aterrizar en el comercio concreto).
+  useEffect(() => {
+    if (!comercioParam) return
+    const comercio = todos.find((c) => c.id === comercioParam)
+    if (comercio) setSeleccionado(comercio)
+  }, [comercioParam, todos])
+
+  // Al cambiar de categoría (también por atrás/adelante del historial), se
+  // descarta el sub-filtro de tipo de cocina.
+  useEffect(() => {
     setCocinaFiltro(null)
+  }, [categoria])
+
+  // Al salir del listado no debe quedar una ficha abierta de la visita anterior.
+  useEffect(() => {
+    if (vista !== 'listado') setSeleccionado(null)
+  }, [vista])
+
+  // Chips de FiltrosCategoria dentro del listado. `replace`: los cambios de
+  // filtro no ensucian el historial — atrás vuelve a la vista anterior en un
+  // paso. Se ancla `ver=todos` para seguir en el listado (sin pasar por las
+  // tarjetas de subcategoría ni volver a la landing).
+  function elegirCategoria(cat) {
+    const next = new URLSearchParams()
+    if (cat) next.set('categoria', cat)
+    next.set('ver', 'todos')
+    if (busqueda) next.set('q', busqueda)
+    setSearchParams(next, { replace: true })
+  }
+
+  // Input de búsqueda dentro del listado (cada tecla, con `replace`). Conserva
+  // la categoría y la subcategoría activas; borrar el texto no cambia de vista.
+  function cambiarBusqueda(texto) {
+    const next = new URLSearchParams()
+    if (categoria) next.set('categoria', categoria)
+    if (sub) next.set('sub', sub)
+    else next.set('ver', 'todos')
+    if (texto) next.set('q', texto)
+    setSearchParams(next, { replace: true })
+  }
+
+  // Buscador de la landing (push: atrás vuelve a la landing).
+  function buscarDesdeLanding(texto) {
+    const next = new URLSearchParams({ ver: 'todos' })
+    if (texto.trim()) next.set('q', texto.trim())
+    setSearchParams(next)
+  }
+
+  // Buscador de la vista de subcategorías: busca dentro de la categoría (push).
+  function buscarEnCategoria(texto) {
+    const next = new URLSearchParams({ categoria, ver: 'todos' })
+    if (texto.trim()) next.set('q', texto.trim())
+    setSearchParams(next)
+  }
+
+  // Destacados de la landing: abrir la ficha exige pasar a la vista de listado.
+  // El efecto de ?comercio= se encarga de seleccionarla.
+  function seleccionarDesdeDestacados(comercio) {
+    setSearchParams({ comercio: comercio.id })
   }
 
   // Tipos de cocina disponibles entre los locales de restauración.
@@ -72,15 +141,17 @@ export default function Mapa() {
     return [...set].sort((a, b) => etiquetaCocina(a).localeCompare(etiquetaCocina(b), 'es'))
   }, [todos])
 
-  // Base filtrada por los controles no textuales (categoría / tipo de cocina).
+  // Base filtrada por los controles no textuales (categoría / subcategoría /
+  // tipo de cocina).
   const baseFiltrada = useMemo(
     () =>
       todos.filter((c) => {
         if (categoria && c.categoria !== categoria) return false
+        if (sub && c.subtipo !== sub) return false
         if (cocinaFiltro && !(c.cocina || []).includes(cocinaFiltro)) return false
         return true
       }),
-    [todos, categoria, cocinaFiltro],
+    [todos, categoria, sub, cocinaFiltro],
   )
 
   // Búsqueda con intención: mapea "sushi", "hamburguesas", "tapas"… a comercios
@@ -96,10 +167,30 @@ export default function Mapa() {
     [comercios],
   )
 
-  // Comercios destacados (contratados). La franja solo se muestra en la vista
-  // sin filtrar: con una categoría o búsqueda activa el usuario va a lo suyo.
+  // Comercios destacados (contratados). La franja es exclusiva de la landing:
+  // en el listado el usuario va a lo suyo.
   const { items: comerciosDestacados } = useDestacados({ tipo: 'comercio' })
-  const conDestacados = !categoria && !busqueda && comerciosDestacados.length > 0
+  const conDestacados = vista === 'landing' && comerciosDestacados.length > 0
+
+  // Total de comercios por categoría, para las tarjetas de la landing.
+  const conteosPorCategoria = useMemo(() => {
+    const conteos = {}
+    for (const c of todos) conteos[c.categoria] = (conteos[c.categoria] || 0) + 1
+    return conteos
+  }, [todos])
+
+  // Subtipos presentes en la categoría activa, en orden alfabético, para las
+  // tarjetas de subcategoría.
+  const subtiposDeCategoria = useMemo(() => {
+    if (!categoria) return []
+    const conteos = {}
+    for (const c of todos) {
+      if (c.categoria === categoria) conteos[c.subtipo] = (conteos[c.subtipo] || 0) + 1
+    }
+    return Object.entries(conteos)
+      .map(([subtipo, total]) => ({ subtipo, total }))
+      .sort((a, b) => infoSubtipo(a.subtipo).nombre.localeCompare(infoSubtipo(b.subtipo).nombre, 'es'))
+  }, [todos, categoria])
 
   // Lazy loading: mostrar 12 iniciales, cargar 12 más al hacer scroll
   const { items: comerciosVisibles, observerRef } = useLazyLoad(comercios, 12)
@@ -154,7 +245,7 @@ export default function Mapa() {
               items={comerciosDestacados}
               columnas={3}
               seccion="comercios"
-              onItemClick={setSeleccionado}
+              onItemClick={seleccionarDesdeDestacados}
             />
           </div>
 
@@ -164,7 +255,7 @@ export default function Mapa() {
               items={comerciosDestacados}
               eyebrow="Comercios destacados"
               titulo="Los negocios que dan vida al pueblo"
-              onSeleccionar={setSeleccionado}
+              onSeleccionar={seleccionarDesdeDestacados}
               onAnunciar={() => setSugiriendo(true)}
               seccion="comercios"
             />
@@ -172,13 +263,55 @@ export default function Mapa() {
         </section>
       )}
 
+      {/* Landing por tipo de negocio (sin filtros activos) o vista de listado */}
+      {vista === 'landing' ? (
+        <LandingComercios
+          total={todos.length}
+          conteos={conteosPorCategoria}
+          onBuscar={buscarDesdeLanding}
+          onSugerir={() => setSugiriendo(true)}
+        />
+      ) : (
+        <>
+      {/* Migas: landing ← categoría ← subcategoría */}
+      <div className="px-4 lg:px-0 pb-3">
+        <Link
+          to="/comercios"
+          className="inline-flex items-center gap-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
+        >
+          <MIcon name="arrow_back" className="text-[14px]" />
+          Todas las categorías
+        </Link>
+        {categoria && vista === 'listado' ? (
+          <Link
+            to={`/comercios?categoria=${categoria}`}
+            className="ml-3 gz-label text-terracota transition-opacity hover:opacity-80"
+          >
+            / {CATEGORIAS[categoria].nombre}
+          </Link>
+        ) : categoria ? (
+          <span className="ml-3 gz-label text-mudo">/ {CATEGORIAS[categoria].nombre}</span>
+        ) : null}
+        {sub && vista === 'listado' && (
+          <span className="ml-3 gz-label text-mudo">/ {infoSubtipo(sub).nombre}</span>
+        )}
+      </div>
+
+      {vista === 'subcategorias' ? (
+        <SubcategoriasComercios
+          categoria={CATEGORIAS[categoria]}
+          subtipos={subtiposDeCategoria}
+          onBuscar={buscarEnCategoria}
+        />
+      ) : (
+        <>
       {/* Buscador y filtros - FULL WIDTH, ENCIMA de listado */}
       <div className="px-4 lg:px-0 py-6 border-y border-tinta">
         <FiltrosCategoria
           categoria={categoria}
           onCategoria={elegirCategoria}
           busqueda={busqueda}
-          onBusqueda={setBusqueda}
+          onBusqueda={cambiarBusqueda}
         />
 
         {categoria === 'restauracion' && cocinasDisponibles.length > 0 && (
@@ -312,6 +445,10 @@ export default function Mapa() {
           </div>
         )}
       </div>
+        </>
+      )}
+        </>
+      )}
 
       {sugiriendo && <SugerirComercio onCerrar={() => setSugiriendo(false)} />}
     </div>

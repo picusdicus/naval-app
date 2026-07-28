@@ -7,6 +7,7 @@ export const SIMBOLO_CATEGORIA = {
   restauracion: 'restaurant',
   salud: 'medical_services',
   belleza: 'content_cut',
+  moda: 'checkroom',
   hogar: 'chair',
   servicios: 'build',
   servicios_prof: 'handyman',

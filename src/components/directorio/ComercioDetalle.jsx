@@ -8,6 +8,18 @@ function normalizarWeb(web) {
   return web.startsWith('http') ? web : `https://${web}`
 }
 
+// Atributos prácticos que trae Google Places (solo se guardan los afirmativos).
+const ETIQUETA_ATRIBUTO = {
+  terraza: { icono: 'deck', texto: 'Terraza' },
+  paraLlevar: { icono: 'takeout_dining', texto: 'Para llevar' },
+  aDomicilio: { icono: 'delivery_dining', texto: 'A domicilio' },
+  reservas: { icono: 'event_available', texto: 'Reservas' },
+  vegetariano: { icono: 'eco', texto: 'Opción vegetariana' },
+  accesible: { icono: 'accessible', texto: 'Accesible' },
+  tarjeta: { icono: 'credit_card', texto: 'Acepta tarjeta' },
+  soloEfectivo: { icono: 'payments', texto: 'Solo efectivo' },
+}
+
 // Ficha de comercio desplegada bajo su fila (La Gaceta): tarjeta impresa con
 // inicial de color, datos de contacto en filas discontinuas y acciones a
 // Google Maps. Se muestra solo para el comercio activo (accordion en Mapa.jsx).
@@ -18,10 +30,15 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
   // API oficial de URLs de Google Maps (gratuita, sin clave): direcciones y
   // ficha del negocio (fotos, reseñas, horarios) buscando por nombre + municipio.
   const comoLlegar = `https://www.google.com/maps/dir/?api=1&destination=${comercio.lat},${comercio.lng}`
-  const verEnGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${comercio.nombre}, Navalcarnero`,
-  )}`
+  // Con `mapsUrl` (ficha exacta que devuelve Places) no hace falta buscar por
+  // nombre, que a veces cae en el negocio equivocado.
+  const verEnGoogleMaps =
+    comercio.mapsUrl ||
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      `${comercio.nombre}, Navalcarnero`,
+    )}`
   const web = normalizarWeb(comercio.web)
+  const atributos = Object.keys(comercio.atributos || {}).filter((k) => ETIQUETA_ATRIBUTO[k])
 
   return (
     <div className="gz-tarjeta-impresa animate-rise p-5">
@@ -51,11 +68,29 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
         </button>
       </div>
 
+      {comercio.cerradoTemporal && (
+        <p className="mt-3 flex items-center gap-2 border border-terracota bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta text-terracota">
+          <MIcon name="warning" className="text-[16px]" />
+          Cerrado temporalmente
+        </p>
+      )}
+
       {cocinas.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta">
           {cocinas.map((c) => (
             <span key={c} className="bg-papel-calido px-2.5 py-1 text-pardo">
               {c}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {atributos.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-verde-bosque">
+          {atributos.map((k) => (
+            <span key={k} className="flex items-center gap-1">
+              <MIcon name={ETIQUETA_ATRIBUTO[k].icono} className="text-[15px]" />
+              {ETIQUETA_ATRIBUTO[k].texto}
             </span>
           ))}
         </div>

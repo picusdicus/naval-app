@@ -76,8 +76,14 @@ const API_THROTTLE_MS = 220;
  *   educacion    — schools, academies, dance, languages, driving schools
  */
 const CATEGORY_RULES = [
+  // ── Prioritarias ──────────────────────────────────────────────────────────
+  // Una gasolinera casi siempre lleva también types de cafetería/tienda; si no
+  // se evalúa antes que restauración, acaba clasificada como bar (caso Galp).
+  { types: ["gas_station"],              categoria: "servicios",      subtipo: "fuel" },
+
   // ── Alimentacion ──────────────────────────────────────────────────────────
   { types: ["supermarket"],              categoria: "alimentacion",   subtipo: "supermarket" },
+  { types: ["asian_grocery_store"],      categoria: "alimentacion",   subtipo: "shop" },
   { types: ["grocery_store"],            categoria: "alimentacion",   subtipo: "supermarket" },
   { types: ["convenience_store"],        categoria: "alimentacion",   subtipo: "convenience" },
   { types: ["bakery"],                   categoria: "alimentacion",   subtipo: "bakery" },
@@ -123,7 +129,10 @@ const CATEGORY_RULES = [
   { types: ["barber_shop"],              categoria: "belleza",        subtipo: "barber" },
   { types: ["spa"],                      categoria: "belleza",        subtipo: "beauty" },
   { types: ["massage"],                  categoria: "belleza",        subtipo: "beauty" },
-  { types: ["tattoo_parlor"],            categoria: "belleza",        subtipo: "beauty" },
+  { types: ["tattoo_parlor"],            categoria: "belleza",        subtipo: "tattoo" },
+  { types: ["tanning_studio"],           categoria: "belleza",        subtipo: "beauty" },
+  { types: ["skin_care_clinic"],         categoria: "belleza",        subtipo: "beauty" },
+  { types: ["makeup_artist"],            categoria: "belleza",        subtipo: "beauty" },
 
   // ── Hogar ─────────────────────────────────────────────────────────────────
   { types: ["furniture_store"],          categoria: "hogar",          subtipo: "furniture" },
@@ -139,7 +148,13 @@ const CATEGORY_RULES = [
   { types: ["book_store"],               categoria: "hogar",          subtipo: "books" },
   { types: ["toy_store"],                categoria: "hogar",          subtipo: "toys" },
   { types: ["sporting_goods_store"],     categoria: "hogar",          subtipo: "sports" },
+  { types: ["jewelry_store"],            categoria: "hogar",          subtipo: "jewelry" },
+  { types: ["gift_shop"],                categoria: "hogar",          subtipo: "gift" },
+  { types: ["cell_phone_store"],         categoria: "hogar",          subtipo: "electronics" },
+  { types: ["bicycle_store"],            categoria: "hogar",          subtipo: "sports" },
+  { types: ["department_store"],         categoria: "hogar",          subtipo: "shop" },
   { types: ["pharmacy"],                 categoria: "salud",          subtipo: "pharmacy" }, // already above
+  { types: ["chiropractor"],             categoria: "salud",          subtipo: "doctors" },
 
   // ── Deporte (NEW) ─────────────────────────────────────────────────────────
   // Gym/fitness moved from servicios to deporte
@@ -209,6 +224,8 @@ const CATEGORY_RULES = [
   { types: ["storage"],                  categoria: "servicios",      subtipo: "storage" },
   { types: ["courier_service"],          categoria: "servicios",      subtipo: "courier" },
   { types: ["funeral_home"],             categoria: "servicios",      subtipo: "funeral" },
+  { types: ["locksmith"],                categoria: "servicios",      subtipo: "locksmith" },
+  { types: ["tailor"],                   categoria: "servicios",      subtipo: "tailor" },
 
   // ── Servicios profesionales ───────────────────────────────────────────────
   { types: ["lawyer"],                   categoria: "servicios_prof", subtipo: "lawyer" },
@@ -223,6 +240,12 @@ const CATEGORY_RULES = [
   { types: ["employment_agency"],        categoria: "servicios_prof", subtipo: "employment" },
   { types: ["photographer"],             categoria: "servicios_prof", subtipo: "photographer" },
   { types: ["printing_store"],           categoria: "servicios_prof", subtipo: "printing" },
+
+  // ── Último recurso ────────────────────────────────────────────────────────
+  // `food_store` es un type genérico que Google cuelga también de cafeterías,
+  // panaderías o veterinarias con tienda: SIEMPRE al final, para que cualquier
+  // type específico de arriba gane antes.
+  { types: ["food_store"],               categoria: "alimentacion",   subtipo: "shop" },
 ];
 
 function mapGoogleTypes(googleTypes = []) {
@@ -241,6 +264,103 @@ function mapGoogleTypes(googleTypes = []) {
     return { categoria: "hogar", subtipo: "shop" };
   }
   return { categoria: "servicios", subtipo: "service" };
+}
+
+// ---------------------------------------------------------------------------
+// Cuisine mapping: Google cuisine types → claves de COCINA_LABEL (src/lib/cocinas.js)
+// Alimenta los sub-chips "tipo de cocina" del listado de restauración.
+// ---------------------------------------------------------------------------
+
+const COCINA_POR_TIPO = {
+  hamburger_restaurant:    "burger",
+  pizza_restaurant:        "pizza",
+  italian_restaurant:      "italian",
+  spanish_restaurant:      "spanish",
+  tapas_bar:               "tapas",
+  chinese_restaurant:      "chinese",
+  japanese_restaurant:     "japanese",
+  sushi_restaurant:        "sushi",
+  ramen_restaurant:        "japanese",
+  korean_restaurant:       "asian",
+  thai_restaurant:         "asian",
+  vietnamese_restaurant:   "asian",
+  asian_restaurant:        "asian",
+  indian_restaurant:       "indian",
+  mexican_restaurant:      "mexican",
+  american_restaurant:     "american",
+  turkish_restaurant:      "turkish",
+  middle_eastern_restaurant: "kebab",
+  lebanese_restaurant:     "kebab",
+  mediterranean_restaurant: "mediterranean",
+  greek_restaurant:        "mediterranean",
+  seafood_restaurant:      "seafood",
+  steak_house:             "steak_house",
+  barbecue_restaurant:     "barbecue",
+  fast_food_restaurant:    "fast_food",
+  sandwich_shop:           "sandwich",
+  breakfast_restaurant:    "breakfast",
+  brunch_restaurant:       "breakfast",
+  french_restaurant:       "french",
+  vegetarian_restaurant:   "vegetarian",
+  vegan_restaurant:        "vegan",
+  ice_cream_shop:          "ice_cream",
+};
+
+function cocinasDe(primaryType = "", googleTypes = []) {
+  const set = new Set();
+  for (const t of [primaryType, ...googleTypes]) {
+    if (COCINA_POR_TIPO[t]) set.add(COCINA_POR_TIPO[t]);
+  }
+  return [...set];
+}
+
+// Segundo pase para los que el mapeo por types deja en el cajón genérico
+// (shop/service): se refinan con el primaryTypeDisplayName en español que
+// devuelve Google ("Clínica dental", "Fontanero", "Institución educativa"…).
+const REFINO_POR_TIPO_DISPLAY = [
+  [/instituci[oó]n educativa|centro educativo/i, { categoria: "educacion", subtipo: "school" }],
+  [/cl[ií]nica dental|dentista/i,               { categoria: "salud", subtipo: "dentist" }],
+  [/cl[ií]nica|centro m[eé]dico|ambulatori/i,   { categoria: "salud", subtipo: "doctors" }],
+  [/veterinari/i,                               { categoria: "salud", subtipo: "veterinary" }],
+  [/esteticista|est[eé]tica/i,                  { categoria: "belleza", subtipo: "beauty" }],
+  [/cuidado de mascotas|peluquer[ií]a canina/i, { categoria: "servicios", subtipo: "pet_care" }],
+  [/fontanero/i,                                { categoria: "servicios_prof", subtipo: "plumber" }],
+  [/electricista/i,                             { categoria: "servicios_prof", subtipo: "electrician" }],
+  [/asesor|consultor|gestor[ií]a/i,             { categoria: "servicios_prof", subtipo: "consultant" }],
+  [/contratista/i,                              { categoria: "servicios_prof", subtipo: "builder" }],
+  [/cafeter[ií]a/i,                             { categoria: "restauracion", subtipo: "cafe" }],
+  [/panader[ií]a/i,                             { categoria: "alimentacion", subtipo: "bakery" }],
+];
+
+const SUBTIPOS_GENERICOS = new Set(["shop", "service"]);
+
+function refinarGenerico(categoria, subtipo, tipoDisplay) {
+  if (!SUBTIPOS_GENERICOS.has(subtipo) || !tipoDisplay) return { categoria, subtipo };
+  for (const [re, destino] of REFINO_POR_TIPO_DISPLAY) {
+    if (re.test(tipoDisplay)) return { ...destino };
+  }
+  return { categoria, subtipo };
+}
+
+// Los puntos de paquetería (lockers InPost, Punto Pack, GLS…) no llevan un
+// type específico de Google y caen al fallback hogar/shop; se detectan por
+// nombre y se reclasifican como servicio de paquetería.
+const RE_PAQUETERIA = /\b(inpost|punto pack|locker|punto de recogida|parcel|amazon hub|mondial relay|gls|seur pickup|citypaq|pudo)\b/i;
+
+// El locationBias de la búsqueda es orientativo, no un límite: se cuelan
+// negocios de Móstoles, Griñón, Arroyomolinos… Se filtra por distancia real.
+const MAX_DISTANCIA_KM = 6;
+
+function distanciaKm(lat, lng) {
+  const R = 6371;
+  const dLat = ((lat - NAVALCARNERO_CENTER.latitude) * Math.PI) / 180;
+  const dLng = ((lng - NAVALCARNERO_CENTER.longitude) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((NAVALCARNERO_CENTER.latitude * Math.PI) / 180) *
+      Math.cos((lat * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
 }
 
 // ---------------------------------------------------------------------------
@@ -283,9 +403,12 @@ async function getDetails(placeId) {
     headers: {
       "X-Goog-Api-Key": API_KEY,
       "X-Goog-FieldMask":
-        "id,displayName,types,location,formattedAddress," +
+        "id,displayName,types,primaryType,location,formattedAddress," +
+        "shortFormattedAddress,googleMapsUri,businessStatus," +
         "nationalPhoneNumber,websiteUri,regularOpeningHours," +
-        "rating,userRatingCount,priceLevel,primaryTypeDisplayName",
+        "rating,userRatingCount,priceLevel,primaryTypeDisplayName," +
+        "editorialSummary,outdoorSeating,takeout,delivery,reservable," +
+        "servesVegetarianFood,accessibilityOptions,paymentOptions",
       "Accept-Language": "es",
     },
   });
@@ -325,6 +448,23 @@ const SEARCH_QUERIES = [
 
   // New: Educacion
   "colegio academia escuela danza autoescuela idiomas guarderia Navalcarnero Madrid",
+
+  // Verticales de nicho: las queries genéricas de arriba saturan el cupo de
+  // ~60 resultados por búsqueda y estos gremios nunca aparecían.
+  "joyerias relojerias Navalcarnero Madrid",
+  "tatuajes piercing Navalcarnero Madrid",
+  "opticas ortopedias herbolarios Navalcarnero Madrid",
+  "librerias papelerias jugueterias Navalcarnero Madrid",
+  "estancos loterias kioscos prensa Navalcarnero Madrid",
+  "cerrajerias copisterias reparacion moviles informatica Navalcarnero Madrid",
+  "veterinarios peluqueria canina tiendas mascotas Navalcarnero Madrid",
+  "floristerias viveros plantas Navalcarnero Madrid",
+  "bazares tiendas regalos decoracion Navalcarnero Madrid",
+  "talleres coche neumaticos chapa pintura Navalcarnero Madrid",
+  "tiendas ropa zapaterias moda complementos Navalcarnero Madrid",
+  "fisioterapia podologia psicologia clinica Navalcarnero Madrid",
+  "fotografos imprentas agencias de viajes Navalcarnero Madrid",
+  "punto de recogida paquetes locker InPost GLS SEUR Mondial Relay Navalcarnero Madrid",
 
   // Extra sweep to catch anything missed
   "servicios locales Navalcarnero Madrid",
@@ -380,6 +520,8 @@ async function main() {
   let detailCalls = 0;
   let detailErrors = 0;
   let skipped = 0;
+  let cerrados = 0;
+  let lejanos = 0;
   const ids = Array.from(rawPlaces.keys());
 
   for (let i = 0; i < ids.length; i++) {
@@ -395,24 +537,52 @@ async function main() {
 
       if (!lat || !lng) { skipped++; continue; }
 
-      const { categoria, subtipo } = mapGoogleTypes(d.types || []);
+      // Un negocio cerrado definitivamente no debe entrar en el directorio.
+      if (d.businessStatus === "CLOSED_PERMANENTLY") { cerrados++; continue; }
+
+      // Fuera del municipio (el locationBias no es un límite duro).
+      if (distanciaKm(lat, lng) > MAX_DISTANCIA_KM) { lejanos++; continue; }
+
+      let { categoria, subtipo } = mapGoogleTypes(d.types || []);
+      ({ categoria, subtipo } = refinarGenerico(categoria, subtipo, d.primaryTypeDisplayName?.text));
+
+      const nombrePlace = d.displayName?.text || "";
+      if (RE_PAQUETERIA.test(nombrePlace)) {
+        categoria = "servicios";
+        subtipo = "courier";
+      }
+
+      // Atributos prácticos (solo se guardan los afirmativos, el JSON no crece).
+      const atributos = {};
+      if (d.outdoorSeating) atributos.terraza = true;
+      if (d.takeout) atributos.paraLlevar = true;
+      if (d.delivery) atributos.aDomicilio = true;
+      if (d.reservable) atributos.reservas = true;
+      if (d.servesVegetarianFood) atributos.vegetariano = true;
+      if (d.accessibilityOptions?.wheelchairAccessibleEntrance) atributos.accesible = true;
+      if (d.paymentOptions?.acceptsCashOnly) atributos.soloEfectivo = true;
+      else if (d.paymentOptions?.acceptsCreditCards) atributos.tarjeta = true;
 
       comercios.push({
         id:           `gpl_${googleId}`,
         nombre:       d.displayName?.text || rawPlaces.get(googleId)?.displayName?.text || "",
         categoria,
         subtipo,
-        cocina:       [],
+        cocina:       categoria === "restauracion" ? cocinasDe(d.primaryType, d.types) : [],
         lat,
         lng,
-        direccion:    d.formattedAddress        || "",
+        direccion:    d.shortFormattedAddress    || d.formattedAddress || "",
         telefono:     d.nationalPhoneNumber      || "",
         web:          d.websiteUri               || "",
+        mapsUrl:      d.googleMapsUri            || "",
         horario:      formatHours(d.regularOpeningHours),
         rating:       d.rating                  ?? null,
         totalReviews: d.userRatingCount         ?? null,
         precioNivel:  formatPriceLevel(d.priceLevel),
         tipoDisplay:  d.primaryTypeDisplayName?.text || "",
+        descripcion:  d.editorialSummary?.text   || "",
+        cerradoTemporal: d.businessStatus === "CLOSED_TEMPORARILY",
+        atributos,
       });
 
       await sleep(API_THROTTLE_MS);
@@ -422,39 +592,59 @@ async function main() {
     }
   }
 
-  console.log(`  Detail calls: ${detailCalls}  |  errors: ${detailErrors}  |  skipped: ${skipped}\n`);
+  console.log(`  Detail calls: ${detailCalls}  |  errors: ${detailErrors}  |  skipped: ${skipped}  |  cerrados definitivos: ${cerrados}  |  fuera del municipio: ${lejanos}\n`);
 
-  // ── Phase 3: sort and write ────────────────────────────────────────────────
-  comercios.sort((a, b) => {
+  // ── Phase 3: overrides curados, sort and write ─────────────────────────────
+  // src/data/comercios-overrides.json corrige clasificaciones que Google trae
+  // mal (keyed por id; `"excluir": true` saca el local del directorio).
+  const OVERRIDES_PATH = resolve(ROOT, "src/data/comercios-overrides.json");
+  let final = comercios;
+  if (existsSync(OVERRIDES_PATH)) {
+    const overrides = JSON.parse(readFileSync(OVERRIDES_PATH, "utf-8"));
+    let aplicados = 0;
+    final = comercios.filter((c) => !overrides[c.id]?.excluir);
+    for (const c of final) {
+      if (overrides[c.id]) { Object.assign(c, overrides[c.id]); aplicados++; }
+    }
+    console.log(`  Overrides: ${aplicados} aplicados, ${comercios.length - final.length} excluidos\n`);
+  }
+
+  final.sort((a, b) => {
     if (a.categoria !== b.categoria)
       return a.categoria.localeCompare(b.categoria, "es");
     return a.nombre.localeCompare(b.nombre, "es");
   });
 
   mkdirSync(dirname(COMERCIOS_PATH), { recursive: true });
-  writeFileSync(COMERCIOS_PATH, JSON.stringify(comercios, null, 2) + "\n", "utf-8");
+  writeFileSync(COMERCIOS_PATH, JSON.stringify(final, null, 2) + "\n", "utf-8");
 
   // ── Summary ────────────────────────────────────────────────────────────────
   const totalCalls = searchCalls + detailCalls;
   console.log("=".repeat(65));
-  console.log(`Done!  ${comercios.length} comercios written to src/data/comercios.json`);
+  console.log(`Done!  ${final.length} comercios written to src/data/comercios.json`);
   console.log("\nBy category:");
-  const byCat = comercios.reduce((acc, c) => {
+  const byCat = final.reduce((acc, c) => {
     acc[c.categoria] = (acc[c.categoria] || 0) + 1; return acc;
   }, {});
   Object.entries(byCat)
     .sort(([, a], [, b]) => b - a)
     .forEach(([cat, n]) => console.log(`  ${cat.padEnd(22)} ${n}`));
 
-  const withPhone  = comercios.filter(c => c.telefono).length;
-  const withWeb    = comercios.filter(c => c.web).length;
-  const withHours  = comercios.filter(c => c.horario).length;
-  const withRating = comercios.filter(c => c.rating).length;
+  const withPhone  = final.filter(c => c.telefono).length;
+  const withWeb    = final.filter(c => c.web).length;
+  const withHours  = final.filter(c => c.horario).length;
+  const withRating = final.filter(c => c.rating).length;
+  const withCocina = final.filter(c => c.cocina?.length).length;
+  const withDesc   = final.filter(c => c.descripcion).length;
+  const withAttrs  = final.filter(c => c.atributos && Object.keys(c.atributos).length).length;
   console.log("\nField coverage:");
-  console.log(`  telefono     ${withPhone}/${comercios.length}`);
-  console.log(`  web          ${withWeb}/${comercios.length}`);
-  console.log(`  horario      ${withHours}/${comercios.length}`);
-  console.log(`  rating       ${withRating}/${comercios.length}`);
+  console.log(`  telefono     ${withPhone}/${final.length}`);
+  console.log(`  web          ${withWeb}/${final.length}`);
+  console.log(`  horario      ${withHours}/${final.length}`);
+  console.log(`  rating       ${withRating}/${final.length}`);
+  console.log(`  cocina       ${withCocina}/${final.length}`);
+  console.log(`  descripcion  ${withDesc}/${final.length}`);
+  console.log(`  atributos    ${withAttrs}/${final.length}`);
 
   console.log(`\nAPI calls used: ${totalCalls}  (~$${(totalCalls * 0.017).toFixed(2)})`);
   console.log(`  ${searchCalls} search  +  ${detailCalls} detail`);

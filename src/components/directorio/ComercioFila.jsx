@@ -61,6 +61,7 @@ const COLORES_CATEGORIA = {
   alimentacion: '#4a5b41',
   salud: '#31463d',
   belleza: '#8a3a58',
+  moda: '#8e4a6b',
   restauracion: '#7a2d1e',
   hogar: '#3a4e5c',
   servicios: '#c68a2e',
