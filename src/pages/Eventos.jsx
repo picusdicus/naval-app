@@ -16,6 +16,7 @@ import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
 import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
 import { prefsLocales } from '../lib/push.js'
+import { eventoATarjeta } from '../lib/destacados.js'
 
 // Agrupa eventos (ya ordenados asc. por fecha+hora) por día natural, en orden.
 function agruparPorDia(eventos) {
@@ -126,10 +127,15 @@ export default function Eventos() {
   const grupos = useMemo(() => agruparPorDia(futuros), [futuros])
 
   // Eventos destacados contratados. El carrusel aparece encima de la agenda solo
-  // en la vista sin filtrar; con un filtro activo (o sin destacados vigentes) se
-  // oculta y la agenda por día ocupa su lugar.
+  // en la vista sin filtrar; con un filtro activo se oculta. Si hay destacados
+  // vigentes, se muestran; si no, se muestran los próximos eventos.
   const { items: destacadosEvento } = useDestacados({ eventos: todos, tipo: 'evento' })
-  const conCarrusel = categoria === null && destacadosEvento.length > 0
+  const eventosCarrusel = useMemo(() => {
+    if (categoria !== null || futuros.length === 0) return []
+    if (destacadosEvento.length > 0) return destacadosEvento
+    return futuros.slice(0, 3).map((e) => eventoATarjeta(e))
+  }, [categoria, futuros, destacadosEvento])
+  const conCarrusel = eventosCarrusel.length > 0
 
   return (
     <div className="flex flex-col">
@@ -172,21 +178,23 @@ export default function Eventos() {
           {/* Móvil */}
           <div className="md:hidden">
             <div className="mb-3 flex items-baseline justify-between">
-              <span className="gz-eyebrow">Destacados de la semana</span>
+              <span className="gz-eyebrow">
+                {destacadosEvento.length > 0 ? 'Destacados de la semana' : 'Próximos eventos'}
+              </span>
               <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
-                {String(Math.min(destacadosEvento.length, 3)).padStart(2, '0')} /{' '}
-                {String(destacadosEvento.length).padStart(2, '0')}
+                {String(Math.min(eventosCarrusel.length, 3)).padStart(2, '0')} /{' '}
+                {String(eventosCarrusel.length).padStart(2, '0')}
               </span>
             </div>
-            <CarruselDestacados items={destacadosEvento} columnas={3} seccion="eventos" />
+            <CarruselDestacados items={eventosCarrusel} columnas={3} seccion="eventos" />
           </div>
 
           {/* Escritorio */}
           <div className="hidden md:block">
             <HeroDestacadosDesktop
-              items={destacadosEvento}
-              eyebrow="Destacados de la semana"
-              titulo="Lo que no te puedes perder"
+              items={eventosCarrusel}
+              eyebrow={destacadosEvento.length > 0 ? 'Destacados de la semana' : 'Próximos eventos'}
+              titulo={destacadosEvento.length > 0 ? 'Lo que no te puedes perder' : 'A qué ir próximamente'}
               seccion="eventos"
             />
           </div>

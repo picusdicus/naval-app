@@ -14,6 +14,7 @@ import comerciosData from '../data/comercios.json'
 import MIcon from '../components/MIcon.jsx'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import CarruselDesktopInmersivo from '../components/destacados/CarruselDesktopInmersivo.jsx'
+import { eventoATarjeta } from '../lib/destacados.js'
 
 const EVENTOS_EN_PORTADA = 6
 
@@ -43,7 +44,20 @@ export default function Inicio() {
   const proximos = useMemo(() => proximosEventos(eventos, EVENTOS_EN_PORTADA), [eventos])
 
   // Teaser mixto (eventos + comercios) contratados como destacados.
-  const { items: destacados } = useDestacados({ eventos })
+  // Si hay espacio, rellenar con eventos próximos hasta completar 4 items
+  // (mínimo visual útil en el carrusel móvil).
+  const { items: destacadosOriginales } = useDestacados({ eventos })
+  const destacados = useMemo(() => {
+    const minimos = 4
+    if (destacadosOriginales.length >= minimos) return destacadosOriginales
+    const eventosProximos = proximosEventos(eventos)
+    const ids = new Set(destacadosOriginales.map((d) => d.item?.id))
+    const faltantes = eventosProximos
+      .filter((e) => !ids.has(e.id))
+      .slice(0, minimos - destacadosOriginales.length)
+      .map((e) => eventoATarjeta(e))
+    return [...destacadosOriginales, ...faltantes]
+  }, [destacadosOriginales, eventos])
 
   const semana = proximos.slice(0, 4)
   // Tres comercios bien poblados y distintos para la banda de escritorio (mockup
