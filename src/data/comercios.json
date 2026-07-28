@@ -2330,6 +2330,29 @@
     }
   },
   {
+    "id": "gpl_ChIJ0f-EpFyUQQ0RzoBxduDz5Cw",
+    "nombre": "Centro de Interpretación de Navalcarnero",
+    "categoria": "educacion",
+    "subtipo": "academy",
+    "cocina": [],
+    "lat": 40.289579599999996,
+    "lng": -4.012852,
+    "direccion": "C. de San José, 4, Navalcarnero",
+    "telefono": "918 10 11 41",
+    "web": "http://turismo-navalcarnero.com/",
+    "mapsUrl": "https://maps.google.com/?cid=3234978577744232654&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–14:00 | martes: 9:00–14:00 | miércoles: 9:00–14:00 | jueves: 9:00–14:00 | viernes: 9:00–14:00 | sábado: 11:00–14:00, 17:00–19:00 | domingo: 11:00–14:00, 17:00–19:00",
+    "rating": 4.4,
+    "totalReviews": 194,
+    "precioNivel": "",
+    "tipoDisplay": "Museo",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true
+    }
+  },
+  {
     "id": "gpl_ChIJVVVlRVyUQQ0RxkNhbhZ7lRw",
     "nombre": "English Connection Academia de Inglés - Navalcarnero",
     "categoria": "educacion",
@@ -4324,29 +4347,6 @@
     "totalReviews": 25,
     "precioNivel": "",
     "tipoDisplay": "Teatro",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "accesible": true
-    }
-  },
-  {
-    "id": "gpl_ChIJ0f-EpFyUQQ0RzoBxduDz5Cw",
-    "nombre": "Centro de Interpretación de Navalcarnero",
-    "categoria": "ocio_cultura",
-    "subtipo": "museum",
-    "cocina": [],
-    "lat": 40.289579599999996,
-    "lng": -4.012852,
-    "direccion": "C. de San José, 4, Navalcarnero",
-    "telefono": "918 10 11 41",
-    "web": "http://turismo-navalcarnero.com/",
-    "mapsUrl": "https://maps.google.com/?cid=3234978577744232654&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 9:00–14:00 | martes: 9:00–14:00 | miércoles: 9:00–14:00 | jueves: 9:00–14:00 | viernes: 9:00–14:00 | sábado: 11:00–14:00, 17:00–19:00 | domingo: 11:00–14:00, 17:00–19:00",
-    "rating": 4.4,
-    "totalReviews": 194,
-    "precioNivel": "",
-    "tipoDisplay": "Museo",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {
