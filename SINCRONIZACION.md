@@ -88,9 +88,9 @@ Los tres GET comparten contrato: Edge, sin auth, cache CDN 60 s, y **`{lista: []
 - **`src/lib/useNoticiasPublicas.js`** — mezcla RSS + Neon y expone:
   - `noticias`: último mes, orden desc, **sin** las actividades.
   - `alertas`: urgentes vigentes (`expiraEn > ahora`) — al caducar desaparecen solas, sin cron.
-  - `actividades`: plazo abierto (o sin plazo conocido), ordenadas por fecha límite ascendente (las sin plazo al final) — al pasar el plazo desaparecen solas.
+  - `actividades`: plazo abierto (o sin plazo conocido), ordenadas por fecha de publicación descendente — al pasar el plazo desaparecen solas.
 - **Página Noticias** — sección "Avisos del municipio" (solo alertas vigentes) + listado de noticias (que excluye los avisos activos para no duplicar).
-- **Página Actividades** (`/actividades`, enlazada en el menú lateral) — tarjetas con chip de categoría y badge de plazo ("Plazo hasta el X"; a ≤5 días, "Quedan N días" en terracota). Vacía con mensaje claro si no hay inscripciones abiertas.
+- **Página Actividades** (`/actividades`, enlazada en el menú lateral) — franja "Últimos días de plazo" arriba (plazos que cierran en ≤ 7 días, deslizable, en terracota) y debajo la lista por fecha de publicación, con chip de categoría y badge de plazo ("Plazo hasta el X"; a ≤5 días, "Quedan N días" en terracota). Vacía con mensaje claro si no hay inscripciones abiertas.
 - **Detalle** (`/noticias/:id`) — resuelve tanto noticias como actividades (deep-links `ig-…`); en actividades muestra badge "Actividad · <categoría>", la fila "Plazo" y vuelve a `/actividades`.
 - **Inicio** — franja "Estado del municipio" alimentada por `alertas`.
 

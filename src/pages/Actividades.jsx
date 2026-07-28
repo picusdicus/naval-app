@@ -20,6 +20,11 @@ const ICONOS_ACTIVIDAD = {
 // Con pocos días de plazo el aviso pasa a terracota para que no se escape.
 const UMBRAL_ULTIMOS_DIAS = 5
 
+// Plazos a ≤ 7 días se destacan en la franja "Últimos días" sobre la lista
+// (la lista va por fecha de publicación, así que sin la franja una actividad
+// antigua a punto de cerrar quedaría enterrada).
+const UMBRAL_CADUCA_PRONTO = 7
+
 function formatearPlazo(iso) {
   const fecha = new Date(`${iso}T00:00:00`)
   return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' }).format(fecha)
@@ -34,6 +39,12 @@ function textoPlazo(fechaLimite) {
   return `Plazo hasta el ${formatearPlazo(fechaLimite)}`
 }
 
+// "Último día" / "Quedan N días" para la franja de plazos a punto de cerrar.
+function textoCuentaAtras(fechaLimite) {
+  const dias = diasHasta(fechaLimite)
+  return dias === 0 ? 'Último día' : `Quedan ${dias} días`
+}
+
 export default function Actividades() {
   const { actividades, cargando } = useNoticiasPublicas()
   const [categoria, setCategoria] = useState(null)
@@ -44,10 +55,26 @@ export default function Actividades() {
     return Object.keys(ETIQUETAS_ACTIVIDAD).filter((c) => presentes.has(c))
   }, [actividades])
 
-  const listado = useMemo(
-    () => (categoria ? actividades.filter((a) => a.categoria === categoria) : actividades),
+  // Franja "Últimos días": plazos que cierran en ≤ 7 días, el más próximo
+  // primero. Solo en la vista sin filtrar (mismo criterio que el carrusel de
+  // destacados en Eventos).
+  const caducanPronto = useMemo(
+    () =>
+      categoria === null
+        ? actividades
+            .filter((a) => a.fechaLimite && diasHasta(a.fechaLimite) <= UMBRAL_CADUCA_PRONTO)
+            .sort((a, b) => a.fechaLimite.localeCompare(b.fechaLimite))
+        : [],
     [actividades, categoria]
   )
+
+  // La lista general (por fecha de publicación, del hook) excluye lo que ya
+  // está en la franja para no duplicar tarjetas.
+  const listado = useMemo(() => {
+    const enFranja = new Set(caducanPronto.map((a) => a.id))
+    const base = categoria ? actividades.filter((a) => a.categoria === categoria) : actividades
+    return base.filter((a) => !enFranja.has(a.id))
+  }, [actividades, categoria, caducanPronto])
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -61,6 +88,40 @@ export default function Actividades() {
         Inscripciones y plazos abiertos: talleres, escuelas deportivas, campamentos, ayudas…
         Cuando el plazo termina, la actividad desaparece de esta lista.
       </p>
+
+      {/* Últimos días: plazos que cierran ya, deslizables en horizontal.
+          Estética de aviso (terracota), como la franja de Avisos en Noticias. */}
+      {caducanPronto.length > 0 && (
+        <section className="mt-6 animate-rise">
+          <div className="mb-3 flex items-center gap-2">
+            <MIcon name="timer" className="text-[18px] text-terracota" />
+            <h2 className="gz-eyebrow text-terracota">Últimos días de plazo</h2>
+          </div>
+          <div className="hide-scrollbar -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
+            {caducanPronto.map((a) => (
+              <Link
+                key={a.id}
+                to={`/noticias/${a.id}`}
+                className="min-w-[260px] max-w-[320px] flex-none snap-start border border-terracota bg-terracota-fondo p-4 transition-colors hover:bg-terracota/10"
+              >
+                <div className="flex items-center justify-between gap-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta">
+                  <span className="text-mudo">{ETIQUETAS_ACTIVIDAD[a.categoria] || 'General'}</span>
+                  <span className="flex items-center gap-1 text-terracota">
+                    <MIcon name="timer" className="text-[13px]" />
+                    {textoCuentaAtras(a.fechaLimite)}
+                  </span>
+                </div>
+                <p className="mt-2 line-clamp-2 font-serif-dm text-lg leading-tight text-tinta">
+                  {a.titulo}
+                </p>
+                <p className="mt-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta">
+                  Hasta el {formatearPlazo(a.fechaLimite)}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Filtro por categoría */}
       {categoriasDisponibles.length > 1 && (
@@ -91,7 +152,7 @@ export default function Actividades() {
 
       <div className="mt-5 h-px bg-tinta" />
 
-      {listado.length === 0 && (
+      {listado.length === 0 && caducanPronto.length === 0 && (
         <p className="mt-6 border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-pardo">
           {cargando
             ? 'Cargando actividades…'

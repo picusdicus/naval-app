@@ -82,18 +82,15 @@ export function useNoticiasPublicas() {
   }, [deLaBase])
 
   // Actividades con el plazo abierto (o sin plazo conocido, mientras sigan en
-  // la ventana de historial del GET): plazo más cercano primero, las de plazo
-  // desconocido al final. Al pasar fecha_limite desaparecen solas, sin cron.
+  // la ventana de historial del GET), lo último publicado primero — como las
+  // noticias. La urgencia de plazo no se ordena aquí: la página Actividades
+  // destaca aparte las que caducan pronto en su franja "Últimos días". Al
+  // pasar fecha_limite desaparecen solas, sin cron.
   const actividades = useMemo(() => {
     const hoy = hoyISO()
     return deLaBase
       .filter((n) => n.tipo === 'actividad' && (!n.fechaLimite || n.fechaLimite >= hoy))
-      .sort((a, b) => {
-        if (a.fechaLimite && b.fechaLimite) return a.fechaLimite.localeCompare(b.fechaLimite)
-        if (a.fechaLimite) return -1
-        if (b.fechaLimite) return 1
-        return (b.fecha || '').localeCompare(a.fecha || '')
-      })
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
   }, [deLaBase])
 
   // Avisos del municipio: las urgentes vigentes (urgente + no caducadas).
