@@ -2745,30 +2745,6 @@
     }
   },
   {
-    "id": "gpl_ChIJVenvZEmVQQ0RRGwHExX6_dw",
-    "nombre": "Amarok Pet Shop",
-    "categoria": "hogar",
-    "subtipo": "shop",
-    "cocina": [],
-    "lat": 40.297533699999995,
-    "lng": -4.0052674,
-    "direccion": "C. del Arcángel Gabriel, Navalcarnero",
-    "telefono": "661 85 58 24",
-    "web": "http://www.amarokpetshop.com/",
-    "mapsUrl": "https://maps.google.com/?cid=15924158825872452676&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 10:00–20:00 | martes: 10:00–20:00 | miércoles: 10:00–20:00 | jueves: 10:00–20:00 | viernes: 10:00–20:00 | sábado: 10:00–20:00 | domingo: 10:00–20:00",
-    "rating": 5,
-    "totalReviews": 15,
-    "precioNivel": "",
-    "tipoDisplay": "Comercio",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "aDomicilio": true,
-      "tarjeta": true
-    }
-  },
-  {
     "id": "gpl_ChIJxxgCE2WUQQ0Rr9Ex_Mzb2M4",
     "nombre": "Antique Arte Y Decoración",
     "categoria": "hogar",
@@ -7154,6 +7130,30 @@
     "cerradoTemporal": false,
     "atributos": {
       "accesible": true
+    }
+  },
+  {
+    "id": "gpl_ChIJVenvZEmVQQ0RRGwHExX6_dw",
+    "nombre": "Amarok Pet Shop",
+    "categoria": "servicios",
+    "subtipo": "pet_care",
+    "cocina": [],
+    "lat": 40.297533699999995,
+    "lng": -4.0052674,
+    "direccion": "C. del Arcángel Gabriel, Navalcarnero",
+    "telefono": "661 85 58 24",
+    "web": "http://www.amarokpetshop.com/",
+    "mapsUrl": "https://maps.google.com/?cid=15924158825872452676&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–20:00 | martes: 10:00–20:00 | miércoles: 10:00–20:00 | jueves: 10:00–20:00 | viernes: 10:00–20:00 | sábado: 10:00–20:00 | domingo: 10:00–20:00",
+    "rating": 5,
+    "totalReviews": 15,
+    "precioNivel": "",
+    "tipoDisplay": "Comercio",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "aDomicilio": true,
+      "tarjeta": true
     }
   },
   {
