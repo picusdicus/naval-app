@@ -17,7 +17,7 @@ export default function TarjetaCategoria({ to, imagen, color, icono, nombre, tot
     <Link
       to={to}
       aria-label={`${nombre}, ${total} ${total === 1 ? 'comercio' : 'comercios'}`}
-      className="group relative block aspect-[4/3] w-full overflow-hidden border border-tinta transition-shadow md:rounded-lg md:border-0 md:shadow-cartel md:hover:shadow-tarjeta-gaceta"
+      className="group relative block aspect-[16/9] w-full overflow-hidden border border-tinta transition-shadow md:aspect-[4/3] md:rounded-lg md:border-0 md:shadow-cartel md:hover:shadow-tarjeta-gaceta"
     >
       {conImagen ? (
         <img

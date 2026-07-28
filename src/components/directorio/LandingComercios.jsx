@@ -56,7 +56,7 @@ export default function LandingComercios({ total, conteos, onBuscar, onSugerir }
           </Link>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4">
           {CATEGORIAS_ORDENADAS.map((cat) => (
             <TarjetaCategoria
               key={cat.id}
