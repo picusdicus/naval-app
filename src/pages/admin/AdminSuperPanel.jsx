@@ -4,6 +4,7 @@ import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
 import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
+import TablesComercios from '../../components/admin/super/TablesComercios.jsx'
 import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
 import UmamiStats from '../../components/admin/UmamiStats.jsx'
 import DialogoInfoUsuario from '../../components/admin/DialogoInfoUsuario.jsx'
@@ -71,6 +72,7 @@ export default function AdminSuperPanel() {
     ['organizaciones', 'business', 'Organizaciones'],
     ['codigos', 'card_giftcard', 'Códigos de invitación'],
     ['destacados', 'star', 'Destacados'],
+    ['comercios', 'storefront', 'Comercios'],
     ['analytics', 'analytics', 'Analytics'],
   ]
 
@@ -148,6 +150,7 @@ export default function AdminSuperPanel() {
           {seccionActiva === 'organizaciones' && <TablesOrganizaciones />}
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
           {seccionActiva === 'destacados' && <TablesDestacados />}
+          {seccionActiva === 'comercios' && <TablesComercios />}
           {seccionActiva === 'analytics' && (
             <div className="space-y-8">
               <TableAnalytics umamiSummary={umamiSummary} />

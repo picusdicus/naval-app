@@ -1,7 +1,9 @@
 // Mapeo de tags de OpenStreetMap (shop=* / amenity=*) a categorías amigables
 // en español. Usado tanto por el script de descarga como por la interfaz.
 
-export const CATEGORIAS = {
+import categoriasExtra from '../data/categorias-extra.js'
+
+const CATEGORIAS_BASE = {
   alimentacion: { id: 'alimentacion', nombre: 'Alimentación', color: '#C1633D' },
   restauracion: { id: 'restauracion', nombre: 'Restauración', color: '#7A2E3E' },
   salud: { id: 'salud', nombre: 'Salud', color: '#3B7A57' },
@@ -13,6 +15,12 @@ export const CATEGORIAS = {
   deporte: { id: 'deporte', nombre: 'Deporte', color: '#D4A574' },
   ocio_cultura: { id: 'ocio_cultura', nombre: 'Ocio y cultura', color: '#A67C52' },
   educacion: { id: 'educacion', nombre: 'Educación', color: '#6B5B95' },
+}
+
+// Las base + las creadas desde el panel superadmin (categorias-extra.js).
+export const CATEGORIAS = { ...CATEGORIAS_BASE }
+for (const [id, def] of Object.entries(categoriasExtra)) {
+  CATEGORIAS[id] = { id, nombre: def.nombre, color: def.color }
 }
 
 const SHOP_A_CATEGORIA = {

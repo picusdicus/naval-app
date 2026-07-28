@@ -2,7 +2,9 @@
 // directorio, para las tarjetas de subcategoría de cada categoría.
 // Módulo "limpio" (sin JSX/JSON), como categorias.js.
 
-export const SUBTIPO_INFO = {
+import subtiposExtra from '../data/subtipos-extra.js'
+
+const SUBTIPO_BASE = {
   // Alimentación
   supermarket: { nombre: 'Supermercados', icono: 'shopping_cart' },
   bakery: { nombre: 'Panaderías', icono: 'bakery_dining' },
@@ -140,6 +142,9 @@ export const SUBTIPO_INFO = {
   // Genérico
   shop: { nombre: 'Otras tiendas', icono: 'storefront' },
 }
+
+// Los base + los creados desde el panel superadmin (subtipos-extra.js).
+export const SUBTIPO_INFO = { ...SUBTIPO_BASE, ...subtiposExtra }
 
 // Etiqueta e icono de un subtipo; si no está en el diccionario, formatea el
 // identificador de forma razonable para no romper la tarjeta.

@@ -50,6 +50,10 @@ const VARIABLES_API = [
   // Webhook de noticias de Instagram (api/sync-instagram-noticias.js): secreto
   // propio para poder rotarlo sin tocar el de eventos.
   'NOTICIAS_SYNC_SECRET',
+  // Commits a GitHub desde el panel superadmin de comercios
+  // (api/super/comercios.js) y el cron de eventos (api/sync-events.js).
+  'GITHUB_TOKEN',
+  'GITHUB_REPO',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni
