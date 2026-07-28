@@ -43,5 +43,61 @@
   "gpl_ChIJVenvZEmVQQ0RRGwHExX6_dw": {
     "categoria": "servicios",
     "subtipo": "pet_care"
+  },
+  "gpl_ChIJOUpJFGeUQQ0RlIBGGvPj9Dg": {
+    "categoria": "servicios",
+    "subtipo": "photographer"
+  },
+  "gpl_ChIJE13brLiVQQ0RGHre4mBYPVE": {
+    "categoria": "ocio_cultura",
+    "subtipo": "venue"
+  },
+  "gpl_ChIJH3zutUSUQQ0RglufV18LNys": {
+    "categoria": "salud",
+    "subtipo": "doctors"
+  },
+  "gpl_ChIJAyfM11qUQQ0R0jsbCRUMWvA": {
+    "categoria": "salud",
+    "subtipo": "doctors"
+  },
+  "gpl_ChIJ85gQBVuUQQ0RvizZNClCrNo": {
+    "categoria": "servicios",
+    "subtipo": "photographer"
+  },
+  "gpl_ChIJEZ9JkVyUQQ0Rt4lSOBpQRg4": {
+    "categoria": "hogar",
+    "subtipo": "garden_centre"
+  },
+  "gpl_ChIJDU4gpdf8Pw0RBy6fOrh0Uew": {
+    "categoria": "hogar",
+    "subtipo": "garden_centre"
+  },
+  "gpl_ChIJhRHMm1uUQQ0RIo-hTi1MWRI": {
+    "categoria": "servicios",
+    "subtipo": "photographer"
+  },
+  "gpl_ChIJW4qmKjaVQQ0RnLoBvAWMtms": {
+    "categoria": "servicios_prof",
+    "subtipo": "fontaneria"
+  },
+  "gpl_ChIJJzArF12VQQ0Ruu_k0kiRkng": {
+    "categoria": "servicios",
+    "subtipo": "photographer"
+  },
+  "gpl_ChIJFyRtDF-VQQ0R-f7PlGA5IfI": {
+    "categoria": "servicios_prof",
+    "subtipo": "swimming_pool"
+  },
+  "gpl_ChIJlUWWUa-VQQ0RIb3ZxVjC62U": {
+    "categoria": "servicios",
+    "subtipo": "photographer"
+  },
+  "gpl_ChIJX-u9uCOTQQ0Rg5iDb3mXnFE": {
+    "categoria": "salud",
+    "subtipo": "physiotherapist"
+  },
+  "gpl_ChIJYejdJiiVQQ0Rkz9YPOaHWtE": {
+    "categoria": "servicios_prof",
+    "subtipo": "reformas"
   }
 }

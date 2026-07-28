@@ -3222,6 +3222,52 @@
     }
   },
   {
+    "id": "gpl_ChIJEZ9JkVyUQQ0Rt4lSOBpQRg4",
+    "nombre": "Jardinería Arte Sano",
+    "categoria": "hogar",
+    "subtipo": "garden_centre",
+    "cocina": [],
+    "lat": 40.2889768,
+    "lng": -4.012398999999999,
+    "direccion": "C. Italia, 7, Pta 3, Navalcarnero",
+    "telefono": "722 78 67 29",
+    "web": "http://alvaropuche.es/",
+    "mapsUrl": "https://maps.google.com/?cid=1028597638445042103&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 8:00–18:00 | martes: 8:00–18:00 | miércoles: 8:00–18:00 | jueves: 8:00–18:00 | viernes: 8:00–18:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 4.9,
+    "totalReviews": 61,
+    "precioNivel": "",
+    "tipoDisplay": "Servicios",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true
+    }
+  },
+  {
+    "id": "gpl_ChIJDU4gpdf8Pw0RBy6fOrh0Uew",
+    "nombre": "Jardinería Barbera S.L",
+    "categoria": "hogar",
+    "subtipo": "garden_centre",
+    "cocina": [],
+    "lat": 40.2989799,
+    "lng": -3.9461234,
+    "direccion": "P.º de Extremadura, 25500",
+    "telefono": "916 46 40 00",
+    "web": "http://www.jardineriabarbera.com/",
+    "mapsUrl": "https://maps.google.com/?cid=17028520000670871047&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "",
+    "rating": 5,
+    "totalReviews": 4,
+    "precioNivel": "",
+    "tipoDisplay": "Granja",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJY4Txi2eUQQ0Rp9qYKPEAyiM",
     "nombre": "Jardineria Guadalupense SL",
     "categoria": "hogar",
@@ -4358,6 +4404,30 @@
     "cerradoTemporal": false,
     "atributos": {
       "accesible": true
+    }
+  },
+  {
+    "id": "gpl_ChIJE13brLiVQQ0RGHre4mBYPVE",
+    "nombre": "Centro de Ocio infantil Cuchi Park",
+    "categoria": "ocio_cultura",
+    "subtipo": "venue",
+    "cocina": [],
+    "lat": 40.288995,
+    "lng": -4.0035509,
+    "direccion": "Pol. Ind. Alparrache II, C. las Eras, 9, Navalcarnero",
+    "telefono": "673 99 83 59",
+    "web": "https://www.cuchipark.com/",
+    "mapsUrl": "https://maps.google.com/?cid=5853932263797848600&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: Cerrado | martes: Cerrado | miércoles: Cerrado | jueves: 18:00–20:00 | viernes: 18:00–22:30 | sábado: 18:00–22:30 | domingo: 18:00–20:00",
+    "rating": 4.2,
+    "totalReviews": 149,
+    "precioNivel": "",
+    "tipoDisplay": "Centro de ocio",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true,
+      "tarjeta": true
     }
   },
   {
@@ -6054,6 +6124,29 @@
     "atributos": {}
   },
   {
+    "id": "gpl_ChIJH3zutUSUQQ0RglufV18LNys",
+    "nombre": "Centro de Salud Navalcarnero",
+    "categoria": "salud",
+    "subtipo": "doctors",
+    "cocina": [],
+    "lat": 40.2900876,
+    "lng": -4.0144307,
+    "direccion": "C. de la Doctora, 10, Navalcarnero",
+    "telefono": "918 11 28 02",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=3113970171469847426&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 8:00–21:00 | martes: 8:00–21:00 | miércoles: 8:00–21:00 | jueves: 8:00–21:00 | viernes: 8:00–21:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 1.5,
+    "totalReviews": 286,
+    "precioNivel": "",
+    "tipoDisplay": "Oficina de la Administración",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true
+    }
+  },
+  {
     "id": "gpl_ChIJ7wAYCwSVQQ0Rv5-A6eB4UxM",
     "nombre": "Centro Médico Gava.",
     "categoria": "salud",
@@ -6428,6 +6521,29 @@
     "totalReviews": 719,
     "precioNivel": "",
     "tipoDisplay": "Cuidados veterinarios",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true
+    }
+  },
+  {
+    "id": "gpl_ChIJAyfM11qUQQ0R0jsbCRUMWvA",
+    "nombre": "Cruz Roja Navalcarnero",
+    "categoria": "salud",
+    "subtipo": "doctors",
+    "cocina": [],
+    "lat": 40.289911599999996,
+    "lng": -4.015937399999999,
+    "direccion": "C. de El Escorial, 47, Navalcarnero",
+    "telefono": "913 30 88 34",
+    "web": "https://www2.cruzroja.es/",
+    "mapsUrl": "https://maps.google.com/?cid=17319168601493289938&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–15:00 | martes: 9:00–15:00 | miércoles: 9:00–15:00 | jueves: 9:00–15:00 | viernes: 9:00–15:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 4.9,
+    "totalReviews": 49,
+    "precioNivel": "",
+    "tipoDisplay": "Asociación u organización",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {
@@ -7043,6 +7159,29 @@
     }
   },
   {
+    "id": "gpl_ChIJX-u9uCOTQQ0Rg5iDb3mXnFE",
+    "nombre": "Osteopatía y Masaje Terapéutico",
+    "categoria": "salud",
+    "subtipo": "physiotherapist",
+    "cocina": [],
+    "lat": 40.299967099999996,
+    "lng": -3.9770901999999997,
+    "direccion": "C. del Pino Carrasco, 4, Navalcarnero",
+    "telefono": "643 71 07 15",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=5880741761256757379&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–21:00 | martes: 10:00–21:00 | miércoles: 10:00–21:00 | jueves: 10:00–21:00 | viernes: 10:00–21:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 4.9,
+    "totalReviews": 94,
+    "precioNivel": "",
+    "tipoDisplay": "Salud y bienestar",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true
+    }
+  },
+  {
     "id": "gpl_ChIJ4Q_-n0SUQQ0RazoC-J8IBIM",
     "nombre": "Peluquería y Estética Beatriz Flores",
     "categoria": "salud",
@@ -7299,7 +7438,7 @@
     "id": "gpl_ChIJOUpJFGeUQQ0RlIBGGvPj9Dg",
     "nombre": "Carlos Santana Fotógrafo",
     "categoria": "servicios",
-    "subtipo": "service",
+    "subtipo": "photographer",
     "cocina": [],
     "lat": 40.2880173,
     "lng": -4.0128226,
@@ -7364,53 +7503,6 @@
     "atributos": {}
   },
   {
-    "id": "gpl_ChIJE13brLiVQQ0RGHre4mBYPVE",
-    "nombre": "Centro de Ocio infantil Cuchi Park",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.288995,
-    "lng": -4.0035509,
-    "direccion": "Pol. Ind. Alparrache II, C. las Eras, 9, Navalcarnero",
-    "telefono": "673 99 83 59",
-    "web": "https://www.cuchipark.com/",
-    "mapsUrl": "https://maps.google.com/?cid=5853932263797848600&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: Cerrado | martes: Cerrado | miércoles: Cerrado | jueves: 18:00–20:00 | viernes: 18:00–22:30 | sábado: 18:00–22:30 | domingo: 18:00–20:00",
-    "rating": 4.2,
-    "totalReviews": 149,
-    "precioNivel": "",
-    "tipoDisplay": "Centro de ocio",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "accesible": true,
-      "tarjeta": true
-    }
-  },
-  {
-    "id": "gpl_ChIJH3zutUSUQQ0RglufV18LNys",
-    "nombre": "Centro de Salud Navalcarnero",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.2900876,
-    "lng": -4.0144307,
-    "direccion": "C. de la Doctora, 10, Navalcarnero",
-    "telefono": "918 11 28 02",
-    "web": "",
-    "mapsUrl": "https://maps.google.com/?cid=3113970171469847426&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 8:00–21:00 | martes: 8:00–21:00 | miércoles: 8:00–21:00 | jueves: 8:00–21:00 | viernes: 8:00–21:00 | sábado: Cerrado | domingo: Cerrado",
-    "rating": 1.5,
-    "totalReviews": 286,
-    "precioNivel": "",
-    "tipoDisplay": "Oficina de la Administración",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "accesible": true
-    }
-  },
-  {
     "id": "gpl_ChIJq6ofkV6UQQ0RzZrFSj1eYSU",
     "nombre": "Contenedores De Obra B. Rodríguez",
     "categoria": "servicios",
@@ -7453,29 +7545,6 @@
     "atributos": {
       "accesible": true,
       "tarjeta": true
-    }
-  },
-  {
-    "id": "gpl_ChIJAyfM11qUQQ0R0jsbCRUMWvA",
-    "nombre": "Cruz Roja Navalcarnero",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.289911599999996,
-    "lng": -4.015937399999999,
-    "direccion": "C. de El Escorial, 47, Navalcarnero",
-    "telefono": "913 30 88 34",
-    "web": "https://www2.cruzroja.es/",
-    "mapsUrl": "https://maps.google.com/?cid=17319168601493289938&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 9:00–15:00 | martes: 9:00–15:00 | miércoles: 9:00–15:00 | jueves: 9:00–15:00 | viernes: 9:00–15:00 | sábado: Cerrado | domingo: Cerrado",
-    "rating": 4.9,
-    "totalReviews": 49,
-    "precioNivel": "",
-    "tipoDisplay": "Asociación u organización",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "accesible": true
     }
   },
   {
@@ -7644,7 +7713,7 @@
     "id": "gpl_ChIJ85gQBVuUQQ0RvizZNClCrNo",
     "nombre": "Gaspar Foto - Video",
     "categoria": "servicios",
-    "subtipo": "service",
+    "subtipo": "photographer",
     "cocina": [],
     "lat": 40.288401,
     "lng": -4.0153932,
@@ -7771,52 +7840,6 @@
     }
   },
   {
-    "id": "gpl_ChIJEZ9JkVyUQQ0Rt4lSOBpQRg4",
-    "nombre": "Jardinería Arte Sano",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.2889768,
-    "lng": -4.012398999999999,
-    "direccion": "C. Italia, 7, Pta 3, Navalcarnero",
-    "telefono": "722 78 67 29",
-    "web": "http://alvaropuche.es/",
-    "mapsUrl": "https://maps.google.com/?cid=1028597638445042103&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 8:00–18:00 | martes: 8:00–18:00 | miércoles: 8:00–18:00 | jueves: 8:00–18:00 | viernes: 8:00–18:00 | sábado: Cerrado | domingo: Cerrado",
-    "rating": 4.9,
-    "totalReviews": 61,
-    "precioNivel": "",
-    "tipoDisplay": "Servicios",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "accesible": true
-    }
-  },
-  {
-    "id": "gpl_ChIJDU4gpdf8Pw0RBy6fOrh0Uew",
-    "nombre": "Jardinería Barbera S.L",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.2989799,
-    "lng": -3.9461234,
-    "direccion": "P.º de Extremadura, 25500",
-    "telefono": "916 46 40 00",
-    "web": "http://www.jardineriabarbera.com/",
-    "mapsUrl": "https://maps.google.com/?cid=17028520000670871047&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "",
-    "rating": 5,
-    "totalReviews": 4,
-    "precioNivel": "",
-    "tipoDisplay": "Granja",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "tarjeta": true
-    }
-  },
-  {
     "id": "gpl_ChIJRXUj6UKUQQ0RiJ7uLbBHqNQ",
     "nombre": "Juzgados de Navalcarnero",
     "categoria": "servicios",
@@ -7843,7 +7866,7 @@
     "id": "gpl_ChIJhRHMm1uUQQ0RIo-hTi1MWRI",
     "nombre": "kurryfotografo",
     "categoria": "servicios",
-    "subtipo": "service",
+    "subtipo": "photographer",
     "cocina": [],
     "lat": 40.286369799999996,
     "lng": -4.0133863,
@@ -8108,27 +8131,6 @@
     "atributos": {}
   },
   {
-    "id": "gpl_ChIJW4qmKjaVQQ0RnLoBvAWMtms",
-    "nombre": "Mantenimientos y Servicios Integrales NP SL",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.3032256,
-    "lng": -4.004231,
-    "direccion": "Av. de la Dehesa, 6, Loc 10, Navalcarnero",
-    "telefono": "914 34 69 47",
-    "web": "https://npserviciosintegrales.es/",
-    "mapsUrl": "https://maps.google.com/?cid=7761544964076583580&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 8:00–18:00 | martes: 8:00–18:00 | miércoles: 8:00–18:00 | jueves: 8:00–18:00 | viernes: 8:00–18:00 | sábado: Cerrado | domingo: Cerrado",
-    "rating": null,
-    "totalReviews": null,
-    "precioNivel": "",
-    "tipoDisplay": "Servicios",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {}
-  },
-  {
     "id": "gpl_ChIJ4eRpaY6VQQ0RLPMuUvaCbBg",
     "nombre": "Marya Von Dass",
     "categoria": "servicios",
@@ -8242,7 +8244,7 @@
     "id": "gpl_ChIJJzArF12VQQ0Ruu_k0kiRkng",
     "nombre": "Natalia Gama Fotografía",
     "categoria": "servicios",
-    "subtipo": "service",
+    "subtipo": "photographer",
     "cocina": [],
     "lat": 40.2851934,
     "lng": -4.0158768,
@@ -8283,27 +8285,6 @@
     "atributos": {
       "tarjeta": true
     }
-  },
-  {
-    "id": "gpl_ChIJFyRtDF-VQQ0R-f7PlGA5IfI",
-    "nombre": "NAVALPOOL",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.3035293,
-    "lng": -4.0039372,
-    "direccion": "Av. de la Dehesa, 6, BAJO, Navalcarnero",
-    "telefono": "914 34 69 47",
-    "web": "http://navalpool.es/",
-    "mapsUrl": "https://maps.google.com/?cid=17447289518386315001&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "",
-    "rating": 4.5,
-    "totalReviews": 51,
-    "precioNivel": "",
-    "tipoDisplay": "Servicios",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {}
   },
   {
     "id": "gpl_ChIJS7EHglqUQQ0RvGZdObPn-bQ",
@@ -8381,7 +8362,7 @@
     "id": "gpl_ChIJlUWWUa-VQQ0RIb3ZxVjC62U",
     "nombre": "NOA GARCO FOTOGRAFIA",
     "categoria": "servicios",
-    "subtipo": "service",
+    "subtipo": "photographer",
     "cocina": [],
     "lat": 40.2898609,
     "lng": -4.0015295,
@@ -8463,29 +8444,6 @@
     "totalReviews": 12,
     "precioNivel": "",
     "tipoDisplay": "Centro de información turística",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "accesible": true
-    }
-  },
-  {
-    "id": "gpl_ChIJX-u9uCOTQQ0Rg5iDb3mXnFE",
-    "nombre": "Osteopatía y Masaje Terapéutico",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.299967099999996,
-    "lng": -3.9770901999999997,
-    "direccion": "C. del Pino Carrasco, 4, Navalcarnero",
-    "telefono": "643 71 07 15",
-    "web": "",
-    "mapsUrl": "https://maps.google.com/?cid=5880741761256757379&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 10:00–21:00 | martes: 10:00–21:00 | miércoles: 10:00–21:00 | jueves: 10:00–21:00 | viernes: 10:00–21:00 | sábado: Cerrado | domingo: Cerrado",
-    "rating": 4.9,
-    "totalReviews": 94,
-    "precioNivel": "",
-    "tipoDisplay": "Salud y bienestar",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {
@@ -8814,27 +8772,6 @@
     "totalReviews": 3,
     "precioNivel": "",
     "tipoDisplay": "Oficina de gobierno local",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {}
-  },
-  {
-    "id": "gpl_ChIJYejdJiiVQQ0Rkz9YPOaHWtE",
-    "nombre": "Reformas Serradilla",
-    "categoria": "servicios",
-    "subtipo": "service",
-    "cocina": [],
-    "lat": 40.281653,
-    "lng": -4.0251874,
-    "direccion": "C. Gredos, 19, Navalcarnero",
-    "telefono": "619 96 89 52",
-    "web": "https://instagram.com/reformas_serradilla?igshid=YmMyMTA2M2Y=",
-    "mapsUrl": "https://maps.google.com/?cid=15085519324755541907&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 8:00–19:00 | martes: 8:00–19:00 | miércoles: 8:00–19:00 | jueves: 8:00–19:00 | viernes: 8:00–19:00 | sábado: Cerrado | domingo: Cerrado",
-    "rating": 5,
-    "totalReviews": 50,
-    "precioNivel": "",
-    "tipoDisplay": "Servicios",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {}
@@ -9632,6 +9569,27 @@
     "atributos": {}
   },
   {
+    "id": "gpl_ChIJW4qmKjaVQQ0RnLoBvAWMtms",
+    "nombre": "Mantenimientos y Servicios Integrales NP SL",
+    "categoria": "servicios_prof",
+    "subtipo": "fontaneria",
+    "cocina": [],
+    "lat": 40.3032256,
+    "lng": -4.004231,
+    "direccion": "Av. de la Dehesa, 6, Loc 10, Navalcarnero",
+    "telefono": "914 34 69 47",
+    "web": "https://npserviciosintegrales.es/",
+    "mapsUrl": "https://maps.google.com/?cid=7761544964076583580&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 8:00–18:00 | martes: 8:00–18:00 | miércoles: 8:00–18:00 | jueves: 8:00–18:00 | viernes: 8:00–18:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": null,
+    "totalReviews": null,
+    "precioNivel": "",
+    "tipoDisplay": "Servicios",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {}
+  },
+  {
     "id": "gpl_ChIJkyz4qFyUQQ0RKLfXVZrRj9c",
     "nombre": "N.C. Gestión Inmobiliaria",
     "categoria": "servicios_prof",
@@ -9674,6 +9632,27 @@
     "atributos": {}
   },
   {
+    "id": "gpl_ChIJFyRtDF-VQQ0R-f7PlGA5IfI",
+    "nombre": "NAVALPOOL",
+    "categoria": "servicios_prof",
+    "subtipo": "swimming_pool",
+    "cocina": [],
+    "lat": 40.3035293,
+    "lng": -4.0039372,
+    "direccion": "Av. de la Dehesa, 6, BAJO, Navalcarnero",
+    "telefono": "914 34 69 47",
+    "web": "http://navalpool.es/",
+    "mapsUrl": "https://maps.google.com/?cid=17447289518386315001&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "",
+    "rating": 4.5,
+    "totalReviews": 51,
+    "precioNivel": "",
+    "tipoDisplay": "Servicios",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {}
+  },
+  {
     "id": "gpl_ChIJDR_PcBpg_6gRKLE9A_tpyg0",
     "nombre": "NHA instalaciones",
     "categoria": "servicios_prof",
@@ -9711,6 +9690,27 @@
     "totalReviews": 237,
     "precioNivel": "",
     "tipoDisplay": "Agencia inmobiliaria",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {}
+  },
+  {
+    "id": "gpl_ChIJYejdJiiVQQ0Rkz9YPOaHWtE",
+    "nombre": "Reformas Serradilla",
+    "categoria": "servicios_prof",
+    "subtipo": "reformas",
+    "cocina": [],
+    "lat": 40.281653,
+    "lng": -4.0251874,
+    "direccion": "C. Gredos, 19, Navalcarnero",
+    "telefono": "619 96 89 52",
+    "web": "https://instagram.com/reformas_serradilla?igshid=YmMyMTA2M2Y=",
+    "mapsUrl": "https://maps.google.com/?cid=15085519324755541907&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 8:00–19:00 | martes: 8:00–19:00 | miércoles: 8:00–19:00 | jueves: 8:00–19:00 | viernes: 8:00–19:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 5,
+    "totalReviews": 50,
+    "precioNivel": "",
+    "tipoDisplay": "Servicios",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {}
