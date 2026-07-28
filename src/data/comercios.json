@@ -145,33 +145,6 @@
     }
   },
   {
-    "id": "gpl_ChIJo_HpqmCVQQ0RUY-9t9nPfhg",
-    "nombre": "Dianna's Bakery and Coffee",
-    "categoria": "alimentacion",
-    "subtipo": "bakery",
-    "cocina": [],
-    "lat": 40.2974782,
-    "lng": -3.9891632999999995,
-    "direccion": "Calle del Labrador, 1, Madrid",
-    "telefono": "643 60 43 14",
-    "web": "",
-    "mapsUrl": "https://maps.google.com/?cid=1765076637973319505&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 8:00–20:00 | martes: 8:00–20:00 | miércoles: 8:00–20:00 | jueves: 8:00–20:00 | viernes: 8:00–20:00 | sábado: 9:00–20:00 | domingo: 9:00–20:00",
-    "rating": 4.4,
-    "totalReviews": 200,
-    "precioNivel": "INEXPENSIVE",
-    "tipoDisplay": "Cafetería",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "terraza": true,
-      "paraLlevar": true,
-      "vegetariano": true,
-      "accesible": true,
-      "tarjeta": true
-    }
-  },
-  {
     "id": "gpl_ChIJpT8hwlGVQQ0RPmGgyx5ji-Q",
     "nombre": "El Chino",
     "categoria": "alimentacion",
@@ -244,7 +217,7 @@
     "id": "gpl_ChIJPTOQgUuVQQ0RMa7QkD_qxHo",
     "nombre": "Frutería & Carnicería la Estación",
     "categoria": "alimentacion",
-    "subtipo": "supermarket",
+    "subtipo": "frutas_y_verduras",
     "cocina": [],
     "lat": 40.2925392,
     "lng": -4.0074805,
@@ -268,7 +241,7 @@
     "id": "gpl_ChIJDTX2eVyUQQ0RrDJbHVqPsjM",
     "nombre": "FRUTERIAS LOS PRIMOS",
     "categoria": "alimentacion",
-    "subtipo": "supermarket",
+    "subtipo": "frutas_y_verduras",
     "cocina": [],
     "lat": 40.2873627,
     "lng": -4.0130466,
@@ -358,32 +331,6 @@
     "cerradoTemporal": false,
     "atributos": {
       "aDomicilio": true,
-      "tarjeta": true
-    }
-  },
-  {
-    "id": "gpl_ChIJX9PYvliVQQ0Rny4trW7JELk",
-    "nombre": "La Manon Navalcarnero",
-    "categoria": "alimentacion",
-    "subtipo": "bakery",
-    "cocina": [],
-    "lat": 40.2872403,
-    "lng": -4.0148297,
-    "direccion": "Calle de Jacinto González, 11, Navalcarnero",
-    "telefono": "913 30 83 26",
-    "web": "https://www.instagram.com/la_manon_navalcarnero/",
-    "mapsUrl": "https://maps.google.com/?cid=13335379973833043615&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 8:30–21:00 | martes: 8:30–21:00 | miércoles: 8:30–21:00 | jueves: 8:30–21:00 | viernes: 8:30–23:00 | sábado: 8:30–23:00 | domingo: 8:30–22:00",
-    "rating": 4.1,
-    "totalReviews": 771,
-    "precioNivel": "INEXPENSIVE",
-    "tipoDisplay": "Panadería",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "paraLlevar": true,
-      "aDomicilio": true,
-      "accesible": true,
       "tarjeta": true
     }
   },
@@ -4985,6 +4932,33 @@
     }
   },
   {
+    "id": "gpl_ChIJo_HpqmCVQQ0RUY-9t9nPfhg",
+    "nombre": "Dianna's Bakery and Coffee",
+    "categoria": "restauracion",
+    "subtipo": "cafe",
+    "cocina": [],
+    "lat": 40.2974782,
+    "lng": -3.9891632999999995,
+    "direccion": "Calle del Labrador, 1, Madrid",
+    "telefono": "643 60 43 14",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=1765076637973319505&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 8:00–20:00 | martes: 8:00–20:00 | miércoles: 8:00–20:00 | jueves: 8:00–20:00 | viernes: 8:00–20:00 | sábado: 9:00–20:00 | domingo: 9:00–20:00",
+    "rating": 4.4,
+    "totalReviews": 200,
+    "precioNivel": "INEXPENSIVE",
+    "tipoDisplay": "Cafetería",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "terraza": true,
+      "paraLlevar": true,
+      "vegetariano": true,
+      "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJg8MB9EWVQQ0RIe9bWVpTO4k",
     "nombre": "DUAKE CITY COFFEE BAR GOURMET",
     "categoria": "restauracion",
@@ -5279,6 +5253,32 @@
     "atributos": {
       "terraza": true,
       "reservas": true,
+      "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJX9PYvliVQQ0Rny4trW7JELk",
+    "nombre": "La Manon Navalcarnero",
+    "categoria": "restauracion",
+    "subtipo": "cafe",
+    "cocina": [],
+    "lat": 40.2872403,
+    "lng": -4.0148297,
+    "direccion": "Calle de Jacinto González, 11, Navalcarnero",
+    "telefono": "913 30 83 26",
+    "web": "https://www.instagram.com/la_manon_navalcarnero/",
+    "mapsUrl": "https://maps.google.com/?cid=13335379973833043615&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 8:30–21:00 | martes: 8:30–21:00 | miércoles: 8:30–21:00 | jueves: 8:30–21:00 | viernes: 8:30–23:00 | sábado: 8:30–23:00 | domingo: 8:30–22:00",
+    "rating": 4.1,
+    "totalReviews": 771,
+    "precioNivel": "INEXPENSIVE",
+    "tipoDisplay": "Panadería",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "paraLlevar": true,
+      "aDomicilio": true,
       "accesible": true,
       "tarjeta": true
     }
