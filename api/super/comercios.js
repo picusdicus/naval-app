@@ -11,7 +11,7 @@
 // queda visible en ~2 minutos.
 import { requerirSuperAdminEdge } from '../_auth.js'
 import { json, leerJson, csrfInvalido, rechazoCsrf } from '../_http.js'
-import { leerArchivoRepo, commitArchivos } from '../_github.js'
+import { leerArchivoRepo, commitArchivosConDetalle } from '../_github.js'
 import { CATEGORIAS } from '../../src/lib/categorias.js'
 import { SUBTIPO_INFO } from '../../src/lib/subtipos.js'
 
@@ -210,13 +210,13 @@ export default async function handler(req) {
         `${Object.keys(nuevasCategorias).length + Object.keys(nuevosSubtipos).length} taxonomias nuevas`,
       )
     }
-    const commitHecho = await commitArchivos(
+    const commit = await commitArchivosConDetalle(
       archivos,
       `Comercios: ${partes.join(' y ')} desde el panel`,
     )
 
-    if (!commitHecho) {
-      return json({ error: 'No se pudo hacer el commit a GitHub. Revisa los logs.' }, 502)
+    if (!commit.ok) {
+      return json({ error: `No se pudo hacer el commit a GitHub. ${commit.error}` }, 502)
     }
 
     const excluidos = comercios.length - corregidos.length

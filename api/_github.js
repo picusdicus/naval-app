@@ -11,8 +11,23 @@ function credenciales() {
     cabeceras: {
       Authorization: `token ${process.env.GITHUB_TOKEN}`,
       Accept: 'application/vnd.github.v3+json',
+      // GitHub exige User-Agent en todas las peticiones; el fetch del runtime
+      // Edge no envía ninguno por defecto.
+      'User-Agent': 'NavalcarneroApp/0.1 (proyecto vecinal)',
     },
   }
+}
+
+// Texto de error útil de una respuesta fallida de la API de GitHub (incluye el
+// `message` del cuerpo, p. ej. "Resource not accessible by personal access token").
+async function detalleError(res, contexto) {
+  let cuerpo = ''
+  try {
+    cuerpo = (await res.json())?.message || ''
+  } catch {
+    /* cuerpo no-JSON: se queda vacío */
+  }
+  return `${contexto}: ${res.status}${cuerpo ? ` — ${cuerpo.slice(0, 200)}` : ''}`
 }
 
 // Lee un archivo del repo (rama main) como texto crudo. null si no existe o
@@ -29,25 +44,26 @@ export async function leerArchivoRepo(ruta) {
 }
 
 // Commit de uno o más archivos al repo en un ÚNICO commit (Git Data API).
-// `archivos` = [{ path, contenido }] — solo los que han cambiado. Devuelve true
-// si commiteó. Fail-soft: cualquier error se loguea y devuelve false, nunca lanza.
-export async function commitArchivos(archivos, mensaje) {
-  if (!archivos.length) return false
+// `archivos` = [{ path, contenido }] — solo los que han cambiado. Devuelve
+// { ok, error } con el motivo real del fallo (para que el panel superadmin
+// pueda mostrarlo); nunca lanza.
+export async function commitArchivosConDetalle(archivos, mensaje) {
+  if (!archivos.length) return { ok: false, error: 'No hay archivos que commitear.' }
   const cred = credenciales()
   if (!cred) {
     console.log('⚠️  No se pudo hacer commit: falta GITHUB_TOKEN o GITHUB_REPO')
-    return false
+    return { ok: false, error: 'Falta GITHUB_TOKEN o GITHUB_REPO.' }
   }
   const { base, cabeceras } = cred
 
   try {
     // Ref y árbol base actuales de main
     const refRes = await fetch(`${base}/git/refs/heads/main`, { headers: cabeceras })
-    if (!refRes.ok) throw new Error(`No se pudo obtener ref de main: ${refRes.status}`)
+    if (!refRes.ok) throw new Error(await detalleError(refRes, 'No se pudo obtener ref de main'))
     const mainSha = (await refRes.json()).object.sha
 
     const commitRes = await fetch(`${base}/git/commits/${mainSha}`, { headers: cabeceras })
-    if (!commitRes.ok) throw new Error(`No se pudo obtener commit: ${commitRes.status}`)
+    if (!commitRes.ok) throw new Error(await detalleError(commitRes, 'No se pudo obtener commit'))
     const treeSha = (await commitRes.json()).tree.sha
 
     // Un blob por archivo cambiado
@@ -58,7 +74,7 @@ export async function commitArchivos(archivos, mensaje) {
         headers: cabeceras,
         body: JSON.stringify({ content: a.contenido, encoding: 'utf-8' }),
       })
-      if (!blobRes.ok) throw new Error(`No se pudo crear blob (${a.path}): ${blobRes.status}`)
+      if (!blobRes.ok) throw new Error(await detalleError(blobRes, `No se pudo crear blob (${a.path})`))
       tree.push({ path: a.path, mode: '100644', type: 'blob', sha: (await blobRes.json()).sha })
     }
 
@@ -67,7 +83,7 @@ export async function commitArchivos(archivos, mensaje) {
       headers: cabeceras,
       body: JSON.stringify({ base_tree: treeSha, tree }),
     })
-    if (!treeRes.ok) throw new Error(`No se pudo crear árbol: ${treeRes.status}`)
+    if (!treeRes.ok) throw new Error(await detalleError(treeRes, 'No se pudo crear árbol'))
     const nuevoTree = (await treeRes.json()).sha
 
     const newCommitRes = await fetch(`${base}/git/commits`, {
@@ -75,7 +91,7 @@ export async function commitArchivos(archivos, mensaje) {
       headers: cabeceras,
       body: JSON.stringify({ message: mensaje, tree: nuevoTree, parents: [mainSha] }),
     })
-    if (!newCommitRes.ok) throw new Error(`No se pudo crear commit: ${newCommitRes.status}`)
+    if (!newCommitRes.ok) throw new Error(await detalleError(newCommitRes, 'No se pudo crear commit'))
     const nuevoCommit = (await newCommitRes.json()).sha
 
     const updateRefRes = await fetch(`${base}/git/refs/heads/main`, {
@@ -83,12 +99,17 @@ export async function commitArchivos(archivos, mensaje) {
       headers: cabeceras,
       body: JSON.stringify({ sha: nuevoCommit, force: false }),
     })
-    if (!updateRefRes.ok) throw new Error(`No se pudo actualizar ref: ${updateRefRes.status}`)
+    if (!updateRefRes.ok) throw new Error(await detalleError(updateRefRes, 'No se pudo actualizar ref'))
 
     console.log(`✓ Commit a GitHub: ${archivos.map((a) => a.path).join(', ')}`)
-    return true
+    return { ok: true }
   } catch (err) {
     console.error('❌ Error al hacer commit:', err.message)
-    return false
+    return { ok: false, error: err.message }
   }
+}
+
+// Variante booleana (la usa el cron, fail-soft como siempre).
+export async function commitArchivos(archivos, mensaje) {
+  return (await commitArchivosConDetalle(archivos, mensaje)).ok
 }
