@@ -53,6 +53,8 @@ if (!API_KEY) {
 }
 
 const COMERCIOS_PATH = resolve(ROOT, "src/data/comercios.json");
+const SERVICIOS_PATH = resolve(ROOT, "src/data/servicios-locales.json");
+const DUPES_REPORT_PATH = resolve(ROOT, "duplicados-detectados.json");
 
 // ---------------------------------------------------------------------------
 // Tuning constants
@@ -665,6 +667,94 @@ async function main() {
 
   console.log(`\nAPI calls used: ${totalCalls}  (~$${(totalCalls * 0.017).toFixed(2)})`);
   console.log(`  ${searchCalls} search  +  ${detailCalls} detail`);
+
+  avisarDuplicados(final);
+}
+
+// ---------------------------------------------------------------------------
+// Aviso de duplicados con servicios-locales.json (directorio curado a mano)
+// ---------------------------------------------------------------------------
+// El fetch regenera comercios.json desde cero y NO cruza los servicios curados,
+// así que si Google trae un negocio que ya estaba a mano en servicios-locales.json
+// reaparece el duplicado. Esta comprobación cruza los gpl_… con los local/… por
+// teléfono y dirección y avisa por consola + escribe duplicados-detectados.json.
+// No borra nada: el operador decide si retira la entrada local/… (el teléfono
+// idéntico es casi seguro; misma dirección con teléfono distinto puede ser un
+// negocio diferente y hay que verificarlo).
+function avisarDuplicados(comerciosGoogle) {
+  if (!existsSync(SERVICIOS_PATH)) return;
+  let servicios;
+  try { servicios = JSON.parse(readFileSync(SERVICIOS_PATH, "utf-8")); }
+  catch { return; }
+
+  const sinTildes = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const soloTexto = (s) => sinTildes(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  const STOP = new Set(["de", "la", "el", "los", "las", "y", "del", "navalcarnero", "s", "l", "sl", "centro", "tienda", "comercio", "local", "comercial"]);
+  const tokens = (s) => new Set(soloTexto(s).split(" ").filter((w) => w && !STOP.has(w) && w.length > 1));
+  const tel = (t) => (t || "").replace(/\D/g, "").replace(/^34/, "");
+  const dirClave = (d) => {
+    let x = soloTexto(d).replace(/\bnavalcarnero\b/g, "").replace(/\blocal\b|\bcomercial\b|\bbajo\b/g, " ").trim();
+    x = x.replace(/\b(calle|c|avenida|avda|av|paseo|plaza|plazuela|pza|ronda|rda|camino|travesia|tr|callejon|carretera|ctra|urbanizacion|urb|pol|poligono)\b/g, " ").replace(/\s+/g, " ").trim();
+    const num = x.match(/\b(\d{1,4})\b/);
+    return { calle: new Set(x.split(" ").filter((w) => w && isNaN(w) && w.length > 2)), num: num ? num[1] : null };
+  };
+  const solapa = (a, b) => {
+    if (!a.size || !b.size) return 0;
+    let i = 0; for (const t of a) if (b.has(t)) i++;
+    return i / Math.min(a.size, b.size);
+  };
+
+  const sospechas = [];
+  for (const s of servicios) {
+    let mejor = null;
+    for (const c of comerciosGoogle) {
+      const nombreSim = solapa(tokens(s.nombre), tokens(c.nombre));
+      const ka = dirClave(s.direccion), kb = dirClave(c.direccion);
+      const calleSim = solapa(ka.calle, kb.calle);
+      const numIgual = !!(ka.num && kb.num && ka.num === kb.num);
+      const telIgual = !!(tel(s.telefono) && tel(s.telefono) === tel(c.telefono));
+
+      // Confianza: 3 = casi seguro (teléfono idéntico y nombre coherente);
+      // 2 = fuerte (revisar). No se marca "misma dirección" a secas: en un pueblo
+      // muchos negocios comparten calle y número (vecinos) sin ser el mismo, y
+      // eso solo generaría ruido.
+      let motivo = null, conf = 0;
+      if (telIgual && nombreSim >= 0.45) { motivo = "teléfono idéntico"; conf = 3; }
+      else if (telIgual) { motivo = "mismo teléfono, nombre distinto (¿mismo dueño?)"; conf = 2; }
+      else if (nombreSim >= 0.6 && calleSim >= 0.5 && numIgual) { motivo = "mismo nombre y dirección"; conf = 2; }
+      else if (nombreSim >= 0.75 && calleSim >= 0.5) { motivo = "mismo nombre y calle"; conf = 2; }
+
+      if (motivo && (!mejor || conf > mejor.conf)) mejor = { conf, motivo, c };
+    }
+    if (mejor) sospechas.push({
+      confianza: mejor.conf,
+      motivo: mejor.motivo,
+      servicioId: s.id,
+      servicioNombre: s.nombre,
+      servicioDireccion: s.direccion || "",
+      comercioId: mejor.c.id,
+      comercioNombre: mejor.c.nombre,
+      comercioDireccion: mejor.c.direccion || "",
+    });
+  }
+
+  console.log("\n" + "=".repeat(65));
+  if (!sospechas.length) {
+    console.log("✓ Sin duplicados detectados con servicios-locales.json");
+    return;
+  }
+
+  sospechas.sort((a, b) => b.confianza - a.confianza);
+  const seguros = sospechas.filter((d) => d.confianza >= 3).length;
+
+  console.log(`⚠ ${sospechas.length} posible(s) duplicado(s) con servicios-locales.json${seguros ? ` (${seguros} por teléfono idéntico)` : ""}:`);
+  for (const d of sospechas) {
+    console.log(`  • ${d.comercioNombre} (${d.comercioId})`);
+    console.log(`      ↔ ${d.servicioNombre} (${d.servicioId})`);
+    console.log(`      ${d.motivo} · ${d.comercioDireccion}`);
+  }
+  writeFileSync(DUPES_REPORT_PATH, JSON.stringify(sospechas, null, 2) + "\n", "utf-8");
+  console.log("\n  Reporte en duplicados-detectados.json (no borra nada; revísalo a mano).");
 }
 
 main().catch((err) => {

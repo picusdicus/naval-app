@@ -56,26 +56,26 @@ const SUBTIPO_BASE = {
   electronics: { nombre: 'Electrónica y móviles', icono: 'devices' },
   toys: { nombre: 'Jugueterías', icono: 'toys' },
   sports: { nombre: 'Deportes', icono: 'sports_soccer' },
-  gift: { nombre: 'Regalos', icono: 'redeem' },
+  gift: { nombre: 'Regalos', icono: 'card_giftcard' },
   pet: { nombre: 'Mascotas', icono: 'pets' },
 
   // Servicios
   car_repair: { nombre: 'Talleres', icono: 'car_repair' },
-  car_wash: { nombre: 'Lavaderos', icono: 'local_car_wash' },
+  car_wash: { nombre: 'Lavado de coches', icono: 'local_car_wash' },
   car: { nombre: 'Concesionarios', icono: 'directions_car' },
   fuel: { nombre: 'Gasolineras', icono: 'local_gas_station' },
-  courier: { nombre: 'Paquetería', icono: 'local_shipping' },
+  courier: { nombre: 'Transportes y mensajería', icono: 'local_shipping' },
   laundry: { nombre: 'Lavanderías', icono: 'local_laundry_service' },
   dry_cleaning: { nombre: 'Tintorerías', icono: 'local_laundry_service' },
   bank: { nombre: 'Bancos', icono: 'account_balance' },
   atm: { nombre: 'Cajeros', icono: 'local_atm' },
   post_office: { nombre: 'Correos', icono: 'local_post_office' },
-  travel_agency: { nombre: 'Agencias de viajes', icono: 'flight' },
+  travel_agency: { nombre: 'Agencias de viajes', icono: 'travel_explore' },
   hotel: { nombre: 'Alojamiento', icono: 'hotel' },
   parking: { nombre: 'Aparcamientos', icono: 'local_parking' },
-  storage: { nombre: 'Trasteros', icono: 'warehouse' },
-  locksmith: { nombre: 'Cerrajerías', icono: 'key' },
-  tailor: { nombre: 'Arreglos de ropa', icono: 'checkroom' },
+  storage: { nombre: 'Trasteros', icono: 'inventory_2' },
+  locksmith: { nombre: 'Cerrajerías', icono: 'lock' },
+  tailor: { nombre: 'Sastrerías y arreglos', icono: 'styler' },
   pet_care: { nombre: 'Cuidado de mascotas', icono: 'pets' },
   library: { nombre: 'Bibliotecas', icono: 'local_library' },
   funeral: { nombre: 'Funerarias', icono: 'local_florist' },
@@ -87,7 +87,7 @@ const SUBTIPO_BASE = {
   consultant: { nombre: 'Asesorías y gestorías', icono: 'work' },
   accountant: { nombre: 'Contabilidad', icono: 'calculate' },
   insurance: { nombre: 'Seguros', icono: 'shield' },
-  notary: { nombre: 'Notarías', icono: 'history_edu' },
+  notary: { nombre: 'Notarías', icono: 'gavel' },
   architect: { nombre: 'Arquitectos', icono: 'architecture' },
   plumber: { nombre: 'Fontaneros', icono: 'plumbing' },
   fontaneria: { nombre: 'Fontaneros', icono: 'plumbing' },
@@ -99,8 +99,8 @@ const SUBTIPO_BASE = {
   cerrajeria: { nombre: 'Cerrajerías', icono: 'key' },
   pintura: { nombre: 'Pintores', icono: 'format_paint' },
   photographer: { nombre: 'Fotógrafos', icono: 'photo_camera' },
-  printing: { nombre: 'Imprentas y copisterías', icono: 'print' },
-  marketing: { nombre: 'Publicidad', icono: 'campaign' },
+  printing: { nombre: 'Imprenta y artes gráficas', icono: 'print' },
+  marketing: { nombre: 'Marketing y publicidad', icono: 'campaign' },
   moving: { nombre: 'Mudanzas', icono: 'local_shipping' },
   computer: { nombre: 'Informática', icono: 'computer' },
   employment: { nombre: 'Agencias de empleo', icono: 'badge' },
@@ -125,7 +125,7 @@ const SUBTIPO_BASE = {
   nightclub: { nombre: 'Ocio nocturno', icono: 'nightlife' },
   park: { nombre: 'Parques', icono: 'park' },
   playground: { nombre: 'Parques infantiles', icono: 'attractions' },
-  attraction: { nombre: 'Lugares de interés', icono: 'photo_camera' },
+  attraction: { nombre: 'Magia', icono: 'photo_camera' },
   casino: { nombre: 'Salones de juego', icono: 'casino' },
 
   // Educación
@@ -141,6 +141,28 @@ const SUBTIPO_BASE = {
 
   // Genérico
   shop: { nombre: 'Otras tiendas', icono: 'storefront' },
+
+  // Alimentación
+  comida_preparada: { nombre: 'Comida preparada', icono: 'takeout_dining' },
+  seafood: { nombre: 'Pescaderías', icono: 'set_meal' },
+
+  // Salud
+  nursing_home: { nombre: 'Residencias de mayores', icono: 'elderly' },
+
+  // Servicios
+  tobacco: { nombre: 'Estancos', icono: 'smoking_rooms' },
+  lottery: { nombre: 'Loterías y apuestas', icono: 'casino' },
+
+  // Belleza
+  pet_grooming: { nombre: 'Peluquerías caninas', icono: 'pets' },
+
+  // Ocio y cultura
+  bookshop: { nombre: 'Librerías', icono: 'menu_book' },
+  stationery: { nombre: 'Papelerías', icono: 'edit_note' },
+
+  // Deporte
+  pilates: { nombre: 'Pilates', icono: 'self_improvement' },
+  cycling: { nombre: 'Ciclismo', icono: 'directions_bike' },
 }
 
 // Los base + los creados desde el panel superadmin (subtipos-extra.js).

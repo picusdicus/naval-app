@@ -36,6 +36,9 @@ reference/
 .env*
 !.env.example
 
+# Reporte de duplicados (subproducto de npm run fetch:comercios)
+duplicados-detectados.json
+
 # Playwright
 test-results/
 playwright-report/
