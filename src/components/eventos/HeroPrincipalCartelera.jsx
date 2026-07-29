@@ -101,7 +101,10 @@ export default function HeroPrincipalCartelera({
   const urlEntradas = eventoActual.entradas?.url
 
   return (
-    <div className="relative mb-8 overflow-hidden animate-rise md:rounded-2xl">
+    // En móvil rompe a sangre: -mx-5 cancela el px-5 lateral del <main> de
+    // Layout (sin radio en los bordes). En md+ vuelve a ser tarjeta con margen
+    // normal y esquinas redondeadas.
+    <div className="relative -mx-5 mb-8 overflow-hidden animate-rise md:mx-0 md:rounded-2xl">
       {/* Fondo: cartel real desenfocado o degradado de categoría */}
       <div
         className="absolute inset-0"
@@ -121,7 +124,7 @@ export default function HeroPrincipalCartelera({
       <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
 
       {/* Contenido */}
-      <div className="relative flex flex-col gap-6 px-4 py-8 md:flex-row md:gap-8 md:px-8 md:py-12">
+      <div className="relative flex flex-col gap-6 px-6 py-8 md:flex-row md:gap-8 md:px-8 md:py-12">
         {/* Cartel nítido (2:3) */}
         <div className="w-32 flex-shrink-0 sm:w-40 md:w-48 lg:w-56">
           {posterUrl ? (
@@ -207,10 +210,11 @@ export default function HeroPrincipalCartelera({
         </div>
       </div>
 
-      {/* Puntos del carrusel */}
+      {/* Puntos del carrusel. Cada botón mide 44 px de alto (área de toque)
+          aunque el punto visible sea pequeño. */}
       {eventosCarrusel.length > 1 && (
         <div
-          className="relative flex justify-center gap-2 pb-6"
+          className="relative flex justify-center pb-3"
           onMouseEnter={() => setPausado(true)}
           onMouseLeave={() => setPausado(false)}
         >
@@ -219,12 +223,16 @@ export default function HeroPrincipalCartelera({
               key={i}
               type="button"
               onClick={() => setIndiceActual(i)}
-              className={`h-2 rounded-full transition-all ${
-                i === indiceActual ? 'w-6 bg-papel' : 'w-2 bg-papel/40 hover:bg-papel/60'
-              }`}
+              className="flex h-11 items-center justify-center px-1.5"
               aria-label={`Destacado ${i + 1} de ${eventosCarrusel.length}`}
               aria-current={i === indiceActual}
-            />
+            >
+              <span
+                className={`h-2 rounded-full transition-all ${
+                  i === indiceActual ? 'w-6 bg-papel' : 'w-2 bg-papel/40'
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}

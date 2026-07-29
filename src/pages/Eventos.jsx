@@ -125,16 +125,18 @@ export default function Eventos() {
   return (
     <div className="flex flex-col">
       {/* Masthead */}
-      <header className="flex items-start justify-between gap-4 mb-6">
+      <header className="mb-6 flex items-start justify-between gap-4">
         <div className="gz-filete-doble flex-1 pb-3">
           <div className="gz-label text-mudo">Qué hacer en</div>
           <h1 className="font-serif-dm text-seccion leading-none text-tinta">La cartelera</h1>
         </div>
-        {/* Push notification opt-in */}
+        {/* Opt-in de push: en móvil solo icono (no compite con el título),
+            texto a partir de sm. Área de toque ≥44 px. */}
         <button
           type="button"
           onClick={() => setAvisosAbierto(true)}
-          className={`flex flex-shrink-0 items-center gap-2 px-3 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta transition-colors ${
+          aria-label={avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
+          className={`flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 px-3 font-mono-ibm text-[11px] uppercase tracking-etiqueta transition-colors ${
             avisosActivos ? 'border border-tinta text-tinta' : 'bg-tinta text-papel hover:opacity-90'
           }`}
         >
@@ -143,7 +145,9 @@ export default function Eventos() {
             className="text-[16px]"
             fill={avisosActivos}
           />
-          {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
+          <span className="hidden sm:inline">
+            {avisosActivos ? 'Avisos activados' : 'Recibir avisos'}
+          </span>
         </button>
       </header>
 
