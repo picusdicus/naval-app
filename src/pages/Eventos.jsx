@@ -1,151 +1,136 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
-import {
-  LISTA_CATEGORIAS_EVENTO,
-  LISTA_SUBCATEGORIAS_CULTURA,
-  proximosEventos,
-  eventosPasados,
-} from '../lib/eventos.js'
-import EventoFila from '../components/eventos/EventoFila.jsx'
-import EventoFilaNueva from '../components/eventos/EventoFilaNueva.jsx'
-import CalendarioEventos from '../components/eventos/CalendarioEventos.jsx'
+import { proximosEventos, agruparEventosPorDia } from '../lib/eventos.js'
+import HeroPrincipalCartelera from '../components/eventos/HeroPrincipalCartelera.jsx'
+import TiraDeHoras from '../components/eventos/TiraDeHoras.jsx'
+import FiltrosEventos from '../components/eventos/FiltrosEventos.jsx'
+import MuroCartelera from '../components/eventos/MuroCartelera.jsx'
+import AbrirCalendario from '../components/eventos/AbrirCalendario.jsx'
+import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
 import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
-import { useDestacados } from '../lib/useDestacados.js'
-import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
-import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
-import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
 import { prefsLocales } from '../lib/push.js'
-import { eventoATarjeta } from '../lib/destacados.js'
-
-// Agrupa eventos (ya ordenados asc. por fecha+hora) por día natural, en orden.
-function agruparPorDia(eventos) {
-  const grupos = []
-  const indice = new Map()
-  for (const e of eventos) {
-    if (!indice.has(e.fecha)) {
-      const g = { fecha: e.fecha, eventos: [] }
-      indice.set(e.fecha, g)
-      grupos.push(g)
-    }
-    indice.get(e.fecha).eventos.push(e)
-  }
-  return grupos
-}
-
-const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1)
-
-function diaNumero(fecha) {
-  return new Date(`${fecha}T00:00:00`).getDate()
-}
-
-// Cuántos eventos ya celebrados se muestran de entrada, y de cuántos en cuántos
-// se amplía la lista al pulsar "Ver más".
-const PASADOS_INICIALES = 12
-const PASADOS_INCREMENTO = 24
-
-// Rótulo que separa los meses dentro de la agenda. Las filas solo muestran el
-// número de día, así que sin esto el salto del 31 al 1 parece un desorden.
-function SeparadorMes({ fecha }) {
-  const d = new Date(`${fecha}T00:00:00`)
-  const etiqueta = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(d)
-  return (
-    <div className="flex items-center gap-4 pt-2">
-      <h3 className="font-mono-ibm text-[11px] uppercase tracking-etiqueta text-terracota">
-        {cap(etiqueta)}
-      </h3>
-      <div className="h-px flex-1 bg-filete" />
-    </div>
-  )
-}
-
-// "Lunes · Julio" para la cabecera de cada grupo de día.
-function diaEtiqueta(fecha) {
-  const d = new Date(`${fecha}T00:00:00`)
-  const dia = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(d)
-  const mes = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(d)
-  return `${cap(dia)} · ${cap(mes)}`
-}
+import { hoyISO } from '../lib/fechas.js'
 
 export default function Eventos() {
-  const [categoria, setCategoria] = useState(null)
-  // Sub-filtro dentro de Cultura (teatro, cine, música…). Se resetea al
-  // cambiar de categoría: un sub-filtro solo tiene sentido bajo su paraguas.
-  const [subcategoria, setSubcategoria] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+
+  // Estado desde URL params
+  const categoriasParam = searchParams.get('categorias')
+  const diaParam = searchParams.get('dia')
+
+  const categoriasActivas = useMemo(
+    () => (categoriasParam ? categoriasParam.split(',') : []),
+    [categoriasParam]
+  )
+
   const [avisosAbierto, setAvisosAbierto] = useState(false)
-  const [mesSeleccionado, setMesSeleccionado] = useState(() => new Date())
-  // Solo para pintar el botón ("Recibir avisos" vs "Avisos activados"): la
-  // copia local de las preferencias, no el estado real del servidor. La bandeja
-  // de avisos vive en la cabecera global (CentroAvisos), no aquí.
+  const [mostrarCalendario, setMostrarCalendario] = useState(false)
   const [avisosActivos, setAvisosActivos] = useState(() => Boolean(prefsLocales()))
-  // La agenda arrastra el histórico completo (la del Ayuntamiento se vuelca por
-  // trimestres), así que "Eventos anteriores" se corta y se amplía a petición.
-  const [pasadosVisibles, setPasadosVisibles] = useState(PASADOS_INICIALES)
 
-  // Estáticos del JSON + los que las organizaciones han publicado desde /admin.
-  const { eventos: todos } = useEventosPublicos()
+  // Data
+  const { eventos: todosEventos } = useEventosPublicos()
+  const futuros = useMemo(() => proximosEventos(todosEventos), [todosEventos])
+  const eventosAgrupados = useMemo(() => agruparEventosPorDia(futuros), [futuros])
 
-  // Solo se ofrecen como filtro las categorías presentes (en próximos o pasados).
-  const categoriasDisponibles = useMemo(() => {
-    const presentes = new Set(todos.map((e) => e.categoria))
-    return LISTA_CATEGORIAS_EVENTO.filter((c) => presentes.has(c.id))
-  }, [todos])
-
-  // Sub-chips de Cultura: solo las subcategorías con algún evento etiquetado.
-  // Los eventos de cultura sin subcategoría siguen visibles bajo "Todo cultura".
-  const subcategoriasDisponibles = useMemo(() => {
-    const presentes = new Set(
-      todos.filter((e) => e.categoria === 'cultura').map((e) => e.subcategoria)
+  // Día por defecto: el primero con algún evento que cumpla el filtro activo
+  // (hoy suele no tener nada, y con un filtro puede no tenerlo el primer día
+  // sin filtrar). El param de la URL manda si existe.
+  const primerDiaConMatch = useMemo(() => {
+    const grupo = eventosAgrupados.find(({ eventos }) =>
+      categoriasActivas.length === 0
+        ? eventos.length > 0
+        : eventos.some((e) => categoriasActivas.includes(e.categoria))
     )
-    return LISTA_SUBCATEGORIAS_CULTURA.filter((s) => presentes.has(s.id))
-  }, [todos])
+    return grupo?.dia
+  }, [eventosAgrupados, categoriasActivas])
 
-  const porCategoria = (lista) => {
-    let filtrada = categoria ? lista.filter((e) => e.categoria === categoria) : lista
-    if (categoria === 'cultura' && subcategoria) {
-      filtrada = filtrada.filter((e) => e.subcategoria === subcategoria)
-    }
-    return filtrada
+  const diaSeleccionado = diaParam || primerDiaConMatch || hoyISO()
+
+  // Destacados contratados (crudos de /api/destacados). El hero y el muro
+  // resuelven las referencias contra los eventos ya cargados.
+  const [datosDestacados, setDatosDestacados] = useState([])
+
+  useEffect(() => {
+    fetch('/api/destacados')
+      .then((r) => (r.ok ? r.json() : { destacados: [] }))
+      .then((datos) => setDatosDestacados(datos.destacados ?? []))
+      .catch(() => setDatosDestacados([]))
+  }, [])
+
+  // Índice de eventos por id público para resolver referencias de destacados.
+  const eventosPorRefId = useMemo(() => {
+    const mapa = new Map()
+    todosEventos.forEach((e) => {
+      mapa.set(e.id, e)
+      if (e.idsSecundarios) e.idsSecundarios.forEach((s) => mapa.set(s, e))
+      if (e.id.startsWith('bd-')) mapa.set(e.id.slice(3), e)
+    })
+    return mapa
+  }, [todosEventos])
+
+  // Ids de eventos actualmente destacados (para marcar la tarjeta panorámica).
+  const idsDestacados = useMemo(() => {
+    const set = new Set()
+    datosDestacados.forEach((d) => {
+      const evento = eventosPorRefId.get(d.referenciaId)
+      if (evento) set.add(evento.id)
+    })
+    return set
+  }, [datosDestacados, eventosPorRefId])
+
+  // Sync URL params when filters change
+  const handleCategoriasChange = (cat) => {
+    const nuevas = categoriasActivas.includes(cat)
+      ? categoriasActivas.filter((c) => c !== cat)
+      : [...categoriasActivas, cat]
+
+    const params = new URLSearchParams()
+    if (diaParam) params.append('dia', diaParam)
+    if (nuevas.length > 0) params.append('categorias', nuevas.join(','))
+    setSearchParams(params)
   }
 
-  const futuros = useMemo(
-    () => porCategoria(proximosEventos(todos)),
-    [todos, categoria, subcategoria]
-  )
-  const pasados = useMemo(
-    () => porCategoria(eventosPasados(todos)),
-    [todos, categoria, subcategoria]
-  )
-  // Al cambiar de filtro se vuelve al corte inicial: si no, un filtro nuevo
-  // heredaría la lista ya expandida del anterior. El sub-filtro de cultura
-  // tampoco sobrevive a un cambio de categoría.
-  useEffect(() => {
-    setPasadosVisibles(PASADOS_INICIALES)
-    setSubcategoria(null)
-  }, [categoria])
-  useEffect(() => setPasadosVisibles(PASADOS_INICIALES), [subcategoria])
-  const grupos = useMemo(() => agruparPorDia(futuros), [futuros])
+  const handleLimpiarFiltros = () => {
+    const params = new URLSearchParams()
+    if (diaParam) params.append('dia', diaParam)
+    setSearchParams(params)
+  }
 
-  // Eventos destacados contratados. El carrusel aparece encima de la agenda solo
-  // en la vista sin filtrar; con un filtro activo se oculta. Si hay destacados
-  // vigentes, se muestran; si no, se muestran los próximos eventos.
-  const { items: destacadosEvento } = useDestacados({ eventos: todos, tipo: 'evento' })
-  const eventosCarrusel = useMemo(() => {
-    if (categoria !== null || futuros.length === 0) return []
-    if (destacadosEvento.length > 0) return destacadosEvento
-    return futuros.slice(0, 3).map((e) => eventoATarjeta(e))
-  }, [categoria, futuros, destacadosEvento])
-  const conCarrusel = eventosCarrusel.length > 0
+  const handleDiaSeleccionado = (dia) => {
+    const params = new URLSearchParams()
+    params.append('dia', dia)
+    if (categoriasActivas.length > 0) params.append('categorias', categoriasActivas.join(','))
+    setSearchParams(params)
+
+    // Ancla de scroll a la banda de ese día en el muro.
+    setTimeout(() => {
+      const banda = document.getElementById(`dia-${dia}`)
+      if (banda) banda.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+  }
+
+  const handleVerDiaCompleto = (dia) => {
+    const params = new URLSearchParams()
+    if (categoriasActivas.length > 0) params.append('categorias', categoriasActivas.join(','))
+    navigate(`/eventos/${dia}?${params.toString()}`)
+  }
+
+  const handleClickEvento = (evento) => {
+    navigate(`/eventos/${evento.id}`)
+  }
 
   return (
     <div className="flex flex-col">
-      {/* Masthead - FULL WIDTH */}
+      {/* Masthead */}
       <header className="flex items-start justify-between gap-4 mb-6">
         <div className="gz-filete-doble flex-1 pb-3">
           <div className="gz-label text-mudo">Qué hacer en</div>
           <h1 className="font-serif-dm text-seccion leading-none text-tinta">La cartelera</h1>
         </div>
-        {/* Opt-in de push */}
+        {/* Push notification opt-in */}
         <button
           type="button"
           onClick={() => setAvisosAbierto(true)}
@@ -170,185 +155,74 @@ export default function Eventos() {
         }}
       />
 
-      {/* Destacados (contratados) - FULL WIDTH.
-          Móvil: carrusel nativo con scroll-snap; escritorio: hero editorial
-          con tarjetas grandes, cabecera y flechas (igual que Comercios). */}
-      {conCarrusel && (
-        <section className="mb-6 animate-rise">
-          {/* Móvil */}
-          <div className="md:hidden">
-            <div className="mb-3 flex items-baseline justify-between">
-              <span className="gz-eyebrow">
-                {destacadosEvento.length > 0 ? 'Destacados de la semana' : 'Próximos eventos'}
-              </span>
-              <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
-                {String(Math.min(eventosCarrusel.length, 3)).padStart(2, '0')} /{' '}
-                {String(eventosCarrusel.length).padStart(2, '0')}
-              </span>
-            </div>
-            <CarruselDestacados items={eventosCarrusel} columnas={3} seccion="eventos" />
-          </div>
+      {/* Hero: carrusel global de destacados, con relleno de próximos eventos */}
+      <HeroPrincipalCartelera
+        proximos={futuros}
+        destacados={datosDestacados}
+        categoriasActivas={categoriasActivas}
+        onVerEvento={handleClickEvento}
+      />
 
-          {/* Escritorio */}
-          <div className="hidden md:block">
-            <HeroDestacadosDesktop
-              items={eventosCarrusel}
-              eyebrow={destacadosEvento.length > 0 ? 'Destacados de la semana' : 'Próximos eventos'}
-              titulo={destacadosEvento.length > 0 ? 'Lo que no te puedes perder' : 'A qué ir próximamente'}
-              seccion="eventos"
-            />
-          </div>
-        </section>
-      )}
+      {/* Day strip selector */}
+      <TiraDeHoras
+        eventosAgrupados={eventosAgrupados}
+        diaSeleccionado={diaSeleccionado}
+        categoriasActivas={categoriasActivas}
+        onDiaSeleccionado={handleDiaSeleccionado}
+        onAbrirCalendario={() => setMostrarCalendario(true)}
+      />
 
-      {/* Cuerpo: agenda (izquierda) + calendario (lateral sticky) */}
-      <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Columna izquierda: filtros + lista de eventos */}
-        <div className="flex flex-1 flex-col min-w-0">
-        {/* Selector de categorías - DEBAJO de destacados */}
-        {categoriasDisponibles.length > 0 && (
-          <div className="hide-scrollbar mb-6 flex flex-wrap gap-2 py-1 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta">
-            <button
-              type="button"
-              onClick={() => setCategoria(null)}
-              className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-                categoria === null ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
-              }`}
-            >
-              Todos
-            </button>
-            {categoriasDisponibles.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setCategoria(cat.id)}
-                className={`flex-none whitespace-nowrap px-3 py-2 transition-colors ${
-                  categoria === cat.id ? 'bg-tinta text-papel' : 'border border-tinta text-tinta hover:bg-papel-calido'
-                }`}
-              >
-                {cat.nombre}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Category filters (contadores sobre toda la cartelera) */}
+      <FiltrosEventos
+        eventos={futuros}
+        categoriasActivas={categoriasActivas}
+        onCategoriaToggle={handleCategoriasChange}
+        onLimpiar={handleLimpiarFiltros}
+      />
 
-        {/* Sub-filtros de Cultura (teatro, cine, música…): solo con el filtro
-            Cultura activo y si hay eventos etiquetados con subcategoría. */}
-        {categoria === 'cultura' && subcategoriasDisponibles.length > 0 && (
-          <div className="hide-scrollbar -mt-3 mb-6 flex flex-wrap gap-2 py-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta">
-            <button
-              type="button"
-              onClick={() => setSubcategoria(null)}
-              className={`flex-none whitespace-nowrap px-2.5 py-1.5 transition-colors ${
-                subcategoria === null
-                  ? 'bg-terracota text-papel'
-                  : 'border border-terracota text-terracota hover:bg-terracota-fondo'
-              }`}
-            >
-              Todo cultura
-            </button>
-            {subcategoriasDisponibles.map((sub) => (
-              <button
-                key={sub.id}
-                type="button"
-                onClick={() => setSubcategoria(sub.id)}
-                className={`flex-none whitespace-nowrap px-2.5 py-1.5 transition-colors ${
-                  subcategoria === sub.id
-                    ? 'bg-terracota text-papel'
-                    : 'border border-terracota text-terracota hover:bg-terracota-fondo'
-                }`}
-              >
-                {sub.nombre}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Main grid / muro */}
+      <div>
+        <MuroCartelera
+          eventosAgrupados={eventosAgrupados}
+          categoriasActivas={categoriasActivas}
+          idsDestacados={idsDestacados}
+          onClickEvento={handleClickEvento}
+          onVerDiaCompleto={handleVerDiaCompleto}
+        />
+      </div>
 
-        {/* ----------------------------- Agenda por día ----------------------------- */}
-        <div className="mb-6 h-px bg-tinta" />
+      {/* Calendario en modal (bajo demanda desde la tira de días) */}
+      <AbrirCalendario
+        abierto={mostrarCalendario}
+        eventosAgrupados={eventosAgrupados}
+        categoriasActivas={categoriasActivas}
+        diaSeleccionado={diaSeleccionado}
+        onSeleccionar={(dia) => {
+          setMostrarCalendario(false)
+          handleDiaSeleccionado(dia)
+        }}
+        onCerrar={() => setMostrarCalendario(false)}
+      />
 
-        {futuros.length === 0 && (
-          <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-pardo">
-            No hay eventos próximos por ahora. Consulta más abajo el histórico de actividades.
-          </p>
-        )}
-
-        {/* Lista de próximos eventos, con un rótulo cada vez que cambia el mes */}
-        <div className="space-y-4">
-          {futuros.map((e, i) => {
-            const mes = e.fecha.slice(0, 7)
-            const cambiaMes = i === 0 || futuros[i - 1].fecha.slice(0, 7) !== mes
-            return (
-              <Fragment key={e.id}>
-                {cambiaMes && <SeparadorMes fecha={e.fecha} />}
-                <EventoFilaNueva evento={e} />
-              </Fragment>
-            )
-          })}
-        </div>
-
-        {/* Anteriores */}
-        {pasados.length > 0 && (
-          <section className="mt-10">
-            <div className="flex items-center gap-4 mb-5">
-              <div className="h-px flex-1 bg-filete" />
-              <h2 className="flex items-center gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-mudo">
-                <MIcon name="history" className="text-[16px]" />
-                Eventos anteriores
-              </h2>
-              <div className="h-px flex-1 bg-filete" />
-            </div>
-            <div className="flex flex-col gap-3.5">
-              {pasados.slice(0, pasadosVisibles).map((e) => (
-                <EventoFila key={e.id} evento={e} pasado />
-              ))}
-            </div>
-            {pasados.length > pasadosVisibles && (
-              <div className="mt-5 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setPasadosVisibles((n) => n + PASADOS_INCREMENTO)}
-                  className="border border-tinta px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta transition-colors hover:bg-tinta hover:text-papel"
-                >
-                  Ver más ({pasados.length - pasadosVisibles})
-                </button>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* CTA */}
-        <section className="mt-10 flex flex-col items-center border border-tinta bg-papel-calido p-8 text-center">
-          <MIcon name="campaign" className="mb-2 text-[40px] text-terracota" />
-          <h3 className="font-serif-dm text-xl text-tinta">¿Organizas un evento?</h3>
-          <p className="mb-6 mt-2 max-w-md font-serif-spectral text-sm text-tinta-apagada">
-            Si tu asociación o negocio organiza una actividad en Navalcarnero, cuéntanoslo y la
-            publicaremos en la agenda vecinal.
-          </p>
-          <a
-            href="mailto:directorio@navalcarnero.example?subject=Propuesta%20de%20evento"
-            className="gz-boton-tinta"
-          >
-            Proponer un evento
-          </a>
-        </section>
-
-        <p className="mt-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
-          Imágenes ilustrativas vía Wikimedia Commons: {CREDITOS_FOTOS.join(' · ')}
+      {/* CTA */}
+      <section className="mt-10 mb-6 flex flex-col items-center border border-tinta bg-papel-calido p-8 text-center">
+        <MIcon name="campaign" className="mb-2 text-[40px] text-terracota" />
+        <h3 className="font-serif-dm text-xl text-tinta">¿Organizas un evento?</h3>
+        <p className="mb-6 mt-2 max-w-md font-serif-spectral text-sm text-tinta-apagada">
+          Si tu asociación o negocio organiza una actividad en Navalcarnero, cuéntanoslo y la
+          publicaremos en la agenda vecinal.
         </p>
-      </div>
+        <a
+          href="mailto:directorio@navalcarnero.example?subject=Propuesta%20de%20evento"
+          className="gz-boton-tinta"
+        >
+          Proponer un evento
+        </a>
+      </section>
 
-        {/* Columna derecha (lateral): Calendario sticky - solo en desktop */}
-        <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
-          <div className="lg:sticky lg:top-28">
-            <CalendarioEventos
-              eventos={futuros}
-              mesSeleccionado={mesSeleccionado}
-              onMesChange={setMesSeleccionado}
-            />
-          </div>
-        </div>
-      </div>
+      <p className="mb-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
+        Imágenes ilustrativas vía Wikimedia Commons: {CREDITOS_FOTOS.join(' · ')}
+      </p>
     </div>
   )
 }

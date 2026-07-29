@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Outlet, Routes, Route, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, Routes, Route, useLocation, useParams } from 'react-router-dom'
 import ScrollManager from './components/ScrollManager.jsx'
 import Layout from './components/layout/Layout.jsx'
 import AccessScreen from './components/AccessScreen.jsx'
@@ -10,6 +10,7 @@ import { AdminAuthProvider } from './lib/adminAuth.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Eventos from './pages/Eventos.jsx'
 import EventoDetalle from './pages/EventoDetalle.jsx'
+import ProgramaDelDia from './pages/ProgramaDelDia.jsx'
 import Mapa from './pages/Mapa.jsx'
 import Noticias from './pages/Noticias.jsx'
 import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
@@ -33,6 +34,17 @@ import CookieBanner from './components/CookieBanner.jsx'
 function RedirigirConQuery({ a }) {
   const { search } = useLocation()
   return <Navigate to={`${a}${search}`} replace />
+}
+
+// /eventos/:id sirve dos vistas según el formato del segmento: una fecha
+// 'YYYY-MM-DD' abre el programa del día (la cartelera de ese día); cualquier
+// otro id abre la ficha del evento. Un solo route evita la colisión de
+// especificidad entre dos rutas '/eventos/:param' (React Router no las
+// distingue por sí solo) y mantiene la URL limpia del prototipo.
+function EventoODiaCompleto() {
+  const { id } = useParams()
+  const esFecha = /^\d{4}-\d{2}-\d{2}$/.test(id)
+  return esFecha ? <ProgramaDelDia /> : <EventoDetalle />
 }
 
 export default function App() {
@@ -104,7 +116,8 @@ export default function App() {
           <Route element={<Layout onLogout={handleLogout} />}>
             <Route path="/" element={<Inicio />} />
             <Route path="/eventos" element={<Eventos />} />
-            <Route path="/eventos/:id" element={<EventoDetalle />} />
+            {/* Un solo route: fecha 'YYYY-MM-DD' → programa del día; id → ficha. */}
+            <Route path="/eventos/:id" element={<EventoODiaCompleto />} />
             <Route path="/comercios" element={<Mapa />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NoticiaDetalle />} />

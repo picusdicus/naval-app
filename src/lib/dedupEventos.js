@@ -26,21 +26,60 @@ export function claveTitulo(titulo) {
 // contenido en media cartelera de verano); la igualdad exacta vale siempre.
 const MIN_CONTENCION = 12
 
-/** Iguales tras normalizar, o uno contenido en el otro si es lo bastante
- * largo — cubre "Cine de verano: Minecraft" vs "Cine de verano: Una película
- * de Minecraft" sin fusionar títulos genéricos. */
+// Palabras vacías (artículos/preposiciones/conjunciones) que no distinguen un
+// evento de otro. Se ignoran al comparar títulos para que un curado y su post
+// de Instagram no queden como dos por una palabra de relleno: "Cine de verano:
+// UNA película de Minecraft" vs "Cine de verano: película de Minecraft".
+const VACIAS = new Set([
+  'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas',
+  'y', 'e', 'o', 'u', 'en', 'a', 'al', 'con', 'para', 'por',
+])
+
+/** Tokens significativos de una clave ya normalizada (sin palabras vacías). */
+function significativas(clave) {
+  return clave.split(' ').filter((t) => t && !VACIAS.has(t))
+}
+
+/** Iguales tras normalizar (ignorando palabras vacías), o uno contenido en el
+ * otro si es lo bastante largo — cubre "Cine de verano: Una película de
+ * Minecraft" vs "Cine de verano: película de Minecraft" sin fusionar títulos
+ * genéricos. */
 export function titulosEquivalentes(a, b) {
   if (!a || !b) return false
   if (a === b) return true
+  // Misma secuencia de palabras significativas (ignora artículos/preposiciones).
+  const sa = significativas(a).join(' ')
+  const sb = significativas(b).join(' ')
+  if (sa && sa === sb) return true
   const corto = a.length <= b.length ? a : b
   const largo = a.length <= b.length ? b : a
   return corto.length >= MIN_CONTENCION && largo.includes(corto)
 }
 
+// Rellena en `base` los campos que tenga vacíos con los de `otro` y acumula el
+// id de `otro` en idsSecundarios (para que deep links y destacados que apunten
+// al duplicado sigan resolviendo). `base` no se pisa: gana la versión curada o
+// el primer duplicado encontrado. Devuelve un objeto nuevo (no muta).
+function fusionar(base, otro) {
+  return {
+    ...base,
+    imagen: base.imagen || otro.imagen,
+    descripcion: base.descripcion || otro.descripcion,
+    hora: base.hora || otro.hora,
+    lugar: base.lugar || otro.lugar,
+    url: base.url || otro.url,
+    entradas: base.entradas || otro.entradas,
+    subcategoria: base.subcategoria || otro.subcategoria,
+    idsSecundarios: [...(base.idsSecundarios || []), otro.id],
+  }
+}
+
 /**
  * Mezcla los eventos estáticos con los de la base de datos eliminando
  * duplicados (misma fecha + títulos equivalentes). Devuelve una lista nueva:
- * estáticos (enriquecidos si tenían duplicado) + los de la base sin pareja.
+ * estáticos (enriquecidos si tenían duplicado) + los de la base sin pareja,
+ * a su vez deduplicados ENTRE SÍ (un mismo acto anunciado en dos posts de
+ * Instagram crea dos filas con el mismo título → una sola tarjeta).
  */
 export function combinarEventos(estaticos, deLaBase) {
   if (!deLaBase.length) return estaticos
@@ -56,24 +95,24 @@ export function combinarEventos(estaticos, deLaBase) {
   const sinPareja = []
   for (const evento of deLaBase) {
     const clave = claveTitulo(evento.titulo)
+    // 1) ¿Empareja con un estático? Enriquece ese y sigue.
     const pareja = (porFecha.get(evento.fecha) || []).find((c) =>
       titulosEquivalentes(c.clave, clave)
     )
-    if (!pareja) {
-      sinPareja.push(evento)
+    if (pareja) {
+      resultado[pareja.indice] = fusionar(resultado[pareja.indice], evento)
       continue
     }
-    const base = resultado[pareja.indice]
-    resultado[pareja.indice] = {
-      ...base,
-      imagen: base.imagen || evento.imagen,
-      descripcion: base.descripcion || evento.descripcion,
-      hora: base.hora || evento.hora,
-      lugar: base.lugar || evento.lugar,
-      url: base.url || evento.url,
-      entradas: base.entradas || evento.entradas,
-      subcategoria: base.subcategoria || evento.subcategoria,
-      idsSecundarios: [...(base.idsSecundarios || []), evento.id],
+    // 2) Si no, ¿ya hay otro de la BD equivalente (misma fecha + título)?
+    //    Fusiónalos en vez de crear dos tarjetas.
+    const gemelo = sinPareja.find(
+      (x) => x.fecha === evento.fecha && titulosEquivalentes(claveTitulo(x.titulo), clave)
+    )
+    if (gemelo) {
+      const i = sinPareja.indexOf(gemelo)
+      sinPareja[i] = fusionar(gemelo, evento)
+    } else {
+      sinPareja.push(evento)
     }
   }
   return [...resultado, ...sinPareja]

@@ -45,6 +45,18 @@ export function formatearFechaLarga(iso) {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
+const capitalizar = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+
+// Día de la semana capitalizado: 'Martes'. Para las bandas/cabeceras del muro.
+export function diaSemanaDe(iso) {
+  return capitalizar(new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(aFecha(iso)))
+}
+
+// Mes capitalizado: 'Julio'.
+export function mesDe(iso) {
+  return capitalizar(new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(aFecha(iso)))
+}
+
 // Eventos futuros (o de hoy) ordenados por fecha ascendente.
 export function proximosEventos(eventos, limite) {
   const hoy = new Date()
@@ -64,4 +76,78 @@ export function eventosPasados(eventos, limite) {
     .filter((e) => aFecha(e.fecha) < hoy)
     .sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora || '').localeCompare(a.hora || ''))
   return typeof limite === 'number' ? pasados.slice(0, limite) : pasados
+}
+
+// Agrupa eventos por día (YYYY-MM-DD), ordenados cronológicamente.
+// Devuelve: [{ dia: 'YYYY-MM-DD', eventos: [...sorted by time] }, ...]
+export function agruparEventosPorDia(eventos) {
+  const agrupados = new Map()
+
+  // Ordenar todos los eventos por fecha y hora primero
+  const ordenados = [...eventos].sort((a, b) => {
+    const cmp = a.fecha.localeCompare(b.fecha)
+    if (cmp !== 0) return cmp
+    return (a.hora || '').localeCompare(b.hora || '')
+  })
+
+  // Agrupar por día
+  ordenados.forEach((evento) => {
+    if (!agrupados.has(evento.fecha)) {
+      agrupados.set(evento.fecha, [])
+    }
+    agrupados.get(evento.fecha).push(evento)
+  })
+
+  // Convertir a array de objetos, en orden cronológico de claves
+  return Array.from(agrupados.entries())
+    .map(([dia, eventos]) => ({ dia, eventos }))
+}
+
+// Obtiene eventos de un día específico, filtrados y ordenados por hora.
+export function eventosDelDia(eventos, dia, categoriasActivas = []) {
+  let resultado = eventos.filter((e) => e.fecha === dia)
+
+  if (categoriasActivas.length > 0) {
+    resultado = resultado.filter((e) => categoriasActivas.includes(e.categoria))
+  }
+
+  return resultado.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''))
+}
+
+// Agrupa eventos por tramo horario: Mañana (00:00-12:00), Tarde (12:00-20:00),
+// Noche (20:00-24:00), Madrugada (sin hora definida + eventos sin hora específica).
+export function agruparPorTramoHorario(eventos) {
+  const tramos = {
+    mañana: [],
+    tarde: [],
+    noche: [],
+    madrugada: [],
+  }
+
+  eventos.forEach((evento) => {
+    if (!evento.hora) {
+      tramos.madrugada.push(evento)
+      return
+    }
+
+    const [horas] = evento.hora.split(':')
+    const h = parseInt(horas, 10)
+
+    if (h < 12) {
+      tramos.mañana.push(evento)
+    } else if (h < 20) {
+      tramos.tarde.push(evento)
+    } else {
+      tramos.noche.push(evento)
+    }
+  })
+
+  // Ordenar dentro de cada tramo por hora
+  Object.keys(tramos).forEach((tramo) => {
+    if (tramo !== 'madrugada') {
+      tramos[tramo].sort((a, b) => (a.hora || '').localeCompare(b.hora || ''))
+    }
+  })
+
+  return tramos
 }
