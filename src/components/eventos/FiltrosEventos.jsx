@@ -2,10 +2,36 @@ import { useMemo } from 'react'
 import { CATEGORIAS_EVENTO, LISTA_CATEGORIAS_EVENTO } from '../../lib/eventos'
 import MIcon from '../MIcon'
 
+// Chip de filtro: el botón aporta el área de toque (≥44 px de alto) y la píldora
+// interior es la parte visible, más pequeña — así el tap es cómodo en móvil sin
+// engordar el chip.
+function ChipTipo({ activo, onClick, color, etiqueta, contador, ariaLabel }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={activo}
+      aria-label={ariaLabel}
+      className="flex min-h-[44px] flex-shrink-0 items-center"
+    >
+      <span
+        className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 font-mono-ibm text-xs font-semibold tracking-wider transition-all ${
+          activo ? 'bg-tinta text-papel' : 'border border-[#d9d0ba] bg-papel text-tinta'
+        }`}
+      >
+        {color && (
+          <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
+        )}
+        {etiqueta}
+        <span className={activo ? 'text-papel/70' : 'text-pardo'}>{contador}</span>
+      </span>
+    </button>
+  )
+}
+
 /**
- * Category filter row: chips with colored dots + counters.
- * Multiselect: clicking toggles a category on/off.
- * Counters show events in each category for the selected day + active filters.
+ * Fila de filtros por tipo: una sola fila con scroll horizontal (como la tira
+ * de días), nunca envuelve a varias líneas. Contadores sobre el conjunto pasado.
  */
 export default function FiltrosEventos({
   eventos = [],
@@ -13,7 +39,6 @@ export default function FiltrosEventos({
   onCategoriaToggle = () => {},
   onLimpiar = () => {},
 }) {
-  // Count events per category
   const contadores = useMemo(() => {
     const counts = {}
     LISTA_CATEGORIAS_EVENTO.forEach((cat) => {
@@ -22,73 +47,54 @@ export default function FiltrosEventos({
     return counts
   }, [eventos])
 
-  // Show only categories that have events
-  const categoriasDisponibles = LISTA_CATEGORIAS_EVENTO.filter(
-    (cat) => contadores[cat.id] > 0
-  )
+  const categoriasDisponibles = LISTA_CATEGORIAS_EVENTO.filter((cat) => contadores[cat.id] > 0)
 
   return (
     <div className="mb-6 w-full">
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <span className="font-mono-ibm text-xs uppercase font-semibold tracking-wider text-pardo whitespace-nowrap">
+      {/* Cabecera: etiqueta TIPO + Limpiar */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <span className="font-mono-ibm text-[11px] uppercase font-semibold tracking-etiqueta text-pardo">
           Tipo
         </span>
-
-        <div className="flex flex-wrap gap-2 flex-1">
-          {/* Chip "Todos": limpia el filtro; activo cuando no hay ninguno. */}
+        {categoriasActivas.length > 0 && (
           <button
             type="button"
             onClick={onLimpiar}
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-mono-ibm text-xs font-semibold tracking-wider transition-all ${
-              categoriasActivas.length === 0
-                ? 'bg-tinta text-papel'
-                : 'border border-[#d9d0ba] bg-papel text-tinta hover:border-tinta'
-            }`}
-            aria-pressed={categoriasActivas.length === 0}
-          >
-            Todos
-            <span className={categoriasActivas.length === 0 ? 'text-papel/70' : 'text-pardo'}>
-              {eventos.length}
-            </span>
-          </button>
-
-          {categoriasDisponibles.map((cat) => {
-            const activo = categoriasActivas.includes(cat.id)
-            return (
-              <button
-                key={cat.id}
-                onClick={() => onCategoriaToggle(cat.id)}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full font-mono-ibm text-xs font-semibold tracking-wider transition-all ${
-                  activo
-                    ? 'bg-tinta text-papel'
-                    : 'border border-[#d9d0ba] bg-papel text-tinta hover:border-tinta'
-                }`}
-                aria-pressed={activo}
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: cat.color }}
-                />
-                {cat.nombre}
-                <span className="text-pardo">{contadores[cat.id]}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {categoriasActivas.length > 0 && (
-          <button
-            onClick={onLimpiar}
-            className="flex-shrink-0 inline-flex items-center gap-1 text-terracota font-mono-ibm text-xs uppercase font-semibold tracking-wider hover:text-tinta transition"
+            className="inline-flex flex-shrink-0 items-center gap-1 font-mono-ibm text-[11px] uppercase font-semibold tracking-etiqueta text-terracota transition hover:text-tinta"
           >
             <MIcon name="close" className="text-sm" />
-            <span className="hidden sm:inline">Limpiar</span>
+            Limpiar
           </button>
         )}
       </div>
 
-      {/* Bottom border */}
-      <div className="border-b border-[#d9d0ba]" />
+      {/* Carril de chips en una sola fila con scroll horizontal + fade derecho */}
+      <div className="relative">
+        <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1 pr-8">
+          <ChipTipo
+            activo={categoriasActivas.length === 0}
+            onClick={onLimpiar}
+            etiqueta="Todos"
+            contador={eventos.length}
+            ariaLabel="Todos los tipos"
+          />
+          {categoriasDisponibles.map((cat) => (
+            <ChipTipo
+              key={cat.id}
+              activo={categoriasActivas.includes(cat.id)}
+              onClick={() => onCategoriaToggle(cat.id)}
+              color={cat.color}
+              etiqueta={cat.nombre}
+              contador={contadores[cat.id]}
+              ariaLabel={cat.nombre}
+            />
+          ))}
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-papel to-transparent" />
+      </div>
+
+      {/* Filete separador, con aire por encima y por debajo */}
+      <div className="mt-4 border-b border-[#d9d0ba]" />
     </div>
   )
 }

@@ -111,12 +111,14 @@ export default function TiraDeHoras({
         </button>
       </div>
 
-      {/* Carril de chips (scroll horizontal) */}
-      <div
-        ref={scrollRef}
-        onScroll={onScroll}
-        className="hide-scrollbar flex gap-2 overflow-x-auto pb-2 md:gap-3"
-      >
+      {/* Carril de chips (scroll horizontal) con desvanecido a la derecha para
+          indicar que hay más y no cortar el último chip a la mitad. */}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          onScroll={onScroll}
+          className="hide-scrollbar flex gap-2 overflow-x-auto pb-2 pr-8 md:gap-3"
+        >
         {diasConEventos.map(({ dia, contador }) => {
           const { abbr, dia: num } = formatearDia(dia)
           const activo = dia === diaSeleccionado
@@ -144,6 +146,8 @@ export default function TiraDeHoras({
             </button>
           )
         })}
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-papel to-transparent" />
       </div>
     </div>
   )
