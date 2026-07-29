@@ -128,7 +128,7 @@ const SUBTIPO_BASE = {
   attraction: { nombre: 'Magia', icono: 'photo_camera' },
   casino: { nombre: 'Salones de juego', icono: 'casino' },
 
-  // Educación
+  // Educación -
   school: { nombre: 'Colegios y escuelas', icono: 'school' },
   academy: { nombre: 'Academias', icono: 'auto_stories' },
   kindergarten: { nombre: 'Guarderías', icono: 'child_care' },
