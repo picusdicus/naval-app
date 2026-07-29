@@ -13,19 +13,6 @@
     "fuente": "Ayuntamiento"
   },
   {
-    "id": "aytocult-concurso-ilumina-navalcarnero-2025",
-    "titulo": "Concurso ilumina Navalcarnero 2025",
-    "fecha": "2025-12-09",
-    "hora": "",
-    "lugar": "Navalcarnero",
-    "categoria": "cultura",
-    "origen": "cultural",
-    "descripcion": "Un año más, el Ayuntamiento de Navalcarnero, a través de la Concejalía de Cultura, convoca el Concurso ILUMINA NAVALCARNERO 2025. Para participar, puedes inscribirte hasta el 9 de diciembre. Puedes consultar las Bases de Participación y descargarte el formulario de inscripción en los siguientes enlaces: BASES DE PARTICIPACIÓN CONCURSO ILUMINA NAVALCARNERO 2025 INSCRIPCIÓN",
-    "url": "https://navalcarnero.es/navalcarnero/cultura/concurso-ilumina-navalcarnero-2025/",
-    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL14.png",
-    "fuente": "Ayuntamiento"
-  },
-  {
     "id": "aytocult-cabalgata-de-reyes-2026-normas-de-seguridad",
     "titulo": "Cabalgata de Reyes 2026: Normas de seguridad",
     "fecha": "2026-01-05",
@@ -127,6 +114,19 @@
     "descripcion": "El próximo martes 16 de junio a las 19:00h, se inaugura la exposición de los trabajos realizados por las alumnas y alumnos de los Talleres de Pintura, infantil y adulto, de la Concejalía de Cultura. La exposición permanecerá en la Sala de Exposiciones de la Casa de la Cultura (Cl Libertad, 29) del 16 al 26 de junio, en horario de 18:00 a 21:00 horas de lunes a viernes y los sábados de 11:00 a 14:00h.",
     "url": "https://navalcarnero.es/navalcarnero/cultura/del-16-al-26-de-junio-exposicion-de-los-alumnos-del-taller-de-pintura-de-la-concejaia-de-cultura/",
     "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/715436335_1329845099337501_6332082838241785116_n.jpg",
+    "fuente": "Ayuntamiento"
+  },
+  {
+    "id": "aytocult-bases-de-la-xxxvii-edicion-del-certamen-de-teatro-aficionado-villa-real-de-navalcarnero",
+    "titulo": "Bases de la xxxvii edición del certamen de teatro aficionado villa real de Navalcarnero",
+    "fecha": "2026-07-23",
+    "hora": "",
+    "lugar": "Navalcarnero",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "Ya está abierto el plazo de inscripción para participar en el CERTAMEN DE TEATRO AFICIONADO VILLA REAL DE NAVALCARNERO que este año llega ya a su 37 edición. Os dejamos las Bases para todos los grupos de teatro aficionado que se animen a participar BASES CETAN 2026 OK",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/bases-de-la-xxxvii-edicion-del-certamen-de-teatro-aficionado-villa-real-de-navalcarnero/",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CETAN.jpg",
     "fuente": "Ayuntamiento"
   }
 ]
