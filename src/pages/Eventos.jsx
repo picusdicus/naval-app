@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { proximosEventos, agruparEventosPorDia } from '../lib/eventos.js'
-import HeroPrincipalCartelera from '../components/eventos/HeroPrincipalCartelera.jsx'
 import TiraDeHoras from '../components/eventos/TiraDeHoras.jsx'
 import FiltrosEventos from '../components/eventos/FiltrosEventos.jsx'
 import MuroCartelera from '../components/eventos/MuroCartelera.jsx'
 import AbrirCalendario from '../components/eventos/AbrirCalendario.jsx'
 import DialogoAvisos from '../components/eventos/DialogoAvisos.jsx'
+import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
+import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
+import { useDestacados } from '../lib/useDestacados.js'
+import { eventoATarjeta } from '../lib/destacados.js'
 import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { prefsLocales } from '../lib/push.js'
@@ -49,37 +52,32 @@ export default function Eventos() {
 
   const diaSeleccionado = diaParam || primerDiaConMatch || hoyISO()
 
-  // Destacados contratados (crudos de /api/destacados). El hero y el muro
-  // resuelven las referencias contra los eventos ya cargados.
-  const [datosDestacados, setDatosDestacados] = useState([])
+  // Destacados de eventos (mismo hook que Inicio/Comercios) ya resueltos a la
+  // forma `tarjeta`. Se rellena con los eventos más próximos hasta un mínimo,
+  // para que el carrusel tenga con qué rotar aunque no haya contratados —
+  // exactamente el patrón de la portada.
+  const { items: destacadosEvento } = useDestacados({ eventos: todosEventos, tipo: 'evento' })
+  const MIN_CARRUSEL = 6
+  const itemsCarrusel = useMemo(() => {
+    if (destacadosEvento.length >= MIN_CARRUSEL) return destacadosEvento
+    const ids = new Set(destacadosEvento.map((d) => d.item?.id))
+    const relleno = futuros
+      .filter((e) => !ids.has(e.id))
+      .slice(0, MIN_CARRUSEL - destacadosEvento.length)
+      .map((e) => eventoATarjeta(e))
+    return [...destacadosEvento, ...relleno]
+  }, [destacadosEvento, futuros])
 
-  useEffect(() => {
-    fetch('/api/destacados')
-      .then((r) => (r.ok ? r.json() : { destacados: [] }))
-      .then((datos) => setDatosDestacados(datos.destacados ?? []))
-      .catch(() => setDatosDestacados([]))
-  }, [])
+  // Ids de eventos realmente destacados (para la tarjeta panorámica del muro).
+  const idsDestacados = useMemo(
+    () => new Set(destacadosEvento.map((d) => d.item?.id).filter(Boolean)),
+    [destacadosEvento]
+  )
 
-  // Índice de eventos por id público para resolver referencias de destacados.
-  const eventosPorRefId = useMemo(() => {
-    const mapa = new Map()
-    todosEventos.forEach((e) => {
-      mapa.set(e.id, e)
-      if (e.idsSecundarios) e.idsSecundarios.forEach((s) => mapa.set(s, e))
-      if (e.id.startsWith('bd-')) mapa.set(e.id.slice(3), e)
-    })
-    return mapa
-  }, [todosEventos])
-
-  // Ids de eventos actualmente destacados (para marcar la tarjeta panorámica).
-  const idsDestacados = useMemo(() => {
-    const set = new Set()
-    datosDestacados.forEach((d) => {
-      const evento = eventosPorRefId.get(d.referenciaId)
-      if (evento) set.add(evento.id)
-    })
-    return set
-  }, [datosDestacados, eventosPorRefId])
+  // El carrusel se oculta al filtrar por categoría (igual que la franja de
+  // Comercios): con un filtro activo manda el muro filtrado.
+  const conCarrusel = categoriasActivas.length === 0 && itemsCarrusel.length > 0
+  const hayDestacadosReales = destacadosEvento.length > 0
 
   // Sync URL params when filters change
   const handleCategoriasChange = (cat) => {
@@ -159,13 +157,35 @@ export default function Eventos() {
         }}
       />
 
-      {/* Hero: carrusel global de destacados, con relleno de próximos eventos */}
-      <HeroPrincipalCartelera
-        proximos={futuros}
-        destacados={datosDestacados}
-        categoriasActivas={categoriasActivas}
-        onVerEvento={handleClickEvento}
-      />
+      {/* Destacados: mismos componentes que Inicio y Comercios (consistencia).
+          Móvil: carrusel nativo con scroll-snap; escritorio: hero editorial. */}
+      {conCarrusel && (
+        <section className="mb-6 animate-rise">
+          {/* Móvil */}
+          <div className="md:hidden">
+            <div className="mb-3 flex items-baseline justify-between">
+              <span className="gz-eyebrow">
+                {hayDestacadosReales ? 'Destacados de la semana' : 'Próximos eventos'}
+              </span>
+              <span className="font-mono-ibm text-[10px] tracking-etiqueta text-mudo">
+                {String(Math.min(itemsCarrusel.length, 3)).padStart(2, '0')} /{' '}
+                {String(itemsCarrusel.length).padStart(2, '0')}
+              </span>
+            </div>
+            <CarruselDestacados items={itemsCarrusel} columnas={3} seccion="eventos" />
+          </div>
+
+          {/* Escritorio */}
+          <div className="hidden md:block">
+            <HeroDestacadosDesktop
+              items={itemsCarrusel}
+              eyebrow={hayDestacadosReales ? 'Destacados de la semana' : 'Próximos eventos'}
+              titulo={hayDestacadosReales ? 'Lo que no te puedes perder' : 'A qué ir próximamente'}
+              seccion="eventos"
+            />
+          </div>
+        </section>
+      )}
 
       {/* Day strip selector */}
       <TiraDeHoras
