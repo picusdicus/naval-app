@@ -483,7 +483,7 @@
     "id": "gpl_ChIJveiRO12UQQ0R8mSpOETjW9g",
     "nombre": "José Avelino Del Casar González",
     "categoria": "alimentacion",
-    "subtipo": "shop",
+    "subtipo": "seafood",
     "cocina": [],
     "lat": 40.2878064,
     "lng": -4.012955799999999,
@@ -625,6 +625,30 @@
     }
   },
   {
+    "id": "gpl_ChIJGbIkiFyUQQ0RhKiPdIASfMI",
+    "nombre": "Mercado de la Cruz Verde",
+    "categoria": "alimentacion",
+    "subtipo": "marketplace",
+    "cocina": [],
+    "lat": 40.287963399999995,
+    "lng": -4.0129589,
+    "direccion": "Plazuela del Mercado, Navalcarnero",
+    "telefono": "",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=14014096483390826628&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–14:00 | martes: 9:00–14:00, 17:30–20:00 | miércoles: 9:00–14:00, 17:30–20:00 | jueves: 9:00–14:00, 17:30–20:00 | viernes: 9:00–14:00, 17:30–20:00 | sábado: 9:00–14:00 | domingo: Cerrado",
+    "rating": 4.4,
+    "totalReviews": 159,
+    "precioNivel": "",
+    "tipoDisplay": "Mercado",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJD8thLVuVQQ0R794nrEGCMIo",
     "nombre": "Mercadona",
     "categoria": "alimentacion",
@@ -760,6 +784,31 @@
     "cerradoTemporal": false,
     "atributos": {
       "paraLlevar": true,
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJ3aW_eFuUQQ0RKFkRzOS5RH8",
+    "nombre": "Panadería Pastelería José Luis",
+    "categoria": "alimentacion",
+    "subtipo": "bakery",
+    "cocina": [],
+    "lat": 40.288450399999995,
+    "lng": -4.0140416,
+    "direccion": "C. del Real, 12, Navalcarnero",
+    "telefono": "918 11 05 72",
+    "web": "http://www.pasteleriajoseluis.com/",
+    "mapsUrl": "https://maps.google.com/?cid=9170659133560543528&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 7:30–14:00, 17:00–21:00 | martes: 7:30–14:00, 17:00–21:00 | miércoles: 7:30–14:00 | jueves: 7:30–14:00, 17:00–21:00 | viernes: 7:30–14:00, 17:00–21:00 | sábado: 8:00–14:00, 17:00–21:00 | domingo: 8:00–14:00, 17:00–21:00",
+    "rating": 4.4,
+    "totalReviews": 559,
+    "precioNivel": "",
+    "tipoDisplay": "Pastelería",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "paraLlevar": true,
+      "accesible": true,
       "tarjeta": true
     }
   },
@@ -1445,6 +1494,52 @@
     }
   },
   {
+    "id": "gpl_ChIJjdMnCzuVQQ0Rs2ZlhJJi92o",
+    "nombre": "El espejo mágico",
+    "categoria": "belleza",
+    "subtipo": "beauty",
+    "cocina": [],
+    "lat": 40.2869186,
+    "lng": -4.0094921,
+    "direccion": "C. Tío Canor, 1, Loc derecha, Navalcarnero",
+    "telefono": "911 25 73 11",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=7707737668693878451&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 16:00–20:00 | martes: 10:00–14:00, 16:00–20:00 | miércoles: 10:00–14:00, 16:00–20:00 | jueves: 10:00–14:00, 16:00–20:00 | viernes: 10:00–14:00, 16:00–20:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 4.9,
+    "totalReviews": 106,
+    "precioNivel": "",
+    "tipoDisplay": "Salón de manicura y pedicura",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJB6tS6meVQQ0RU6gmCdO68RA",
+    "nombre": "Energía Natural",
+    "categoria": "belleza",
+    "subtipo": "hairdresser",
+    "cocina": [],
+    "lat": 40.2871186,
+    "lng": -4.014617299999999,
+    "direccion": "n° 6, C. del Pozo del Concejo, 6, Navalcarnero",
+    "telefono": "659 93 32 60",
+    "web": "https://enaturalnavalcarnero.wordpress.com/?fbclid=PAQ0xDSwMIqKVleHRuA2FlbQIxMQABp0mzvazWs6cp3VWINzh3sAr1dS-Qem1jJ64z_t_T4AiczH2zdrk9ISJ8TJdx_aem_AriF5VREsnn0f_qrQkPJ5w",
+    "mapsUrl": "https://maps.google.com/?cid=1220962389548509267&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: Cerrado | martes: 9:30–14:00, 17:00–20:30 | miércoles: 9:30–14:00, 17:00–20:30 | jueves: 9:30–14:00, 17:00–20:30 | viernes: 9:30–14:00, 17:00–20:30 | sábado: 9:30–14:00 | domingo: Cerrado",
+    "rating": 4.9,
+    "totalReviews": 92,
+    "precioNivel": "",
+    "tipoDisplay": "Peluquería",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJOf7Y6PSVQQ0RZldEoMj8JqU",
     "nombre": "Erika Zarco peluqueros",
     "categoria": "belleza",
@@ -1489,6 +1584,29 @@
     "cerradoTemporal": false,
     "atributos": {
       "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJ5dyMGe6VQQ0Rx4u_RBPKakU",
+    "nombre": "Eva Morales",
+    "categoria": "belleza",
+    "subtipo": "beauty",
+    "cocina": [],
+    "lat": 40.280298599999995,
+    "lng": -4.0229571,
+    "direccion": "C. de Alfonso VI, 16, Navalcarnero",
+    "telefono": "615 48 92 40",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=5002032520254950343&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 17:00–20:00 | martes: 10:00–14:00, 17:00–20:00 | miércoles: 10:00–14:00, 17:00–20:00 | jueves: 10:00–14:00, 17:00–20:00 | viernes: 10:00–14:00, 17:00–20:00 | sábado: 10:00–14:00 | domingo: Cerrado",
+    "rating": 5,
+    "totalReviews": 22,
+    "precioNivel": "",
+    "tipoDisplay": "Esteticista",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
       "tarjeta": true
     }
   },
@@ -1632,6 +1750,29 @@
     }
   },
   {
+    "id": "gpl_ChIJHXcNgiuVQQ0Rrdj8vOfzZPg",
+    "nombre": "J.Nails Studio",
+    "categoria": "belleza",
+    "subtipo": "beauty",
+    "cocina": [],
+    "lat": 40.2874249,
+    "lng": -4.0144120999999995,
+    "direccion": "Pl. de Segovia, 13, Navalcarnero",
+    "telefono": "645 62 00 00",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=17898698995710875821&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 16:00–20:30 | martes: 10:00–14:00, 16:00–20:30 | miércoles: 10:00–14:00, 16:00–20:30 | jueves: 10:00–14:00, 16:00–20:30 | viernes: 10:00–14:00, 16:00–20:30 | sábado: 10:00–16:00 | domingo: Cerrado",
+    "rating": 4.6,
+    "totalReviews": 44,
+    "precioNivel": "",
+    "tipoDisplay": "Salón de manicura y pedicura",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJp5EWJ9-VQQ0Rck_B7RYeKYI",
     "nombre": "Judith Olaya Estética",
     "categoria": "belleza",
@@ -1694,6 +1835,29 @@
     "totalReviews": 3,
     "precioNivel": "",
     "tipoDisplay": "Barbería",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJU3PqO5iVQQ0RHL28bxw_VSA",
+    "nombre": "Lin Nails",
+    "categoria": "belleza",
+    "subtipo": "beauty",
+    "cocina": [],
+    "lat": 40.287564599999996,
+    "lng": -4.013189700000001,
+    "direccion": "C. de la Constitución, 11, Navalcarnero",
+    "telefono": "688 00 77 80",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=2329837773600374044&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–21:00 | martes: 10:00–21:00 | miércoles: 10:00–21:00 | jueves: 10:00–21:00 | viernes: 10:00–21:00 | sábado: 10:00–21:00 | domingo: Cerrado",
+    "rating": 3.6,
+    "totalReviews": 28,
+    "precioNivel": "",
+    "tipoDisplay": "Centro de estética",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {
@@ -1769,6 +1933,29 @@
     "cerradoTemporal": false,
     "atributos": {
       "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJdaQf1sqVQQ0RUbkCzw6VbSY",
+    "nombre": "Oana Nails",
+    "categoria": "belleza",
+    "subtipo": "beauty",
+    "cocina": [],
+    "lat": 40.2862655,
+    "lng": -4.0150177,
+    "direccion": "C. de Fidel Borrajo, 23, Navalcarnero",
+    "telefono": "627 19 53 13",
+    "web": "https://oana-nails.ueniweb.com/?utm_campaign=gmb",
+    "mapsUrl": "https://maps.google.com/?cid=2769033236737866065&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:30–16:30 | martes: 9:30–16:30 | miércoles: 10:00–16:30 | jueves: 10:00–16:30 | viernes: 9:30–16:30 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 5,
+    "totalReviews": 68,
+    "precioNivel": "",
+    "tipoDisplay": "Salón de manicura y pedicura",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
       "tarjeta": true
     }
   },
@@ -3698,6 +3885,30 @@
     }
   },
   {
+    "id": "gpl_ChIJ7ZZoMluUQQ0Rer_Wh604Ooo",
+    "nombre": "Concept Confort",
+    "categoria": "hogar",
+    "subtipo": "furniture",
+    "cocina": [],
+    "lat": 40.290221700000004,
+    "lng": -4.015209700000001,
+    "direccion": "C. de la Doctora, 14, Navalcarnero",
+    "telefono": "916 16 18 21",
+    "web": "http://www.colchonesycanapesabatibles.com/",
+    "mapsUrl": "https://maps.google.com/?cid=9960335843842768762&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 17:00–20:00 | martes: 10:00–14:00, 17:00–20:00 | miércoles: 10:00–14:00, 17:00–20:00 | jueves: 10:00–14:00, 17:00–20:00 | viernes: 10:00–14:00, 17:00–20:00 | sábado: 10:00–14:00 | domingo: Cerrado",
+    "rating": 4.6,
+    "totalReviews": 97,
+    "precioNivel": "",
+    "tipoDisplay": "Tienda de muebles",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "aDomicilio": true,
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJjTuZiiOVQQ0RUs3182gsKJs",
     "nombre": "CRASS ELECTRODOMÉSTICOS",
     "categoria": "hogar",
@@ -4188,6 +4399,30 @@
     "cerradoTemporal": false,
     "atributos": {
       "aDomicilio": true
+    }
+  },
+  {
+    "id": "gpl_ChIJT7byX2eUQQ0R2hLWRRwkRH8",
+    "nombre": "Hechizo",
+    "categoria": "hogar",
+    "subtipo": "shop",
+    "cocina": [],
+    "lat": 40.2900981,
+    "lng": -4.012638,
+    "direccion": "Pl. de Zafiro, 2, Navalcarnero",
+    "telefono": "918 11 31 21",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=9170494445082514138&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 17:00–20:00 | martes: 10:00–14:00, 17:00–20:00 | miércoles: 10:00–14:00, 17:00–20:00 | jueves: 10:00–14:00, 17:00–20:00 | viernes: 10:00–14:00, 17:00–20:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 4.7,
+    "totalReviews": 31,
+    "precioNivel": "",
+    "tipoDisplay": "Comercio",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "aDomicilio": true,
+      "tarjeta": true
     }
   },
   {
@@ -4699,6 +4934,29 @@
     }
   },
   {
+    "id": "gpl_ChIJuwIz0RSUQQ0RoDgxjvqozhc",
+    "nombre": "Papelería y tienda regalos El lápiz mágico",
+    "categoria": "hogar",
+    "subtipo": "toys",
+    "cocina": [],
+    "lat": 40.302455599999995,
+    "lng": -4.0044702999999995,
+    "direccion": "Av. de la Dehesa, 4, Navalcarnero",
+    "telefono": "918 18 44 08",
+    "web": "https://www.facebook.com/ElLapizMagico/",
+    "mapsUrl": "https://maps.google.com/?cid=1715494302155618464&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 17:30–20:00 | martes: 10:00–14:00, 17:30–20:00 | miércoles: 10:00–14:00, 17:30–20:00 | jueves: 10:00–14:00, 17:30–20:00 | viernes: 10:00–14:00, 17:30–20:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 4.8,
+    "totalReviews": 72,
+    "precioNivel": "",
+    "tipoDisplay": "Comercio",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJnabC4liVQQ0RJkgxxiCPPOg",
     "nombre": "Piensos Angel Ollero",
     "categoria": "hogar",
@@ -4821,6 +5079,31 @@
     }
   },
   {
+    "id": "gpl_ChIJ-5MGDWaUQQ0RhV9210mDtz8",
+    "nombre": "Sofas Baratos y Economicos Alhambraconfort",
+    "categoria": "hogar",
+    "subtipo": "furniture",
+    "cocina": [],
+    "lat": 40.290248999999996,
+    "lng": -4.001958999999999,
+    "direccion": "Pol. Ind. Alparrache II, C. de los Charcones, 25, Navalcarnero",
+    "telefono": "918 19 80 56",
+    "web": "https://www.alhambraconfort.com/",
+    "mapsUrl": "https://maps.google.com/?cid=4591282698298220421&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–13:30, 16:00–20:00 | martes: 9:00–13:30, 16:00–20:00 | miércoles: 9:00–13:30, 16:00–20:00 | jueves: 9:00–13:30, 16:00–20:00 | viernes: 9:00–13:30, 16:00–20:00 | sábado: 10:00–13:30, 17:00–20:00 | domingo: Cerrado",
+    "rating": 4.4,
+    "totalReviews": 46,
+    "precioNivel": "",
+    "tipoDisplay": "Tienda de muebles",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "aDomicilio": true,
+      "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJ34jjCmWUQQ0Rpx3zDhOUqcg",
     "nombre": "Tapizados Zafiro",
     "categoria": "hogar",
@@ -4840,6 +5123,31 @@
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {}
+  },
+  {
+    "id": "gpl_ChIJx1mZo1qVQQ0Ry1zKv4h8Bb0",
+    "nombre": "Tienda de Colchones Flex By Alonso",
+    "categoria": "hogar",
+    "subtipo": "furniture",
+    "cocina": [],
+    "lat": 40.2883223,
+    "lng": -4.0120648,
+    "direccion": "C. de Sebastián Muñoz, 28, Navalcarnero",
+    "telefono": "614 46 68 39",
+    "web": "https://www.flex.es/",
+    "mapsUrl": "https://maps.google.com/?cid=13620429574827039947&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 17:00–20:00 | martes: 10:00–14:00, 17:00–20:00 | miércoles: 10:00–14:00, 17:00–20:00 | jueves: 10:00–14:00, 17:00–20:00 | viernes: 10:00–14:00, 17:00–20:00 | sábado: 10:00–14:00 | domingo: Cerrado",
+    "rating": 5,
+    "totalReviews": 35,
+    "precioNivel": "",
+    "tipoDisplay": "Tienda de muebles",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "aDomicilio": true,
+      "accesible": true,
+      "tarjeta": true
+    }
   },
   {
     "id": "gpl_ChIJfRjsBnCUQQ0RdfXpvCTM0iY",
@@ -4886,6 +5194,30 @@
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJkd1LEMOTQQ0RHbptAOw4VvM",
+    "nombre": "Unicash Navalcarnero",
+    "categoria": "hogar",
+    "subtipo": "shop",
+    "cocina": [],
+    "lat": 40.293583399999996,
+    "lng": -3.9828733999999995,
+    "direccion": "Av. del Quince de Mayo, 5, Navalcarnero",
+    "telefono": "630 81 77 06",
+    "web": "https://www.unicash.es/",
+    "mapsUrl": "https://maps.google.com/?cid=17534264785484233245&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–13:30, 16:00–20:00 | martes: 9:00–13:30, 16:00–20:00 | miércoles: 9:00–13:30, 16:00–20:00 | jueves: 9:00–13:30, 16:00–20:00 | viernes: 9:00–13:30, 16:00–20:00 | sábado: 9:00–13:30 | domingo: Cerrado",
+    "rating": 4,
+    "totalReviews": 21,
+    "precioNivel": "",
+    "tipoDisplay": "Comercio",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "accesible": true,
       "tarjeta": true
     }
   },
@@ -5143,6 +5475,31 @@
     }
   },
   {
+    "id": "gpl_ChIJXaWBXW-UQQ0RniAnDubbEHE",
+    "nombre": "Deportes Halcón - Bedecar S.A. Central y gestión web",
+    "categoria": "moda",
+    "subtipo": "clothes",
+    "cocina": [],
+    "lat": 40.291034599999996,
+    "lng": -4.0019268,
+    "direccion": "Calle, Cam. de Villaviciosa, 8, Navalcarnero",
+    "telefono": "918 11 16 45",
+    "web": "https://deporteshalcon.net/",
+    "mapsUrl": "https://maps.google.com/?cid=8147253507039633566&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 17:00–18:30 | martes: 10:00–14:00, 17:00–18:30 | miércoles: 10:00–14:00, 17:00–18:30 | jueves: 10:00–14:00, 17:00–18:30 | viernes: 10:00–14:00, 17:00–18:30 | sábado: 10:00–14:00 | domingo: Cerrado",
+    "rating": 4.8,
+    "totalReviews": 483,
+    "precioNivel": "",
+    "tipoDisplay": "Tienda de deportes",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "aDomicilio": true,
+      "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJmUCwi1yUQQ0RWgp47MmUjZ0",
     "nombre": "El pequeño capricho",
     "categoria": "moda",
@@ -5323,6 +5680,29 @@
     "totalReviews": 1,
     "precioNivel": "",
     "tipoDisplay": "Joyería",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJR_7eW3eUQQ0Rrapcu7Lo2EY",
+    "nombre": "Nocturno S. L.",
+    "categoria": "moda",
+    "subtipo": "clothes",
+    "cocina": [],
+    "lat": 40.291476900000006,
+    "lng": -3.9932735,
+    "direccion": "Pol. Ind. Alparrache II, P.º del Alparrache, 29, Navalcarnero",
+    "telefono": "918 11 52 16",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=5105086031969692333&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "",
+    "rating": null,
+    "totalReviews": null,
+    "precioNivel": "",
+    "tipoDisplay": "Tienda de ropa",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {
@@ -6344,6 +6724,31 @@
     }
   },
   {
+    "id": "gpl_ChIJ9cFkh1yUQQ0R5rD7prTpB1A",
+    "nombre": "De La Mar",
+    "categoria": "restauracion",
+    "subtipo": "restaurant",
+    "cocina": [],
+    "lat": 40.2880173,
+    "lng": -4.0128226,
+    "direccion": "Plazuela del Mercado, 16, Navalcarnero",
+    "telefono": "918 11 07 55",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=5766834809976107238&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–14:00 | martes: 9:00–14:00 | miércoles: 9:00–14:00 | jueves: 9:00–14:00, 17:00–20:00 | viernes: 9:00–14:00, 17:00–20:00 | sábado: 9:00–14:00 | domingo: Cerrado",
+    "rating": 5,
+    "totalReviews": 2,
+    "precioNivel": "",
+    "tipoDisplay": "Restaurante",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "paraLlevar": true,
+      "reservas": true,
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJo_HpqmCVQQ0RUY-9t9nPfhg",
     "nombre": "Dianna's Bakery and Coffee",
     "categoria": "restauracion",
@@ -6516,6 +6921,35 @@
     }
   },
   {
+    "id": "gpl_ChIJMbnfDluUQQ0RJwHIodh7aXg",
+    "nombre": "Hosteria de las Monjas",
+    "categoria": "restauracion",
+    "subtipo": "restaurant",
+    "cocina": [
+      "spanish"
+    ],
+    "lat": 40.2882089,
+    "lng": -4.0149916,
+    "direccion": "C. de la Iglesia, 1, Navalcarnero",
+    "telefono": "918 11 18 05",
+    "web": "http://www.hosteriadelasmonjas.es/",
+    "mapsUrl": "https://maps.google.com/?cid=8676602327463362855&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: Cerrado | martes: 10:00–17:00 | miércoles: 10:00–17:00 | jueves: 10:00–17:00 | viernes: 10:00–1:30 | sábado: 10:00–1:30 | domingo: 10:00–18:00",
+    "rating": 4.2,
+    "totalReviews": 1769,
+    "precioNivel": "EXPENSIVE",
+    "tipoDisplay": "Restaurante de cocina española",
+    "descripcion": "Carnes al horno de leña y cocina castellana en una posada del s. XVI que acoge la cueva del beso de Felipe V.",
+    "cerradoTemporal": false,
+    "atributos": {
+      "terraza": true,
+      "paraLlevar": true,
+      "reservas": true,
+      "accesible": true,
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJsVzFXFqUQQ0RJ4REYveWjUo",
     "nombre": "Industrias Cárnicas Jumigo s l",
     "categoria": "restauracion",
@@ -6532,6 +6966,27 @@
     "totalReviews": 6,
     "precioNivel": "",
     "tipoDisplay": "Fábrica",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {}
+  },
+  {
+    "id": "gpl_ChIJCxzDCFuUQQ0RqKdl_1zu-QE",
+    "nombre": "Jesús Collado Moreno",
+    "categoria": "restauracion",
+    "subtipo": "restaurant",
+    "cocina": [],
+    "lat": 40.2881267,
+    "lng": -4.0151622,
+    "direccion": "C. de José María Bausá, 1, Navalcarnero",
+    "telefono": "918 11 00 32",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=142406946428135336&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "",
+    "rating": null,
+    "totalReviews": null,
+    "precioNivel": "",
+    "tipoDisplay": "Restaurante",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {}
@@ -6757,6 +7212,33 @@
       "terraza": true,
       "paraLlevar": true,
       "reservas": true,
+      "tarjeta": true
+    }
+  },
+  {
+    "id": "gpl_ChIJU6UzhluUQQ0REUYFdaOmz5I",
+    "nombre": "Las Cuevas del Carnero",
+    "categoria": "restauracion",
+    "subtipo": "restaurant",
+    "cocina": [
+      "spanish"
+    ],
+    "lat": 40.2873453,
+    "lng": -4.0134779,
+    "direccion": "C. de San Roque, 3, Navalcarnero",
+    "telefono": "918 11 04 61",
+    "web": "http://www.lascuevasdelcarnero.com/",
+    "mapsUrl": "https://maps.google.com/?cid=10578857270689744401&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: Cerrado | martes: 12:00–18:00 | miércoles: 12:00–18:00 | jueves: 12:00–18:00 | viernes: 12:00–18:00, 20:30–24:00 | sábado: 12:00–18:00, 20:30–24:00 | domingo: 12:00–18:00",
+    "rating": 4.5,
+    "totalReviews": 1669,
+    "precioNivel": "EXPENSIVE",
+    "tipoDisplay": "Restaurante",
+    "descripcion": "Rústico asador castellano con cuevas subterráneas de arcos ojivales, pasillos abovedados y paredes de piedra.",
+    "cerradoTemporal": false,
+    "atributos": {
+      "reservas": true,
+      "accesible": true,
       "tarjeta": true
     }
   },
@@ -8886,6 +9368,29 @@
     }
   },
   {
+    "id": "gpl_ChIJ4Q_-n0SUQQ0RazoC-J8IBIM",
+    "nombre": "Peluquería y Estética Beatriz Flores",
+    "categoria": "salud",
+    "subtipo": "doctors",
+    "cocina": [],
+    "lat": 40.2918283,
+    "lng": -4.0133665999999995,
+    "direccion": "C. de la Libertad, 63, Navalcarnero",
+    "telefono": "918 13 45 62",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=9440680202029120107&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–14:00, 15:00–19:00 | martes: 10:00–14:00, 15:00–19:00 | miércoles: 15:00–19:00 | jueves: 10:00–14:00, 15:00–19:00 | viernes: 10:00–14:00, 15:00–19:00 | sábado: 10:00–14:00 | domingo: Cerrado",
+    "rating": 5,
+    "totalReviews": 5,
+    "precioNivel": "",
+    "tipoDisplay": "Médico",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
+  },
+  {
     "id": "gpl_ChIJOVieJ1aUQQ0RpCIrsPNvTGo",
     "nombre": "Psicología Navalcarnero",
     "categoria": "salud",
@@ -10090,6 +10595,27 @@
     "atributos": {}
   },
   {
+    "id": "gpl_ChIJd1Fz51yVQQ0R1oJPWvyTz7Y",
+    "nombre": "Hotel Boutique Casa del Comendador",
+    "categoria": "servicios",
+    "subtipo": "hotel",
+    "cocina": [],
+    "lat": 40.288092,
+    "lng": -4.0153463,
+    "direccion": "C. de José María Bausá, 2-4, Navalcarnero",
+    "telefono": "679 47 82 68",
+    "web": "https://www.hotelcasadelcomendador.com/",
+    "mapsUrl": "https://maps.google.com/?cid=13172910147138192086&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: Abierto 24 horas | martes: Abierto 24 horas | miércoles: Abierto 24 horas | jueves: Abierto 24 horas | viernes: Abierto 24 horas | sábado: Abierto 24 horas | domingo: Abierto 24 horas",
+    "rating": 4.4,
+    "totalReviews": 357,
+    "precioNivel": "",
+    "tipoDisplay": "Hotel",
+    "descripcion": "Hotel pintoresco con un restaurante refinado y habitaciones y suites rústicas con detalles clásicos.",
+    "cerradoTemporal": false,
+    "atributos": {}
+  },
+  {
     "id": "gpl_ChIJ8XqdCiyVQQ0RvUYamuSWMzI",
     "nombre": "Ignifugados Humbria S.L.",
     "categoria": "servicios",
@@ -10286,6 +10812,29 @@
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {}
+  },
+  {
+    "id": "gpl_ChIJE6MboIqVQQ0RsJwF08JmCVw",
+    "nombre": "La Pequeña",
+    "categoria": "servicios",
+    "subtipo": "service",
+    "cocina": [],
+    "lat": 40.290875199999995,
+    "lng": -4.0106629,
+    "direccion": "C. Alemania, Navalcarnero",
+    "telefono": "652 42 64 98",
+    "web": "https://www.lapequeña.com/",
+    "mapsUrl": "https://maps.google.com/?cid=6631944913229814960&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–14:00, 17:30–20:00 | martes: 9:00–14:00, 17:30–20:00 | miércoles: 9:00–14:00, 17:30–20:00 | jueves: 9:00–14:00, 17:30–20:00 | viernes: 9:00–14:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 5,
+    "totalReviews": 26,
+    "precioNivel": "",
+    "tipoDisplay": "",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "tarjeta": true
+    }
   },
   {
     "id": "gpl_ChIJIbJyhWWUQQ0RPBQMHGZhe-s",
@@ -11311,6 +11860,27 @@
     "horario": "lunes: 11:00–14:00, 18:00–20:30 | martes: 11:00–14:00, 18:00–20:30 | miércoles: 11:00–14:00, 18:00–20:30 | jueves: 11:00–14:00, 18:00–20:30 | viernes: 11:00–14:00, 18:00–20:30 | sábado: 11:00–14:00 | domingo: Cerrado",
     "rating": 5,
     "totalReviews": 1,
+    "precioNivel": "",
+    "tipoDisplay": "Servicio de envíos",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {}
+  },
+  {
+    "id": "gpl_ChIJdeHxDoWVQQ0RUZmqGuaQPuc",
+    "nombre": "Punto Pack InPost",
+    "categoria": "servicios",
+    "subtipo": "courier",
+    "cocina": [],
+    "lat": 40.2863241,
+    "lng": -4.0144817,
+    "direccion": "C. del Pozo del Concejo, 16, Navalcarnero",
+    "telefono": "938 16 62 34",
+    "web": "https://www.inpost.es/",
+    "mapsUrl": "https://maps.google.com/?cid=16662914989281679697&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 10:00–13:00, 16:30–19:00 | martes: 10:00–13:00, 16:30–19:00 | miércoles: 10:00–13:00, 16:30–19:00 | jueves: 10:00–13:00, 16:30–19:00 | viernes: 10:00–13:00, 16:30–19:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": 3.7,
+    "totalReviews": 3,
     "precioNivel": "",
     "tipoDisplay": "Servicio de envíos",
     "descripcion": "",
@@ -12867,6 +13437,27 @@
     "totalReviews": 14,
     "precioNivel": "",
     "tipoDisplay": "Agencia inmobiliaria",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {}
+  },
+  {
+    "id": "gpl_ChIJW4qmKjaVQQ0RnLoBvAWMtms",
+    "nombre": "Mantenimientos y Servicios Integrales NP SL",
+    "categoria": "servicios_prof",
+    "subtipo": "fontaneria",
+    "cocina": [],
+    "lat": 40.3032256,
+    "lng": -4.004231,
+    "direccion": "Av. de la Dehesa, 6, Loc 10, Navalcarnero",
+    "telefono": "914 34 69 47",
+    "web": "https://npserviciosintegrales.es/",
+    "mapsUrl": "https://maps.google.com/?cid=7761544964076583580&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 8:00–18:00 | martes: 8:00–18:00 | miércoles: 8:00–18:00 | jueves: 8:00–18:00 | viernes: 8:00–18:00 | sábado: Cerrado | domingo: Cerrado",
+    "rating": null,
+    "totalReviews": null,
+    "precioNivel": "",
+    "tipoDisplay": "Servicios",
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {}

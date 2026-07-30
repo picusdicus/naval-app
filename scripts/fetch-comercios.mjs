@@ -767,7 +767,13 @@ function absorberCurados(final, servicios, enlaces, overrides) {
 function trasladarCurado(servicio, comercio, overrides) {
   const override = { ...(overrides[comercio.id] || {}) };
 
-  if (!override.categoria) {
+  // Se respeta una corrección previa del panel, PERO no si dejó el local en uno
+  // de los cajones genéricos (shop/service): eso no es una decisión, es el
+  // fallback del mapeo de types, y la guía sí sabe que "José Avelino Del Casar
+  // González" es la pescadería de Avelino. En sentido contrario tampoco se
+  // cambia algo específico por un genérico de la guía.
+  const previoEsUtil = override.categoria && !SUBTIPOS_GENERICOS.has(override.subtipo);
+  if (!previoEsUtil && !SUBTIPOS_GENERICOS.has(servicio.subtipo)) {
     comercio.categoria = servicio.categoria;
     comercio.subtipo = servicio.subtipo;
     override.categoria = servicio.categoria;
@@ -828,13 +834,39 @@ async function main() {
   console.log(`\n  Total unique places found: ${rawPlaces.size}`);
   console.log(`  Search calls used: ${searchCalls}\n`);
 
-  // ── Phase 1b: búsqueda dirigida de los servicios curados ──────────────────
+  // ── Phase 1b: no perder las fichas que ya estaban publicadas ──────────────
+  // Las búsquedas de texto devuelven ~60 resultados por consulta ordenados por
+  // prominencia, y ese orden varía entre ejecuciones: comparando dos
+  // regeneraciones del mismo día se cayeron 25 fichas que sí estaban (el Mercado
+  // de la Cruz Verde entre ellas). Así que el directorio vigente se siembra
+  // como punto de partida: cada ficha vuelve a pasar por el detalle de la fase 2,
+  // que es quien decide de verdad si sigue (sigue viva, dentro del municipio, con
+  // coordenadas). Se le pasan nombre/dirección/teléfono para que el emparejado de
+  // la fase 1c pueda usarlas sin gastar búsqueda.
+  const vigentes = leerComerciosVigentes();
+  let recuperadas = 0;
+  for (const c of vigentes) {
+    const googleId = c.id.startsWith("gpl_") ? c.id.slice(4) : null;
+    if (!googleId || rawPlaces.has(googleId)) continue;
+    rawPlaces.set(googleId, {
+      id: googleId,
+      displayName: { text: c.nombre },
+      formattedAddress: c.direccion,
+      nationalPhoneNumber: c.telefono,
+    });
+    recuperadas++;
+  }
+  console.log(
+    `Phase 1b — Directorio vigente: ${vigentes.length} fichas, ${recuperadas} que esta búsqueda no había reencontrado\n`,
+  );
+
+  // ── Phase 1c: búsqueda dirigida de los servicios curados ──────────────────
   const servicios = leerServicios();
   let enlaces = new Map();
   if (SIN_SERVICIOS || !servicios.length) {
-    console.log("Phase 1b — Servicios curados: saltada\n");
+    console.log("Phase 1c — Servicios curados: saltada\n");
   } else {
-    console.log(`Phase 1b — Servicios curados (${Math.min(servicios.length, LIMITE_SERVICIOS)} de ${servicios.length})`);
+    console.log(`Phase 1c — Servicios curados (${Math.min(servicios.length, LIMITE_SERVICIOS)} de ${servicios.length})`);
     const r = await enlazarServiciosCurados(rawPlaces, servicios);
     enlaces = r.enlaces;
     searchCalls += r.stats.llamadas;
@@ -1011,8 +1043,17 @@ async function main() {
 }
 
 // ---------------------------------------------------------------------------
-// Lectura de los ficheros curados
+// Lectura de los ficheros de datos
 // ---------------------------------------------------------------------------
+
+// El comercios.json vigente, que la fase 1b usa como suelo del directorio.
+function leerComerciosVigentes() {
+  if (!existsSync(COMERCIOS_PATH)) return [];
+  try {
+    const datos = JSON.parse(readFileSync(COMERCIOS_PATH, "utf-8"));
+    return Array.isArray(datos) ? datos : [];
+  } catch { return []; }
+}
 
 function leerServicios() {
   if (!existsSync(SERVICIOS_PATH)) return [];
