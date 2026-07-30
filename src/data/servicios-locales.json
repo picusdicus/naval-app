@@ -263,7 +263,7 @@
     "id": "local/alimentacion-la-casuca-asturiana",
     "nombre": "La Casuca Asturiana de Candelas",
     "categoria": "alimentacion",
-    "subtipo": "deli",
+    "subtipo": "butcher",
     "cocina": [],
     "lat": null,
     "lng": null,
