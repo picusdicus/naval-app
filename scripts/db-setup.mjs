@@ -2,7 +2,13 @@
 // (organización TYL TYL + su código de invitación). Es idempotente: se puede
 // ejecutar tantas veces como haga falta.
 //
-//   npm run db:setup
+//   npm run db:setup    esquema + siembra de prueba  → SOLO en desarrollo
+//   npm run db:schema   solo el esquema (DDL)        → seguro en producción
+//
+// ⚠️ La siembra NO es inocua en producción: hace UPSERT sobre la organización
+// Teatro TYL TYL, que es real, y en el camino RESETEA la contraseña de su
+// usuario admin a la de por defecto y pone su código de invitación a 0 usos.
+// Para aplicar un cambio de esquema en producción usa `npm run db:schema`.
 //
 // Necesita DATABASE_URL. Se lee de .env.local (generado por `vercel env pull`)
 // o del entorno.
@@ -138,8 +144,15 @@ async function sembrar() {
   )
 }
 
+const SOLO_ESQUEMA = process.argv.slice(2).includes('--solo-esquema')
+
 await aplicarEsquema()
-await sembrar()
+
+if (SOLO_ESQUEMA) {
+  console.log('Solo esquema: no se ha sembrado nada (ninguna contraseña ni código tocados).')
+} else {
+  await sembrar()
+}
 
 const [{ n }] = await sql`SELECT count(*)::int AS n FROM organizaciones`
 console.log(`Listo. Organizaciones en la base de datos: ${n}`)

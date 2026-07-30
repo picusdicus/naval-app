@@ -15,7 +15,8 @@ npm run build            # production build (vite build)
 npm run preview          # preview the production build
 npm run lint              # eslint .
 npm run test:e2e         # Playwright: sube public/poster.jpg a Blob de verdad (ver abajo)
-npm run db:setup         # apply db/schema.sql to Neon + seed the TYL TYL test org (idempotent)
+npm run db:setup         # apply db/schema.sql to Neon + seed the TYL TYL test org (idempotent) — DEV ONLY
+npm run db:schema        # apply db/schema.sql only, no seeding — this is the one to run against production
 npm run fetch:comercios  # regenerate src/data/comercios.json from Google Places API (also absorbs servicios-locales.json entries Google now covers — see Data layer)
 npm run fetch:eventos    # regenerate src/data/eventos-externos.json from Teatro TYL TYL API + Ayuntamiento RSS
 npm run fetch:noticias   # regenerate src/data/noticias.json from Ayuntamiento press feed RSS
@@ -121,6 +122,8 @@ The Neon project `navalcarnero-db` is provisioned through the Vercel Marketplace
 
 - `db/schema.sql` — canonical schema. Six tables: `organizaciones` (cultural orgs and business-owner accounts; `comercio_id` links one to its directory entry), `codigos_invitacion` (invite codes the superadmin issues so an org's managers can sign up), `usuarios` (`admin`/`editor` belong to an org, `vecino`/`superadmin` don't), `eventos_usuario` (events created in-app, in `borrador`/`publicado`/`archivado`), `analytics` (anonymous usage events) and `destacados` (paid featured items — see **Destacados** above). Statements are split on a trailing `;` by the setup script, so don't add functions or dollar-quoted blocks. `CREATE TABLE IF NOT EXISTS` won't add columns to a table that already exists, so new columns also need an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at the end of the file.
 - `scripts/db-setup.mjs` (`npm run db:setup`) — applies the schema and seeds the test org **Teatro TYL TYL** (`slug: tyl-tyl`) with invite code **`TYLTYL-2026`** (grants `admin`, 5 uses). Idempotent via `ON CONFLICT`.
+- **`npm run db:schema` (`--solo-esquema`) is the one to run against production.** There is a single Neon database for every environment (the Marketplace integration injects the same `DATABASE_URL`), so `db:setup`'s seeding is **not** inocuous there: the `ON CONFLICT` upsert hits the real Teatro TYL TYL org, **resets its admin user's password to the default** and puts its invite code back to 0 uses. `db:schema` applies only the DDL — all 38 statements carry `IF NOT EXISTS`, so it's safe and repeatable.
+- **A new table in `db/schema.sql` + `TABLAS` does not reach production by deploying.** Nothing applies the schema automatically: the DDL has to be run by hand. Deploying the code first leaves `GET /api/health` returning 503 with `faltan: [<tabla>]` until someone runs `db:schema` — which is exactly what happened with `eventos_ocultos` (deployed 2026-07-30 08:43, table created ~11:48). Apply the schema **before** the deploy that needs it.
 - `api/_db.js` — `obtenerSql()` returns a memoized `@neondatabase/serverless` HTTP client (tagged template). Underscore prefix keeps Vercel from deploying it as an endpoint.
 - `api/health.js` — `GET /api/health` verifies the connection and that the tables in `TABLAS` (`api/_db.js`) exist; returns 503 if either fails. A new table must be added to `TABLAS` or health won't check it. Live at https://naval-app-one.vercel.app/api/health.
 
