@@ -19,17 +19,67 @@ export const config = { runtime: 'edge' }
 
 const RUTA_OVERRIDES = 'src/data/comercios-overrides.json'
 const RUTA_COMERCIOS = 'src/data/comercios.json'
+const RUTA_SERVICIOS = 'src/data/servicios-locales.json'
 const RUTA_CATEGORIAS_EXTRA = 'src/data/categorias-extra.js'
 const RUTA_SUBTIPOS_EXTRA = 'src/data/subtipos-extra.js'
 
-// Solo entradas de Google Places: los servicios curados (`local/…`) se editan
-// a mano en servicios-locales.json y el fetch no les aplica overrides.
+// Dos familias de id editables:
+//  · gpl_… : entradas de Google Places. La corrección va al override (el fetch
+//    la reaplica en cada regeneración) y al comercios.json vigente.
+//  · local/… : servicios curados a mano. No hay override ni regeneración: se
+//    edita el propio servicios-locales.json. No se pueden excluir desde el
+//    panel (borrar un curado sería irreversible; se gestiona en el fichero).
 const ID_REGEX = /^gpl_[A-Za-z0-9_-]{5,120}$/
+const LOCAL_ID_REGEX = /^local\/[a-z0-9_-]{2,120}$/
+const esLocal = (id) => LOCAL_ID_REGEX.test(id)
 const SLUG_REGEX = /^[a-z][a-z0-9_]{1,29}$/
 const COLOR_REGEX = /^#[0-9a-fA-F]{6}$/
 const ICONO_REGEX = /^[a-z][a-z0-9_]{1,39}$/
 const MAX_CAMBIOS = 50
 const MAX_NUEVAS = 10
+
+// Datos de contacto/ubicación que el superadmin puede corregir además de la
+// categorización. Se guardan en el override (se reaplican en cada regeneración
+// del directorio, congelando el dato frente a lo que devuelva Google) y en el
+// comercios.json vigente. Solo llegan los campos que el panel modificó.
+const CAMPOS_DATOS = ['direccion', 'telefono', 'web', 'lat', 'lng']
+const TELEFONO_REGEX = /^[0-9+()\s.-]{0,30}$/
+const DIRECCION_MAX = 200
+const WEB_MAX = 300
+
+// Coordenada de comercios.json → número, o null si viene vacía/nula.
+function aCoordenada(valor) {
+  return valor === null || valor === undefined || valor === '' ? null : Number(valor)
+}
+
+// Valida los campos de datos presentes en un cambio. Devuelve error o null.
+function validarDatos(cambio) {
+  if ('direccion' in cambio) {
+    if (typeof cambio.direccion !== 'string' || cambio.direccion.length > DIRECCION_MAX) {
+      return 'Dirección inválida (máx. 200 caracteres).'
+    }
+  }
+  if ('telefono' in cambio) {
+    if (typeof cambio.telefono !== 'string' || !TELEFONO_REGEX.test(cambio.telefono)) {
+      return 'Teléfono inválido.'
+    }
+  }
+  if ('web' in cambio) {
+    const w = typeof cambio.web === 'string' ? cambio.web.trim() : null
+    if (w === null || cambio.web.length > WEB_MAX || (w && !/^https?:\/\/.+/i.test(w))) {
+      return 'Web inválida (debe empezar por http:// o https://).'
+    }
+  }
+  for (const clave of ['lat', 'lng']) {
+    if (clave in cambio && cambio[clave] !== null && cambio[clave] !== '') {
+      const n = Number(cambio[clave])
+      if (!Number.isFinite(n)) return `Coordenada ${clave} inválida.`
+      if (clave === 'lat' && (n < -90 || n > 90)) return 'Latitud fuera de rango (-90 a 90).'
+      if (clave === 'lng' && (n < -180 || n > 180)) return 'Longitud fuera de rango (-180 a 180).'
+    }
+  }
+  return null
+}
 
 // Los módulos extra los escribe solo este endpoint, siempre con este formato:
 // cabecera de comentarios + `export default <json>`. parsearExtra confía en él.
@@ -85,8 +135,10 @@ function validarCambios(cambios, categoriasValidas, subtiposValidos) {
   if (entradas.length > MAX_CAMBIOS) return `Máximo ${MAX_CAMBIOS} cambios por guardado.`
 
   for (const [id, cambio] of entradas) {
-    if (!ID_REGEX.test(id)) return `ID de comercio inválido: ${id.slice(0, 40)}`
+    if (!ID_REGEX.test(id) && !LOCAL_ID_REGEX.test(id)) return `ID de comercio inválido: ${id.slice(0, 40)}`
     if (!cambio || typeof cambio !== 'object') return 'Cambio con formato inválido.'
+    // Excluir un gpl_ es un override reversible; excluir un curado (local/…)
+    // lo elimina de servicios-locales.json (permanente, recuperable solo por git).
     if (cambio.excluir === true) continue
     if (!categoriasValidas.has(cambio.categoria)) {
       return `Categoría desconocida: ${String(cambio.categoria).slice(0, 30)}`
@@ -94,6 +146,8 @@ function validarCambios(cambios, categoriasValidas, subtiposValidos) {
     if (!subtiposValidos.has(cambio.subtipo)) {
       return `Subtipo desconocido: ${String(cambio.subtipo).slice(0, 30)}`
     }
+    const errorDatos = validarDatos(cambio)
+    if (errorDatos) return `${errorDatos} (${id.slice(0, 20)}…)`
   }
   return null
 }
@@ -123,14 +177,17 @@ export default async function handler(req) {
 
   try {
     // Estado actual en el repo (rama main).
-    const [textoOverrides, textoComercios, textoCatsExtra, textoSubsExtra] = await Promise.all([
-      leerArchivoRepo(RUTA_OVERRIDES),
-      leerArchivoRepo(RUTA_COMERCIOS),
-      leerArchivoRepo(RUTA_CATEGORIAS_EXTRA),
-      leerArchivoRepo(RUTA_SUBTIPOS_EXTRA),
-    ])
+    const [textoOverrides, textoComercios, textoServicios, textoCatsExtra, textoSubsExtra] =
+      await Promise.all([
+        leerArchivoRepo(RUTA_OVERRIDES),
+        leerArchivoRepo(RUTA_COMERCIOS),
+        leerArchivoRepo(RUTA_SERVICIOS),
+        leerArchivoRepo(RUTA_CATEGORIAS_EXTRA),
+        leerArchivoRepo(RUTA_SUBTIPOS_EXTRA),
+      ])
     const overrides = textoOverrides ? JSON.parse(textoOverrides) : {}
     const comercios = textoComercios ? JSON.parse(textoComercios) : []
+    const servicios = textoServicios ? JSON.parse(textoServicios) : []
     const categoriasExtra = parsearExtra(textoCatsExtra)
     const subtiposExtra = parsearExtra(textoSubsExtra)
 
@@ -157,14 +214,23 @@ export default async function handler(req) {
     error = validarCambios(cambios, categoriasValidas, subtiposValidos)
     if (error) return json({ error }, 400)
 
-    // 1) Acumular en los overrides (fuente de verdad para futuras regeneraciones).
+    // 1) Los cambios de Google Places (gpl_…) se acumulan en los overrides
+    //    (fuente de verdad para futuras regeneraciones). Los curados (local/…)
+    //    no tienen override: se editan directamente en servicios-locales.json (paso 3).
     let aplicadosJson = 0
     for (const [id, cambio] of Object.entries(cambios)) {
+      if (esLocal(id)) continue
       if (cambio.excluir === true) {
         overrides[id] = { excluir: true }
       } else {
-        overrides[id] = { ...(overrides[id] || {}), categoria: cambio.categoria, subtipo: cambio.subtipo }
-        delete overrides[id].excluir // una recategorización anula una exclusión previa
+        const base = { ...(overrides[id] || {}), categoria: cambio.categoria, subtipo: cambio.subtipo }
+        for (const clave of CAMPOS_DATOS) {
+          if (clave in cambio) {
+            base[clave] = clave === 'lat' || clave === 'lng' ? aCoordenada(cambio[clave]) : cambio[clave]
+          }
+        }
+        delete base.excluir // una recategorización anula una exclusión previa
+        overrides[id] = base
       }
     }
 
@@ -175,6 +241,11 @@ export default async function handler(req) {
       if (!cambio || cambio.excluir === true) continue
       c.categoria = cambio.categoria
       c.subtipo = cambio.subtipo
+      for (const clave of CAMPOS_DATOS) {
+        if (clave in cambio) {
+          c[clave] = clave === 'lat' || clave === 'lng' ? aCoordenada(cambio[clave]) : cambio[clave]
+        }
+      }
       aplicadosJson++
     }
     corregidos.sort((a, b) =>
@@ -183,12 +254,43 @@ export default async function handler(req) {
         : a.nombre.localeCompare(b.nombre, 'es'),
     )
 
+    // 3) Servicios curados (local/…): se edita el propio servicios-locales.json,
+    //    conservando el orden y el resto de campos. Excluir un curado lo ELIMINA
+    //    del fichero (no hay override que lo oculte); es permanente salvo git.
+    let aplicadosServicios = 0
+    let excluidosServicios = 0
+    const serviciosFiltrados = servicios.filter((c) => {
+      if (cambios[c.id]?.excluir === true) {
+        excluidosServicios++
+        return false
+      }
+      return true
+    })
+    for (const c of serviciosFiltrados) {
+      const cambio = cambios[c.id]
+      if (!cambio || cambio.excluir === true) continue
+      c.categoria = cambio.categoria
+      c.subtipo = cambio.subtipo
+      for (const clave of CAMPOS_DATOS) {
+        if (clave in cambio) {
+          c[clave] = clave === 'lat' || clave === 'lng' ? aCoordenada(cambio[clave]) : cambio[clave]
+        }
+      }
+      aplicadosServicios++
+    }
+    const serviciosModificado = aplicadosServicios > 0 || excluidosServicios > 0
+
+    const cambiosGpl = Object.keys(cambios).some((id) => !esLocal(id))
+
     const archivos = []
-    if (hayCambios) {
+    if (cambiosGpl) {
       archivos.push(
         { path: RUTA_OVERRIDES, contenido: JSON.stringify(overrides, null, 2) + '\n' },
         { path: RUTA_COMERCIOS, contenido: JSON.stringify(corregidos, null, 2) + '\n' },
       )
+    }
+    if (serviciosModificado) {
+      archivos.push({ path: RUTA_SERVICIOS, contenido: JSON.stringify(serviciosFiltrados, null, 2) + '\n' })
     }
     if (Object.keys(nuevasCategorias).length > 0) {
       archivos.push({
@@ -201,6 +303,10 @@ export default async function handler(req) {
         path: RUTA_SUBTIPOS_EXTRA,
         contenido: serializarExtra(subtiposExtra, CABECERA_SUBTIPOS),
       })
+    }
+
+    if (archivos.length === 0) {
+      return json({ error: 'No se aplicó ningún cambio (revisa los identificadores).' }, 400)
     }
 
     const partes = []
@@ -224,6 +330,8 @@ export default async function handler(req) {
       ok: true,
       guardados: Object.keys(cambios).length,
       aplicadosAlJson: aplicadosJson,
+      serviciosActualizados: aplicadosServicios,
+      serviciosExcluidos: excluidosServicios,
       excluidos,
       categoriasCreadas: Object.keys(nuevasCategorias).length,
       subtiposCreados: Object.keys(nuevosSubtipos).length,

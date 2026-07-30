@@ -4,6 +4,7 @@ import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
 import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
+import TablesEventos from '../../components/admin/super/TablesEventos.jsx'
 import TablesComercios from '../../components/admin/super/TablesComercios.jsx'
 import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
 import UmamiStats from '../../components/admin/UmamiStats.jsx'
@@ -72,6 +73,7 @@ export default function AdminSuperPanel() {
     ['organizaciones', 'business', 'Organizaciones'],
     ['codigos', 'card_giftcard', 'Códigos de invitación'],
     ['destacados', 'star', 'Destacados'],
+    ['eventos', 'event', 'Eventos'],
     ['comercios', 'storefront', 'Comercios'],
     ['analytics', 'analytics', 'Analytics'],
   ]
@@ -150,6 +152,7 @@ export default function AdminSuperPanel() {
           {seccionActiva === 'organizaciones' && <TablesOrganizaciones />}
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
           {seccionActiva === 'destacados' && <TablesDestacados />}
+          {seccionActiva === 'eventos' && <TablesEventos />}
           {seccionActiva === 'comercios' && <TablesComercios />}
           {seccionActiva === 'analytics' && (
             <div className="space-y-8">

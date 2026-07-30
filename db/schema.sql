@@ -265,3 +265,15 @@ ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAU
 ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS categoria text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general'));
 
 ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS fecha_limite date;
+
+-- Eventos ocultados a mano por el superadmin desde el panel (tab Eventos).
+-- referencia_id = id público del evento, en el mismo formato que usan los
+-- destacados y la bandeja de avisos (ev-…, aytocult-…, bd-<uuid>, ig-…). Cubre
+-- tanto los eventos estáticos (eventos.json / eventos-externos.json) como los
+-- de Neon sin tocar el estado del evento de la organización: la agenda pública
+-- (useEventosPublicos) filtra CLIENT-SIDE los ids presentes aquí. Ocultar es
+-- reversible: basta borrar la fila.
+CREATE TABLE IF NOT EXISTS eventos_ocultos (
+  referencia_id text PRIMARY KEY,
+  oculto_en timestamptz NOT NULL DEFAULT now()
+);

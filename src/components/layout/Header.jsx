@@ -9,6 +9,7 @@ import { useAdminAuth } from '../../lib/adminAuth.jsx'
 const enlaces = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/eventos', label: 'Eventos' },
+  { to: '/actividades', label: 'Actividades' },
   { to: '/comercios', label: 'Comercios' },
   { to: '/noticias', label: 'Noticias' },
 ]

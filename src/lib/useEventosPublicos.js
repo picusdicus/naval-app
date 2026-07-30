@@ -17,6 +17,7 @@ const ESTATICOS = [...eventosCurados, ...eventosExternos]
  */
 export function useEventosPublicos() {
   const [deLaBase, setDeLaBase] = useState([])
+  const [ocultos, setOcultos] = useState(() => new Set())
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -34,6 +35,15 @@ export function useEventosPublicos() {
         if (vigente) setCargando(false)
       })
 
+    // Lista de ids ocultados por el superadmin. Falla suave: si no responde,
+    // no se oculta nada (la agenda se muestra completa).
+    fetch('/api/eventos-ocultos')
+      .then((r) => (r.ok ? r.json() : { ocultos: [] }))
+      .then((datos) => {
+        if (vigente) setOcultos(new Set(datos.ocultos ?? []))
+      })
+      .catch(() => {})
+
     return () => {
       vigente = false
     }
@@ -42,8 +52,16 @@ export function useEventosPublicos() {
   // Identidad estable mientras no lleguen datos nuevos: quien reciba `eventos`
   // puede usarlo como dependencia de un useMemo sin recalcular en cada render.
   // combinarEventos fusiona los duplicados (evento curado + el mismo evento
-  // creado en Neon por el scrapper de Instagram) en una sola tarjeta.
-  const eventos = useMemo(() => combinarEventos(ESTATICOS, deLaBase), [deLaBase])
+  // creado en Neon por el scrapper de Instagram) en una sola tarjeta; después
+  // se descartan los que el superadmin haya ocultado (por id principal o por
+  // cualquiera de los idsSecundarios que la fusión haya acumulado).
+  const eventos = useMemo(() => {
+    const combinados = combinarEventos(ESTATICOS, deLaBase)
+    if (!ocultos.size) return combinados
+    return combinados.filter(
+      (e) => !ocultos.has(e.id) && !(e.idsSecundarios || []).some((id) => ocultos.has(id)),
+    )
+  }, [deLaBase, ocultos])
 
   return { eventos, cargando }
 }

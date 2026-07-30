@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import comerciosData from '../../../data/comercios.json'
+import serviciosLocales from '../../../data/servicios-locales.json'
 import overridesActuales from '../../../data/comercios-overrides.json'
 import { LISTA_CATEGORIAS } from '../../../lib/categorias.js'
 import { SUBTIPO_INFO, infoSubtipo } from '../../../lib/subtipos.js'
@@ -24,6 +25,19 @@ const OPCIONES_SUBTIPO = Object.keys(SUBTIPO_INFO)
   .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
 
 const ES_GENERICO = (subtipo) => subtipo === 'shop' || subtipo === 'service'
+
+// Campos de contacto/ubicación editables además de la categorización.
+const CAMPOS_DATOS = ['direccion', 'telefono', 'web', 'lat', 'lng']
+
+// ¿El valor del formulario coincide con el dato original del comercio? (para no
+// guardar en el cambio los campos que no se han tocado de verdad).
+function mismoDato(comercio, clave, valor) {
+  if (clave === 'lat' || clave === 'lng') {
+    const a = valor === '' || valor === null || valor === undefined ? null : Number(valor)
+    return a === (comercio[clave] ?? null)
+  }
+  return (valor ?? '') === (comercio[clave] ?? '')
+}
 
 // "Ocio nocturno" → "ocio_nocturno" (sin acentos, solo a-z/0-9/_).
 function slugDe(nombre) {
@@ -50,13 +64,28 @@ export default function TablesComercios() {
   const [formError, setFormError] = useState(null)
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState(null) // { tipo: 'ok'|'error', texto }
+  const [expandido, setExpandido] = useState(() => new Set()) // ids con el panel de datos abierto
 
-  const base = useMemo(() => comerciosData.filter((c) => c.id.startsWith('gpl_')), [])
+  function alternarExpandido(id) {
+    setExpandido((previo) => {
+      const copia = new Set(previo)
+      copia.has(id) ? copia.delete(id) : copia.add(id)
+      return copia
+    })
+  }
+
+  // Google Places (gpl_…) + servicios curados (local/…). Los curados salen del
+  // filtro "solo sin subtipo claro" (ya vienen categorizados), pero aparecen al
+  // buscar por texto o si tienen un cambio pendiente.
+  const base = useMemo(
+    () => [...comerciosData.filter((c) => c.id.startsWith('gpl_')), ...serviciosLocales],
+    [],
+  )
 
   const filtrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase()
     return base.filter((c) => {
-      if (soloGenericos && !ES_GENERICO(c.subtipo) && !cambios[c.id]) return false
+      if (soloGenericos && !texto && !ES_GENERICO(c.subtipo) && !cambios[c.id]) return false
       if (!texto) return true
       return (
         c.nombre.toLowerCase().includes(texto) ||
@@ -69,6 +98,9 @@ export default function TablesComercios() {
   const visibles = filtrados.slice(0, MAX_FILAS)
   const totalCambios = Object.keys(cambios).length
   const totalNuevas = Object.keys(nuevasCategorias).length + Object.keys(nuevosSubtipos).length
+  const exclusionesCuradas = Object.entries(cambios).filter(
+    ([id, cambio]) => cambio.excluir === true && id.startsWith('local/'),
+  ).length
 
   const opcionesCategoria = useMemo(
     () => [
@@ -93,7 +125,18 @@ export default function TablesComercios() {
   )
 
   function valorActual(comercio) {
-    return cambios[comercio.id] || { categoria: comercio.categoria, subtipo: comercio.subtipo }
+    const cambio = cambios[comercio.id] || {}
+    const leer = (clave, defecto) => (clave in cambio ? cambio[clave] : defecto)
+    return {
+      categoria: cambio.categoria ?? comercio.categoria,
+      subtipo: cambio.subtipo ?? comercio.subtipo,
+      excluir: cambio.excluir === true,
+      direccion: leer('direccion', comercio.direccion ?? ''),
+      telefono: leer('telefono', comercio.telefono ?? ''),
+      web: leer('web', comercio.web ?? ''),
+      lat: leer('lat', comercio.lat ?? ''),
+      lng: leer('lng', comercio.lng ?? ''),
+    }
   }
 
   function registrarCambio(comercio, parcial) {
@@ -104,10 +147,19 @@ export default function TablesComercios() {
         subtipo: comercio.subtipo,
       }
       const siguiente = { ...actual, ...parcial }
+      // Los datos que igualan al original no se guardan: el cambio solo lleva
+      // correcciones reales (evita congelar en el override lo que Google ya trae bien).
+      for (const clave of CAMPOS_DATOS) {
+        if (clave in siguiente && mismoDato(comercio, clave, siguiente[clave])) {
+          delete siguiente[clave]
+        }
+      }
+      const sinDatos = !CAMPOS_DATOS.some((clave) => clave in siguiente)
       const sinCambios =
         siguiente.excluir !== true &&
         siguiente.categoria === comercio.categoria &&
-        siguiente.subtipo === comercio.subtipo
+        siguiente.subtipo === comercio.subtipo &&
+        sinDatos
       const copia = { ...previos }
       if (sinCambios) delete copia[comercio.id]
       else copia[comercio.id] = siguiente
@@ -199,9 +251,9 @@ export default function TablesComercios() {
           <h2 className="font-serif-dm text-xl text-tinta">Categorización de comercios</h2>
           <p className="mt-1 font-serif-spectral text-sm text-pardo">
             Corrige la categoría y subcategoría de las entradas que Google clasifica mal,
-            créalas si no existen, o excluye locales del directorio. Al guardar se hace un
-            commit y los cambios se publican con el redeploy (~2 min). Se conservan aunque se
-            regenere el directorio.
+            edita su dirección, teléfono, web y coordenadas, créalas si no existen, o excluye
+            locales del directorio. Al guardar se hace un commit y los cambios se publican con
+            el redeploy (~2 min). Se conservan aunque se regenere el directorio.
           </p>
         </div>
         <button
@@ -225,6 +277,18 @@ export default function TablesComercios() {
         >
           <MIcon name={mensaje.tipo === 'ok' ? 'check_circle' : 'error'} className="mt-0.5 text-[18px]" />
           <span>{mensaje.texto}</span>
+        </p>
+      )}
+
+      {exclusionesCuradas > 0 && (
+        <p className="flex items-start gap-2 border border-terracota bg-terracota-fondo px-4 py-3 font-serif-spectral text-sm text-terracota">
+          <MIcon name="warning" className="mt-0.5 text-[18px]" />
+          <span>
+            {exclusionesCuradas}{' '}
+            {exclusionesCuradas === 1 ? 'servicio curado se eliminará' : 'servicios curados se eliminarán'}{' '}
+            de <code>servicios-locales.json</code> al guardar. Es permanente (recuperable solo por
+            git). Deshaz el botón «Se elimina» si no era tu intención.
+          </span>
         </p>
       )}
 
@@ -343,18 +407,19 @@ export default function TablesComercios() {
           const editado = Boolean(cambios[c.id])
           const excluido = valor.excluir === true
           const conOverride = Boolean(overridesActuales[c.id])
+          const esCurado = c.id.startsWith('local/')
           return (
-            <div
-              key={c.id}
-              className={`flex flex-col gap-3 py-3 lg:flex-row lg:items-center ${excluido ? 'opacity-50' : ''}`}
-            >
+            <div key={c.id} className={`py-3 ${excluido ? 'opacity-50' : ''}`}>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-serif-dm text-base leading-tight text-tinta">
                   {c.nombre}
                   {editado && <span className="ml-2 align-middle text-terracota">●</span>}
                 </p>
                 <p className="mt-0.5 truncate font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
-                  {c.tipoDisplay || 'Sin tipo de Google'} · {c.direccion || 'sin dirección'}
+                  {c.tipoDisplay || (esCurado ? 'Servicio curado' : 'Sin tipo de Google')} ·{' '}
+                  {c.direccion || 'sin dirección'}
+                  {esCurado && <span className="ml-2 text-verde">· curado</span>}
                   {conOverride && <span className="ml-2 text-ocre-profundo">· corregido antes</span>}
                 </p>
               </div>
@@ -407,12 +472,98 @@ export default function TablesComercios() {
                       ? 'border-terracota bg-terracota text-papel'
                       : 'border-filete text-pardo hover:border-terracota hover:text-terracota'
                   }`}
-                  title={excluido ? 'Volver a incluir en el directorio' : 'Excluir del directorio'}
+                  title={
+                    excluido
+                      ? 'Deshacer'
+                      : esCurado
+                        ? 'Eliminar este servicio curado de servicios-locales.json (permanente al guardar, recuperable solo por git)'
+                        : 'Excluir del directorio'
+                  }
                 >
-                  <MIcon name={excluido ? 'undo' : 'visibility_off'} className="text-[14px]" />
-                  {excluido ? 'Excluido' : 'Excluir'}
+                  <MIcon
+                    name={excluido ? 'undo' : esCurado ? 'delete' : 'visibility_off'}
+                    className="text-[14px]"
+                  />
+                  {excluido ? (esCurado ? 'Se elimina' : 'Excluido') : esCurado ? 'Eliminar' : 'Excluir'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => alternarExpandido(c.id)}
+                  disabled={excluido}
+                  className={`inline-flex items-center gap-1 border px-2.5 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    expandido.has(c.id)
+                      ? 'border-tinta bg-tinta text-papel'
+                      : 'border-filete text-pardo hover:border-tinta hover:text-tinta'
+                  }`}
+                  title="Editar dirección, teléfono, web y coordenadas"
+                >
+                  <MIcon name="edit_location_alt" className="text-[14px]" />
+                  Datos
                 </button>
               </div>
+              </div>
+
+              {expandido.has(c.id) && !excluido && (
+                <div className="mt-3 grid grid-cols-1 gap-3 border border-filete bg-papel-calido p-3 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo sm:col-span-2">
+                    Dirección
+                    <input
+                      type="text"
+                      value={valor.direccion}
+                      onChange={(e) => registrarCambio(c, { direccion: e.target.value })}
+                      placeholder="Calle, número, Navalcarnero"
+                      className="gz-input py-2 text-sm normal-case tracking-normal"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                    Teléfono
+                    <input
+                      type="tel"
+                      value={valor.telefono}
+                      onChange={(e) => registrarCambio(c, { telefono: e.target.value })}
+                      placeholder="918 00 00 00"
+                      className="gz-input py-2 text-sm normal-case tracking-normal"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                    Web
+                    <input
+                      type="url"
+                      value={valor.web}
+                      onChange={(e) => registrarCambio(c, { web: e.target.value })}
+                      placeholder="https://…"
+                      className="gz-input py-2 text-sm normal-case tracking-normal"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                    Latitud
+                    <input
+                      type="number"
+                      step="any"
+                      value={valor.lat}
+                      onChange={(e) => registrarCambio(c, { lat: e.target.value })}
+                      placeholder="40.2903"
+                      className="gz-input py-2 text-sm normal-case tracking-normal"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                    Longitud
+                    <input
+                      type="number"
+                      step="any"
+                      value={valor.lng}
+                      onChange={(e) => registrarCambio(c, { lng: e.target.value })}
+                      placeholder="-4.0126"
+                      className="gz-input py-2 text-sm normal-case tracking-normal"
+                    />
+                  </label>
+                  <p className="font-serif-spectral text-xs text-pardo sm:col-span-2">
+                    Estas correcciones se conservan aunque se regenere el directorio desde Google.
+                    Deja un campo vacío para borrar el dato.
+                  </p>
+                </div>
+              )}
             </div>
           )
         })}
