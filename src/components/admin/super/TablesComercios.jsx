@@ -539,10 +539,10 @@ export default function TablesComercios() {
                   <label className="flex flex-col gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                     Latitud
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       value={valor.lat}
-                      onChange={(e) => registrarCambio(c, { lat: e.target.value })}
+                      onChange={(e) => registrarCambio(c, { lat: e.target.value.replace(',', '.') })}
                       placeholder="40.2903"
                       className="gz-input py-2 text-sm normal-case tracking-normal"
                     />
@@ -550,10 +550,10 @@ export default function TablesComercios() {
                   <label className="flex flex-col gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                     Longitud
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       value={valor.lng}
-                      onChange={(e) => registrarCambio(c, { lng: e.target.value })}
+                      onChange={(e) => registrarCambio(c, { lng: e.target.value.replace(',', '.') })}
                       placeholder="-4.0126"
                       className="gz-input py-2 text-sm normal-case tracking-normal"
                     />
