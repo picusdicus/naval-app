@@ -380,26 +380,6 @@
     "fuenteSubcategoria": "Comida Preparada"
   },
   {
-    "id": "local/alimentacion-empanadas-malvon",
-    "nombre": "Empanadas Malvón",
-    "categoria": "alimentacion",
-    "subtipo": "comida_preparada",
-    "cocina": [],
-    "lat": null,
-    "lng": null,
-    "direccion": "Calle Ferrocarril, 26, Navalcarnero",
-    "telefono": "",
-    "web": "",
-    "horario": "",
-    "rating": null,
-    "totalReviews": null,
-    "precioNivel": "",
-    "tipoDisplay": "Comida preparada",
-    "fuente": "guia-municipal",
-    "fuenteCategoria": "Alimentación",
-    "fuenteSubcategoria": "Comida Preparada"
-  },
-  {
     "id": "local/alimentacion-gusto-casero",
     "nombre": "Gusto Casero",
     "categoria": "alimentacion",
