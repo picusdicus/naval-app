@@ -5,8 +5,14 @@
  * in Navalcarnero from Google Places API (New), normalizes them to the
  * app's data shape, and writes the result to src/data/comercios.json.
  *
+ * Además cruza el directorio curado a mano (src/data/servicios-locales.json):
+ * busca cada servicio curado en Places por nombre+dirección y, cuando lo
+ * confirma, la ficha de Google gana y el curado se retira del fichero (ver
+ * "Emparejado con el directorio curado" más abajo).
+ *
  * Usage:
  *   node scripts/fetch-comercios-google.mjs
+ *   node scripts/fetch-comercios-google.mjs --solo-servicios --limite-servicios=30   # prueba
  *
  * Requires:
  *   GOOGLE_PLACES_KEY in .env (or already in process.env)
@@ -54,7 +60,22 @@ if (!API_KEY) {
 
 const COMERCIOS_PATH = resolve(ROOT, "src/data/comercios.json");
 const SERVICIOS_PATH = resolve(ROOT, "src/data/servicios-locales.json");
+const OVERRIDES_PATH = resolve(ROOT, "src/data/comercios-overrides.json");
 const DUPES_REPORT_PATH = resolve(ROOT, "duplicados-detectados.json");
+const ABSORBIDOS_REPORT_PATH = resolve(ROOT, "servicios-absorbidos.json");
+
+// Flags:
+//   --dry-run             calcula todo y escribe los informes, pero no toca los JSON de datos
+//   --sin-servicios       salta la búsqueda dirigida de los curados (ahorra ~1 llamada por curado)
+//   --limite-servicios=N  solo intenta enlazar los N primeros curados (para probar)
+//   --solo-servicios      salta las queries genéricas y prueba SOLO el enlace de los curados.
+//                         Implica --dry-run: sin la fase 1 el directorio saldría a medias.
+const ARGS = process.argv.slice(2);
+const SOLO_SERVICIOS = ARGS.includes("--solo-servicios");
+const DRY_RUN = ARGS.includes("--dry-run") || SOLO_SERVICIOS;
+const SIN_SERVICIOS = ARGS.includes("--sin-servicios") && !SOLO_SERVICIOS;
+const LIMITE_SERVICIOS =
+  Number(ARGS.find((a) => a.startsWith("--limite-servicios="))?.split("=")[1]) || Infinity;
 
 // ---------------------------------------------------------------------------
 // Tuning constants
@@ -89,11 +110,13 @@ const CATEGORY_RULES = [
   { types: ["grocery_store"],            categoria: "alimentacion",   subtipo: "supermarket" },
   { types: ["convenience_store"],        categoria: "alimentacion",   subtipo: "convenience" },
   { types: ["bakery"],                   categoria: "alimentacion",   subtipo: "bakery" },
+  { types: ["pastry_shop"],              categoria: "alimentacion",   subtipo: "pastry" },
   { types: ["butcher_shop"],             categoria: "alimentacion",   subtipo: "butcher" },
   { types: ["deli"],                     categoria: "alimentacion",   subtipo: "deli" },
   { types: ["greengrocer"],              categoria: "alimentacion",   subtipo: "greengrocer" },
   { types: ["market"],                   categoria: "alimentacion",   subtipo: "marketplace" },
   { types: ["liquor_store"],             categoria: "alimentacion",   subtipo: "alcohol" },
+  { types: ["winery"],                   categoria: "alimentacion",   subtipo: "alcohol" },
   { types: ["candy_store"],              categoria: "alimentacion",   subtipo: "confectionery" },
   { types: ["chocolate_factory"],        categoria: "alimentacion",   subtipo: "confectionery" },
 
@@ -139,6 +162,7 @@ const CATEGORY_RULES = [
   // ── Hogar ─────────────────────────────────────────────────────────────────
   { types: ["furniture_store"],          categoria: "hogar",          subtipo: "furniture" },
   { types: ["hardware_store"],           categoria: "hogar",          subtipo: "doityourself" },
+  { types: ["home_improvement_store"],   categoria: "hogar",          subtipo: "doityourself" },
   { types: ["home_goods_store"],         categoria: "hogar",          subtipo: "houseware" },
   { types: ["florist"],                  categoria: "hogar",          subtipo: "florist" },
   { types: ["garden_center"],            categoria: "hogar",          subtipo: "garden_centre" },
@@ -220,6 +244,7 @@ const CATEGORY_RULES = [
   { types: ["atm"],                      categoria: "servicios",      subtipo: "atm" },
   { types: ["post_office"],              categoria: "servicios",      subtipo: "post_office" },
   { types: ["travel_agency"],            categoria: "servicios",      subtipo: "travel_agency" },
+  { types: ["tour_agency"],              categoria: "servicios",      subtipo: "travel_agency" },
   { types: ["library"],                  categoria: "servicios",      subtipo: "library" },
   { types: ["dry_cleaning"],             categoria: "servicios",      subtipo: "dry_cleaning" },
   { types: ["lodging", "hotel"],         categoria: "servicios",      subtipo: "hotel" },
@@ -380,19 +405,135 @@ function distanciaKm(lat, lng) {
 }
 
 // ---------------------------------------------------------------------------
+// Emparejado con el directorio curado (servicios-locales.json)
+// ---------------------------------------------------------------------------
+// Los servicios curados (guía municipal) son fichas de contacto a mano: sin
+// coordenadas, sin horario y sin web. Muchos SÍ están en Google Places, pero las
+// queries genéricas de arriba no los alcanzan (cada búsqueda topa en ~60
+// resultados ordenados por prominencia y estos son negocios pequeños), así que
+// se buscan uno a uno por nombre + dirección.
+//
+// Cuando Places confirma uno, la ficha de Google GANA (trae ubicación, horario y
+// reseñas) y el curado se BORRA de servicios-locales.json — si no, saldría
+// duplicado en el directorio, que concatena las dos fuentes sin dedupe. Lo único
+// que se rescata del curado es su categoría/subtipo (la guía clasifica a mano
+// donde Places devuelve types genéricos) y los datos de contacto que Google no
+// traiga: viajan al override, que se reaplica en cada regeneración.
+
+const sinTildes = (s) => (s || "").toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+const soloTexto = (s) => sinTildes(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+const PALABRAS_VACIAS = new Set(["de", "la", "el", "los", "las", "y", "del", "navalcarnero", "sl", "slp", "cb", "centro", "tienda", "comercio", "local", "comercial"]);
+const tokens = (s) => new Set(soloTexto(s).split(" ").filter((w) => w.length >= 3 && !PALABRAS_VACIAS.has(w)));
+
+const tel = (t) => (t || "").replace(/\D/g, "").replace(/^34/, "");
+
+// Reduce una dirección a { calle: Set(palabras), num }, quitando el tipo de vía
+// y los adornos ("local", "bajo") que cada fuente escribe a su manera.
+function dirClave(d) {
+  let x = soloTexto(d)
+    .replace(/\bnavalcarnero\b/g, "")
+    .replace(/\blocal\b|\bcomercial\b|\bbajo\b|\bbis\b/g, " ")
+    .replace(/\b(calle|c|avenida|avda|av|paseo|plaza|plazuela|pza|ronda|rda|camino|travesia|tr|callejon|carretera|ctra|urbanizacion|urb|pol|poligono|ind)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const num = x.match(/\b(\d{1,4})\b/);
+  return { calle: new Set(x.split(" ").filter((w) => w && isNaN(w) && w.length > 2)), num: num ? num[1] : null };
+}
+
+const solapa = (a, b) => {
+  if (!a.size || !b.size) return 0;
+  let i = 0;
+  for (const t of a) if (b.has(t)) i++;
+  return i / Math.min(a.size, b.size);
+};
+
+// Similitud de nombres. Con UNA sola palabra en común se divide por el lado más
+// largo: si no, "Golden Consultores" casaría al 100 % con "A&R Consultores"
+// (comprobado, era un falso positivo real).
+function simNombre(a, b) {
+  if (!a.size || !b.size) return 0;
+  let i = 0;
+  for (const t of a) if (b.has(t)) i++;
+  return i < 2 ? i / Math.max(a.size, b.size) : i / Math.min(a.size, b.size);
+}
+
+// Vista uniforme de un candidato, venga de una búsqueda (Place) o del directorio
+// ya montado (comercio).
+const fichaDePlace = (p) => ({
+  nombre: p.displayName?.text || "",
+  direccion: p.shortFormattedAddress || p.formattedAddress || "",
+  telefono: p.nationalPhoneNumber || "",
+});
+
+// ¿Los dos nombres tienen algo que ver? Tolerante con la grafía, porque la guía
+// separa lo que Google junta y al revés: "Luz y Led" ↔ "LuzyLed",
+// "Centro Casa Verde" ↔ "Centro Casaverde", "20 Bikes" ↔ "20Bikes".
+function nombresEmparentados(a, b) {
+  const ja = soloTexto(a).replace(/ /g, "");
+  const jb = soloTexto(b).replace(/ /g, "");
+  if (!ja || !jb) return false;
+  if (ja.includes(jb) || jb.includes(ja)) return true;
+  // Solo palabras de ≥4 letras: con 3 se cuela ruido dentro de otras palabras
+  // ("All **for** Printing" contra "Af**for**d Industrial", que son dos empresas).
+  for (const t of tokens(a)) if (t.length >= 4 && jb.includes(t)) return true;
+  for (const t of tokens(b)) if (t.length >= 4 && ja.includes(t)) return true;
+  return false;
+}
+
+// Confianza de que un curado y un candidato de Google sean el MISMO negocio:
+//   3 = casi seguro   2 = fuerte (se absorbe)   1 = dudoso (a revisar a mano)   0 = nada
+function confianzaEnlace(servicio, ficha) {
+  const nombreSim = simNombre(tokens(servicio.nombre), tokens(ficha.nombre));
+  const ka = dirClave(servicio.direccion);
+  const kb = dirClave(ficha.direccion);
+  const calleSim = solapa(ka.calle, kb.calle);
+  const numIgual = !!(ka.num && kb.num && ka.num === kb.num);
+  const ta = tel(servicio.telefono);
+  const tb = tel(ficha.telefono);
+  const telIgual = !!(ta && ta === tb);
+  const telDistinto = !!(ta && tb && ta !== tb);
+
+  if (telIgual && nombreSim >= 0.45) return { conf: 3, motivo: "teléfono idéntico" };
+  if (nombreSim >= 0.6 && calleSim >= 0.5 && numIgual) return { conf: 3, motivo: "mismo nombre y misma dirección" };
+  // El teléfono solo no basta si los nombres no tienen NADA que ver: un mismo
+  // número cubre a veces dos negocios del mismo dueño (una perfumería y una
+  // administración de lotería, una cafetería y una empresa de climatización), y
+  // absorber ahí borra uno de los dos del directorio y encima le pega su
+  // categoría al otro. Comprobado en la primera regeneración: 2 de 30 casos.
+  if (telIgual) {
+    return nombresEmparentados(servicio.nombre, ficha.nombre)
+      ? { conf: 2, motivo: "mismo teléfono, mismo rótulo escrito de otra forma" }
+      : { conf: 1, motivo: "mismo teléfono pero nombres sin relación (¿dos negocios del mismo dueño?)" };
+  }
+  // Dos teléfonos distintos son la señal más fuerte de que son negocios
+  // diferentes (vecinos de portal, mismo gremio en la misma calle): sin dirección
+  // exacta que lo respalde no se absorbe, se manda a revisión.
+  if (telDistinto) {
+    return nombreSim >= 0.75 && calleSim >= 0.5
+      ? { conf: 1, motivo: "nombre y calle coinciden, pero el teléfono no" }
+      : { conf: 0, motivo: null };
+  }
+  if (nombreSim >= 0.75 && calleSim >= 0.5) return { conf: 2, motivo: "mismo nombre y misma calle" };
+  if (nombreSim >= 0.9 && numIgual) return { conf: 2, motivo: "mismo nombre y mismo número" };
+  if (nombreSim >= 0.9) return { conf: 1, motivo: "mismo nombre, dirección sin contrastar" };
+  return { conf: 0, motivo: null };
+}
+
+// ---------------------------------------------------------------------------
 // Google Places API (New) wrappers
 // ---------------------------------------------------------------------------
 
 const PLACES_BASE = "https://places.googleapis.com/v1";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function searchText(query, pageToken = null) {
+async function searchText(query, pageToken = null, maxResultCount = 20) {
   const body = {
     textQuery: query,
     locationBias: {
       circle: { center: NAVALCARNERO_CENTER, radius: SEARCH_RADIUS_METERS },
     },
-    maxResultCount: 20,
+    maxResultCount,
     languageCode: "es",
   };
   if (pageToken) body.pageToken = pageToken;
@@ -402,9 +543,14 @@ async function searchText(query, pageToken = null) {
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": API_KEY,
+      // `nationalPhoneNumber` no lo usa el directorio (el detalle lo trae igual):
+      // está aquí porque es el criterio con el que se reconoce a un servicio
+      // curado, y sin él el emparejado de la fase 1b se queda ciego justo donde
+      // más falta hace (rótulo distinto del nombre de la guía: "Frusangar" ↔
+      // "Patatas Frusangar", puestos del mercado dados de alta a nombre del dueño).
       "X-Goog-FieldMask":
         "places.id,places.displayName,places.types,places.location," +
-        "places.formattedAddress,nextPageToken",
+        "places.formattedAddress,places.nationalPhoneNumber,nextPageToken",
     },
     body: JSON.stringify(body),
   });
@@ -487,6 +633,158 @@ const SEARCH_QUERIES = [
 ];
 
 // ---------------------------------------------------------------------------
+// Búsqueda dirigida de los servicios curados
+// ---------------------------------------------------------------------------
+// Una búsqueda por curado, con su nombre y su dirección. Los que ya haya traído
+// la fase 1 no gastan llamada. Los ids resueltos se suman a `rawPlaces` para que
+// la fase 2 les pida el detalle completo como a cualquier otro.
+async function enlazarServiciosCurados(rawPlaces, servicios) {
+  const enlaces = new Map(); // servicioId → { placeId, conf, motivo, via }
+  const stats = { llamadas: 0, yaEstaban: 0, nuevos: 0, sinEnlace: 0, errores: 0 };
+
+  const lista = servicios.slice(0, LIMITE_SERVICIOS);
+  for (let i = 0; i < lista.length; i++) {
+    const s = lista[i];
+    if (i % 25 === 0) console.log(`  [${i + 1}/${lista.length}]`);
+
+    // 1) ¿Lo trajo ya alguna query genérica? (gratis)
+    let mejor = null;
+    for (const p of rawPlaces.values()) {
+      const { conf, motivo } = confianzaEnlace(s, fichaDePlace(p));
+      if (conf >= 2 && (!mejor || conf > mejor.conf)) {
+        mejor = { placeId: p.id, conf, motivo, via: "búsqueda genérica" };
+      }
+    }
+    if (mejor) {
+      enlaces.set(s.id, mejor);
+      stats.yaEstaban++;
+      continue;
+    }
+
+    // 2) Búsqueda dirigida.
+    let place = null;
+    try {
+      const { places } = await searchText(`${s.nombre}, ${s.direccion || "Navalcarnero"}`, null, 5);
+      stats.llamadas++;
+      for (const p of places) {
+        const lat = p.location?.latitude ?? 0;
+        const lng = p.location?.longitude ?? 0;
+        if (!lat || !lng || distanciaKm(lat, lng) > MAX_DISTANCIA_KM) continue;
+        const { conf, motivo } = confianzaEnlace(s, fichaDePlace(p));
+        if (conf >= 2 && (!mejor || conf > mejor.conf)) {
+          mejor = { placeId: p.id, conf, motivo, via: "búsqueda dirigida" };
+          place = p;
+        }
+      }
+    } catch (err) {
+      stats.errores++;
+      console.error(`  WARN ${s.nombre}: ${err.message.slice(0, 80)}`);
+    }
+
+    if (mejor) {
+      if (!rawPlaces.has(mejor.placeId)) {
+        rawPlaces.set(mejor.placeId, place);
+        stats.nuevos++;
+      }
+      enlaces.set(s.id, mejor);
+    } else {
+      stats.sinEnlace++;
+    }
+    await sleep(API_THROTTLE_MS);
+  }
+
+  return { enlaces, stats };
+}
+
+// ---------------------------------------------------------------------------
+// Absorción: el curado que Google ya cubre sale de servicios-locales.json
+// ---------------------------------------------------------------------------
+// Se re-verifica con el detalle completo (ahora sí hay teléfono, que es el
+// criterio fuerte). Solo se absorbe con confianza ≥ 2; lo dudoso se queda y va
+// al informe para mirarlo a mano.
+function absorberCurados(final, servicios, enlaces, overrides) {
+  const porId = new Map(final.map((c) => [c.id, c]));
+  const absorbidos = [];
+  const revisar = [];
+  const restantes = [];
+
+  for (const s of servicios) {
+    const candidatos = [];
+    const enlace = enlaces.get(s.id);
+    if (enlace) {
+      const c = porId.get(`gpl_${enlace.placeId}`);
+      if (c) candidatos.push(c); // si no sobrevivió (cerrado, lejano, excluido) no se absorbe
+    }
+    // El teléfono solo se conoce tras el detalle, así que aquí se pillan también
+    // los duplicados que ya venían de las queries genéricas sin enlazar.
+    const t = tel(s.telefono);
+    if (t) for (const c of final) if (tel(c.telefono) === t && !candidatos.includes(c)) candidatos.push(c);
+
+    let mejor = null;
+    for (const c of candidatos) {
+      const { conf, motivo } = confianzaEnlace(s, c);
+      if (conf > 0 && (!mejor || conf > mejor.conf)) mejor = { conf, motivo, comercio: c };
+    }
+
+    if (mejor && mejor.conf >= 2) {
+      trasladarCurado(s, mejor.comercio, overrides);
+      absorbidos.push({
+        confianza: mejor.conf,
+        motivo: mejor.motivo,
+        via: enlace?.via || "coincidencia por teléfono",
+        servicioId: s.id,
+        servicioNombre: s.nombre,
+        servicioDireccion: s.direccion || "",
+        comercioId: mejor.comercio.id,
+        comercioNombre: mejor.comercio.nombre,
+        comercioDireccion: mejor.comercio.direccion || "",
+      });
+    } else {
+      restantes.push(s);
+      if (mejor) {
+        revisar.push({
+          confianza: mejor.conf,
+          motivo: mejor.motivo,
+          servicioId: s.id,
+          servicioNombre: s.nombre,
+          servicioDireccion: s.direccion || "",
+          comercioId: mejor.comercio.id,
+          comercioNombre: mejor.comercio.nombre,
+          comercioDireccion: mejor.comercio.direccion || "",
+        });
+      }
+    }
+  }
+
+  return { absorbidos, revisar, restantes };
+}
+
+// La ficha de Google gana en datos pero pierde en taxonomía: la guía municipal
+// clasifica a mano ("frutas_y_verduras", "comida_preparada") donde Places
+// devuelve types genéricos. Lo curado que merece sobrevivir viaja al override,
+// que es lo único que se reaplica en las próximas regeneraciones (el curado se
+// borra). Un override previo del panel superadmin manda sobre la guía.
+function trasladarCurado(servicio, comercio, overrides) {
+  const override = { ...(overrides[comercio.id] || {}) };
+
+  if (!override.categoria) {
+    comercio.categoria = servicio.categoria;
+    comercio.subtipo = servicio.subtipo;
+    override.categoria = servicio.categoria;
+    override.subtipo = servicio.subtipo;
+  }
+  // Contacto: solo se rellenan huecos de Google, nunca se pisa lo que trae.
+  for (const campo of ["telefono", "web", "direccion"]) {
+    if (!comercio[campo] && servicio[campo]) {
+      comercio[campo] = servicio[campo];
+      override[campo] = servicio[campo];
+    }
+  }
+
+  overrides[comercio.id] = override;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -499,7 +797,7 @@ async function main() {
   const rawPlaces = new Map();
   let searchCalls = 0;
 
-  for (const query of SEARCH_QUERIES) {
+  for (const query of SOLO_SERVICIOS ? [] : SEARCH_QUERIES) {
     let pageToken = null;
     let page = 1;
     process.stdout.write(`  "${query}" `);
@@ -529,6 +827,22 @@ async function main() {
 
   console.log(`\n  Total unique places found: ${rawPlaces.size}`);
   console.log(`  Search calls used: ${searchCalls}\n`);
+
+  // ── Phase 1b: búsqueda dirigida de los servicios curados ──────────────────
+  const servicios = leerServicios();
+  let enlaces = new Map();
+  if (SIN_SERVICIOS || !servicios.length) {
+    console.log("Phase 1b — Servicios curados: saltada\n");
+  } else {
+    console.log(`Phase 1b — Servicios curados (${Math.min(servicios.length, LIMITE_SERVICIOS)} de ${servicios.length})`);
+    const r = await enlazarServiciosCurados(rawPlaces, servicios);
+    enlaces = r.enlaces;
+    searchCalls += r.stats.llamadas;
+    console.log(
+      `  Enlazados: ${enlaces.size}  (${r.stats.yaEstaban} ya estaban en los resultados, ${r.stats.nuevos} nuevos)` +
+        `  |  sin enlace: ${r.stats.sinEnlace}  |  llamadas: ${r.stats.llamadas}  |  errores: ${r.stats.errores}\n`,
+    );
+  }
 
   // ── Phase 2: fetch full details ────────────────────────────────────────────
   console.log("Phase 2 — Place details");
@@ -613,19 +927,25 @@ async function main() {
 
   console.log(`  Detail calls: ${detailCalls}  |  errors: ${detailErrors}  |  skipped: ${skipped}  |  cerrados definitivos: ${cerrados}  |  fuera del municipio: ${lejanos}\n`);
 
-  // ── Phase 3: overrides curados, sort and write ─────────────────────────────
+  // ── Phase 3: overrides curados ─────────────────────────────────────────────
   // src/data/comercios-overrides.json corrige clasificaciones que Google trae
   // mal (keyed por id; `"excluir": true` saca el local del directorio).
-  const OVERRIDES_PATH = resolve(ROOT, "src/data/comercios-overrides.json");
-  let final = comercios;
-  if (existsSync(OVERRIDES_PATH)) {
-    const overrides = JSON.parse(readFileSync(OVERRIDES_PATH, "utf-8"));
-    let aplicados = 0;
-    final = comercios.filter((c) => !overrides[c.id]?.excluir);
-    for (const c of final) {
-      if (overrides[c.id]) { Object.assign(c, overrides[c.id]); aplicados++; }
-    }
-    console.log(`  Overrides: ${aplicados} aplicados, ${comercios.length - final.length} excluidos\n`);
+  const overrides = leerOverrides();
+  const overridesAntes = JSON.stringify(overrides);
+  let final = comercios.filter((c) => !overrides[c.id]?.excluir);
+  let aplicados = 0;
+  for (const c of final) {
+    if (overrides[c.id]) { Object.assign(c, overrides[c.id]); aplicados++; }
+  }
+  console.log(`  Overrides: ${aplicados} aplicados, ${comercios.length - final.length} excluidos\n`);
+
+  // ── Phase 4: absorber los curados que Google ya cubre ──────────────────────
+  const { absorbidos, revisar, restantes } = absorberCurados(final, servicios, enlaces, overrides);
+  if (servicios.length) {
+    console.log(
+      `Phase 4 — Servicios curados absorbidos: ${absorbidos.length}` +
+        `  |  siguen curados: ${restantes.length}  |  dudosos a revisar: ${revisar.length}\n`,
+    );
   }
 
   final.sort((a, b) => {
@@ -634,8 +954,27 @@ async function main() {
     return a.nombre.localeCompare(b.nombre, "es");
   });
 
-  mkdirSync(dirname(COMERCIOS_PATH), { recursive: true });
-  writeFileSync(COMERCIOS_PATH, JSON.stringify(final, null, 2) + "\n", "utf-8");
+  if (DRY_RUN) {
+    console.log("  DRY RUN — no se escribe ningún JSON de datos (solo los informes).\n");
+  } else {
+    mkdirSync(dirname(COMERCIOS_PATH), { recursive: true });
+    writeFileSync(COMERCIOS_PATH, JSON.stringify(final, null, 2) + "\n", "utf-8");
+
+    // El curado absorbido desaparece de servicios-locales.json: si se quedara,
+    // el directorio (que concatena las dos fuentes) lo pintaría dos veces.
+    if (absorbidos.length) {
+      writeFileSync(SERVICIOS_PATH, JSON.stringify(restantes, null, 2) + "\n", "utf-8");
+      console.log(`  servicios-locales.json: ${absorbidos.length} entradas retiradas (quedan ${restantes.length})`);
+    }
+    if (JSON.stringify(overrides) !== overridesAntes) {
+      writeFileSync(OVERRIDES_PATH, JSON.stringify(overrides, null, 2) + "\n", "utf-8");
+      console.log(`  comercios-overrides.json: taxonomía curada trasladada`);
+    }
+  }
+
+  if (absorbidos.length) {
+    writeFileSync(ABSORBIDOS_REPORT_PATH, JSON.stringify(absorbidos, null, 2) + "\n", "utf-8");
+  }
 
   // ── Summary ────────────────────────────────────────────────────────────────
   const totalCalls = searchCalls + detailCalls;
@@ -668,93 +1007,60 @@ async function main() {
   console.log(`\nAPI calls used: ${totalCalls}  (~$${(totalCalls * 0.017).toFixed(2)})`);
   console.log(`  ${searchCalls} search  +  ${detailCalls} detail`);
 
-  avisarDuplicados(final);
+  informarServicios(absorbidos, revisar, restantes);
 }
 
 // ---------------------------------------------------------------------------
-// Aviso de duplicados con servicios-locales.json (directorio curado a mano)
+// Lectura de los ficheros curados
 // ---------------------------------------------------------------------------
-// El fetch regenera comercios.json desde cero y NO cruza los servicios curados,
-// así que si Google trae un negocio que ya estaba a mano en servicios-locales.json
-// reaparece el duplicado. Esta comprobación cruza los gpl_… con los local/… por
-// teléfono y dirección y avisa por consola + escribe duplicados-detectados.json.
-// No borra nada: el operador decide si retira la entrada local/… (el teléfono
-// idéntico es casi seguro; misma dirección con teléfono distinto puede ser un
-// negocio diferente y hay que verificarlo).
-function avisarDuplicados(comerciosGoogle) {
-  if (!existsSync(SERVICIOS_PATH)) return;
-  let servicios;
-  try { servicios = JSON.parse(readFileSync(SERVICIOS_PATH, "utf-8")); }
-  catch { return; }
 
-  const sinTildes = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const soloTexto = (s) => sinTildes(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-  const STOP = new Set(["de", "la", "el", "los", "las", "y", "del", "navalcarnero", "s", "l", "sl", "centro", "tienda", "comercio", "local", "comercial"]);
-  const tokens = (s) => new Set(soloTexto(s).split(" ").filter((w) => w && !STOP.has(w) && w.length > 1));
-  const tel = (t) => (t || "").replace(/\D/g, "").replace(/^34/, "");
-  const dirClave = (d) => {
-    let x = soloTexto(d).replace(/\bnavalcarnero\b/g, "").replace(/\blocal\b|\bcomercial\b|\bbajo\b/g, " ").trim();
-    x = x.replace(/\b(calle|c|avenida|avda|av|paseo|plaza|plazuela|pza|ronda|rda|camino|travesia|tr|callejon|carretera|ctra|urbanizacion|urb|pol|poligono)\b/g, " ").replace(/\s+/g, " ").trim();
-    const num = x.match(/\b(\d{1,4})\b/);
-    return { calle: new Set(x.split(" ").filter((w) => w && isNaN(w) && w.length > 2)), num: num ? num[1] : null };
-  };
-  const solapa = (a, b) => {
-    if (!a.size || !b.size) return 0;
-    let i = 0; for (const t of a) if (b.has(t)) i++;
-    return i / Math.min(a.size, b.size);
-  };
+function leerServicios() {
+  if (!existsSync(SERVICIOS_PATH)) return [];
+  try { return JSON.parse(readFileSync(SERVICIOS_PATH, "utf-8")); }
+  catch { return []; }
+}
 
-  const sospechas = [];
-  for (const s of servicios) {
-    let mejor = null;
-    for (const c of comerciosGoogle) {
-      const nombreSim = solapa(tokens(s.nombre), tokens(c.nombre));
-      const ka = dirClave(s.direccion), kb = dirClave(c.direccion);
-      const calleSim = solapa(ka.calle, kb.calle);
-      const numIgual = !!(ka.num && kb.num && ka.num === kb.num);
-      const telIgual = !!(tel(s.telefono) && tel(s.telefono) === tel(c.telefono));
+function leerOverrides() {
+  if (!existsSync(OVERRIDES_PATH)) return {};
+  try { return JSON.parse(readFileSync(OVERRIDES_PATH, "utf-8")); }
+  catch { return {}; }
+}
 
-      // Confianza: 3 = casi seguro (teléfono idéntico y nombre coherente);
-      // 2 = fuerte (revisar). No se marca "misma dirección" a secas: en un pueblo
-      // muchos negocios comparten calle y número (vecinos) sin ser el mismo, y
-      // eso solo generaría ruido.
-      let motivo = null, conf = 0;
-      if (telIgual && nombreSim >= 0.45) { motivo = "teléfono idéntico"; conf = 3; }
-      else if (telIgual) { motivo = "mismo teléfono, nombre distinto (¿mismo dueño?)"; conf = 2; }
-      else if (nombreSim >= 0.6 && calleSim >= 0.5 && numIgual) { motivo = "mismo nombre y dirección"; conf = 2; }
-      else if (nombreSim >= 0.75 && calleSim >= 0.5) { motivo = "mismo nombre y calle"; conf = 2; }
-
-      if (motivo && (!mejor || conf > mejor.conf)) mejor = { conf, motivo, c };
-    }
-    if (mejor) sospechas.push({
-      confianza: mejor.conf,
-      motivo: mejor.motivo,
-      servicioId: s.id,
-      servicioNombre: s.nombre,
-      servicioDireccion: s.direccion || "",
-      comercioId: mejor.c.id,
-      comercioNombre: mejor.c.nombre,
-      comercioDireccion: mejor.c.direccion || "",
-    });
-  }
+// ---------------------------------------------------------------------------
+// Informe final sobre los servicios curados
+// ---------------------------------------------------------------------------
+// Dos listas: los absorbidos (Google los cubre y ya han salido del fichero
+// curado, con rastro en servicios-absorbidos.json para poder deshacerlo con git)
+// y los dudosos, que NO se tocan y van a duplicados-detectados.json para mirarlos
+// a mano — típicamente mismo nombre y calle con teléfonos distintos, que en un
+// pueblo puede ser el mismo negocio con el teléfono viejo o dos negocios vecinos.
+function informarServicios(absorbidos, revisar, restantes) {
+  if (!absorbidos.length && !revisar.length) return;
 
   console.log("\n" + "=".repeat(65));
-  if (!sospechas.length) {
-    console.log("✓ Sin duplicados detectados con servicios-locales.json");
-    return;
+
+  if (absorbidos.length) {
+    console.log(`✓ ${absorbidos.length} servicio(s) curado(s) absorbido(s) por Google Places:`);
+    for (const d of [...absorbidos].sort((a, b) => b.confianza - a.confianza)) {
+      console.log(`  • ${d.servicioNombre} (${d.servicioId})`);
+      console.log(`      → ${d.comercioNombre} (${d.comercioId})`);
+      console.log(`      ${d.motivo} · ${d.via}`);
+    }
+    console.log(`\n  Quedan ${restantes.length} servicios curados (no están en Places).`);
+    console.log("  Rastro en servicios-absorbidos.json; para deshacer, git checkout de los JSON.");
   }
 
-  sospechas.sort((a, b) => b.confianza - a.confianza);
-  const seguros = sospechas.filter((d) => d.confianza >= 3).length;
-
-  console.log(`⚠ ${sospechas.length} posible(s) duplicado(s) con servicios-locales.json${seguros ? ` (${seguros} por teléfono idéntico)` : ""}:`);
-  for (const d of sospechas) {
-    console.log(`  • ${d.comercioNombre} (${d.comercioId})`);
-    console.log(`      ↔ ${d.servicioNombre} (${d.servicioId})`);
-    console.log(`      ${d.motivo} · ${d.comercioDireccion}`);
+  if (revisar.length) {
+    revisar.sort((a, b) => b.confianza - a.confianza);
+    console.log(`\n⚠ ${revisar.length} pareja(s) dudosa(s) — NO se han tocado:`);
+    for (const d of revisar) {
+      console.log(`  • ${d.servicioNombre} (${d.servicioId})`);
+      console.log(`      ↔ ${d.comercioNombre} (${d.comercioId})`);
+      console.log(`      ${d.motivo}`);
+    }
+    writeFileSync(DUPES_REPORT_PATH, JSON.stringify(revisar, null, 2) + "\n", "utf-8");
+    console.log("\n  Reporte en duplicados-detectados.json (revísalo a mano).");
   }
-  writeFileSync(DUPES_REPORT_PATH, JSON.stringify(sospechas, null, 2) + "\n", "utf-8");
-  console.log("\n  Reporte en duplicados-detectados.json (no borra nada; revísalo a mano).");
 }
 
 main().catch((err) => {

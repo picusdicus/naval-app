@@ -139,5 +139,688 @@
   "gpl_ChIJVVVlRVyUQQ0RxkNhbhZ7lRw": {
     "categoria": "educacion",
     "subtipo": "academy"
+  },
+  "gpl_ChIJNYl0t9aVQQ0REZq41mazJXI": {
+    "categoria": "alimentacion",
+    "subtipo": "pastry"
+  },
+  "gpl_ChIJZRTCxkuVQQ0RRhmofVm-jdk": {
+    "categoria": "alimentacion",
+    "subtipo": "pastry"
+  },
+  "gpl_ChIJae3gJGGVQQ0RPU4zxFFj15c": {
+    "categoria": "alimentacion",
+    "subtipo": "bakery"
+  },
+  "gpl_ChIJY-SLwIiTQQ0RSNBKWSD1_VE": {
+    "categoria": "alimentacion",
+    "subtipo": "frutas_y_verduras"
+  },
+  "gpl_ChIJC72opF6UQQ0RgR5jebLaEm0": {
+    "categoria": "alimentacion",
+    "subtipo": "butcher",
+    "telefono": "918 11 16 44"
+  },
+  "gpl_ChIJ0X9i1ViVQQ0RJ1fCCr3ycdY": {
+    "categoria": "alimentacion",
+    "subtipo": "butcher"
+  },
+  "gpl_ChIJR-6UJ1uUQQ0RlXKKRlJBaNc": {
+    "categoria": "alimentacion",
+    "subtipo": "confectionery"
+  },
+  "gpl_ChIJnabC4liVQQ0RJkgxxiCPPOg": {
+    "categoria": "hogar",
+    "subtipo": "pet"
+  },
+  "gpl_ChIJfwiKsFuUQQ0ReccSiEpcHW4": {
+    "categoria": "alimentacion",
+    "subtipo": "comida_preparada"
+  },
+  "gpl_ChIJeSx8dEOUQQ0RpN09ltvZe-c": {
+    "categoria": "alimentacion",
+    "subtipo": "comida_preparada"
+  },
+  "gpl_ChIJlRaVKNqVQQ0R01-UjgwBYRY": {
+    "categoria": "alimentacion",
+    "subtipo": "comida_preparada"
+  },
+  "gpl_ChIJm-DgwkKUQQ0RsnNNW9yU5mM": {
+    "categoria": "alimentacion",
+    "subtipo": "alcohol"
+  },
+  "gpl_ChIJ34kFBVuUQQ0RgkKTjT2484c": {
+    "categoria": "alimentacion",
+    "subtipo": "alcohol"
+  },
+  "gpl_ChIJk5cw182VQQ0Rg2SUGT6zJdY": {
+    "categoria": "hogar",
+    "subtipo": "pet"
+  },
+  "gpl_ChIJ61nAZluUQQ0RrXTgQNSPL1o": {
+    "categoria": "hogar",
+    "subtipo": "florist"
+  },
+  "gpl_ChIJYUs5nFyUQQ0RdCpyCV7Bvhk": {
+    "categoria": "hogar",
+    "subtipo": "garden_centre"
+  },
+  "gpl_ChIJ8aDwaACVQQ0Ro8okt4TjNs8": {
+    "categoria": "hogar",
+    "subtipo": "houseware",
+    "telefono": "669 68 38 93"
+  },
+  "gpl_ChIJ_wxe92eUQQ0RZvVrkEiJZ9s": {
+    "categoria": "servicios_prof",
+    "subtipo": "architect",
+    "telefono": "696 09 89 60"
+  },
+  "gpl_ChIJDzowjFuUQQ0R1zAPFjZwkAQ": {
+    "categoria": "servicios_prof",
+    "subtipo": "lawyer"
+  },
+  "gpl_ChIJ_2lAjWuVQQ0Ra0UjN1vUykk": {
+    "categoria": "servicios_prof",
+    "subtipo": "lawyer"
+  },
+  "gpl_ChIJsaDX3BYpQg0RSghelj5XF5Q": {
+    "categoria": "servicios_prof",
+    "subtipo": "accountant"
+  },
+  "gpl_ChIJ4b5vQfGVQQ0RkMSs3TMxOfg": {
+    "categoria": "servicios_prof",
+    "subtipo": "accountant"
+  },
+  "gpl_ChIJoQbUAlDrQQ0RsEXq6mrIq10": {
+    "categoria": "servicios_prof",
+    "subtipo": "accountant"
+  },
+  "gpl_ChIJE8_t3UWUQQ0R8lIDTGhdg6c": {
+    "categoria": "servicios_prof",
+    "subtipo": "marketing"
+  },
+  "gpl_ChIJEbfBQ1yUQQ0RzXbNI0K-p0U": {
+    "categoria": "servicios_prof",
+    "subtipo": "notary"
+  },
+  "gpl_ChIJvzU22FqUQQ0Rh1cLZsfQGP4": {
+    "categoria": "servicios_prof",
+    "subtipo": "notary"
+  },
+  "gpl_ChIJC040Ls1LQA0RsQ2yHs0m8x4": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ7fXu1kKUQQ0RLRG3U6dEM1s": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ4fHlBGOVQQ0RwvHGy3pozMI": {
+    "categoria": "servicios",
+    "subtipo": "tailor"
+  },
+  "gpl_ChIJk8rSLPGVQQ0RRwDRVR59WIw": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ7Uehk2eUQQ0R0DF8E03PiVE": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJryZy0gOVQQ0REPJaKcPdgLc": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJrZLAalGUQQ0RepAsUdMZC-Q": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ5drr-7-VQQ0RV0ZS9RVm0RU": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJCVcPM0WUQQ0RXF5Wiw2ubOA": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ9fta3VyUQQ0RPM5GhWeRxNU": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJjQSpunqUQQ0Rzwz6zUdEjZU": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJRTQBsneUQQ0R4wxehIb6qUw": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJIbJyhWWUQQ0RPBQMHGZhe-s": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ1zZKy3GUQQ0R9Z4I3q-tUzQ": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJC33WtqWTQQ0ReCpxnGuk0yg": {
+    "categoria": "servicios",
+    "subtipo": "locksmith"
+  },
+  "gpl_ChIJt2bI27-KQQ0R81LjokM12Io": {
+    "categoria": "servicios_prof",
+    "subtipo": "printing"
+  },
+  "gpl_ChIJFXGY7pOKQQ0RqdAszOeO2oc": {
+    "categoria": "servicios_prof",
+    "subtipo": "printing"
+  },
+  "gpl_ChIJOwS17pOKQQ0R3nSpvP9PKIY": {
+    "categoria": "servicios_prof",
+    "subtipo": "printing"
+  },
+  "gpl_ChIJ6wRYDl2VQQ0Rm7aTYWeIRaw": {
+    "categoria": "servicios_prof",
+    "subtipo": "insurance"
+  },
+  "gpl_ChIJT-TXrkSUQQ0RGuo4QAKX0jU": {
+    "categoria": "servicios_prof",
+    "subtipo": "insurance"
+  },
+  "gpl_ChIJyWsNfFuUQQ0Rya0q0AztA9g": {
+    "categoria": "servicios_prof",
+    "subtipo": "insurance"
+  },
+  "gpl_ChIJmx4kkCqVQQ0RKz_kBOmiRgU": {
+    "categoria": "servicios",
+    "subtipo": "bank"
+  },
+  "gpl_ChIJGQPRhFuUQQ0Rxm9hxkiWZr4": {
+    "categoria": "servicios_prof",
+    "subtipo": "estate_agent"
+  },
+  "gpl_ChIJ_9-nqESUQQ0ReonxW7CICus": {
+    "categoria": "servicios_prof",
+    "subtipo": "insurance"
+  },
+  "gpl_ChIJYUSZPWeUQQ0RZSaZOTvxBnA": {
+    "categoria": "servicios_prof",
+    "subtipo": "accountant"
+  },
+  "gpl_ChIJGWAqbHqUQQ0R6X_3zgNkmLc": {
+    "categoria": "servicios_prof",
+    "subtipo": "insurance"
+  },
+  "gpl_ChIJ__mMx1yUQQ0RFQxmqowMtdQ": {
+    "categoria": "servicios",
+    "subtipo": "service",
+    "telefono": "918 11 03 20"
+  },
+  "gpl_ChIJgdGMyPWVQQ0RShLgLsca02g": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ7bGz7WeUQQ0R97MNTypwZjk": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJJYgj1puVQQ0Rf8iN_-O48R4": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJy_wQKFuUQQ0RCsz3z900Ydg": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJO__TQ1-TQQ0RAeypYi5I-qM": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJRTG_tXqVQQ0RG1YoV-IW530": {
+    "categoria": "hogar",
+    "subtipo": "doityourself"
+  },
+  "gpl_ChIJRX3LU1mUQQ0R3swyuCWUz5M": {
+    "categoria": "hogar",
+    "subtipo": "doityourself"
+  },
+  "gpl_ChIJfRjsBnCUQQ0RdfXpvCTM0iY": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJ4WOlbW-UQQ0RDA-IXg7kFIA": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJxyf0rWiUQQ0ReMmU3RvCGvA": {
+    "categoria": "hogar",
+    "subtipo": "doityourself"
+  },
+  "gpl_ChIJ6XsbF6jsQQ0RaHI-zosJQfo": {
+    "categoria": "hogar",
+    "subtipo": "doityourself"
+  },
+  "gpl_ChIJy8pEDWaUQQ0R2DQC1VgM-wQ": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJ7e-9Kj-VQQ0RKACp3E19WVA": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ8XqdCiyVQQ0RvUYamuSWMzI": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJ30n12JaTQQ0R1g6CHy7Wywc": {
+    "categoria": "hogar",
+    "subtipo": "doityourself"
+  },
+  "gpl_ChIJ2erfhomTQQ0R27aJupFcei0": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJVyismVuUQQ0RzURvF7J-GoU": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJjTuZiiOVQQ0RUs3182gsKJs": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJifCn2nKVQQ0RnWyFaCf8-2g": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJ34jjCmWUQQ0Rpx3zDhOUqcg": {
+    "categoria": "hogar",
+    "subtipo": "furniture"
+  },
+  "gpl_ChIJgXaRSXeUQQ0Rc93pURKD9fE": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJl8vBFXqUQQ0RXMyBxqYUvso": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJyVK0w16UQQ0RvJ6_YZVMmeY": {
+    "categoria": "hogar",
+    "subtipo": "houseware",
+    "telefono": "683 50 70 03"
+  },
+  "gpl_ChIJe83QBFuUQQ0ReR4vDTRD7Ys": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJnQs663eUQQ0RVOTItDTRQDg": {
+    "categoria": "hogar",
+    "subtipo": "houseware"
+  },
+  "gpl_ChIJV-7XDQCVQQ0Reov-stveJyU": {
+    "categoria": "restauracion",
+    "subtipo": "restaurant"
+  },
+  "gpl_ChIJZ0mT9FyUQQ0RB8CcJ7DiJrs": {
+    "categoria": "servicios",
+    "subtipo": "hotel"
+  },
+  "gpl_ChIJNyPtAgCVQQ0RvWlNy-E53M4": {
+    "categoria": "restauracion",
+    "subtipo": "restaurant"
+  },
+  "gpl_ChIJ7e5aIJuVQQ0RYMu8BnxS8j8": {
+    "categoria": "servicios",
+    "subtipo": "hotel"
+  },
+  "gpl_ChIJ9139c9iVQQ0RlVlOSJ-V4qI": {
+    "categoria": "restauracion",
+    "subtipo": "cafe"
+  },
+  "gpl_ChIJHxC5n0iVQQ0RmtYTpQ3Ku6Y": {
+    "categoria": "restauracion",
+    "subtipo": "restaurant"
+  },
+  "gpl_ChIJT5z-iRFSfUERhs3xrItgxS0": {
+    "categoria": "servicios_prof",
+    "subtipo": "estate_agent"
+  },
+  "gpl_ChIJ8xGQ3QKVQQ0RmXv_cbO18sU": {
+    "categoria": "servicios_prof",
+    "subtipo": "estate_agent"
+  },
+  "gpl_ChIJR68jWU-VQQ0RWpg7F4MCy4c": {
+    "categoria": "servicios_prof",
+    "subtipo": "estate_agent"
+  },
+  "gpl_ChIJz-gBuF2UQQ0RgTH0yHJwAgw": {
+    "categoria": "servicios_prof",
+    "subtipo": "estate_agent"
+  },
+  "gpl_ChIJi4UeKFuUQQ0RV2xWVuvvIoE": {
+    "categoria": "servicios_prof",
+    "subtipo": "estate_agent"
+  },
+  "gpl_ChIJjWCjAW-UQQ0Rzlc22hrG0Wk": {
+    "categoria": "servicios_prof",
+    "subtipo": "estate_agent"
+  },
+  "gpl_ChIJk39982qVQQ0R0Y4SXfYc9LY": {
+    "categoria": "moda",
+    "subtipo": "clothes"
+  },
+  "gpl_ChIJi_h68V2UQQ0RdS_SRry7lts": {
+    "categoria": "moda",
+    "subtipo": "clothes",
+    "telefono": "912 26 47 21"
+  },
+  "gpl_ChIJ48GWZ4OVQQ0RDA2rV1d5TZI": {
+    "categoria": "moda",
+    "subtipo": "jewelry"
+  },
+  "gpl_ChIJ0yC4jWmVQQ0RmDga8DYcETY": {
+    "categoria": "servicios",
+    "subtipo": "car"
+  },
+  "gpl_ChIJ1--9gESUQQ0R-kkCE3L4hbg": {
+    "categoria": "servicios",
+    "subtipo": "car"
+  },
+  "gpl_ChIJxTqlO2-UQQ0RH9pXj4hDhac": {
+    "categoria": "servicios",
+    "subtipo": "car_repair"
+  },
+  "gpl_ChIJpzE5LCyVQQ0RdQ36dOoII4s": {
+    "categoria": "servicios",
+    "subtipo": "car"
+  },
+  "gpl_ChIJl-KsmWWUQQ0RcGDXqmrddr4": {
+    "categoria": "servicios",
+    "subtipo": "car"
+  },
+  "gpl_ChIJaSCSB3CUQQ0RMXEBG0hbLd8": {
+    "categoria": "servicios",
+    "subtipo": "car_repair"
+  },
+  "gpl_ChIJhStKN6iVQQ0R7bKwfFIRC6c": {
+    "categoria": "servicios",
+    "subtipo": "car_repair"
+  },
+  "gpl_ChIJpXBPDGaUQQ0RxOqHWfvHk8Q": {
+    "categoria": "servicios",
+    "subtipo": "car_repair"
+  },
+  "gpl_ChIJUUDnDGaUQQ0RV-hyorpFHWw": {
+    "categoria": "servicios",
+    "subtipo": "car_repair"
+  },
+  "gpl_ChIJ21uIDWaUQQ0RiTiP6AmsUDA": {
+    "categoria": "servicios",
+    "subtipo": "car"
+  },
+  "gpl_ChIJVVVlRVyUQQ0RLPKCxUf8mmE": {
+    "categoria": "servicios",
+    "subtipo": "travel_agency"
+  },
+  "gpl_ChIJk61DxhCTQQ0R4FnMIFIQXuc": {
+    "categoria": "ocio_cultura",
+    "subtipo": "venue"
+  },
+  "gpl_ChIJG_zjtXGVQQ0RLvhHOeUdqI0": {
+    "categoria": "ocio_cultura",
+    "subtipo": "venue"
+  },
+  "gpl_ChIJSStCx3-TQQ0Ry0BjMQRtG0U": {
+    "categoria": "ocio_cultura",
+    "subtipo": "venue"
+  },
+  "gpl_ChIJDZgWgMmVQQ0RdnuTQ69wiyI": {
+    "categoria": "ocio_cultura",
+    "subtipo": "venue"
+  },
+  "gpl_ChIJ88diVVqUQQ0RFxa2JCaxgGU": {
+    "categoria": "ocio_cultura",
+    "subtipo": "theatre"
+  },
+  "gpl_ChIJZ-6xBZKTQQ0Rmje67XhejMw": {
+    "categoria": "ocio_cultura",
+    "subtipo": "playground"
+  },
+  "gpl_ChIJt9SQDGeUQQ0RKQV0PFB1nGw": {
+    "categoria": "ocio_cultura",
+    "subtipo": "playground"
+  },
+  "gpl_ChIJrRUL7UyVQQ0R2Xz2glniftY": {
+    "categoria": "servicios_prof",
+    "subtipo": "printing"
+  },
+  "gpl_ChIJlSRWWACVQQ0R17VDHANGYOk": {
+    "categoria": "servicios",
+    "subtipo": "storage"
+  },
+  "gpl_ChIJY80U9Q-TQQ0RPSFHG4hKwsM": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJx7cfQV2UQQ0RAajZM3g9qZI": {
+    "categoria": "servicios",
+    "subtipo": "tailor",
+    "telefono": "631 30 45 61"
+  },
+  "gpl_ChIJuSS-oW-UQQ0RK7MJK9IL_rY": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJAxMwbRSUQQ0RD6Gorq11S5I": {
+    "categoria": "belleza",
+    "subtipo": "beauty"
+  },
+  "gpl_ChIJ1zHoNluUQQ0R-hFhkPgw6co": {
+    "categoria": "educacion",
+    "subtipo": "music_school"
+  },
+  "gpl_ChIJZRigKMhbrkwRuo1dMr9PoRw": {
+    "categoria": "servicios",
+    "subtipo": "courier"
+  },
+  "gpl_ChIJ3-pvY26VQQ0RFMQf_RcH3js": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJbaShOUSUQQ0RlliBAgigrTI": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJbZCSnkaDQQ0Rn2Pq_TKFYzw": {
+    "categoria": "salud",
+    "subtipo": "doctors"
+  },
+  "gpl_ChIJ1d7dk42NQQ0RM7smjcHGtHU": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJnaYa_gWVQQ0RAwwuYVSp4U4": {
+    "categoria": "servicios",
+    "subtipo": "tailor"
+  },
+  "gpl_ChIJnzEtyOyVQQ0RQQ7BYEJQlqE": {
+    "categoria": "belleza",
+    "subtipo": "hairdresser"
+  },
+  "gpl_ChIJ758887-TQQ0RJqsTcCctokA": {
+    "categoria": "belleza",
+    "subtipo": "barber"
+  },
+  "gpl_ChIJ-2brbACVQQ0RMhmx3HHe_K0": {
+    "categoria": "belleza",
+    "subtipo": "beauty"
+  },
+  "gpl_ChIJT7byX2eUQQ0RKpzGeT9z1pc": {
+    "categoria": "belleza",
+    "subtipo": "hairdresser"
+  },
+  "gpl_ChIJ-bTvs7OVQQ0RTFNjyWfk-dU": {
+    "categoria": "belleza",
+    "subtipo": "beauty"
+  },
+  "gpl_ChIJVYPnZVuUQQ0RbVt9AQvLlSk": {
+    "categoria": "belleza",
+    "subtipo": "beauty"
+  },
+  "gpl_ChIJFwnPI2qVQQ0RhUdRy6RdLIY": {
+    "categoria": "salud",
+    "subtipo": "doctors"
+  },
+  "gpl_ChIJyRsFyF2UQQ0ReYDW0vD5CBw": {
+    "categoria": "salud",
+    "subtipo": "dentist"
+  },
+  "gpl_ChIJHXX5irCVQQ0R530QgQ3nBp0": {
+    "categoria": "salud",
+    "subtipo": "dentist"
+  },
+  "gpl_ChIJU95vvFGVQQ0R8R6C7vFK0fI": {
+    "categoria": "salud",
+    "subtipo": "dentist"
+  },
+  "gpl_ChIJE_vsJWeUQQ0R5CsjxxxNi-M": {
+    "categoria": "salud",
+    "subtipo": "hospital"
+  },
+  "gpl_ChIJhdLHF2eUQQ0RAPoOPcZ2LL0": {
+    "categoria": "salud",
+    "subtipo": "physiotherapist"
+  },
+  "gpl_ChIJizkcTVqUQQ0RZQ8AoVdGCUY": {
+    "categoria": "salud",
+    "subtipo": "optician"
+  },
+  "gpl_ChIJtYz5-_CVQQ0RJfaOSGhAfTg": {
+    "categoria": "salud",
+    "subtipo": "doctors"
+  },
+  "gpl_ChIJJ9ZYUy6VQQ0ROKhDOL09Yp4": {
+    "categoria": "salud",
+    "subtipo": "nursing_home"
+  },
+  "gpl_ChIJUSmJWEKUQQ0RksbCCtclD7c": {
+    "categoria": "salud",
+    "subtipo": "nursing_home"
+  },
+  "gpl_ChIJCRuwol6UQQ0Rrrz5OF75I8E": {
+    "categoria": "salud",
+    "subtipo": "nursing_home"
+  },
+  "gpl_ChIJ64SoNOiVQQ0RXZmHdb0tXTo": {
+    "categoria": "salud",
+    "subtipo": "nursing_home"
+  },
+  "gpl_ChIJu0M5lUKUQQ0RgwbxczXwZGc": {
+    "categoria": "salud",
+    "subtipo": "nursing_home"
+  },
+  "gpl_ChIJ1wfWTUKUQQ0R_3LZ5p3M9hg": {
+    "categoria": "salud",
+    "subtipo": "nursing_home"
+  },
+  "gpl_ChIJQbApHk6VQQ0R6mGx86iBFqk": {
+    "categoria": "deporte",
+    "subtipo": "cycling"
+  },
+  "gpl_ChIJ7-UO6SOOQQ0RLfUyfuO6xMY": {
+    "categoria": "deporte",
+    "subtipo": "cycling"
+  },
+  "gpl_ChIJs3R1uF2UQQ0RNQNerNE2fZE": {
+    "categoria": "deporte",
+    "subtipo": "cycling"
+  },
+  "gpl_ChIJteyAWYCVQQ0RsL2yFoQ_mnM": {
+    "categoria": "deporte",
+    "subtipo": "yoga"
+  },
+  "gpl_ChIJb9cBWfGVQQ0R4HQTQU2UH08": {
+    "categoria": "deporte",
+    "subtipo": "yoga"
+  },
+  "gpl_ChIJpTB03BSUQQ0RMnkcMxiJyGM": {
+    "categoria": "deporte",
+    "subtipo": "martial_arts"
+  },
+  "gpl_ChIJ689VT9iTQQ0RwPYaxbWLMn0": {
+    "categoria": "deporte",
+    "subtipo": "gym"
+  },
+  "gpl_ChIJ1UZvnFyUQQ0RZfnu56p54LY": {
+    "categoria": "educacion",
+    "subtipo": "art_school"
+  },
+  "gpl_ChIJHyk3a4KVQQ0R-wq_QULFzl4": {
+    "categoria": "educacion",
+    "subtipo": "driving_school"
+  },
+  "gpl_ChIJkxje28-TQQ0REsmhNOYTdgU": {
+    "categoria": "educacion",
+    "subtipo": "academy"
+  },
+  "gpl_ChIJyznQF2eUQQ0RgXv4TmpumF0": {
+    "categoria": "educacion",
+    "subtipo": "academy"
+  },
+  "gpl_ChIJ8RlMpESUQQ0R8GwKDISlC6Q": {
+    "categoria": "educacion",
+    "subtipo": "driving_school"
+  },
+  "gpl_ChIJ79oOe1qUQQ0RN9JxiRs_O7o": {
+    "categoria": "educacion",
+    "subtipo": "driving_school"
+  },
+  "gpl_ChIJW6LxARWUQQ0RC0ijMW01WL8": {
+    "categoria": "educacion",
+    "subtipo": "school"
+  },
+  "gpl_ChIJx1xIsGCUQQ0R32DEs6ktnP8": {
+    "categoria": "educacion",
+    "subtipo": "school"
+  },
+  "gpl_ChIJB1IeIrCVQQ0Rn4iI8P7XV4g": {
+    "categoria": "educacion",
+    "subtipo": "kindergarten"
+  },
+  "gpl_ChIJaTdhRFyUQQ0RrL6KvnuHChs": {
+    "categoria": "educacion",
+    "subtipo": "kindergarten"
+  },
+  "gpl_ChIJI79jb1yUQQ0R85ktLPlSveo": {
+    "categoria": "educacion",
+    "subtipo": "kindergarten"
+  },
+  "gpl_ChIJJ8wB6FyUQQ0RJxzntfHTzhY": {
+    "categoria": "servicios_prof",
+    "subtipo": "computer"
+  },
+  "gpl_ChIJ33KYa1eUQQ0RwDmc-p8tr48": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJn7AIXW-UQQ0RT6XBjy9A25Y": {
+    "categoria": "servicios",
+    "subtipo": "courier"
+  },
+  "gpl_ChIJY-SLwIiTQQ0RGkhD0r320aQ": {
+    "categoria": "servicios",
+    "subtipo": "courier"
+  },
+  "gpl_ChIJGwGURQeVQQ0RbyG04CvoZVs": {
+    "categoria": "servicios",
+    "subtipo": "courier"
+  },
+  "gpl_ChIJ1e3SnFuUQQ0R5qpjrrHnE0A": {
+    "categoria": "servicios",
+    "subtipo": "service"
+  },
+  "gpl_ChIJib80o-uVQQ0R7KHGSnk-UoY": {
+    "categoria": "servicios",
+    "subtipo": "service"
   }
 }
