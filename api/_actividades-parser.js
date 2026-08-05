@@ -157,7 +157,8 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
   // Matching flexible: ignorar números de orden y usar palabras clave principales
   const extraerPalabras = (t) => t.replace(/^\d+\.\s+/, '').toLowerCase().split(/\s+/).filter(p => p.length > 3)
 
-  for (const act of validadas) {
+  for (let idx = 0; idx < validadas.length; idx++) {
+    const act = validadas[idx]
     // Buscar candidato con máximo overlap de palabras
     let candidato = null
     let maxOverlap = 0
@@ -182,14 +183,9 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
         console.log(`[parser] Full-size derivada: ${urlFinal}`)
       }
 
-      try {
-        // Intentar subir imagen del HTML a Blob (opcional; sin credenciales usa URL directa)
-        const urlBlob = await subirImagen('instagram-actividades', shortCode, urlFinal)
-        act.imagen_url = urlBlob || urlFinal // Fallback a URL original si no hay Blob
-      } catch (err) {
-        console.warn(`[extraerActividadesDeHTML] Fallo upload imagen ${shortCode}: ${err.message}`)
-        act.imagen_url = urlFinal || imagenPostInstagram
-      }
+      // Usar directamente la URL municipal (durables + evita colisiones en Blob)
+      // Las URLs municipales son de confianza y no expiran
+      act.imagen_url = urlFinal
     } else {
       // Sin imagen en el HTML: usar imagen del post
       act.imagen_url = imagenPostInstagram

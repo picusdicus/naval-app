@@ -12,14 +12,21 @@ if (fs.existsSync(envPath)) {
 
 import { obtenerSql } from './api/_db.js'
 
-async function clean() {
+async function check() {
   try {
     const sql = obtenerSql()
-    await sql`DELETE FROM actividades WHERE TRUE`
-    console.log('✓ Borradas todas las actividades')
+    const result = await sql`SELECT titulo, origen_externo_id, imagen_url FROM actividades ORDER BY creado_en DESC LIMIT 10`
+
+    console.log(`\nActividades y sus IDs:\n`)
+    for (const a of result) {
+      console.log(`${a.titulo}`)
+      console.log(`  ID: ${a.origen_externo_id}`)
+      console.log(`  Img: ${a.imagen_url}`)
+      console.log()
+    }
   } catch (err) {
     console.error('Error:', err.message)
   }
 }
 
-clean()
+check()
