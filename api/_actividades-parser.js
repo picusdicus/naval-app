@@ -189,6 +189,7 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
     } else {
       // Sin imagen en el HTML: usar imagen del post
       act.imagen_url = imagenPostInstagram
+      console.error(`[parser] No encontró matching para "${act.titulo}" - usando fallback`)
     }
   }
 

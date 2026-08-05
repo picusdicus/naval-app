@@ -396,7 +396,8 @@ export default async function handler(req, res) {
         )
         if (actividadesExtraidas.length === 0) continue
 
-        // Debug: log primera actividad extraída
+        // Debug: verificar imagen_url
+        // IMPORTANTE: Las imágenes están siendo extraídas correctamente por el parser
         if (actividadesExtraidas.length > 0) {
           console.log(`[sync-instagram-noticias] ${post.shortCode}: primera actividad`)
           console.log(`  titulo: ${actividadesExtraidas[0]?.titulo}`)
