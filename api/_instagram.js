@@ -101,7 +101,9 @@ export const hayCredencialesBlob = () =>
  * opcional: un fallo aquí no descarta el item).
  */
 export async function subirImagen(prefijo, shortCode, urlOrigen) {
-  if (!urlOrigen || !hayCredencialesBlob()) return null
+  // Sin credenciales: devolver URL original como fallback
+  if (!urlOrigen) return null
+  if (!hayCredencialesBlob()) return urlOrigen
   try {
     const res = await fetch(urlOrigen)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
