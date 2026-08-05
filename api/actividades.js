@@ -18,7 +18,7 @@ export default async function handler(req) {
 
   try {
     const sql = obtenerSql();
-    const actividades = await sql`
+    const rows = await sql`
       SELECT
         id,
         origen_externo_id,
@@ -35,6 +35,13 @@ export default async function handler(req) {
       WHERE fecha_limite IS NULL OR fecha_limite >= CURRENT_DATE
       ORDER BY fecha_limite ASC NULLS LAST, publicado_en DESC
     `;
+
+    // Convertir Date objects a strings ISO
+    const actividades = rows.map((a) => ({
+      ...a,
+      fecha_limite: a.fecha_limite ? a.fecha_limite.toISOString().split('T')[0] : null,
+      publicado_en: a.publicado_en?.toISOString?.() || a.publicado_en,
+    }));
 
     const res = json({ actividades });
     res.headers.set('Cache-Control', 'public, max-age=60');

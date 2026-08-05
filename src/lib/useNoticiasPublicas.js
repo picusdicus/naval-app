@@ -54,10 +54,24 @@ export function useNoticiasPublicas() {
 
   useEffect(() => {
     let vigente = true
-    fetch('/api/noticias-instagram')
-      .then((r) => (r.ok ? r.json() : { noticias: [] }))
-      .then((datos) => {
-        if (vigente) setDeLaBase(datos.noticias ?? [])
+    Promise.all([
+      fetch('/api/noticias-instagram')
+        .then((r) => (r.ok ? r.json() : { noticias: [] }))
+        .catch(() => ({ noticias: [] })),
+      fetch('/api/actividades')
+        .then((r) => (r.ok ? r.json() : { actividades: [] }))
+        .catch(() => ({ actividades: [] })),
+    ])
+      .then(([noticias, actividades]) => {
+        if (vigente) {
+          const actividadesConTipo = (actividades.actividades ?? []).map((a) => ({
+            ...a,
+            tipo: 'actividad',
+            fecha: a.publicado_en,
+            fechaLimite: a.fecha_limite,
+          }))
+          setDeLaBase([...(noticias.noticias ?? []), ...actividadesConTipo])
+        }
       })
       .catch(() => {
         if (vigente) setDeLaBase([])

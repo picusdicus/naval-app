@@ -1,6 +1,6 @@
 // Parsing inteligente de HTML para extraer actividades con imágenes.
-// Usa heurísticas para encontrar secciones de actividades + sus imágenes,
-// luego enriquece con Claude y maneja fallbacks.
+// Estrategia: buscar imágenes en galerías + sus alt texts (que frecuentemente
+// contienen títulos de actividades), luego enriquecer con Claude.
 
 import Anthropic from '@anthropic-ai/sdk'
 import { JSDOM } from 'jsdom'
@@ -9,56 +9,61 @@ import { subirImagen } from './_instagram.js'
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
 /**
- * Parsea el HTML buscando secciones con actividades + imágenes.
- * Retorna candidatos con: titulo, imagenUrl, imagenAlt, htmlSeccion.
+ * Parsea el HTML buscando imágenes de galerías con títulos útiles.
+ * Estrategia: muchas páginas municipales usan galerías WordPress donde
+ * cada imagen tiene un título informativo en alt text.
+ * Retorna candidatos con: titulo, imagenUrl.
  */
 function parseHtmlInteligente(html) {
   try {
     const dom = new JSDOM(html)
     const doc = dom.window.document
 
-    // Heurística 1: secciones con clases explícitas de actividad/evento
-    let secciones = Array.from(
-      doc.querySelectorAll(
-        '[class*="actividad" i], [class*="evento" i], [class*="event" i], article, [class*="card" i]'
-      )
-    )
+    const actividades = []
 
-    // Heurística 2: si hay pocas, buscar por encabezados grandes + contenedor
-    if (secciones.length < 3) {
-      const encabezados = doc.querySelectorAll('h2, h3, h4')
-      const porEncabezado = []
-      for (const h of encabezados) {
-        const contenedor = h.closest('section, div[class*="card"], div[class*="item"], article, div[style*="border"]')
-        if (contenedor && !porEncabezado.includes(contenedor)) {
-          porEncabezado.push(contenedor)
+    // Estrategia 1: Buscar elementos de galería (WordPress gallery)
+    // Nota: WordPress usa lazy loading, así que data-lazy-src tiene la URL real
+    const galeriaItems = doc.querySelectorAll('.gallery-item img')
+    if (galeriaItems.length > 0) {
+      console.log(`[parseHtmlInteligente] Galería encontrada: ${galeriaItems.length} imágenes`)
+      for (const img of galeriaItems) {
+        const alt = img.alt?.trim() || img.title?.trim()
+        // Prioridad: data-lazy-src (lazy loading) > src > title attribute
+        const url = img.getAttribute('data-lazy-src') || img.src || img.getAttribute('data-src')
+        if (alt && alt.length > 5 && url && !url.includes('1x1.trans.gif')) {
+          actividades.push({
+            titulo: alt,
+            imagenUrl: url, // URL real de la imagen en el HTML
+          })
         }
       }
-      if (porEncabezado.length > 0) secciones = porEncabezado
     }
 
-    // Extraer datos de cada sección
-    const actividades = []
-    for (const sec of secciones) {
-      const titulo = sec.querySelector('h2, h3, h4, [class*="titulo" i]')?.textContent?.trim()
-      if (!titulo || titulo.length < 5) continue // Descartar títulos muy cortos
-
-      const img = sec.querySelector('img')
-      const imagenUrl = img?.src
-      const imagenAlt = img?.alt
-
-      // Limitar el HTML de la sección para no saturar Claude (máx 1500 chars)
-      const htmlSeccion = sec.innerHTML.substring(0, 1500)
-
-      actividades.push({
-        titulo,
-        imagenUrl,
-        imagenAlt,
-        htmlSeccion,
-      })
+    // Estrategia 2: Fallback a cualquier imagen con alt text descriptivo
+    if (actividades.length === 0) {
+      console.log(`[parseHtmlInteligente] Sin galería, buscando imágenes con alt text`)
+      const imgs = doc.querySelectorAll('img[alt]')
+      for (const img of imgs) {
+        const alt = img.alt.trim()
+        const url = img.src || img.getAttribute('data-lazy-src')
+        // Filtrar: descartar logos, iconos de redes, etc
+        const esRelevante =
+          alt.length > 10 &&
+          !alt.match(/logo|facebook|twitter|linkedin|compartir|share|instagram/i) &&
+          url &&
+          !url.includes('/icons/') &&
+          !url.includes('/theme/')
+        if (esRelevante) {
+          actividades.push({
+            titulo: alt,
+            imagenUrl: url,
+          })
+        }
+      }
     }
 
-    return actividades
+    console.log(`[parseHtmlInteligente] Total candidatos: ${actividades.length}`)
+    return actividades.slice(0, 50) // Limitar a 50 para no saturar Claude
   } catch (err) {
     console.error('[parseHtmlInteligente] Error:', err.message)
     return []
@@ -74,31 +79,25 @@ async function validarConClaude(candidatos) {
 
   const client = new Anthropic()
 
-  const prompt = `Eres un experto en extracción de datos. Se te proporciona una lista de candidatos de actividades extraídas de HTML.
+  const prompt = `Eres un experto en extracción de datos de actividades deportivas y culturales.
 
-Tu tarea: para cada uno, estandariza y enriquece los datos. Retorna un array JSON.
+Se te proporciona una lista de títulos/nombres de actividades (extraídos del alt text de imágenes).
+Para cada uno, retorna un objeto JSON estandarizado:
 
-Campos esperados:
-- titulo: string, limpio y sin mayúsculas gritadas
-- categoria: enum de ['deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general']
-- fechaLimite: string YYYY-MM-DD del plazo de inscripción, o null si no se encuentra
-- horario: string ej "19:30-22:30h" u "hora TBD", o null
-- lugar: string con ubicación o instalación, o null
-- imagenValida: boolean — ¿la imagen (alt text o contexto) parece ser de esta actividad? true/false
-- imagenUrl: mantener si imagenValida=true, o null
+Campos:
+- titulo: string limpio, normalizado (sin números de orden como "39. " si está presente)
+- categoria: una de ['deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general']
+- fechaLimite: string YYYY-MM-DD del plazo de inscripción extraído del titulo, o null
+  Ejemplo: si dice "2 Sept" y hoy es 2026-08-05, sería "2026-09-02"
+- horario: string como "10:00h" u "hora TBD", o null
+- lugar: string con ubicación/instalación, o null
 
-Si el candidato no es claramente una actividad (es publicidad, encabezado general, etc), devuélvelo con titulo=null para descartarlo.
+Si el titulo no es una actividad clara, devuelve titulo=null para descartarlo.
 
-Candidatos a procesar:
-${JSON.stringify(
-  candidatos.map((c) => ({
-    titulo: c.titulo,
-    imagenAlt: c.imagenAlt,
-    htmlParcial: c.htmlSeccion.substring(0, 400), // Primeros 400 chars para contexto
-  })),
-  null,
-  2
-)}
+IMPORTANTE: hoy es 2026-08-05. Resuelve fechas relativas.
+
+Candidatos:
+${JSON.stringify(candidatos.map((c) => ({ titulo: c.titulo })), null, 2)}
 
 Retorna SOLO un array JSON válido, sin comentarios ni markdown.`
 
@@ -154,7 +153,7 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
   console.log(`[extraerActividadesDeHTML] Claude validó ${validadas.length}/${candidatos.length}`)
 
   // Paso 3: procesar imágenes
-  // Mapear validadas con candidatos originales para obtener URLs reales
+  // Mapear validadas con candidatos originales para obtener URLs de las imágenes del HTML
   const candidatoPorTitulo = new Map(
     candidatos.map((c) => [c.titulo.toLowerCase().slice(0, 30), c])
   )
@@ -163,20 +162,20 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
     const candidato = candidatoPorTitulo.get(act.titulo.toLowerCase().slice(0, 30))
     const imagenUrlCandidato = candidato?.imagenUrl
 
-    if (act.imagenValida && imagenUrlCandidato) {
+    if (imagenUrlCandidato) {
       try {
-        act.imagen_url = await subirImagen('instagram-actividades', shortCode, imagenUrlCandidato)
+        // Intentar subir imagen del HTML a Blob
+        const urlBlob = await subirImagen('instagram-actividades', shortCode, imagenUrlCandidato)
+        act.imagen_url = urlBlob || imagenUrlCandidato // Fallback a URL original si no hay Blob
       } catch (err) {
         console.warn(`[extraerActividadesDeHTML] Fallo upload imagen ${shortCode}: ${err.message}`)
-        act.imagen_url = imagenPostInstagram // Fallback
+        // Fallback a URL original o imagen del post
+        act.imagen_url = imagenUrlCandidato || imagenPostInstagram
       }
     } else {
-      act.imagen_url = imagenPostInstagram // Fallback si no es válida
+      // Sin imagen en el HTML: usar imagen del post
+      act.imagen_url = imagenPostInstagram
     }
-
-    // Limpieza: no enviar campos internos a la DB
-    delete act.imagenValida
-    delete act.imagenUrl
   }
 
   return validadas
