@@ -6,7 +6,7 @@ const preguntas = [
     numero: '01',
     titulo: '¿Para qué sirve la app?',
     respuesta:
-      'Es la plaza digital del pueblo. Navalcarnero en tu bolsillo: aquí encuentras todo lo que pasa hoy en tu comunidad. En Eventos tienes la agenda cultural completa; en Comercios, el directorio de negocios locales; en Noticias, los avisos del Ayuntamiento (obras, servicios, cambios en la ciudad). Y el Asistente IA te ayuda a entender trámites municipales sin salir de la app.',
+      'Es la plaza digital del pueblo. Navalcarnero en tu bolsillo: aquí encuentras todo lo que pasa hoy en tu comunidad. En Eventos tienes la agenda cultural completa; en Comercios, el directorio de negocios locales; en Noticias, los avisos del Ayuntamiento (obras, servicios, cambios en la ciudad); en Transporte, los horarios de autobús; y en Actividades, inscripciones y plazos de talleres, cursos y eventos municipales.',
   },
   {
     numero: '02',
@@ -33,36 +33,30 @@ const preguntas = [
   },
   {
     numero: '06',
-    titulo: '¿Qué es el Asistente IA?',
+    titulo: '¿Funciona sin conexión?',
     respuesta:
-      'Es tu ayudante para entender trámites municipales sin pedir cita en el Ayuntamiento. Pregúntale cosas como "¿cómo cambio de domicilio?" o "¿cuánto cuesta una licencia de obra?". Responde en español claro, basándose en los datos reales de Navalcarnero y los avisos del Ayuntamiento. No reemplaza al Ayuntamiento, pero te ahorra una llamada muchas veces.',
+      'Parcialmente. Los eventos, comercios y noticias que ya viste se guardan en tu teléfono, así que los puedes ver sin internet. Los avisos nuevos necesitan conexión. La app se actualiza automáticamente cada vez que conectas, así que siempre tienes información fresca.',
   },
   {
     numero: '07',
-    titulo: '¿Funciona sin conexión?',
-    respuesta:
-      'Parcialmente. Los eventos, comercios y noticias que ya viste se guardan en tu teléfono, así que los puedes ver sin internet. El Asistente y los avisos nuevos necesitan conexión. La app se actualiza automáticamente cada vez que conectas, así que siempre tienes información fresca.',
-  },
-  {
-    numero: '08',
     titulo: '¿Es gratuita?',
     respuesta:
       'Sí, completamente. La app de Navalcarnero es un servicio público para los vecinos. Sin anuncios, sin compras dentro de la app, sin rastreo. Lo único que necesitas es una conexión a internet (excepto para ver contenido en caché).',
   },
   {
-    numero: '09',
+    numero: '08',
     titulo: '¿Mis datos están seguros?',
     respuesta:
       'Tus datos de suscripción a avisos nunca se asignan a una cuenta personal: no sabemos quién eres. Tu teléfono decide a qué temas estar suscrito, y esa información solo viaja al servidor cuando actualizas preferencias. No vendemos ni compartimos datos. Revisa la política de privacidad para los detalles completos.',
   },
   {
-    numero: '10',
+    numero: '09',
     titulo: '¿Puedo sugerir un comercio o evento?',
     respuesta:
       'Sí. En la sección Comercios, abajo, hay un formulario "Sugerir un comercio". Cuéntanos qué negocio local falta en la app y nosotros lo añadimos. Los eventos, por ahora, deben ser creados por la organización responsable desde el panel de gestión.',
   },
   {
-    numero: '11',
+    numero: '10',
     titulo: '¿Cómo informo de un problema?',
     respuesta:
       'Si la app no funciona bien, envía un mensaje a través del formulario de contacto en el Ayuntamiento o llama al 918 10 11 41. Describe qué pasa (ej: "no recibo avisos") y el dispositivo que usas (Android/iPhone). El equipo lo revisará rápidamente.',

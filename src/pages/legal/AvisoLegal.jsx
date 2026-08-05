@@ -38,8 +38,7 @@ export default function AvisoLegal() {
           </h2>
           <p className="font-serif-spectral text-tinta-apagada">
             Este sitio web es una plataforma vecinal no oficial que proporciona información sobre
-            agenda de eventos, directorio de comercios y servicios locales, noticias municipales,
-            información de transporte y un asistente IA para trámites municipales en Navalcarnero.
+            agenda de eventos, directorio de comercios y servicios locales, noticias municipales e información de transporte en Navalcarnero.
             No es una web oficial del Ayuntamiento de Navalcarnero.
           </p>
         </section>

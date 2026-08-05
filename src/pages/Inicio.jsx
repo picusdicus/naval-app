@@ -30,7 +30,6 @@ function fechaMasthead() {
 }
 
 export default function Inicio() {
-  const { abrirChat } = useOutletContext()
   const weather = useWeather()
 
   // Alertas urgentes vigentes del Ayuntamiento (Instagram → Neon), filtradas
@@ -348,18 +347,20 @@ export default function Inicio() {
             <div className="flex-1">
               <h2 className="font-serif-dm text-seccion text-tinta">Tu voz importa en Navalcarnero</h2>
               <p className="mt-3 max-w-xl font-serif-spectral text-tinta-apagada">
-                Esta plaza digital la construimos entre todos. Pregunta al asistente, sugiere
-                comercios que falten y mantente al día de la vida del pueblo.
+                Esta plaza digital la construimos entre todos. Sugiere comercios que falten, cuéntanos qué echas en falta y mantente al día de la vida del pueblo.
               </p>
               <div className="mt-6 flex flex-wrap gap-4">
-                <button type="button" onClick={abrirChat} className="gz-boton-pill-tinta">
-                  Preguntar al asistente
-                </button>
                 <Link
                   to="/comercios"
                   className="rounded-full border border-tinta px-6 py-3 font-serif-spectral text-tinta transition-colors hover:bg-papel"
                 >
                   Sugerir un comercio
+                </Link>
+                <Link
+                  to="/sugerencias"
+                  className="rounded-full border border-tinta px-6 py-3 font-serif-spectral text-tinta transition-colors hover:bg-papel"
+                >
+                  Enviar una sugerencia
                 </Link>
               </div>
             </div>

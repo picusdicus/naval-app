@@ -26,6 +26,8 @@ const VARIABLES_API = [
   'UMAMI_WEBSITE_ID',
   // Candado del portal verificado en servidor (api/acceso.js).
   'APP_ACCESO_PASSWORD',
+  // Desactivación del asistente (api/chat.js): por defecto está apagado (julio 2026).
+  'ASISTENTE_ACTIVO',
   // Auth del cron de sincronización de eventos (api/sync-events.js).
   'CRON_SECRET',
   // Rate-limiting compartido (api/_ratelimit.js). La integración de Upstash

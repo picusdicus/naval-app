@@ -35,13 +35,6 @@ export default function Footer({ onAbrirChat }) {
           <div className="font-serif-spectral text-sm text-pardo">
             <p className="gz-label text-mudo">Ayuda</p>
             <div className="mt-3 flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={onAbrirChat}
-                className="text-left transition-colors hover:text-terracota"
-              >
-                Asistente IA
-              </button>
               <Link to="/ayuda" className="transition-colors hover:text-terracota">
                 Preguntas frecuentes
               </Link>

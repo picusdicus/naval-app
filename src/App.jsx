@@ -16,7 +16,6 @@ import Noticias from './pages/Noticias.jsx'
 import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
 import Actividades from './pages/Actividades.jsx'
 import Transporte from './pages/Transporte.jsx'
-import Asistente from './pages/Asistente.jsx'
 import FAQ from './pages/FAQ.jsx'
 import Sugerencias from './pages/Sugerencias.jsx'
 import PerfilComercio from './pages/PerfilComercio.jsx'
@@ -125,7 +124,7 @@ export default function App() {
             <Route path="/noticias/:id" element={<NoticiaDetalle />} />
             <Route path="/actividades" element={<Actividades />} />
             <Route path="/transporte" element={<Transporte />} />
-            <Route path="/asistente" element={<Asistente />} />
+            <Route path="/asistente" element={<Navigate to="/" replace />} />
             <Route path="/ayuda" element={<FAQ />} />
             <Route path="/sugerencias" element={<Sugerencias />} />
             <Route path="/aviso-legal" element={<AvisoLegal />} />

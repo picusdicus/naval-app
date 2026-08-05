@@ -24,6 +24,15 @@ function prepareMessages(rawMessages) {
 }
 
 export default async function handler(req, res) {
+  // Guard de desactivación del asistente (julio 2026).
+  // Devuelve 404 para que el endpoint no anuncie su existencia, aunque está
+  // expuesto a internet. Para reactivar: ASISTENTE_ACTIVO=1 en las env de Vercel.
+  // Sin cambios de código.
+  if (process.env.ASISTENTE_ACTIVO !== '1') {
+    res.status(404).json({ error: 'Not Found' })
+    return
+  }
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' })
     return

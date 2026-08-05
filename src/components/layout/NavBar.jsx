@@ -5,7 +5,7 @@ const tabs = [
   { to: '/eventos', label: 'Eventos' },
   { to: '/comercios', label: 'Comercios' },
   { to: '/noticias', label: 'Noticias' },
-  { to: '/asistente', label: 'IA' },
+  { to: '/actividades', label: 'Actividades' },
 ]
 
 // Barra de navegación inferior (móvil y tablet, como la cabecera compacta),

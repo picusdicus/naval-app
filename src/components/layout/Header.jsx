@@ -72,13 +72,6 @@ export default function Header({ onAbrirMenu, onAbrirChat, onLogout }) {
         </div>
         <div className="flex items-center gap-3">
           <CentroAvisos variante="neutral" />
-          <button
-            type="button"
-            onClick={onAbrirChat}
-            className="rounded-full bg-tinta px-6 py-2 font-serif-spectral text-sm font-medium text-papel transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95"
-          >
-            Asistente IA
-          </button>
           {!cargando &&
             (usuario ? (
               // Con sesión abierta el enlace lleva al panel que le toca al rol;
