@@ -69,6 +69,7 @@ export function useNoticiasPublicas() {
             tipo: 'actividad',
             fecha: a.publicado_en,
             fechaLimite: a.fecha_limite,
+            imagen: a.imagen_url,
           }))
           setDeLaBase([...(noticias.noticias ?? []), ...actividadesConTipo])
         }
