@@ -229,7 +229,7 @@ ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS subcategoria text;
 -- hace falta el índice parcial de eventos_usuario) y el upsert usa
 -- ON CONFLICT (origen_externo_id) a secas. Las alertas vigentes se filtran
 -- CLIENT-SIDE (urgente + expira_en > now), sin cron: al caducar simplemente
--- dejan de mostrarse.
+-- dejan de mostrarse. Las actividades viven ahora en su propia tabla.
 CREATE TABLE IF NOT EXISTS noticias_instagram (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   origen_externo_id text NOT NULL UNIQUE,
@@ -239,9 +239,7 @@ CREATE TABLE IF NOT EXISTS noticias_instagram (
   imagen_url        text,
   url               text,
   usuario           text,
-  tipo              text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad')),
-  categoria         text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general')),
-  fecha_limite      date,
+  tipo              text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia')),
   urgente           boolean NOT NULL DEFAULT false,
   tipo_alerta       text CHECK (tipo_alerta IN ('incendio', 'corte_agua', 'corte_luz', 'trafico', 'emergencia', 'general')),
   publicado_en      timestamptz NOT NULL,
@@ -252,19 +250,6 @@ CREATE TABLE IF NOT EXISTS noticias_instagram (
 );
 
 CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado ON noticias_instagram (publicado_en DESC);
-
--- Triaje noticia|actividad (api/sync-instagram-noticias.js). Una 'actividad'
--- es un post de inscripciones/plazos (talleres, escuelas deportivas, ayudas…):
--- no es noticia pura ni evento de agenda. `categoria` y `fecha_limite` solo
--- aplican a actividades (el webhook fuerza NULL en noticias y urgente=false en
--- actividades); al pasar `fecha_limite` la actividad deja de mostrarse, sin
--- cron. El CHECK va inline en la columna: ADD CONSTRAINT no admite IF NOT
--- EXISTS y este fichero debe ser re-aplicable.
-ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad'));
-
-ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS categoria text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general'));
-
-ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS fecha_limite date;
 
 -- Eventos ocultados a mano por el superadmin desde el panel (tab Eventos).
 -- referencia_id = id público del evento, en el mismo formato que usan los
@@ -324,3 +309,29 @@ CREATE INDEX IF NOT EXISTS idx_comercios_perfil_org ON comercios_perfil (organiz
 -- comercio_id NOT NULL. Al registrarse con ese código, api/registro.js vincula
 -- automáticamente la org al comercio (UPDATE organizaciones.comercio_id).
 ALTER TABLE codigos_invitacion ADD COLUMN IF NOT EXISTS comercio_id text;
+
+-- Actividades con plazo de inscripción sincronizadas desde Instagram del Ayuntamiento
+-- (api/sync-instagram-noticias.js). Extraídas de posts que enlazan a programaciones
+-- completas (ej: programación deportiva de fiestas). Una fila por actividad individual.
+-- origen_externo_id = 'ig-<shortCode>-<slug>' para evitar duplicados si se re-scrapeaña
+-- la misma fuente. Las actividades vigentes se filtran CLIENT-SIDE (fecha_limite >= hoy),
+-- sin cron: al caducar simplemente dejan de mostrarse en la UI.
+CREATE TABLE IF NOT EXISTS actividades (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  origen_externo_id text NOT NULL UNIQUE,
+  titulo            text NOT NULL,
+  descripcion       text,
+  categoria         text NOT NULL CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general')),
+  fecha_limite      date,
+  horario           text,
+  lugar             text,
+  imagen_url        text,
+  url_fuente        text,
+  publicado_en      timestamptz NOT NULL DEFAULT now(),
+  creado_en         timestamptz NOT NULL DEFAULT now(),
+  actualizado_en    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_actividades_origen ON actividades (origen_externo_id);
+
+CREATE INDEX IF NOT EXISTS idx_actividades_fecha_limite ON actividades (fecha_limite DESC);

@@ -33,5 +33,6 @@ export const TABLAS = [
   'push_suscripciones',
   'push_avisos',
   'noticias_instagram',
+  'actividades',
   'eventos_ocultos',
 ]

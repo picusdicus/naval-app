@@ -30,6 +30,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
 import { MAX_POSTS, normalizarPost, obtenerPosts, subirImagen } from './_instagram.js'
+import { extraerActividadesDeHTML } from './_actividades-parser.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -138,6 +139,30 @@ async function extraerNoticias(posts) {
   return JSON.parse(texto).noticias || []
 }
 
+/** Detecta URLs en el caption del post. */
+function detectarUrl(caption) {
+  if (!caption) return null
+  const match = caption.match(/(https?:\/\/[^\s]+)/);
+  return match ? match[1] : null
+}
+
+/** Scrapea una URL y extrae el HTML (máximo 50 KB para no saturar). */
+async function scrapearUrl(url) {
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'NavalcarneroCrawler/1.0' },
+      timeout: 10000,
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const html = await response.text()
+    // Limitar a los primeros 50 KB para no arrastrar demasiado contenido
+    return html.substring(0, 51200)
+  } catch (err) {
+    throw new Error(`Error al scrapear ${url}: ${err.message}`)
+  }
+}
+
+
 /** Fecha de publicación de la fila: el timestamp del post si es parseable. */
 function fechaPublicacion(post) {
   const t = Date.parse(post.publicado)
@@ -210,8 +235,9 @@ function validarExtraccion(noticias, postsPorShortCode) {
   return { validas, descartadas }
 }
 
-/** Tabla e índice del upsert, idempotentes (también están en db/schema.sql). */
-async function asegurarTabla(sql) {
+/** Tablas e índices del upsert, idempotentes (también están en db/schema.sql). */
+async function asegurarTablas(sql) {
+  // noticias_instagram: solo noticias + alertas (actividades viven en su propia tabla).
   await sql`CREATE TABLE IF NOT EXISTS noticias_instagram (
     id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     origen_externo_id text NOT NULL UNIQUE,
@@ -221,9 +247,7 @@ async function asegurarTabla(sql) {
     imagen_url        text,
     url               text,
     usuario           text,
-    tipo              text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad')),
-    categoria         text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general')),
-    fecha_limite      date,
+    tipo              text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia')),
     urgente           boolean NOT NULL DEFAULT false,
     tipo_alerta       text CHECK (tipo_alerta IN ('incendio', 'corte_agua', 'corte_luz', 'trafico', 'emergencia', 'general')),
     publicado_en      timestamptz NOT NULL,
@@ -234,11 +258,25 @@ async function asegurarTabla(sql) {
   )`
   await sql`CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado
             ON noticias_instagram (publicado_en DESC)`
-  // Migración para bases que ya tenían la tabla (CREATE TABLE IF NOT EXISTS no
-  // añade columnas); mismos ALTER que db/schema.sql.
-  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'noticia' CHECK (tipo IN ('noticia', 'actividad'))`
-  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS categoria text CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general'))`
-  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS fecha_limite date`
+
+  // actividades: actividades con plazo de inscripción.
+  await sql`CREATE TABLE IF NOT EXISTS actividades (
+    id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    origen_externo_id text NOT NULL UNIQUE,
+    titulo            text NOT NULL,
+    descripcion       text,
+    categoria         text NOT NULL CHECK (categoria IN ('deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general')),
+    fecha_limite      date,
+    horario           text,
+    lugar             text,
+    imagen_url        text,
+    url_fuente        text,
+    publicado_en      timestamptz NOT NULL DEFAULT now(),
+    creado_en         timestamptz NOT NULL DEFAULT now(),
+    actualizado_en    timestamptz NOT NULL DEFAULT now()
+  )`
+  await sql`CREATE INDEX IF NOT EXISTS idx_actividades_origen ON actividades (origen_externo_id)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_actividades_fecha_limite ON actividades (fecha_limite DESC)`
 }
 
 export default async function handler(req, res) {
@@ -272,6 +310,7 @@ export default async function handler(req, res) {
     recibidos: 0,
     analizados: 0,
     noticias: 0,
+    actividades: 0,
     creadas: 0,
     actualizadas: 0,
     descartadasPorValidacion: 0,
@@ -295,43 +334,38 @@ export default async function handler(req, res) {
       posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
     )
     const { validas, descartadas } = validarExtraccion(extraidas, postsPorShortCode)
-    resumen.noticias = validas.length
+    resumen.noticias = validas.filter(v => v.tipo === 'noticia').length
+    resumen.actividades = validas.filter(v => v.tipo === 'actividad').length
     resumen.descartadasPorValidacion = descartadas.length
     if (descartadas.length) {
       resumen.errores.push(`Extracciones descartadas por validación: ${descartadas.join(', ')}`)
     }
 
     const sql = obtenerSql()
-    await asegurarTabla(sql)
+    await asegurarTablas(sql)
 
-    for (const n of validas) {
+    // Procesar noticias (tipo === 'noticia').
+    for (const n of validas.filter(v => v.tipo === 'noticia')) {
       try {
         const imagenUrl = await subirImagen('instagram-noticias', n.shortCode, n.imagenOrigen)
         if (imagenUrl) resumen.imagenesSubidas++
 
-        // xmax = 0 distingue INSERT de UPDATE. La imagen previa se conserva si
-        // esta vez no se pudo subir; el resto de campos se re-escriben (una
-        // corrección del post en Instagram debe reflejarse aquí).
         const filas = await sql`
           INSERT INTO noticias_instagram
-            (origen_externo_id, tipo, titulo, resumen, cuerpo, imagen_url, url,
-             usuario, categoria, fecha_limite, urgente, tipo_alerta,
-             publicado_en, expira_en)
+            (origen_externo_id, titulo, resumen, cuerpo, imagen_url, url,
+             usuario, urgente, tipo_alerta, publicado_en, expira_en)
           VALUES
-            (${`ig-${n.shortCode}`}, ${n.tipo}, ${n.titulo}, ${n.resumen}, ${n.cuerpo},
-             ${imagenUrl}, ${n.url}, ${n.usuario}, ${n.categoria}, ${n.fechaLimite},
-             ${n.urgente}, ${n.tipoAlerta}, ${n.publicadoEn}, ${n.expiraEn})
+            (${`ig-${n.shortCode}`}, ${n.titulo}, ${n.resumen}, ${n.cuerpo},
+             ${imagenUrl}, ${n.url}, ${n.usuario}, ${n.urgente}, ${n.tipoAlerta},
+             ${n.publicadoEn}, ${n.expiraEn})
           ON CONFLICT (origen_externo_id)
           DO UPDATE SET
-            tipo = EXCLUDED.tipo,
             titulo = EXCLUDED.titulo,
             resumen = EXCLUDED.resumen,
             cuerpo = EXCLUDED.cuerpo,
             imagen_url = COALESCE(EXCLUDED.imagen_url, noticias_instagram.imagen_url),
             url = EXCLUDED.url,
             usuario = EXCLUDED.usuario,
-            categoria = EXCLUDED.categoria,
-            fecha_limite = EXCLUDED.fecha_limite,
             urgente = EXCLUDED.urgente,
             tipo_alerta = EXCLUDED.tipo_alerta,
             publicado_en = EXCLUDED.publicado_en,
@@ -343,6 +377,59 @@ export default async function handler(req, res) {
         else resumen.actualizadas++
       } catch (err) {
         resumen.errores.push(`Noticia ${n.shortCode}: ${err.message}`)
+      }
+    }
+
+    // Procesar actividades: si el post tiene URL, scrapearla y extraer actividades.
+    for (const post of posts) {
+      try {
+        const url = detectarUrl(post.caption)
+        if (!url) continue
+
+        const html = await scrapearUrl(url)
+        // Nuevo parser: parsing inteligente + Claude + manejo de imágenes
+        const actividadesExtraidas = await extraerActividadesDeHTML(
+          html,
+          url,
+          post.imagen, // Imagen del post de Instagram como fallback
+          post.shortCode
+        )
+        if (actividadesExtraidas.length === 0) continue
+
+        resumen.actividades += actividadesExtraidas.length
+
+        for (let i = 0; i < actividadesExtraidas.length; i++) {
+          const act = actividadesExtraidas[i]
+          try {
+            // ID único: post + índice (en caso de múltiples en el mismo post).
+            const origenId = `ig-${post.shortCode}-${i}`
+
+            await sql`
+              INSERT INTO actividades
+                (origen_externo_id, titulo, categoria, fecha_limite, horario, lugar,
+                 imagen_url, url_fuente, publicado_en)
+              VALUES
+                (${origenId}, ${act.titulo}, ${act.categoria || 'general'}, ${act.fechaLimite},
+                 ${act.horario}, ${act.lugar}, ${act.imagen_url}, ${url}, ${new Date(post.publicado || Date.now()).toISOString()})
+              ON CONFLICT (origen_externo_id)
+              DO UPDATE SET
+                titulo = EXCLUDED.titulo,
+                categoria = EXCLUDED.categoria,
+                fecha_limite = EXCLUDED.fecha_limite,
+                horario = EXCLUDED.horario,
+                lugar = EXCLUDED.lugar,
+                imagen_url = COALESCE(EXCLUDED.imagen_url, actividades.imagen_url),
+                url_fuente = EXCLUDED.url_fuente,
+                actualizado_en = now()
+            `
+            resumen.creadas++
+            if (act.imagen_url) resumen.imagenesSubidas++
+          } catch (err) {
+            resumen.errores.push(`Actividad ${origenId}: ${err.message}`)
+          }
+        }
+      } catch (err) {
+        resumen.errores.push(`Scraping ${post.shortCode}: ${err.message}`)
       }
     }
 
