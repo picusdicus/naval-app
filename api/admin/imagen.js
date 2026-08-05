@@ -11,6 +11,8 @@ import { csrfInvalido } from '../_http.js'
 // Serverless (Node) a propósito: @vercel/blob arrastra undici, que necesita
 // builtins de Node que el Edge Runtime no tiene — su build de Edge falla.
 
+export const config = { runtime: 'nodejs' }
+
 const TIPOS_PERMITIDOS = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
