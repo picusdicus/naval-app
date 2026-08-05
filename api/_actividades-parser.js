@@ -154,12 +154,24 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
 
   // Paso 3: procesar imágenes
   // Mapear validadas con candidatos originales para obtener URLs de las imágenes del HTML
-  const candidatoPorTitulo = new Map(
-    candidatos.map((c) => [c.titulo.toLowerCase().slice(0, 30), c])
-  )
+  // Matching flexible: ignorar números de orden y usar palabras clave principales
+  const extraerPalabras = (t) => t.replace(/^\d+\.\s+/, '').toLowerCase().split(/\s+/).filter(p => p.length > 3)
 
   for (const act of validadas) {
-    const candidato = candidatoPorTitulo.get(act.titulo.toLowerCase().slice(0, 30))
+    // Buscar candidato con máximo overlap de palabras
+    let candidato = null
+    let maxOverlap = 0
+    const palabrasAct = extraerPalabras(act.titulo)
+
+    for (const c of candidatos) {
+      const palabrasC = extraerPalabras(c.titulo)
+      const overlap = palabrasAct.filter(p => palabrasC.some(pc => pc.includes(p) || p.includes(pc))).length
+      if (overlap > maxOverlap) {
+        maxOverlap = overlap
+        candidato = c
+      }
+    }
+
     const imagenUrlCandidato = candidato?.imagenUrl
 
     if (imagenUrlCandidato) {
