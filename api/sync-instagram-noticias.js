@@ -396,6 +396,13 @@ export default async function handler(req, res) {
         )
         if (actividadesExtraidas.length === 0) continue
 
+        // Debug: log primera actividad extraída
+        if (actividadesExtraidas.length > 0) {
+          console.log(`[sync-instagram-noticias] ${post.shortCode}: primera actividad`)
+          console.log(`  titulo: ${actividadesExtraidas[0]?.titulo}`)
+          console.log(`  imagen_url: "${actividadesExtraidas[0]?.imagen_url || '(vacío)'}"`)
+        }
+
         resumen.actividades += actividadesExtraidas.length
 
         for (let i = 0; i < actividadesExtraidas.length; i++) {
