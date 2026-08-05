@@ -163,15 +163,17 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
     const imagenUrlCandidato = candidato?.imagenUrl
 
     if (imagenUrlCandidato) {
-      try {
-        // Intentar subir imagen del HTML a Blob
-        const urlBlob = await subirImagen('instagram-actividades', shortCode, imagenUrlCandidato)
-        act.imagen_url = urlBlob || imagenUrlCandidato // Fallback a URL original si no hay Blob
-      } catch (err) {
-        console.warn(`[extraerActividadesDeHTML] Fallo upload imagen ${shortCode}: ${err.message}`)
-        // Fallback a URL original o imagen del post
-        act.imagen_url = imagenUrlCandidato || imagenPostInstagram
-      }
+      // Usar directamente la URL del HTML (municipios suelen tener URLs duraderas)
+      // Si hay Blob credentials y quieres cachear, descomenta el upload abajo
+      act.imagen_url = imagenUrlCandidato
+
+      // Opcional: intentar subir a Blob para cachear/proteger la URL
+      // try {
+      //   const urlBlob = await subirImagen('instagram-actividades', shortCode, imagenUrlCandidato)
+      //   if (urlBlob) act.imagen_url = urlBlob
+      // } catch (err) {
+      //   console.warn(`[extraerActividadesDeHTML] Fallo upload imagen ${shortCode}: ${err.message}`)
+      // }
     } else {
       // Sin imagen en el HTML: usar imagen del post
       act.imagen_url = imagenPostInstagram
