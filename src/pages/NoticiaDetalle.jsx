@@ -96,7 +96,7 @@ export default function NoticiaDetalle() {
         <img
           src={noticia.imagen}
           alt=""
-          className="mt-5 max-h-[420px] w-full border border-tinta object-cover"
+          className="mt-5 max-h-[420px] w-full border border-tinta object-contain"
         />
       )}
 
