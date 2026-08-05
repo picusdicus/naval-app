@@ -88,13 +88,14 @@ const ESQUEMA_EXTRACCION = {
 
 const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Navalcarnero (Madrid) — el Ayuntamiento y la concejalía de cultura — e identifica cuáles son NOTICIAS, ALERTAS o ACTIVIDADES de interés práctico para un vecino, y clasifica cada uno en "tipo":
 
-- tipo "actividad": el contenido principal es algo a lo que el vecino puede APUNTARSE o SOLICITAR — inscripciones a talleres, cursos, campamentos, escuelas deportivas, viajes organizados, ayudas, becas, subvenciones, bolsas de empleo público. Suele haber un plazo ("inscripciones hasta el 15", "plazo abierto del 1 al 30").
-- tipo "noticia": el resto de información municipal (obras, comunicados, gestión de emergencias, balances). Puede ser además una alerta urgente (ver abajo).
+- tipo "actividad": el contenido principal es algo a lo que el vecino puede APUNTARSE o SOLICITAR CON UN PLAZO EXPLÍCITO — inscripciones a talleres, cursos, campamentos, escuelas deportivas, ayudas, becas, subvenciones, bolsas de empleo público. REQUISITO: debe indicar claramente "hasta el X", "plazo abierto del X al Y", "inscripciones abiertas hasta", "solicitudes hasta". Si el post no menciona un plazo específico, es noticia, no actividad.
+- tipo "noticia": el resto de información municipal (obras, comunicados, gestión de emergencias, balances, eventos puntuales, servicios ofrecidos sin plazo). Puede ser además una alerta urgente (ver abajo).
 
 Descarta:
 - Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a un acto puntual con fecha, hora y lugar — esos datos pueden estar en el caption o en el texto del cartel, campo "alt"): ya los cubre la agenda de la app. Ojo: si el post anuncia el PLAZO DE INSCRIPCIÓN a una actividad continuada (un taller trimestral, la escuela de fútbol), NO es un evento de agenda: es tipo "actividad".
 - Felicitaciones, saludos institucionales, efemérides y posts sin información práctica.
-- Sorteos y contenido puramente promocional.
+- Sorteos, campañas y contenido puramente promocional.
+- Servicios puntuales sin plazo de inscripción (donaciones de sangre puntuales, servicios de custodia, etc.)
 
 Para las actividades devuelve además:
 - categoria: la más apropiada de la lista permitida ("talleres" para cursos y talleres culturales o formativos, "ayudas" para subvenciones y becas, "general" si ninguna encaja). En noticias, "".
