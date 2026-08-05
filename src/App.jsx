@@ -19,6 +19,7 @@ import Transporte from './pages/Transporte.jsx'
 import Asistente from './pages/Asistente.jsx'
 import FAQ from './pages/FAQ.jsx'
 import Sugerencias from './pages/Sugerencias.jsx'
+import PerfilComercio from './pages/PerfilComercio.jsx'
 import AvisoLegal from './pages/legal/AvisoLegal.jsx'
 import Privacidad from './pages/legal/Privacidad.jsx'
 import Cookies from './pages/legal/Cookies.jsx'
@@ -119,6 +120,7 @@ export default function App() {
             {/* Un solo route: fecha 'YYYY-MM-DD' → programa del día; id → ficha. */}
             <Route path="/eventos/:id" element={<EventoODiaCompleto />} />
             <Route path="/comercios" element={<Mapa />} />
+            <Route path="/comercios/:id" element={<PerfilComercio />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NoticiaDetalle />} />
             <Route path="/actividades" element={<Actividades />} />

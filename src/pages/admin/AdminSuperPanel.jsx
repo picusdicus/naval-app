@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
+import TableReclamaciones from '../../components/admin/super/TableReclamaciones.jsx'
 import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
 import TablesEventos from '../../components/admin/super/TablesEventos.jsx'
 import TablesComercios from '../../components/admin/super/TablesComercios.jsx'
@@ -72,6 +73,7 @@ export default function AdminSuperPanel() {
   const TABS = [
     ['organizaciones', 'business', 'Organizaciones'],
     ['codigos', 'card_giftcard', 'Códigos de invitación'],
+    ['reclamaciones', 'verified_user', 'Reclamaciones'],
     ['destacados', 'star', 'Destacados'],
     ['eventos', 'event', 'Eventos'],
     ['comercios', 'storefront', 'Comercios'],
@@ -151,6 +153,7 @@ export default function AdminSuperPanel() {
         <div className="border border-tinta bg-papel p-6">
           {seccionActiva === 'organizaciones' && <TablesOrganizaciones />}
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
+          {seccionActiva === 'reclamaciones' && <TableReclamaciones />}
           {seccionActiva === 'destacados' && <TablesDestacados />}
           {seccionActiva === 'eventos' && <TablesEventos />}
           {seccionActiva === 'comercios' && <TablesComercios />}

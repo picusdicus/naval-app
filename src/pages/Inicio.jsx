@@ -12,6 +12,7 @@ import { useWeather } from '../hooks/useWeather.js'
 import { CATEGORIAS } from '../lib/categorias.js'
 import comerciosData from '../data/comercios.json'
 import MIcon from '../components/MIcon.jsx'
+import BotonCompartir from '../components/BotonCompartir.jsx'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import CarruselDesktopInmersivo from '../components/destacados/CarruselDesktopInmersivo.jsx'
 import { eventoATarjeta } from '../lib/destacados.js'
@@ -91,6 +92,11 @@ export default function Inicio() {
           </span>
         </div>
         <div className="gz-filete-doble mt-2" />
+
+        {/* Botón compartir */}
+        <div className="mt-4 flex justify-center">
+          <BotonCompartir />
+        </div>
 
         {/* Portada · Destacados */}
         {destacados.length > 0 && (
