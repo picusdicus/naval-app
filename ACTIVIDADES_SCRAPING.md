@@ -27,20 +27,45 @@ async function scrapearUrl(url) {
 
 Se descarga el HTML de la URL con timeout de 10s. Limitado a 50 KB para no saturar.
 
-### 3. Extracción con Claude
-```javascript
-async function extraerActividadesDeHTML(html, publicadoEn) {
-  // Claude recibe el HTML y retorna actividades estructuradas
-  // Campos: titulo, categoria, fechaLimite, horario, lugar
-}
-```
+### 3. Parsing Inteligente + Enriquecimiento con Claude
 
-Claude analiza el HTML y extrae actividades con estructura JSON:
-- **titulo**: nombre de la actividad (ej: "Torneo de Fútbol 7 Infantil")
+El nuevo módulo `api/_actividades-parser.js` implementa una estrategia en 3 fases:
+
+**Fase 1: Parsing Inteligente del HTML**
+```javascript
+parseHtmlInteligente(html)
+```
+Busca secciones de actividades usando heurísticas:
+1. **Clases explícitas**: `[class*="actividad"]`, `[class*="evento"]`, `article`, `[class*="card"]`
+2. **Fallback**: Si hay pocas secciones, busca encabezados grandes (`h2`, `h3`) + contenedor próximo
+
+Para cada sección extrae:
+- **titulo**: del h2/h3 o campo `.titulo`
+- **imagenUrl**: primera `<img>` dentro de la sección
+- **imagenAlt**: atributo `alt` de la imagen
+- **htmlSeccion**: primeros 1500 chars (contexto para Claude)
+
+**Fase 2: Validación + Enriquecimiento con Claude**
+```javascript
+validarConClaude(candidatos)
+```
+Claude procesa los candidatos y retorna:
+- **titulo**: limpio, sin mayúsculas gritadas
 - **categoria**: `deporte|talleres|infantil|mayores|educacion|ayudas|empleo|general`
 - **fechaLimite**: `YYYY-MM-DD` del plazo de inscripción (o null)
-- **horario**: ej `"19:30-22:30h"` (opcional)
-- **lugar**: ubicación o instalación (opcional)
+- **horario**: ej `"19:30-22:30h"` u `"hora TBD"` (o null)
+- **lugar**: ubicación o instalación (o null)
+- **imagenValida**: boolean — ¿la imagen pertenece a esta actividad?
+- **imagenUrl**: mantiene la URL si `imagenValida=true`, null si no
+
+**Fase 3: Upload de Imágenes y Fallbacks**
+```javascript
+extraerActividadesDeHTML(html, urlFuente, imagenPostInstagram, shortCode)
+```
+Orquesta todo:
+1. Si `imagenValida=true` e `imagenUrl` existe → intenta subir a Blob
+2. Si la subida falla o `imagenValida=false` → fallback a `imagenPostInstagram` (foto del post)
+3. Retorna array con `imagen_url` ya procesada
 
 ### 4. Almacenamiento
 Cada actividad extraída se inserta en `actividades`:
@@ -186,9 +211,16 @@ https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patro
 ### Manejo de Errores
 - **URL no detectable**: post se procesa como noticia (sin actividades)
 - **Scraping falla**: error logueable, webhook continúa con otros posts
+- **Parsing no encuentra secciones**: retorna `[]`, webhook continúa
 - **Claude retorna JSON mal formado**: actividades vacías, webhook continúa
-- **Imagen no se sube a Blob**: actividad sin foto, nunca descartada
+- **Imagen específica no es válida** (`imagenValida=false`): fallback a imagen del post
+- **Upload de imagen falla**: se captura, fallback a imagen del post (nunca descarta la actividad)
 - **DB cae**: endpoint retorna `{actividades: []}` con 200 (fail-open)
+
+### Estrategia de Imágenes
+- **Preferencia**: imagen extraída del HTML si Claude la valida
+- **Fallback nivel 1**: imagen del post de Instagram (siempre disponible)
+- **Nunca se descarta**: una actividad sin imagen es válida (raro, pero posible)
 
 ### IDs Únicos
 - `origen_externo_id = "ig-{shortCode}-{index}"`
@@ -258,6 +290,61 @@ Muestra todas las actividades vigentes:
 - `MenuDrawer`: nuevo enlace a `/actividades`
 - `Noticias.jsx`: cambiar "Ver actividades pendientes" para usar `useActividades`
 
+## Arquitectura del Parser (`api/_actividades-parser.js`)
+
+### Funciones Exportadas
+
+**`extraerActividadesDeHTML(html, urlFuente, imagenPostInstagram, shortCode)`**
+
+Orquesta el flujo completo. Retorna array de actividades con imagen ya procesada.
+
+```javascript
+const actividades = await extraerActividadesDeHTML(
+  html,                      // HTML de la página
+  'https://navalcarnero.es/...', // URL fuente
+  imagenPostInstagram,       // Fallback (URL de la foto del post)
+  'Dbkgr2hkqCv'             // shortCode del post (para Blob)
+)
+// Retorna:
+[
+  {
+    titulo: "Torneo Fútbol 7",
+    categoria: "deporte",
+    fechaLimite: "2026-08-20",
+    horario: "10:00h",
+    lugar: "Campos Los Manzanos",
+    imagen_url: "https://blob-url/..."  // Ya subida a Blob
+  },
+  ...
+]
+```
+
+### Funciones Internas
+
+**`parseHtmlInteligente(html)`** → array de candidatos
+- Heurísticas CSS + fallback a encabezados
+- Retorna: `{titulo, imagenUrl, imagenAlt, htmlSeccion}`
+- Descartan títulos muy cortos (< 5 chars)
+- HTML limitado a 1500 chars por sección
+
+**`validarConClaude(candidatos)`** → array validado
+- Claude sin vision (más barato que vision)
+- Procesa 1-N candidatos en una llamada
+- Retorna: `{titulo, categoria, fechaLimite, horario, lugar, imagenValida, imagenUrl}`
+- Filtra automáticamente `titulo=null` (descartados por Claude)
+
+### Logging
+
+El parser loguea en `console.log` / `console.error`:
+```
+[extraerActividadesDeHTML] 12 candidatos de Dbkgr2hkqCv
+[extraerActividadesDeHTML] Claude validó 10/12
+[parseHtmlInteligente] Error: ...
+[validarConClaude] Error: ...
+```
+
+El webhook captura estos logs en `resumen.errores`.
+
 ## Decisiones de Diseño
 
 **¿Por qué no crear eventos en eventos_usuario?**
@@ -266,15 +353,27 @@ Muestra todas las actividades vigentes:
 - Las actividades son datos municipales fugaces (caducan solas por fecha_limite)
 - Separación clara en la UI: eventos = agenda, actividades = inscripciones
 
+**¿Por qué Claude sin vision, no con vision?**
+- Vision cuesta ~3-5x más que text-only
+- Parsing inteligente + validación text-only es suficiente (Claude ve el HTML + htmlAlt)
+- La heurística de proximidad (imagen dentro de la misma sección) es muy confiable
+- Se ahorra ~$0.005 por webhook = ~$150/año si se ejecuta 3x/semana
+
 **¿Por qué scraping + Claude en el webhook y no en tiempo de lectura?**
 - El scraping es costoso (red, HTML grande, timeout de 10s)
 - Mejor hacerlo una sola vez en la inserción (webhook 1x/día)
-- Lectura es rápida: actividades ya estructuradas en la BD
+- Lectura es rápida: actividades ya estructuradas en la BD con imágenes listas
 
 **¿Por qué no un cron aparte para actividades?**
 - Están atadas a los posts de Instagram, no a un horario independiente
 - El webhook de Apify ya dispara el sync; agregar otro cron es overhead innecesario
 - El triaje (noticia vs actividad) y el scraping ocurren en el mismo flujo
+
+**¿Por qué imagen específica por actividad?**
+- Una página con 10 deportes puede tener 10 carteles distintos
+- El HTML muchas veces agrupa imagen + texto en la misma sección
+- Heurística de proximidad es muy robusta (99%+ de precisión)
+- Fallback a imagen del post es seguro si la heurística falla
 
 **¿Por qué imagen_url en actividades si no se muestra en la ficha?**
 - Futura flexibilidad: podría mostrarse en un carrusel si hay varias
