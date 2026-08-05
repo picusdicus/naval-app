@@ -175,14 +175,20 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
     const imagenUrlCandidato = candidato?.imagenUrl
 
     if (imagenUrlCandidato) {
+      // Derivar versión full-size si es miniatura de WordPress (-150x150.jpg → .jpg)
+      let urlFinal = imagenUrlCandidato
+      if (imagenUrlCandidato.includes('-150x150')) {
+        urlFinal = imagenUrlCandidato.replace(/-150x150\./, '.')
+        console.log(`[parser] Full-size derivada: ${urlFinal}`)
+      }
+
       try {
-        // Intentar subir imagen del HTML a Blob
-        const urlBlob = await subirImagen('instagram-actividades', shortCode, imagenUrlCandidato)
-        act.imagen_url = urlBlob || imagenUrlCandidato // Fallback a URL original si no hay Blob
+        // Intentar subir imagen del HTML a Blob (opcional; sin credenciales usa URL directa)
+        const urlBlob = await subirImagen('instagram-actividades', shortCode, urlFinal)
+        act.imagen_url = urlBlob || urlFinal // Fallback a URL original si no hay Blob
       } catch (err) {
         console.warn(`[extraerActividadesDeHTML] Fallo upload imagen ${shortCode}: ${err.message}`)
-        // Fallback a URL original o imagen del post
-        act.imagen_url = imagenUrlCandidato || imagenPostInstagram
+        act.imagen_url = urlFinal || imagenPostInstagram
       }
     } else {
       // Sin imagen en el HTML: usar imagen del post
