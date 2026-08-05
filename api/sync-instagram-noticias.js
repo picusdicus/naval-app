@@ -30,6 +30,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
 import { MAX_POSTS, normalizarPost, obtenerPosts, subirImagen } from './_instagram.js'
+import { extraerActividadesDeHTML } from './_actividades-parser.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -161,41 +162,6 @@ async function scrapearUrl(url) {
   }
 }
 
-/** Usa Claude para extraer actividades de un HTML. */
-async function extraerActividadesDeHTML(html, publicadoEn) {
-  const client = new Anthropic()
-  const respuesta = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4096,
-    messages: [{
-      role: 'user',
-      content: `Extrae las actividades deportivas, talleres, cursos o eventos de inscripción que encuentres en este HTML de programación de Navalcarnero. Para cada una devuelve:
-
-{
-  "actividades": [
-    {
-      "titulo": "Nombre de la actividad",
-      "categoria": "deporte|talleres|infantil|mayores|educacion|ayudas|empleo|general",
-      "fechaLimite": "YYYY-MM-DD del plazo de inscripción o null",
-      "horario": "Horario o franja de la actividad, ej: '19:30-22:30h'",
-      "lugar": "Lugar o instalación donde se hace"
-    }
-  ]
-}
-
-Si no hay actividades claras, devuelve {"actividades": []}.
-
-HTML:
-${html}`,
-    }],
-  })
-  const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"actividades":[]}'
-  try {
-    return JSON.parse(texto).actividades || []
-  } catch {
-    return []
-  }
-}
 
 /** Fecha de publicación de la fila: el timestamp del post si es parseable. */
 function fechaPublicacion(post) {
@@ -421,7 +387,13 @@ export default async function handler(req, res) {
         if (!url) continue
 
         const html = await scrapearUrl(url)
-        const actividadesExtraidas = await extraerActividadesDeHTML(html, post.publicado)
+        // Nuevo parser: parsing inteligente + Claude + manejo de imágenes
+        const actividadesExtraidas = await extraerActividadesDeHTML(
+          html,
+          url,
+          post.imagen, // Imagen del post de Instagram como fallback
+          post.shortCode
+        )
         if (actividadesExtraidas.length === 0) continue
 
         resumen.actividades += actividadesExtraidas.length
@@ -431,8 +403,6 @@ export default async function handler(req, res) {
           try {
             // ID único: post + índice (en caso de múltiples en el mismo post).
             const origenId = `ig-${post.shortCode}-${i}`
-            const imagenUrl = await subirImagen('instagram-actividades', post.shortCode, post.imagen)
-            if (imagenUrl) resumen.imagenesSubidas++
 
             await sql`
               INSERT INTO actividades
@@ -440,7 +410,7 @@ export default async function handler(req, res) {
                  imagen_url, url_fuente, publicado_en)
               VALUES
                 (${origenId}, ${act.titulo}, ${act.categoria || 'general'}, ${act.fechaLimite},
-                 ${act.horario}, ${act.lugar}, ${imagenUrl}, ${url}, ${new Date(post.publicado || Date.now()).toISOString()})
+                 ${act.horario}, ${act.lugar}, ${act.imagen_url}, ${url}, ${new Date(post.publicado || Date.now()).toISOString()})
               ON CONFLICT (origen_externo_id)
               DO UPDATE SET
                 titulo = EXCLUDED.titulo,
@@ -453,6 +423,7 @@ export default async function handler(req, res) {
                 actualizado_en = now()
             `
             resumen.creadas++
+            if (act.imagen_url) resumen.imagenesSubidas++
           } catch (err) {
             resumen.errores.push(`Actividad ${origenId}: ${err.message}`)
           }
