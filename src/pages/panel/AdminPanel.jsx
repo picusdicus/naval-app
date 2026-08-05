@@ -7,6 +7,7 @@ import DetalleDestacado from '../../components/admin/DetalleDestacado.jsx'
 import DialogoInfoUsuario from '../../components/admin/DialogoInfoUsuario.jsx'
 import AnaliticasOrganizacion from '../../components/admin/AnaliticasOrganizacion.jsx'
 import DestacaNegocio from '../../components/admin/DestacaNegocio.jsx'
+import AdminComercioForm from './AdminComercioForm.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 import { CATEGORIAS_EVENTO } from '../../lib/eventos.js'
 import { campanaFinalizada, diasParaCaducar, textoCaducidad } from '../../lib/destacados.js'
@@ -393,10 +394,11 @@ export default function AdminPanel() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        {/* Pestañas: eventos (gestión) y analíticas (visitas propias en Neon). */}
+        {/* Pestañas: eventos, comercio (si vinculado), analíticas. */}
         <div className="mb-6 flex gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta sm:w-fit">
           {[
             ['eventos', 'event', 'Mis eventos'],
+            ['comercio', 'storefront', 'Mi comercio'],
             ['analiticas', 'monitoring', 'Mis analíticas'],
           ].map(([clave, icono, etiqueta]) => (
             <button
@@ -416,6 +418,11 @@ export default function AdminPanel() {
         </div>
 
         {pestana === 'analiticas' && <AnaliticasOrganizacion onNoAutenticado={cerrarSesion} />}
+
+        <div className={pestana === 'comercio' ? '' : 'hidden'}>
+          <h1 className="mb-6 font-serif-dm text-seccion-sm text-tinta">Mi comercio</h1>
+          <AdminComercioForm />
+        </div>
 
         <div className={pestana === 'eventos' ? '' : 'hidden'}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

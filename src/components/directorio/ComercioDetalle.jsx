@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { CATEGORIAS } from '../../lib/categorias.js'
 import { etiquetasCocina } from '../../lib/cocinas.js'
 import { IconoCategoria } from './iconosCategoria.jsx'
 import MIcon from '../MIcon.jsx'
+import DialogoReclamarComercio from './DialogoReclamarComercio.jsx'
 
 function normalizarWeb(web) {
   if (!web) return ''
@@ -24,6 +27,26 @@ const ETIQUETA_ATRIBUTO = {
 // inicial de color, datos de contacto en filas discontinuas y acciones a
 // Google Maps. Se muestra solo para el comercio activo (accordion en Mapa.jsx).
 export default function ComercioDetalle({ comercio, onCerrar }) {
+  const [perfil, setPerfil] = useState(null)
+  const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
+
+  // Cargar perfil para saber si el comercio está reclamado
+  useEffect(() => {
+    const cargarPerfil = async () => {
+      try {
+        const respuesta = await fetch(`/api/comercios/${comercio.id}/perfil`)
+        if (respuesta.ok) {
+          const datos = await respuesta.json()
+          setPerfil(datos.perfil)
+        }
+      } catch (err) {
+        console.warn('No se pudo cargar el perfil:', err)
+      }
+    }
+
+    cargarPerfil()
+  }, [comercio.id])
+
   const cat = CATEGORIAS[comercio.categoria]
   const tieneCoords = typeof comercio.lat === 'number' && typeof comercio.lng === 'number'
   const cocinas = etiquetasCocina(comercio.cocina || [])
@@ -141,28 +164,59 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
         )}
       </dl>
 
-      {tieneCoords && (
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <a
-            href={comoLlegar}
-            target="_blank"
-            rel="noreferrer"
-            className="gz-boton-tinta flex flex-1 items-center justify-center gap-2"
+      <div className="mt-4 flex flex-col gap-2">
+        {tieneCoords && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <a
+              href={comoLlegar}
+              target="_blank"
+              rel="noreferrer"
+              className="gz-boton-tinta flex flex-1 items-center justify-center gap-2"
+            >
+              <MIcon name="directions" className="text-[16px]" />
+              Cómo llegar
+            </a>
+            <a
+              href={verEnGoogleMaps}
+              target="_blank"
+              rel="noreferrer"
+              className="gz-boton-borde flex flex-1 items-center justify-center gap-2 hover:bg-papel-calido"
+            >
+              <MIcon name="map" className="text-[16px]" />
+              Ver en Google Maps
+            </a>
+          </div>
+        )}
+        {perfil ? (
+          <Link
+            to={`/comercios/${comercio.id}`}
+            className="gz-boton-tinta flex items-center justify-center gap-2"
           >
-            <MIcon name="directions" className="text-[16px]" />
-            Cómo llegar
-          </a>
-          <a
-            href={verEnGoogleMaps}
-            target="_blank"
-            rel="noreferrer"
-            className="gz-boton-borde flex flex-1 items-center justify-center gap-2 hover:bg-papel-calido"
+            <MIcon name="info" className="text-[16px]" />
+            Más información
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setDialogoReclamarAbierto(true)
+            }}
+            className="gz-boton-tinta flex items-center justify-center gap-2"
           >
-            <MIcon name="map" className="text-[16px]" />
-            Ver en Google Maps
-          </a>
-        </div>
-      )}
+            <MIcon name="verified_user" className="text-[16px]" />
+            Reclamar comercio
+          </button>
+        )}
+      </div>
+
+      {/* Diálogo de reclamación */}
+      <DialogoReclamarComercio
+        abierto={dialogoReclamarAbierto}
+        comercioId={comercio.id}
+        comercioNombre={comercio.nombre}
+        onCerrar={() => setDialogoReclamarAbierto(false)}
+      />
     </div>
   )
 }

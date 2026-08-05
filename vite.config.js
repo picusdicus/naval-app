@@ -40,8 +40,10 @@ const VARIABLES_API = [
   'VITE_VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'VAPID_SUBJECT',
-  // reCAPTCHA v3 (api/sugerencias.js). La clave pública la usa el navegador
-  // para obtener el token; la secreta solo el servidor para verificarlo.
+  // reCAPTCHA v3 (api/sugerencias.js, api/solicitar-reclamacion.js).
+  // La clave pública la usa el navegador para obtener el token (prefijo VITE_);
+  // la secreta solo el servidor para verificarlo.
+  'VITE_RECAPTCHA_SITE_KEY',
   'RECAPTCHA_SECRET_KEY',
   // Webhook de sincronización de Instagram (api/sync-instagram.js): secreto de
   // autenticación del webhook de Apify y token para leer sus datasets.
@@ -54,6 +56,9 @@ const VARIABLES_API = [
   // (api/super/comercios.js) y el cron de eventos (api/sync-events.js).
   'GITHUB_TOKEN',
   'GITHUB_REPO',
+  // Email (api/super/reclamaciones.js): enviar correos con código de invitación
+  'RESEND_API_KEY',
+  'VITE_APP_URL',
 ]
 
 // Un segmento por carpeta, solo letras/números/guiones: ni traversal (`..`) ni

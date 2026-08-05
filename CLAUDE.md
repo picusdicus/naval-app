@@ -274,3 +274,53 @@ New public suggestion system for residents to submit ideas, events, report bugs,
   5. Logging for suspicious patterns.
 
 - **Future work**: store suggestions in DB (new `sugerencias` table), send admin email notifications, add a superadmin review panel in `/admin`.
+
+### Reclamación y gestión de comercios + Botón compartir
+
+Implementa el flujo completo para que dueños de comercios reclamen sus fichas, editen su perfil enriquecido, y la app sea compartible. Ver `IMPLEMENTACION_RECLAMACIONES.md` para detalles técnicos completos.
+
+**Flujo:**
+
+1. **Reclamación anónima** (`api/solicitar-reclamacion.js` — Edge, POST público): Dueño rellena formulario sin auth. Defensas: reCAPTCHA v3 (score ≥ 0.5), rate-limit 5/hora por IP. INSERT en `solicitudes_reclamacion` con `estado='pendiente'`.
+
+2. **Aprobación superadmin** (`api/super/reclamaciones.js` — Edge, GET/PATCH): Pestaña `/admin` → "Reclamaciones" → lista solicitudes, filtra por estado, [Aprobar] genera org automáticamente (con `categoria_defecto='cultura'` si el comercio es de `categoria='ocio_cultura'`), genera código de invitación vinculado al `comercio_id`.
+
+3. **Registro** (modificado `api/registro.js`): Al registrarse con código que lleva `comercio_id`, `UPDATE organizaciones SET comercio_id = ...` automáticamente.
+
+4. **Panel** (`src/pages/panel/AdminComercioForm.jsx`): Nueva pestaña `/panel` → "Mi comercio". Formulario enriquecido: foto principal, descripción, horarios (7 días, estructura JSON), fotos adicionales (hasta 5), web, teléfono, dirección, lat/lng. GET/PUT a `api/admin/comercio-perfil.js` (Edge, org-scoped).
+
+5. **Imagen upload** (`api/admin/imagen-comercio.js` — Node): POST con base64 → Vercel Blob en `comercios/<id>/principal.webp` + `comercios/<id>/fotos/<n>.webp`.
+
+6. **Vista pública** (`src/pages/PerfilComercio.jsx`, ruta `/comercios/:id`): Obtiene comercio del JSON + perfil si existe. Precedencia: perfil > JSON, campo a campo. Secciones: encabezado, descripción, horarios, contacto, mapa (si lat/lng). Fallback: si sin perfil, muestra JSON + botón "Reclamar comercio".
+
+7. **Compartir app** (`src/components/BotonCompartir.jsx`): Montado en `Inicio.jsx` hero. Share API nativa en móvil (WhatsApp, Telegram, etc.); popover en escritorio con "Copiar enlace" + "WhatsApp Web". Texto: "Descubre la app de los vecinos de Navalcarnero 👉 [URL]".
+
+**Base de datos:**
+
+Tres entidades nuevas en `db/schema.sql`:
+- `solicitudes_reclamacion`: almacena solicitudes anónimas.
+- `comercios_perfil`: perfiles enriquecidos, vinculados a org via `organizacion_id` (o a comercio via PK `comercio_id`).
+- `codigos_invitacion.comercio_id`: vincula código de invitación a comercio, usado por `api/registro.js`.
+
+**Módulos auxiliares:**
+
+- `src/lib/comerciosHelper.js`: `datoComercio(perfil, json, campo)` → precedencia perfil > json. `datosComercios()` → merge. `buscarComercioEnJson()` → búsqueda.
+- `src/lib/imageOptimizer.js`: `optimizarImagen(file, maxWidth)` → redimensiona + WebP. `validarImagen()` → tipo + tamaño.
+- `src/lib/horarios.js`: `horarioValido()`, `formatearHorarios()`, `horariosVacios()`.
+- `src/lib/useRecaptcha.js`: Hook React para reCAPTCHA v3.
+
+**Env vars nuevas (añadir a `VARIABLES_API` en `vite.config.js`):**
+
+```env
+RECAPTCHA_SECRET_KEY=...
+VITE_RECAPTCHA_SITE_KEY=...
+VITE_APP_URL=... (opcional; fallback window.location.origin)
+```
+
+**Decisiones:**
+
+- **Tipo cultural**: Si `categoria='ocio_cultura'`, org nace con `categoria_defecto='cultura'`, permitiéndole publicar eventos al instante.
+- **Horarios estructura JSON**: `[{dia: "lunes", abierto: true, apertura: "09:00", cierre: "14:00"}]` permite búsquedas futuras sin sacrificar legibilidad.
+- **Fallback JSON**: Perfil siempre gana, pero JSON sirve de fallback por campo, permitiendo enriquecimiento gradual.
+- **Rate-limit + reCAPTCHA**: Doble defensa en reclamación anónima (pública).
+- **Share API nativa**: Móvil prefiere nativo; escritorio fallback simple (popover, sin deps pesadas).

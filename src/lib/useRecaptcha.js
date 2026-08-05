@@ -1,25 +1,36 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
-const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY
 
-/**
- * Hook para obtener un token de reCAPTCHA v3.
- * Carga el script de Google y ejecuta grecaptcha.execute() cuando se solicita.
- * Retorna { token, loading, error, getToken }
- */
 export function useRecaptcha() {
-  const [scriptCargado, setScriptCargado] = useState(false)
-  const [error, setError] = useState(null)
+  const [cargando, setCargando] = useState(!RECAPTCHA_SITE_KEY)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!SITE_KEY || scriptCargado) return
+    if (!RECAPTCHA_SITE_KEY) {
+      console.warn('reCAPTCHA no configurado (VITE_RECAPTCHA_SITE_KEY)')
+      return
+    }
+
+    if (window.grecaptcha) {
+      setCargando(false)
+      return
+    }
 
     const script = document.createElement('script')
     script.src = 'https://www.google.com/recaptcha/api.js'
     script.async = true
     script.defer = true
-    script.onload = () => setScriptCargado(true)
-    script.onerror = () => setError('No se pudo cargar reCAPTCHA')
+
+    script.onload = () => {
+      setCargando(false)
+    }
+
+    script.onerror = () => {
+      setError('No se pudo cargar reCAPTCHA')
+      setCargando(false)
+    }
+
     document.head.appendChild(script)
 
     return () => {
@@ -27,27 +38,37 @@ export function useRecaptcha() {
         document.head.removeChild(script)
       }
     }
-  }, [scriptCargado])
+  }, [])
 
-  const getToken = async (accion = 'submit') => {
-    if (!SITE_KEY) {
-      console.warn('reCAPTCHA no configurado (VITE_RECAPTCHA_SITE_KEY falta)')
-      return null
-    }
+  const getToken = useCallback(
+    async (action = 'submit') => {
+      // En development, devolver token simulado
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('✓ reCAPTCHA deshabilitado en localhost, token simulado')
+        return `dev_token_${Date.now()}`
+      }
 
-    if (!scriptCargado || !window.grecaptcha) {
-      console.warn('reCAPTCHA script aún no cargado')
-      return null
-    }
+      if (!RECAPTCHA_SITE_KEY) {
+        console.warn('reCAPTCHA no configurado')
+        return null
+      }
 
-    try {
-      const token = await window.grecaptcha.execute(SITE_KEY, { action: accion })
-      return token
-    } catch (err) {
-      setError(err.message)
-      return null
-    }
-  }
+      if (!window.grecaptcha) {
+        setError('reCAPTCHA no está disponible')
+        return null
+      }
 
-  return { scriptCargado, error, getToken }
+      try {
+        const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action })
+        return token
+      } catch (err) {
+        setError('Error al obtener token reCAPTCHA')
+        console.error(err)
+        return null
+      }
+    },
+    []
+  )
+
+  return { getToken, cargando, error }
 }

@@ -277,3 +277,50 @@ CREATE TABLE IF NOT EXISTS eventos_ocultos (
   referencia_id text PRIMARY KEY,
   oculto_en timestamptz NOT NULL DEFAULT now()
 );
+
+-- Solicitudes de reclamación de comercios por sus dueños (anónimas). El
+-- superadmin las aprueba en /admin: genera un código de invitación vinculado
+-- al comercio_id, y el dueño se registra con ese código. La columna estado
+-- permite el triaje de gestión en el panel (pendiente → aprobada/rechazada).
+CREATE TABLE IF NOT EXISTS solicitudes_reclamacion (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comercio_id       text NOT NULL,
+  nombre            text NOT NULL,
+  email             text NOT NULL,
+  telefono          text,
+  mensaje           text NOT NULL,
+  estado            text NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aprobada', 'rechazada')),
+  creado_en         timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_solicitudes_comercio ON solicitudes_reclamacion (comercio_id);
+
+CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON solicitudes_reclamacion (estado);
+
+-- Perfil enriquecido de un comercio reclamado. Cada org puede tener un
+-- comercio vinculado (organizaciones.comercio_id); el perfil se almacena aquí
+-- y tiene prioridad sobre los datos estáticos del JSON. Upsert por comercio_id
+-- (PK, referencia al JSON estático, inmutable).
+CREATE TABLE IF NOT EXISTS comercios_perfil (
+  comercio_id       text PRIMARY KEY,
+  organizacion_id   uuid REFERENCES organizaciones(id) ON DELETE CASCADE,
+  descripcion       text,
+  horarios          jsonb,
+  foto_principal    text,
+  fotos             jsonb,
+  web               text,
+  telefono          text,
+  direccion         text,
+  lat               numeric,
+  lng               numeric,
+  creado_en         timestamptz NOT NULL DEFAULT now(),
+  actualizado_en    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_comercios_perfil_org ON comercios_perfil (organizacion_id);
+
+-- Vincula un código de invitación con el comercio que reclama (si aplica).
+-- Cuando el superadmin aprueba una reclamación, genera un código aquí con
+-- comercio_id NOT NULL. Al registrarse con ese código, api/registro.js vincula
+-- automáticamente la org al comercio (UPDATE organizaciones.comercio_id).
+ALTER TABLE codigos_invitacion ADD COLUMN IF NOT EXISTS comercio_id text;

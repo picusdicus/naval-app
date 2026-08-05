@@ -37,6 +37,7 @@ export default async function handler(req) {
         c.usos_actuales,
         c.expira_en,
         c.activo,
+        c.comercio_id,
         o.slug
       FROM codigos_invitacion c
       JOIN organizaciones o ON o.id = c.organizacion_id
@@ -100,14 +101,23 @@ export default async function handler(req) {
 
     const usuario = nuevoUsuario[0]
 
-    // 4. Incrementar el contador de usos del código.
+    // 4. Si el código lleva comercio_id, vincular la org al comercio
+    if (codigo_inv.comercio_id) {
+      await sql`
+        UPDATE organizaciones
+        SET comercio_id = ${codigo_inv.comercio_id}
+        WHERE id = ${usuario.organizacion_id}
+      `
+    }
+
+    // 5. Incrementar el contador de usos del código.
     await sql`
       UPDATE codigos_invitacion
       SET usos_actuales = usos_actuales + 1
       WHERE id = ${codigo_inv.id}
     `
 
-    // 5. Emitir JWT con el rol incluido.
+    // 6. Emitir JWT con el rol incluido.
     const token = await firmarToken({
       email: usuario.email,
       nombre: usuario.nombre,

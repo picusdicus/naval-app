@@ -1,7 +1,10 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CATEGORIAS } from '../../lib/categorias.js'
 import { tipoComercio } from '../../lib/cocinas.js'
 import { IconoCategoria } from './iconosCategoria.jsx'
 import MIcon from '../MIcon.jsx'
+import DialogoReclamarComercio from './DialogoReclamarComercio.jsx'
 
 const PRECIOS = { INEXPENSIVE: '€', MODERATE: '€€', EXPENSIVE: '€€€' }
 
@@ -26,7 +29,8 @@ function horarioDeHoy(horario) {
 }
 
 // Tarjeta de comercio para grid: imagen grande, categoría, nombre, dirección, info
-export default function ComercioTarjeta({ comercio, onClick }) {
+export default function ComercioTarjeta({ comercio, onClick, tienePerfil = false }) {
+  const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
   const cat = CATEGORIAS[comercio.categoria]
   const tipo = tipoComercio(comercio, cat?.nombre)
   const precio = PRECIOS[comercio.precioNivel] || ''
@@ -90,11 +94,35 @@ export default function ComercioTarjeta({ comercio, onClick }) {
 
         {/* Botón */}
         <div className="mt-1.5 pt-1.5 border-t border-filete">
-          <span className="inline-block font-mono-ibm text-[9px] font-bold uppercase tracking-etiqueta text-terracota group-hover:text-tinta transition-colors">
-            Ver ficha
-          </span>
+          {tienePerfil ? (
+            <Link
+              to={`/comercios/${comercio.id}`}
+              className="inline-block font-mono-ibm text-[9px] font-bold uppercase tracking-etiqueta text-terracota group-hover:text-tinta transition-colors"
+            >
+              Más información
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setDialogoReclamarAbierto(true)
+              }}
+              className="inline-block font-mono-ibm text-[9px] font-bold uppercase tracking-etiqueta text-verde hover:text-tinta transition-colors"
+            >
+              Reclamar comercio
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Diálogo de reclamación */}
+      <DialogoReclamarComercio
+        abierto={dialogoReclamarAbierto}
+        comercioId={comercio.id}
+        comercioNombre={comercio.nombre}
+        onCerrar={() => setDialogoReclamarAbierto(false)}
+      />
     </button>
   )
 }
