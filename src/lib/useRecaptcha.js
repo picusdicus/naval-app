@@ -7,8 +7,15 @@ export function useRecaptcha() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!RECAPTCHA_SITE_KEY) {
-      console.warn('reCAPTCHA no configurado (VITE_RECAPTCHA_SITE_KEY)')
+    // En producción, no cargar reCAPTCHA (pendiente validación de Google)
+    const esProduccion = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+    if (esProduccion || !RECAPTCHA_SITE_KEY) {
+      if (esProduccion) {
+        console.warn('reCAPTCHA deshabilitado en producción (pendiente validación de Google), usando token simulado')
+      } else {
+        console.warn('reCAPTCHA no configurado (VITE_RECAPTCHA_SITE_KEY)')
+      }
+      setCargando(false)
       return
     }
 
