@@ -1,27 +1,10 @@
-import { Resend } from 'resend'
-
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = 'danielmolino.it@gmail.com'
-
-let resendClient = null
-
-function obtenerResend() {
-  if (!resendClient && RESEND_API_KEY) {
-    resendClient = new Resend(RESEND_API_KEY)
-  }
-  return resendClient
-}
 
 export async function enviarEmailReclamacion({ comercioId, nombre, email, telefono, mensaje }) {
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY no configurado, email no enviado')
     return { ok: true, skipped: true }
-  }
-
-  const resend = obtenerResend()
-  if (!resend) {
-    console.error('No se pudo inicializar Resend client')
-    return { ok: false, error: 'Error al inicializar servicio de email' }
   }
 
   try {
@@ -37,22 +20,31 @@ export async function enviarEmailReclamacion({ comercioId, nombre, email, telefo
       <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}</p>
     `
 
-    const resultado = await resend.emails.send({
-      from: 'noreply@naval-app.dev',
-      to: ADMIN_EMAIL,
-      subject: asunto,
-      html: contenido,
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'onboarding@resend.dev',
+        to: ADMIN_EMAIL,
+        subject: asunto,
+        html: contenido,
+      }),
     })
 
-    if (resultado.error) {
-      console.error('Error al enviar email con Resend:', resultado.error)
-      return { ok: false, error: resultado.error }
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('Error al enviar email con Resend:', error)
+      return { ok: false, error: error }
     }
 
+    const resultado = await response.json()
     console.log('Email enviado exitosamente:', resultado.id)
     return { ok: true, id: resultado.id }
   } catch (error) {
-    console.error('Error al enviar email:', error)
+    console.error('Error al enviar email:', error.message)
     return { ok: false, error: error.message }
   }
 }
