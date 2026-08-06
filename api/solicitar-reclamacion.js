@@ -4,8 +4,9 @@
 import { obtenerSql } from './_db.js'
 import { json, leerJson, csrfInvalido, rechazoCsrf } from './_http.js'
 import { limitar, obtenerIp, respuesta429 } from './_ratelimit.js'
+import { enviarEmailReclamacion } from './_email.js'
 
-export const config = { runtime: 'edge' }
+export const config = { runtime: 'node' }
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY
 const RECAPTCHA_SCORE_MIN = 0.5
@@ -102,6 +103,19 @@ export default async function handler(req) {
         'pendiente'
       )
     `
+
+    // Enviar email al admin (fail-soft: no romper la respuesta si falla)
+    const resultadoEmail = await enviarEmailReclamacion({
+      comercioId: String(comercioId).trim(),
+      nombre: String(nombre).trim(),
+      email: emailTrimmed,
+      telefono: telefono ? String(telefono).trim() : null,
+      mensaje: String(mensaje).trim(),
+    })
+
+    if (!resultadoEmail.ok && !resultadoEmail.skipped) {
+      console.error('Fallo al enviar email de notificación, pero la solicitud se guardó')
+    }
 
     return json({ ok: true }, 201)
   } catch (error) {

@@ -288,7 +288,7 @@ Implementa el flujo completo para que dueños de comercios reclamen sus fichas, 
 
 **Flujo:**
 
-1. **Reclamación anónima** (`api/solicitar-reclamacion.js` — Edge, POST público): Dueño rellena formulario sin auth. Defensas: reCAPTCHA v3 (score ≥ 0.5), rate-limit 5/hora por IP. INSERT en `solicitudes_reclamacion` con `estado='pendiente'`.
+1. **Reclamación anónima** (`api/solicitar-reclamacion.js` — Node, POST público): Dueño rellena formulario sin auth. Defensas: reCAPTCHA v3 (score ≥ 0.5), rate-limit 5/hora por IP. INSERT en `solicitudes_reclamacion` con `estado='pendiente'`. **Envío de email** (via `api/_email.js` + Resend): notifica al admin en `danielmolino.it@gmail.com` con los detalles de la reclamación (comercio, nombre, email, teléfono, mensaje). Fail-soft: si el email falla, la solicitud se guarda igual y se loguea el error.
 
 2. **Aprobación superadmin** (`api/super/reclamaciones.js` — Edge, GET/PATCH): Pestaña `/admin` → "Reclamaciones" → lista solicitudes, filtra por estado, [Aprobar] genera org automáticamente (con `categoria_defecto='cultura'` si el comercio es de `categoria='ocio_cultura'`), genera código de invitación vinculado al `comercio_id`.
 
@@ -315,6 +315,7 @@ Tres entidades nuevas en `db/schema.sql`:
 - `src/lib/imageOptimizer.js`: `optimizarImagen(file, maxWidth)` → redimensiona + WebP. `validarImagen()` → tipo + tamaño.
 - `src/lib/horarios.js`: `horarioValido()`, `formatearHorarios()`, `horariosVacios()`.
 - `src/lib/useRecaptcha.js`: Hook React para reCAPTCHA v3.
+- `api/_email.js` (Node): `enviarEmailReclamacion()` → Resend. Usado por reclamaciones de comercios. Hardcodeado a `danielmolino.it@gmail.com` con detalles de la solicitud.
 
 **Env vars nuevas (añadir a `VARIABLES_API` en `vite.config.js`):**
 
@@ -322,6 +323,7 @@ Tres entidades nuevas en `db/schema.sql`:
 RECAPTCHA_SECRET_KEY=...
 VITE_RECAPTCHA_SITE_KEY=...
 VITE_APP_URL=... (opcional; fallback window.location.origin)
+RESEND_API_KEY=... (para envío de emails, en reclamaciones de comercios)
 ```
 
 **Decisiones:**
