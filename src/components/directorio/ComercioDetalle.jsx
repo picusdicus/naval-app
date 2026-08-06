@@ -26,34 +26,25 @@ const ETIQUETA_ATRIBUTO = {
 // Ficha de comercio desplegada bajo su fila (La Gaceta): tarjeta impresa con
 // inicial de color, datos de contacto en filas discontinuas y acciones a
 // Google Maps. Se muestra solo para el comercio activo (accordion en Mapa.jsx).
-export default function ComercioDetalle({ comercio, onCerrar }) {
+export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendiente = false }) {
   const [perfil, setPerfil] = useState(null)
-  const [reclamacionPendiente, setReclamacionPendiente] = useState(false)
   const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
 
-  // Cargar perfil y verificar si hay reclamación pendiente
+  // Cargar perfil
   useEffect(() => {
-    const cargarDatos = async () => {
+    const cargarPerfil = async () => {
       try {
-        // Verificar perfil
         const respuestaPerfil = await fetch(`/api/comercios/${comercio.id}/perfil`)
         if (respuestaPerfil.ok) {
           const datos = await respuestaPerfil.json()
           setPerfil(datos.perfil)
         }
-
-        // Verificar si hay reclamación pendiente
-        const respuestaReclamacion = await fetch(`/api/comercio-reclamacion?id=${comercio.id}`)
-        if (respuestaReclamacion.ok) {
-          const datos = await respuestaReclamacion.json()
-          setReclamacionPendiente(datos.tienePendiente)
-        }
       } catch (err) {
-        console.warn('No se pudieron cargar los datos:', err)
+        console.warn('No se pudo cargar el perfil:', err)
       }
     }
 
-    cargarDatos()
+    cargarPerfil()
   }, [comercio.id])
 
   const cat = CATEGORIAS[comercio.categoria]
@@ -204,7 +195,7 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
             <MIcon name="info" className="text-[16px]" />
             Más información
           </Link>
-        ) : reclamacionPendiente ? (
+        ) : esReclamacionPendiente ? (
           <div className="flex items-center justify-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
             <MIcon name="access_time" className="text-[16px]" />
             Reclamación en revisión

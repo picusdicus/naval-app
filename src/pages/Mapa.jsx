@@ -16,6 +16,7 @@ import { infoSubtipo } from '../lib/subtipos.js'
 import { buscarDirectorio } from '../lib/busqueda.js'
 import { useDestacados } from '../lib/useDestacados.js'
 import { useLazyLoad } from '../lib/useLazyLoad.js'
+import { useReclamacionesComercios } from '../lib/useReclamacionesComercios.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
 import MIcon from '../components/MIcon.jsx'
@@ -42,6 +43,9 @@ export default function Mapa() {
   const [sugiriendo, setSugiriendo] = useState(false)
   const detalleRef = useRef(null)
   const columnRef = useRef(null)
+
+  // Cargar estado de reclamaciones de comercios
+  const { reclamaciones, esReclamacionPendiente } = useReclamacionesComercios()
 
   // El mapa (columna derecha) solo existe en escritorio (>= 1024px).
   const esDesktop = useMediaQuery('(min-width: 1024px)')
@@ -388,7 +392,11 @@ export default function Mapa() {
               <div ref={observerRef} className="h-4" />
               {seleccionado && comercios.some((c) => c.id === seleccionado.id) && (
                 <div ref={detalleRef} className="mt-6 border-t-2 border-tinta pt-6">
-                  <ComercioDetalle comercio={seleccionado} onCerrar={() => setSeleccionado(null)} />
+                  <ComercioDetalle
+                    comercio={seleccionado}
+                    onCerrar={() => setSeleccionado(null)}
+                    esReclamacionPendiente={esReclamacionPendiente(seleccionado.id)}
+                  />
                 </div>
               )}
             </>
@@ -407,7 +415,11 @@ export default function Mapa() {
                     />
                     {seleccionado?.id === c.id && (
                       <div ref={detalleRef} className="py-3">
-                        <ComercioDetalle comercio={c} onCerrar={() => setSeleccionado(null)} />
+                        <ComercioDetalle
+                          comercio={c}
+                          onCerrar={() => setSeleccionado(null)}
+                          esReclamacionPendiente={esReclamacionPendiente(c.id)}
+                        />
                       </div>
                     )}
                   </div>
