@@ -14,6 +14,7 @@ export default function PerfilComercio() {
   const [organizacion, setOrganizacion] = useState(null)
   const [esAdmin, setEsAdmin] = useState(false)
   const [reclamacionPendiente, setReclamacionPendiente] = useState(false)
+  const [tieneAprobada, setTieneAprobada] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [mostrarReclamar, setMostrarReclamar] = useState(false)
@@ -57,11 +58,12 @@ export default function PerfilComercio() {
           }
         }
 
-        // Verificar si hay reclamación pendiente
+        // Verificar estado de reclamación
         const respuestaReclamacion = await fetch(`/api/comercio-reclamacion?id=${id}`)
         if (respuestaReclamacion.ok) {
           const datos = await respuestaReclamacion.json()
           setReclamacionPendiente(datos.tienePendiente)
+          setTieneAprobada(datos.tieneAprobada)
         }
 
         // Verificar si el usuario es admin del comercio
@@ -161,6 +163,11 @@ export default function PerfilComercio() {
             <div className="inline-flex items-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
               <MIcon name="access_time" className="text-[16px]" />
               Reclamación en revisión
+            </div>
+          ) : tieneAprobada ? (
+            <div className="inline-flex items-center gap-2 rounded border border-pardo/30 bg-papel-calido px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+              <MIcon name="check_circle" className="text-[16px]" />
+              Reclamación aprobada
             </div>
           ) : (
             <button

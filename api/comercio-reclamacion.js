@@ -1,5 +1,5 @@
 // GET /api/comercio-reclamacion?id=...
-// Verifica si existe una reclamación pendiente para un comercio específico
+// Verifica si existe una reclamación (pendiente o aprobada) para un comercio específico
 import { obtenerSql } from './_db.js'
 
 export const config = { runtime: 'edge' }
@@ -19,21 +19,27 @@ export default async function handler(req) {
   try {
     const sql = obtenerSql()
 
-    // Buscar si hay una reclamación pendiente para este comercio
+    // Buscar si hay una reclamación (pendiente o aprobada) para este comercio
     const resultado = await sql`
       SELECT id, nombre, email, creado_en, estado
       FROM solicitudes_reclamacion
       WHERE comercio_id = ${comercioId}
-      AND estado = 'pendiente'
+      AND estado IN ('pendiente', 'aprobada')
+      ORDER BY creado_en DESC
       LIMIT 1
     `
 
-    const tienePendiente = resultado.length > 0
+    const tieneReclamacion = resultado.length > 0
+    const reclamacion = tieneReclamacion ? resultado[0] : null
+    const tienePendiente = reclamacion?.estado === 'pendiente'
+    const tieneAprobada = reclamacion?.estado === 'aprobada'
 
     return new Response(
       JSON.stringify({
+        tieneReclamacion,
         tienePendiente,
-        solicitud: tienePendiente ? resultado[0] : null,
+        tieneAprobada,
+        solicitud: reclamacion,
       }),
       {
         status: 200,

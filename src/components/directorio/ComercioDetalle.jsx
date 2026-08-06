@@ -30,6 +30,7 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
   const [perfil, setPerfil] = useState(null)
   const [esAdmin, setEsAdmin] = useState(false)
   const [orgId, setOrgId] = useState(null)
+  const [tieneAprobada, setTieneAprobada] = useState(false)
   const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
 
   // Cargar perfil y verificar si el usuario es admin
@@ -49,6 +50,13 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
           const datos = await respuestaAdmin.json()
           setEsAdmin(datos.esAdmin)
           setOrgId(datos.orgId)
+        }
+
+        // Verificar estado de reclamación
+        const respuestaReclamacion = await fetch(`/api/comercio-reclamacion?id=${comercio.id}`)
+        if (respuestaReclamacion.ok) {
+          const datos = await respuestaReclamacion.json()
+          setTieneAprobada(datos.tieneAprobada)
         }
       } catch (err) {
         console.warn('No se pudieron cargar los datos:', err)
@@ -220,6 +228,11 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
           <div className="flex items-center justify-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
             <MIcon name="access_time" className="text-[16px]" />
             Reclamación en revisión
+          </div>
+        ) : tieneAprobada ? (
+          <div className="flex items-center justify-center gap-2 rounded border border-pardo/30 bg-papel-calido px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+            <MIcon name="check_circle" className="text-[16px]" />
+            Reclamación aprobada
           </div>
         ) : (
           <button
