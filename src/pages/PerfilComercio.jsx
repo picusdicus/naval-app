@@ -41,7 +41,7 @@ export default function PerfilComercio({ id: idProp }) {
     const cargarDatos = async () => {
       try {
         // Cargar perfil del comercio
-        const respuestaPerfil = await fetch(`/api/comercios/${id}/perfil`)
+        const respuestaPerfil = await fetch(`/api/comercio-perfil?id=${encodeURIComponent(id)}`)
         if (respuestaPerfil.ok) {
           const datos = await respuestaPerfil.json()
           setPerfil(datos.perfil)
