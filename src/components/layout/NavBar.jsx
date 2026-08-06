@@ -2,9 +2,9 @@ import { NavLink } from 'react-router-dom'
 
 const tabs = [
   { to: '/eventos', label: 'Eventos', flex: true },
+  { to: '/actividades', label: 'Actividades', ml: 'ml-auto' },
   { to: '/comercios', label: 'Comercios', flex: true },
   { to: '/noticias', label: 'Noticias', flex: true },
-  { to: '/actividades', label: 'Actividades', ml: 'ml-auto' },
 ]
 
 // Barra de navegación inferior (móvil y tablet, como la cabecera compacta),
