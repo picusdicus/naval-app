@@ -41,9 +41,14 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
       })
 
       const datos = await respuesta.json()
+      console.log('Respuesta del servidor:', { status: respuesta.status, ok: respuesta.ok, datos })
 
       if (!respuesta.ok) {
-        throw new Error(datos.error || 'No se pudo enviar la solicitud')
+        throw new Error(datos.error || `Error ${respuesta.status}: No se pudo enviar la solicitud`)
+      }
+
+      if (!datos.ok) {
+        throw new Error(datos.error || 'La solicitud no se procesó correctamente')
       }
 
       setExito(true)
