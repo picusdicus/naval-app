@@ -47,6 +47,21 @@ function EventoODiaCompleto() {
   return esFecha ? <ProgramaDelDia /> : <EventoDetalle />
 }
 
+// /comercios sirve dos vistas: sin parámetro abre el mapa/listado; con
+// parámetro (/comercios/:id o /comercios/local/...) abre el perfil. El wildcard
+// permite IDs con slashes (ej: local/ocio_cultura-ac-imagina-magia).
+function ComerciosRuta() {
+  const { '*': restoDePath } = useParams()
+
+  // Si no hay nada después de /comercios, mostrar el mapa
+  if (!restoDePath) {
+    return <Mapa />
+  }
+
+  // Si hay algo, mostrar el perfil con el ID completo (incluyendo slashes)
+  return <PerfilComercio id={restoDePath} />
+}
+
 export default function App() {
   // El candado del portal se verifica en el servidor: al arrancar preguntamos si
   // la cookie de portal es válida (no confiamos en localStorage, que era falsificable).
@@ -118,8 +133,7 @@ export default function App() {
             <Route path="/eventos" element={<Eventos />} />
             {/* Un solo route: fecha 'YYYY-MM-DD' → programa del día; id → ficha. */}
             <Route path="/eventos/:id" element={<EventoODiaCompleto />} />
-            <Route path="/comercios" element={<Mapa />} />
-            <Route path="/comercios/:id" element={<PerfilComercio />} />
+            <Route path="/comercios/*" element={<ComerciosRuta />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NoticiaDetalle />} />
             <Route path="/actividades" element={<Actividades />} />

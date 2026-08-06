@@ -7,8 +7,9 @@ import servicios from '../data/servicios-locales.json'
 import { datoComercio } from '../lib/comerciosHelper.js'
 import { formatearHorarios } from '../lib/horarios.js'
 
-export default function PerfilComercio() {
-  const { id } = useParams()
+export default function PerfilComercio({ id: idProp }) {
+  const { id: idParam } = useParams()
+  const id = idProp || idParam
   const [comercio, setComercio] = useState(null)
   const [perfil, setPerfil] = useState(null)
   const [organizacion, setOrganizacion] = useState(null)
