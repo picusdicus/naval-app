@@ -232,10 +232,23 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
             Reclamación en revisión
           </div>
         ) : tieneAprobada ? (
-          <div className="flex items-center justify-center gap-2 rounded border border-pardo/30 bg-papel-calido px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
-            <MIcon name="check_circle" className="text-[16px]" />
-            Reclamación aprobada
-          </div>
+          esAdmin ? (
+            <Link
+              to={`/panel?org=${comercio.id}`}
+              className="gz-boton-tinta flex items-center justify-center gap-2"
+            >
+              <MIcon name="edit" className="text-[16px]" />
+              Crear Perfil Comercial
+            </Link>
+          ) : (
+            <Link
+              to="/registro"
+              className="gz-boton-tinta flex items-center justify-center gap-2"
+            >
+              <MIcon name="app_registration" className="text-[16px]" />
+              Completar Registro
+            </Link>
+          )
         ) : (
           <button
             type="button"
