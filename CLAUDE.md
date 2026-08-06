@@ -288,7 +288,10 @@ Implementa el flujo completo para que dueños de comercios reclamen sus fichas, 
 
 **Flujo:**
 
-1. **Reclamación anónima** (`api/solicitar-reclamacion.js` — Node, POST público): Dueño rellena formulario sin auth. Defensas: reCAPTCHA v3 (score ≥ 0.5), rate-limit 5/hora por IP. INSERT en `solicitudes_reclamacion` con `estado='pendiente'`. **Envío de email** (via `api/_email.js` + Resend): notifica al admin en `danielmolino.it@gmail.com` con los detalles de la reclamación (comercio, nombre, email, teléfono, mensaje). Fail-soft: si el email falla, la solicitud se guarda igual y se loguea el error.
+1. **Reclamación anónima** (`api/solicitar-reclamacion.js` — Node, POST público): Dueño rellena formulario sin auth. Defensas: reCAPTCHA v3 (score ≥ 0.5), rate-limit 5/hora por IP (saltado en localhost). INSERT en `solicitudes_reclamacion` con `estado='pendiente'`, retorna el UUID de la solicitud. **Envío de emails** (Resend REST API): 
+   - **Al admin** (`danielmolino@gmail.com`): detalles completos de la reclamación + ID de solicitud para tracking
+   - **Al solicitante**: confirmación de recepción con instrucciones + ID de solicitud para hacer seguimiento
+   - Fail-soft: si los emails fallan, la solicitud se guarda igual y se loguea el error
 
 2. **Aprobación superadmin** (`api/super/reclamaciones.js` — Edge, GET/PATCH): Pestaña `/admin` → "Reclamaciones" → lista solicitudes, filtra por estado, [Aprobar] genera org automáticamente (con `categoria_defecto='cultura'` si el comercio es de `categoria='ocio_cultura'`), genera código de invitación vinculado al `comercio_id`.
 

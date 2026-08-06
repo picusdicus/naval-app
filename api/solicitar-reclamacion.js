@@ -53,26 +53,30 @@ async function verificarRecaptcha(token, host) {
   }
 }
 
-async function enviarEmailReclamacion({ comercioId, nombre, email, telefono, mensaje }) {
+async function enviarEmailReclamacion({ solicitudId, comercioId, nombre, email, telefono, mensaje, createdAt }) {
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY no configurado, email no enviado')
     return { ok: true, skipped: true }
   }
 
   try {
-    const asunto = `Nueva solicitud de reclamación: ${comercioId}`
-    const contenido = `
+    const fechaFormato = new Date(createdAt).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })
+
+    // Email al admin
+    const asuntoAdmin = `Nueva solicitud de reclamación: ${comercioId} [${solicitudId.substring(0, 8)}]`
+    const contenidoAdmin = `
       <h2>Nueva Solicitud de Reclamación de Comercio</h2>
+      <p><strong>ID de Solicitud:</strong> ${solicitudId}</p>
       <p><strong>Comercio ID:</strong> ${comercioId}</p>
       <p><strong>Nombre del reclamante:</strong> ${nombre}</p>
       <p><strong>Email:</strong> ${email}</p>
       <p><strong>Teléfono:</strong> ${telefono || 'No proporcionado'}</p>
       <p><strong>Mensaje:</strong></p>
       <p>${mensaje}</p>
-      <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}</p>
+      <p><strong>Fecha de solicitud:</strong> ${fechaFormato}</p>
     `
 
-    const response = await fetch('https://api.resend.com/emails', {
+    const responseAdmin = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
@@ -81,22 +85,56 @@ async function enviarEmailReclamacion({ comercioId, nombre, email, telefono, men
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
         to: ADMIN_EMAIL,
-        subject: asunto,
-        html: contenido,
+        subject: asuntoAdmin,
+        html: contenidoAdmin,
       }),
     })
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Error al enviar email con Resend:', error)
+    if (!responseAdmin.ok) {
+      const error = await responseAdmin.text()
+      console.error('Error al enviar email al admin con Resend:', error)
       return { ok: false, error: error }
     }
 
-    const resultado = await response.json()
-    console.log('Email enviado exitosamente:', resultado.id)
-    return { ok: true, id: resultado.id }
+    // Email al solicitante
+    const asuntoSolicitante = `Tu solicitud de reclamación ha sido recibida [${solicitudId.substring(0, 8)}]`
+    const contenidoSolicitante = `
+      <h2>Confirmación de Solicitud de Reclamación</h2>
+      <p>Hola <strong>${nombre}</strong>,</p>
+      <p>Tu solicitud de reclamación para el comercio <strong>${comercioId}</strong> ha sido recibida correctamente.</p>
+      <p><strong>ID de Solicitud:</strong> <code>${solicitudId}</code></p>
+      <p>Por favor, guarda este ID para poder hacer seguimiento de tu solicitud. Te contactaremos en breve para verificar tu identidad.</p>
+      <hr style="border:none; border-top:1px solid #ddd; margin: 20px 0;">
+      <p style="color:#666; font-size:12px;">
+        Fecha de solicitud: ${fechaFormato}<br>
+        Este es un email automático, por favor no respondas.
+      </p>
+    `
+
+    const responseSolicitante = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'onboarding@resend.dev',
+        to: email,
+        subject: asuntoSolicitante,
+        html: contenidoSolicitante,
+      }),
+    })
+
+    if (!responseSolicitante.ok) {
+      const error = await responseSolicitante.text()
+      console.error('Error al enviar email al solicitante con Resend:', error)
+      return { ok: false, error: error }
+    }
+
+    console.log('Emails enviados exitosamente')
+    return { ok: true }
   } catch (error) {
-    console.error('Error al enviar email:', error.message)
+    console.error('Error al enviar emails:', error.message)
     return { ok: false, error: error.message }
   }
 }
@@ -152,8 +190,8 @@ export default async function handler(req, res) {
   try {
     const sql = obtenerSql()
 
-    // Insertar la solicitud con estado pendiente
-    await sql`
+    // Insertar la solicitud con estado pendiente y recuperar el ID
+    const resultado = await sql`
       INSERT INTO solicitudes_reclamacion (comercio_id, nombre, email, telefono, mensaje, estado)
       VALUES (
         ${String(comercioId).trim()},
@@ -163,24 +201,30 @@ export default async function handler(req, res) {
         ${String(mensaje).trim()},
         'pendiente'
       )
+      RETURNING id, creado_en
     `
 
-    console.log('[solicitar-reclamacion] Solicitud guardada:', comercioId)
+    const solicitudId = resultado[0].id
+    const createdAt = resultado[0].creado_en
 
-    // Enviar email al admin (fail-soft: no romper la respuesta si falla)
+    console.log('[solicitar-reclamacion] Solicitud guardada:', solicitudId)
+
+    // Enviar emails al admin y al solicitante (fail-soft: no romper la respuesta si falla)
     const resultadoEmail = await enviarEmailReclamacion({
+      solicitudId,
       comercioId: String(comercioId).trim(),
       nombre: String(nombre).trim(),
       email: emailTrimmed,
       telefono: telefono ? String(telefono).trim() : null,
       mensaje: String(mensaje).trim(),
+      createdAt,
     })
 
     if (!resultadoEmail.ok && !resultadoEmail.skipped) {
-      console.error('[solicitar-reclamacion] Fallo al enviar email de notificación, pero la solicitud se guardó')
+      console.error('[solicitar-reclamacion] Fallo al enviar emails de notificación, pero la solicitud se guardó')
     }
 
-    return respuestaJson(res, { ok: true }, 201)
+    return respuestaJson(res, { ok: true, solicitudId }, 201)
   } catch (error) {
     console.error('[solicitar-reclamacion] Error:', error)
     return respuestaJson(res, { error: 'Error en el servidor. Intenta de nuevo.' }, 500)
