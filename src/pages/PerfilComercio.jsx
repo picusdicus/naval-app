@@ -57,7 +57,7 @@ export default function PerfilComercio() {
         }
 
         // Verificar si hay reclamación pendiente
-        const respuestaReclamacion = await fetch(`/api/comercios/reclamacion-pendiente?id=${id}`)
+        const respuestaReclamacion = await fetch(`/api/comercio-reclamacion?id=${id}`)
         if (respuestaReclamacion.ok) {
           const datos = await respuestaReclamacion.json()
           setReclamacionPendiente(datos.tienePendiente)
