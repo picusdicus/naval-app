@@ -12,6 +12,7 @@ export default function PerfilComercio() {
   const [comercio, setComercio] = useState(null)
   const [perfil, setPerfil] = useState(null)
   const [organizacion, setOrganizacion] = useState(null)
+  const [reclamacionPendiente, setReclamacionPendiente] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [mostrarReclamar, setMostrarReclamar] = useState(false)
@@ -54,8 +55,15 @@ export default function PerfilComercio() {
             }
           }
         }
+
+        // Verificar si hay reclamación pendiente
+        const respuestaReclamacion = await fetch(`/api/comercios/${id}/reclamacion-pendiente`)
+        if (respuestaReclamacion.ok) {
+          const datos = await respuestaReclamacion.json()
+          setReclamacionPendiente(datos.tienePendiente)
+        }
       } catch (err) {
-        console.warn('No se pudo cargar el perfil:', err)
+        console.warn('No se pudieron cargar los datos:', err)
       } finally {
         setCargando(false)
       }
@@ -127,13 +135,20 @@ export default function PerfilComercio() {
           </div>
 
           {!perfil ? (
-            <button
-              onClick={() => setDialogoReclamarAbierto(true)}
-              className="gz-boton-tinta inline-flex items-center gap-2"
-            >
-              <MIcon name="verified_user" className="text-[16px]" />
-              Reclamar comercio
-            </button>
+            reclamacionPendiente ? (
+              <div className="inline-flex items-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
+                <MIcon name="access_time" className="text-[16px]" />
+                Reclamación en revisión
+              </div>
+            ) : (
+              <button
+                onClick={() => setDialogoReclamarAbierto(true)}
+                className="gz-boton-tinta inline-flex items-center gap-2"
+              >
+                <MIcon name="verified_user" className="text-[16px]" />
+                Reclamar comercio
+              </button>
+            )
           ) : organizacion ? (
             <Link
               to={`/panel?org=${organizacion.slug}`}

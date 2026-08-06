@@ -28,23 +28,32 @@ const ETIQUETA_ATRIBUTO = {
 // Google Maps. Se muestra solo para el comercio activo (accordion en Mapa.jsx).
 export default function ComercioDetalle({ comercio, onCerrar }) {
   const [perfil, setPerfil] = useState(null)
+  const [reclamacionPendiente, setReclamacionPendiente] = useState(false)
   const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
 
-  // Cargar perfil para saber si el comercio está reclamado
+  // Cargar perfil y verificar si hay reclamación pendiente
   useEffect(() => {
-    const cargarPerfil = async () => {
+    const cargarDatos = async () => {
       try {
-        const respuesta = await fetch(`/api/comercios/${comercio.id}/perfil`)
-        if (respuesta.ok) {
-          const datos = await respuesta.json()
+        // Verificar perfil
+        const respuestaPerfil = await fetch(`/api/comercios/${comercio.id}/perfil`)
+        if (respuestaPerfil.ok) {
+          const datos = await respuestaPerfil.json()
           setPerfil(datos.perfil)
         }
+
+        // Verificar si hay reclamación pendiente
+        const respuestaReclamacion = await fetch(`/api/comercios/${comercio.id}/reclamacion-pendiente`)
+        if (respuestaReclamacion.ok) {
+          const datos = await respuestaReclamacion.json()
+          setReclamacionPendiente(datos.tienePendiente)
+        }
       } catch (err) {
-        console.warn('No se pudo cargar el perfil:', err)
+        console.warn('No se pudieron cargar los datos:', err)
       }
     }
 
-    cargarPerfil()
+    cargarDatos()
   }, [comercio.id])
 
   const cat = CATEGORIAS[comercio.categoria]
@@ -195,6 +204,11 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
             <MIcon name="info" className="text-[16px]" />
             Más información
           </Link>
+        ) : reclamacionPendiente ? (
+          <div className="flex items-center justify-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
+            <MIcon name="access_time" className="text-[16px]" />
+            Reclamación en revisión
+          </div>
         ) : (
           <button
             type="button"
