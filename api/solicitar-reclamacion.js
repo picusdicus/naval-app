@@ -10,6 +10,7 @@ const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY
 const RECAPTCHA_SCORE_MIN = 0.5
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = 'danielmolino@gmail.com'
+const RESEND_FROM = 'onboarding@resend.dev'
 
 function respuestaJson(res, datos, status = 200) {
   res.setHeader('Content-Type', 'application/json')
@@ -90,7 +91,7 @@ async function enviarEmailReclamacion({ solicitudId, comercioId, nombre, email, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev',
+        from: RESEND_FROM,
         to: ADMIN_EMAIL,
         subject: asuntoAdmin,
         html: contenidoAdmin,
@@ -130,7 +131,7 @@ async function enviarEmailReclamacion({ solicitudId, comercioId, nombre, email, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev',
+        from: RESEND_FROM,
         to: emailDestino,
         subject: asuntoConMarca,
         html: contenidoSolicitante,
