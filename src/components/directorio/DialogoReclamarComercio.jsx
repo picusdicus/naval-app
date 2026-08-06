@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MIcon from '../MIcon.jsx'
 import { useRecaptcha } from '../../lib/useRecaptcha.js'
 
@@ -12,6 +12,14 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
   const [enviando, setEnviando] = useState(false)
   const [exito, setExito] = useState(false)
   const [solicitudId, setSolicitudId] = useState('')
+  const [captchaTimeout, setCaptchaTimeout] = useState(false)
+
+  // Si reCAPTCHA tarda más de 5 segundos en cargar, permitir envío de todos modos
+  useEffect(() => {
+    if (!captchaCargando) return
+    const timer = setTimeout(() => setCaptchaTimeout(true), 5000)
+    return () => clearTimeout(timer)
+  }, [captchaCargando])
 
   const enviar = async (e) => {
     e.preventDefault()
@@ -192,8 +200,9 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
                 </button>
                 <button
                   type="submit"
-                  disabled={enviando || captchaCargando || !nombre.trim() || !email.trim() || !mensaje.trim()}
+                  disabled={enviando || (captchaCargando && !captchaTimeout) || !nombre.trim() || !email.trim() || !mensaje.trim()}
                   className="gz-boton-tinta flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  title={captchaCargando && !captchaTimeout ? 'Cargando verificación de seguridad...' : ''}
                 >
                   {enviando ? 'Enviando…' : 'Enviar solicitud'}
                 </button>
