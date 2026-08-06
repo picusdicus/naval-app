@@ -10,7 +10,7 @@ const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY
 const RECAPTCHA_SCORE_MIN = 0.5
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = 'danielmolino@gmail.com'
-const RESEND_FROM = 'onboarding@resend.dev'
+const RESEND_FROM = 'noreply@resend.dev'
 
 function respuestaJson(res, datos, status = 200) {
   res.setHeader('Content-Type', 'application/json')
