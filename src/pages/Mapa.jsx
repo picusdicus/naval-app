@@ -45,7 +45,7 @@ export default function Mapa() {
   const columnRef = useRef(null)
 
   // Cargar estado de reclamaciones de comercios
-  const { reclamaciones, esReclamacionPendiente } = useReclamacionesComercios()
+  const { reclamaciones, esReclamacionPendiente, esReclamacionAprobada } = useReclamacionesComercios()
 
   // El mapa (columna derecha) solo existe en escritorio (>= 1024px).
   const esDesktop = useMediaQuery('(min-width: 1024px)')
@@ -396,6 +396,7 @@ export default function Mapa() {
                     comercio={seleccionado}
                     onCerrar={() => setSeleccionado(null)}
                     esReclamacionPendiente={esReclamacionPendiente(seleccionado.id)}
+                    tieneAprobada={esReclamacionAprobada(seleccionado.id)}
                   />
                 </div>
               )}
@@ -419,6 +420,7 @@ export default function Mapa() {
                           comercio={c}
                           onCerrar={() => setSeleccionado(null)}
                           esReclamacionPendiente={esReclamacionPendiente(c.id)}
+                          tieneAprobada={esReclamacionAprobada(c.id)}
                         />
                       </div>
                     )}

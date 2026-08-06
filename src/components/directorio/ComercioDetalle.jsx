@@ -26,11 +26,12 @@ const ETIQUETA_ATRIBUTO = {
 // Ficha de comercio desplegada bajo su fila (La Gaceta): tarjeta impresa con
 // inicial de color, datos de contacto en filas discontinuas y acciones a
 // Google Maps. Se muestra solo para el comercio activo (accordion en Mapa.jsx).
-export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendiente = false }) {
+export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendiente = false, tieneAprobada: tieneAprobadaProp = false }) {
   const [perfil, setPerfil] = useState(null)
   const [esAdmin, setEsAdmin] = useState(false)
   const [orgId, setOrgId] = useState(null)
-  const [tieneAprobada, setTieneAprobada] = useState(false)
+  const [tienePendiente, setTienePendiente] = useState(esReclamacionPendiente)
+  const [tieneAprobada, setTieneAprobada] = useState(tieneAprobadaProp)
   const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
 
   // Cargar perfil y verificar si el usuario es admin
@@ -52,10 +53,11 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
           setOrgId(datos.orgId)
         }
 
-        // Verificar estado de reclamación
+        // Verificar estado de reclamación (sobrescribe las props)
         const respuestaReclamacion = await fetch(`/api/comercio-reclamacion?id=${comercio.id}`)
         if (respuestaReclamacion.ok) {
           const datos = await respuestaReclamacion.json()
+          setTienePendiente(datos.tienePendiente)
           setTieneAprobada(datos.tieneAprobada)
         }
       } catch (err) {
@@ -224,7 +226,7 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
               Ver Perfil
             </Link>
           )
-        ) : esReclamacionPendiente ? (
+        ) : tienePendiente ? (
           <div className="flex items-center justify-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
             <MIcon name="access_time" className="text-[16px]" />
             Reclamación en revisión
