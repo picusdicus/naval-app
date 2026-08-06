@@ -12,6 +12,7 @@ export default function PerfilComercio() {
   const [comercio, setComercio] = useState(null)
   const [perfil, setPerfil] = useState(null)
   const [organizacion, setOrganizacion] = useState(null)
+  const [esAdmin, setEsAdmin] = useState(false)
   const [reclamacionPendiente, setReclamacionPendiente] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -61,6 +62,13 @@ export default function PerfilComercio() {
         if (respuestaReclamacion.ok) {
           const datos = await respuestaReclamacion.json()
           setReclamacionPendiente(datos.tienePendiente)
+        }
+
+        // Verificar si el usuario es admin del comercio
+        const respuestaAdmin = await fetch(`/api/comercio-admin?id=${id}`)
+        if (respuestaAdmin.ok) {
+          const datos = await respuestaAdmin.json()
+          setEsAdmin(datos.esAdmin)
         }
       } catch (err) {
         console.warn('No se pudieron cargar los datos:', err)
@@ -134,30 +142,35 @@ export default function PerfilComercio() {
             )}
           </div>
 
-          {!perfil ? (
-            reclamacionPendiente ? (
-              <div className="inline-flex items-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
-                <MIcon name="access_time" className="text-[16px]" />
-                Reclamación en revisión
-              </div>
-            ) : (
-              <button
-                onClick={() => setDialogoReclamarAbierto(true)}
+          {perfil ? (
+            esAdmin ? (
+              <Link
+                to={`/panel?org=${comercio.id}`}
                 className="gz-boton-tinta inline-flex items-center gap-2"
               >
-                <MIcon name="verified_user" className="text-[16px]" />
-                Reclamar comercio
-              </button>
+                <MIcon name="edit" className="text-[16px]" />
+                Editar Mi Comercio
+              </Link>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded border border-tinta/20 bg-papel-calido px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                <MIcon name="info" className="text-[16px]" />
+                Perfil reclamado
+              </div>
             )
-          ) : organizacion ? (
-            <Link
-              to={`/panel?org=${organizacion.slug}`}
+          ) : reclamacionPendiente ? (
+            <div className="inline-flex items-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
+              <MIcon name="access_time" className="text-[16px]" />
+              Reclamación en revisión
+            </div>
+          ) : (
+            <button
+              onClick={() => setDialogoReclamarAbierto(true)}
               className="gz-boton-tinta inline-flex items-center gap-2"
             >
-              <MIcon name="dashboard" className="text-[16px]" />
-              Mi panel
-            </Link>
-          ) : null}
+              <MIcon name="verified_user" className="text-[16px]" />
+              Reclamar comercio
+            </button>
+          )}
         </div>
 
         {/* Contenido principal */}
