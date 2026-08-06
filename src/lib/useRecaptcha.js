@@ -42,15 +42,14 @@ export function useRecaptcha() {
 
   const getToken = useCallback(
     async (action = 'submit') => {
-      // En development, devolver token simulado
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.log('✓ reCAPTCHA deshabilitado en localhost, token simulado')
-        return `dev_token_${Date.now()}`
-      }
-
-      if (!RECAPTCHA_SITE_KEY) {
-        console.warn('reCAPTCHA no configurado')
-        return null
+      // En development o si no está configurado, devolver token simulado
+      if (!RECAPTCHA_SITE_KEY || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if (!RECAPTCHA_SITE_KEY) {
+          console.warn('reCAPTCHA no configurado, usando token simulado')
+        } else {
+          console.log('✓ reCAPTCHA deshabilitado en localhost, token simulado')
+        }
+        return `token_${Date.now()}`
       }
 
       if (!window.grecaptcha) {
