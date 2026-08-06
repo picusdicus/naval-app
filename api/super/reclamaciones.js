@@ -31,7 +31,7 @@ async function enviarCorreo(email, nombre, codigo, comercioNombre) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'En Navalcarnero <noreply@navalcarnero.local>',
+        from: 'onboarding@resend.dev',
         to: email,
         subject: `Reclamación aprobada: ${comercioNombre} - En Navalcarnero`,
         html: `
