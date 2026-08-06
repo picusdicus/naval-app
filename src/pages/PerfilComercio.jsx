@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
 import DialogoReclamarComercio from '../components/directorio/DialogoReclamarComercio.jsx'
 import comercios from '../data/comercios.json'
@@ -9,6 +9,7 @@ import { formatearHorarios } from '../lib/horarios.js'
 
 export default function PerfilComercio({ id: idProp }) {
   const { id: idParam } = useParams()
+  const navigate = useNavigate()
   const id = idProp || idParam
   const [comercio, setComercio] = useState(null)
   const [perfil, setPerfil] = useState(null)
@@ -263,10 +264,13 @@ export default function PerfilComercio({ id: idProp }) {
 
         {/* CTA volver */}
         <div className="mt-8 flex gap-2">
-          <Link to="/comercios" className="gz-boton-tinta inline-flex items-center gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="gz-boton-tinta inline-flex items-center gap-2"
+          >
             <MIcon name="arrow_back" className="text-[16px]" />
-            Volver al directorio
-          </Link>
+            Volver atrás
+          </button>
         </div>
       </div>
 
