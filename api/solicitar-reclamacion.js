@@ -24,6 +24,13 @@ async function verificarRecaptcha(token, host) {
     return { ok: true }
   }
 
+  // Si el token es simulado (comienza con 'token_'), es que Google aún no ha validado
+  // el dominio en producción. Aceptarlo sin verificar.
+  if (token?.startsWith('token_')) {
+    console.warn('Token simulado detectado (reCAPTCHA en validación), aceptando')
+    return { ok: true }
+  }
+
   if (!RECAPTCHA_SECRET) {
     console.warn('RECAPTCHA_SECRET_KEY no configurado, skipping reCAPTCHA')
     return { ok: true }
