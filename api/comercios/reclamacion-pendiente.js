@@ -1,4 +1,4 @@
-// GET /api/comercios/:id/reclamacion-pendiente
+// GET /api/comercios/reclamacion-pendiente?id=...
 // Verifica si existe una reclamación pendiente para un comercio específico
 import { obtenerSql } from '../_db.js'
 
@@ -10,7 +10,7 @@ export default async function handler(req) {
   }
 
   const url = new URL(req.url)
-  const comercioId = url.pathname.split('/')[3] // /api/comercios/:id/reclamacion-pendiente
+  const comercioId = url.searchParams.get('id')
 
   if (!comercioId) {
     return new Response(JSON.stringify({ error: 'ID de comercio requerido' }), { status: 400 })
