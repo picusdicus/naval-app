@@ -4,7 +4,7 @@
 import { obtenerSql } from './_db.js'
 import { limitar, obtenerIp } from './_ratelimit.js'
 
-export const config = { runtime: 'node' }
+export const config = { runtime: 'nodejs' }
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY
 const RECAPTCHA_SCORE_MIN = 0.5
