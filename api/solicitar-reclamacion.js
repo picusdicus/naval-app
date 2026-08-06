@@ -108,10 +108,14 @@ export default async function handler(req, res) {
     return respuestaJson(res, { error: 'Método no permitido' }, 405)
   }
 
-  const ip = obtenerIp(req)
-  const limite = await limitar({ clave: `reclamacion:ip:${ip}`, limite: 5, ventanaS: 60 * 60 })
-  if (!limite.ok) {
-    return respuestaJson(res, { error: 'Demasiadas solicitudes. Intenta más tarde.' }, 429)
+  // En localhost, saltarse el rate-limit para facilitar testing
+  const esLocalhost = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1')
+  if (!esLocalhost) {
+    const ip = obtenerIp(req)
+    const limite = await limitar({ clave: `reclamacion:ip:${ip}`, limite: 5, ventanaS: 60 * 60 })
+    if (!limite.ok) {
+      return respuestaJson(res, { error: 'Demasiadas solicitudes. Intenta más tarde.' }, 429)
+    }
   }
 
   const { comercioId, nombre, email, telefono, mensaje, recaptchaToken } = req.body || {}
