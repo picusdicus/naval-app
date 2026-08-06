@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import MIcon from '../components/MIcon.jsx'
 import DialogoReclamarComercio from '../components/directorio/DialogoReclamarComercio.jsx'
 import comercios from '../data/comercios.json'
@@ -7,11 +7,16 @@ import servicios from '../data/servicios-locales.json'
 import { datoComercio } from '../lib/comerciosHelper.js'
 import { formatearHorarios } from '../lib/horarios.js'
 
-export default function PerfilComercio() {
-  const { id } = useParams()
+export default function PerfilComercio({ id: idProp }) {
+  const { id: idParam } = useParams()
+  const navigate = useNavigate()
+  const id = idProp || idParam
   const [comercio, setComercio] = useState(null)
   const [perfil, setPerfil] = useState(null)
   const [organizacion, setOrganizacion] = useState(null)
+  const [esAdmin, setEsAdmin] = useState(false)
+  const [reclamacionPendiente, setReclamacionPendiente] = useState(false)
+  const [tieneAprobada, setTieneAprobada] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [mostrarReclamar, setMostrarReclamar] = useState(false)
@@ -36,7 +41,7 @@ export default function PerfilComercio() {
     const cargarDatos = async () => {
       try {
         // Cargar perfil del comercio
-        const respuestaPerfil = await fetch(`/api/comercios/${id}/perfil`)
+        const respuestaPerfil = await fetch(`/api/comercio-perfil?id=${encodeURIComponent(id)}`)
         if (respuestaPerfil.ok) {
           const datos = await respuestaPerfil.json()
           setPerfil(datos.perfil)
@@ -54,8 +59,23 @@ export default function PerfilComercio() {
             }
           }
         }
+
+        // Verificar estado de reclamación
+        const respuestaReclamacion = await fetch(`/api/comercio-reclamacion?id=${id}`)
+        if (respuestaReclamacion.ok) {
+          const datos = await respuestaReclamacion.json()
+          setReclamacionPendiente(datos.tienePendiente)
+          setTieneAprobada(datos.tieneAprobada)
+        }
+
+        // Verificar si el usuario es admin del comercio
+        const respuestaAdmin = await fetch(`/api/comercio-admin?id=${id}`)
+        if (respuestaAdmin.ok) {
+          const datos = await respuestaAdmin.json()
+          setEsAdmin(datos.esAdmin)
+        }
       } catch (err) {
-        console.warn('No se pudo cargar el perfil:', err)
+        console.warn('No se pudieron cargar los datos:', err)
       } finally {
         setCargando(false)
       }
@@ -126,7 +146,42 @@ export default function PerfilComercio() {
             )}
           </div>
 
-          {!perfil ? (
+          {perfil ? (
+            esAdmin ? (
+              <Link
+                to={`/panel?org=${comercio.id}`}
+                className="gz-boton-tinta inline-flex items-center gap-2"
+              >
+                <MIcon name="edit" className="text-[16px]" />
+                Editar Mi Comercio
+              </Link>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded border border-tinta/20 bg-papel-calido px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                <MIcon name="info" className="text-[16px]" />
+                Perfil reclamado
+              </div>
+            )
+          ) : reclamacionPendiente ? (
+            <div className="inline-flex items-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
+              <MIcon name="access_time" className="text-[16px]" />
+              Reclamación en revisión
+            </div>
+          ) : tieneAprobada ? (
+            esAdmin ? (
+              <Link
+                to={`/panel?org=${comercio.id}`}
+                className="gz-boton-tinta inline-flex items-center gap-2"
+              >
+                <MIcon name="edit" className="text-[16px]" />
+                Crear Perfil Comercial
+              </Link>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded border border-verde-bosque/30 bg-papel px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-verde-bosque">
+                <MIcon name="check_circle" className="text-[16px]" />
+                Perfil disponible
+              </div>
+            )
+          ) : (
             <button
               onClick={() => setDialogoReclamarAbierto(true)}
               className="gz-boton-tinta inline-flex items-center gap-2"
@@ -134,15 +189,7 @@ export default function PerfilComercio() {
               <MIcon name="verified_user" className="text-[16px]" />
               Reclamar comercio
             </button>
-          ) : organizacion ? (
-            <Link
-              to={`/panel?org=${organizacion.slug}`}
-              className="gz-boton-tinta inline-flex items-center gap-2"
-            >
-              <MIcon name="dashboard" className="text-[16px]" />
-              Mi panel
-            </Link>
-          ) : null}
+          )}
         </div>
 
         {/* Contenido principal */}
@@ -217,10 +264,13 @@ export default function PerfilComercio() {
 
         {/* CTA volver */}
         <div className="mt-8 flex gap-2">
-          <Link to="/comercios" className="gz-boton-tinta inline-flex items-center gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="gz-boton-tinta inline-flex items-center gap-2"
+          >
             <MIcon name="arrow_back" className="text-[16px]" />
-            Volver al directorio
-          </Link>
+            Volver atrás
+          </button>
         </div>
       </div>
 

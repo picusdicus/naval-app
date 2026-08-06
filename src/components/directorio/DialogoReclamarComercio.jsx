@@ -11,6 +11,7 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [exito, setExito] = useState(false)
+  const [solicitudId, setSolicitudId] = useState('')
 
   const enviar = async (e) => {
     e.preventDefault()
@@ -41,11 +42,17 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
       })
 
       const datos = await respuesta.json()
+      console.log('Respuesta del servidor:', { status: respuesta.status, ok: respuesta.ok, datos })
 
       if (!respuesta.ok) {
-        throw new Error(datos.error || 'No se pudo enviar la solicitud')
+        throw new Error(datos.error || `Error ${respuesta.status}: No se pudo enviar la solicitud`)
       }
 
+      if (!datos.ok) {
+        throw new Error(datos.error || 'La solicitud no se procesó correctamente')
+      }
+
+      setSolicitudId(datos.solicitudId)
       setExito(true)
       setTimeout(() => {
         onCerrar()
@@ -54,7 +61,8 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
         setEmail('')
         setTelefono('')
         setMensaje('')
-      }, 2000)
+        setSolicitudId('')
+      }, 3000)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -88,6 +96,15 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
               <p className="font-serif-spectral text-sm text-pardo">
                 Nos pondremos en contacto en breve para verificar tu identidad.
               </p>
+              {solicitudId && (
+                <div className="mt-4 w-full break-all rounded border border-verde/30 bg-verde/5 p-3">
+                  <p className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">ID de Solicitud</p>
+                  <p className="font-mono-ibm text-xs text-verde">{solicitudId}</p>
+                  <p className="font-serif-spectral text-[11px] text-pardo">
+                    Guarda este código para hacer seguimiento de tu solicitud
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <form onSubmit={enviar} className="space-y-4" noValidate>

@@ -22,6 +22,7 @@ async function enviarCorreo(email, nombre, codigo, comercioNombre) {
   }
 
   const enlaceRegistro = `${APP_URL}/registro?codigo=${codigo}`
+  const emailDest = process.env.NODE_ENV === 'production' ? email : 'danielmolino@gmail.com'
 
   try {
     const respuesta = await fetch('https://api.resend.com/emails', {
@@ -31,9 +32,9 @@ async function enviarCorreo(email, nombre, codigo, comercioNombre) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'En Navalcarnero <noreply@navalcarnero.local>',
-        to: email,
-        subject: `Reclamación aprobada: ${comercioNombre} - En Navalcarnero`,
+        from: 'onboarding@resend.dev',
+        to: emailDest,
+        subject: `Reclamación aprobada: ${comercioNombre} - En Navalcarnero${process.env.NODE_ENV !== 'production' ? ' [TEST]' : ''}`,
         html: `
           <h2>¡Tu reclamación ha sido aprobada! 🎉</h2>
           <p>Hola <strong>${nombre}</strong>,</p>
@@ -54,7 +55,7 @@ async function enviarCorreo(email, nombre, codigo, comercioNombre) {
       const error = await respuesta.json()
       console.error('Error al enviar correo con Resend:', error)
     } else {
-      console.log(`✓ Correo enviado a ${email}`)
+      console.log(`✓ Correo enviado a ${emailDest}${process.env.NODE_ENV !== 'production' ? ` (solicitud original: ${email})` : ''}`)
     }
   } catch (error) {
     console.error('Error enviando correo:', error)

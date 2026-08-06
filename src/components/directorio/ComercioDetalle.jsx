@@ -26,25 +26,46 @@ const ETIQUETA_ATRIBUTO = {
 // Ficha de comercio desplegada bajo su fila (La Gaceta): tarjeta impresa con
 // inicial de color, datos de contacto en filas discontinuas y acciones a
 // Google Maps. Se muestra solo para el comercio activo (accordion en Mapa.jsx).
-export default function ComercioDetalle({ comercio, onCerrar }) {
+export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendiente = false, tieneAprobada: tieneAprobadaProp = false }) {
   const [perfil, setPerfil] = useState(null)
+  const [esAdmin, setEsAdmin] = useState(false)
+  const [orgId, setOrgId] = useState(null)
+  const [tienePendiente, setTienePendiente] = useState(esReclamacionPendiente)
+  const [tieneAprobada, setTieneAprobada] = useState(tieneAprobadaProp)
   const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
 
-  // Cargar perfil para saber si el comercio está reclamado
+  // Cargar perfil y verificar si el usuario es admin
   useEffect(() => {
-    const cargarPerfil = async () => {
+    const cargarDatos = async () => {
       try {
-        const respuesta = await fetch(`/api/comercios/${comercio.id}/perfil`)
-        if (respuesta.ok) {
-          const datos = await respuesta.json()
+        // Verificar perfil
+        const respuestaPerfil = await fetch(`/api/comercios/${comercio.id}/perfil`)
+        if (respuestaPerfil.ok) {
+          const datos = await respuestaPerfil.json()
           setPerfil(datos.perfil)
         }
+
+        // Verificar si el usuario es admin del comercio
+        const respuestaAdmin = await fetch(`/api/comercio-admin?id=${comercio.id}`)
+        if (respuestaAdmin.ok) {
+          const datos = await respuestaAdmin.json()
+          setEsAdmin(datos.esAdmin)
+          setOrgId(datos.orgId)
+        }
+
+        // Verificar estado de reclamación (sobrescribe las props)
+        const respuestaReclamacion = await fetch(`/api/comercio-reclamacion?id=${comercio.id}`)
+        if (respuestaReclamacion.ok) {
+          const datos = await respuestaReclamacion.json()
+          setTienePendiente(datos.tienePendiente)
+          setTieneAprobada(datos.tieneAprobada)
+        }
       } catch (err) {
-        console.warn('No se pudo cargar el perfil:', err)
+        console.warn('No se pudieron cargar los datos:', err)
       }
     }
 
-    cargarPerfil()
+    cargarDatos()
   }, [comercio.id])
 
   const cat = CATEGORIAS[comercio.categoria]
@@ -188,13 +209,46 @@ export default function ComercioDetalle({ comercio, onCerrar }) {
           </div>
         )}
         {perfil ? (
-          <Link
-            to={`/comercios/${comercio.id}`}
-            className="gz-boton-tinta flex items-center justify-center gap-2"
-          >
-            <MIcon name="info" className="text-[16px]" />
-            Más información
-          </Link>
+          esAdmin ? (
+            <Link
+              to={`/panel?org=${comercio.id}`}
+              className="gz-boton-tinta flex items-center justify-center gap-2"
+            >
+              <MIcon name="edit" className="text-[16px]" />
+              Mi Comercio
+            </Link>
+          ) : (
+            <Link
+              to={`/comercios/${comercio.id}`}
+              className="gz-boton-tinta flex items-center justify-center gap-2"
+            >
+              <MIcon name="info" className="text-[16px]" />
+              Ver Perfil
+            </Link>
+          )
+        ) : tienePendiente ? (
+          <div className="flex items-center justify-center gap-2 rounded border border-terracota/30 bg-terracota-fondo px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota">
+            <MIcon name="access_time" className="text-[16px]" />
+            Reclamación en revisión
+          </div>
+        ) : tieneAprobada ? (
+          esAdmin ? (
+            <Link
+              to={`/panel?org=${comercio.id}`}
+              className="gz-boton-tinta flex items-center justify-center gap-2"
+            >
+              <MIcon name="edit" className="text-[16px]" />
+              Crear Perfil Comercial
+            </Link>
+          ) : (
+            <Link
+              to={`/comercios/${comercio.id}`}
+              className="gz-boton-tinta flex items-center justify-center gap-2"
+            >
+              <MIcon name="info" className="text-[16px]" />
+              Ver Perfil
+            </Link>
+          )
         ) : (
           <button
             type="button"

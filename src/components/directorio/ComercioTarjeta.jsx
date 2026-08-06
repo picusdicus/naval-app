@@ -29,7 +29,7 @@ function horarioDeHoy(horario) {
 }
 
 // Tarjeta de comercio para grid: imagen grande, categoría, nombre, dirección, info
-export default function ComercioTarjeta({ comercio, onClick, tienePerfil = false }) {
+export default function ComercioTarjeta({ comercio, onClick, tienePerfil = false, tienePendiente = false }) {
   const [dialogoReclamarAbierto, setDialogoReclamarAbierto] = useState(false)
   const cat = CATEGORIAS[comercio.categoria]
   const tipo = tipoComercio(comercio, cat?.nombre)
@@ -101,6 +101,10 @@ export default function ComercioTarjeta({ comercio, onClick, tienePerfil = false
             >
               Más información
             </Link>
+          ) : tienePendiente ? (
+            <span className="inline-block font-mono-ibm text-[9px] font-bold uppercase tracking-etiqueta text-terracota">
+              En revisión
+            </span>
           ) : (
             <button
               type="button"
