@@ -3,7 +3,7 @@ import MIcon from '../MIcon.jsx'
 import { useRecaptcha } from '../../lib/useRecaptcha.js'
 
 export default function DialogoReclamarComercio({ abierto, comercioId, comercioNombre, onCerrar }) {
-  const { getToken, cargando: captchaCargando } = useRecaptcha()
+  const { getToken, cargando: captchaCargando, error: captchaError } = useRecaptcha()
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
@@ -16,7 +16,10 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
 
   // Si reCAPTCHA tarda más de 5 segundos en cargar, permitir envío de todos modos
   useEffect(() => {
-    if (!captchaCargando) return
+    if (!captchaCargando) {
+      setCaptchaTimeout(false)
+      return
+    }
     const timer = setTimeout(() => setCaptchaTimeout(true), 5000)
     return () => clearTimeout(timer)
   }, [captchaCargando])
@@ -182,10 +185,10 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
                 </p>
               </div>
 
-              {error && (
+              {(error || captchaError) && (
                 <div className="flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-3">
                   <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
-                  <p className="font-serif-spectral text-sm text-terracota">{error}</p>
+                  <p className="font-serif-spectral text-sm text-terracota">{error || captchaError}</p>
                 </div>
               )}
 
