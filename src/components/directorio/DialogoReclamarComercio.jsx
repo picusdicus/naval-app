@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MIcon from '../MIcon.jsx'
 import { useRecaptcha } from '../../lib/useRecaptcha.js'
 
 export default function DialogoReclamarComercio({ abierto, comercioId, comercioNombre, onCerrar }) {
-  const { getToken, cargando: captchaCargando } = useRecaptcha()
+  const { getToken, cargando: captchaCargando, error: captchaError } = useRecaptcha()
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
@@ -12,6 +12,17 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
   const [enviando, setEnviando] = useState(false)
   const [exito, setExito] = useState(false)
   const [solicitudId, setSolicitudId] = useState('')
+  const [captchaTimeout, setCaptchaTimeout] = useState(false)
+
+  // Si reCAPTCHA tarda más de 5 segundos en cargar, permitir envío de todos modos
+  useEffect(() => {
+    if (!captchaCargando) {
+      setCaptchaTimeout(false)
+      return
+    }
+    const timer = setTimeout(() => setCaptchaTimeout(true), 5000)
+    return () => clearTimeout(timer)
+  }, [captchaCargando])
 
   const enviar = async (e) => {
     e.preventDefault()
@@ -174,10 +185,10 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
                 </p>
               </div>
 
-              {error && (
+              {(error || captchaError) && (
                 <div className="flex items-start gap-2 border border-terracota/30 bg-terracota-fondo p-3">
                   <MIcon name="error" className="mt-0.5 flex-shrink-0 text-[20px] text-terracota" />
-                  <p className="font-serif-spectral text-sm text-terracota">{error}</p>
+                  <p className="font-serif-spectral text-sm text-terracota">{error || captchaError}</p>
                 </div>
               )}
 
@@ -192,8 +203,9 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
                 </button>
                 <button
                   type="submit"
-                  disabled={enviando || captchaCargando || !nombre.trim() || !email.trim() || !mensaje.trim()}
+                  disabled={enviando || (captchaCargando && !captchaTimeout) || !nombre.trim() || !email.trim() || !mensaje.trim()}
                   className="gz-boton-tinta flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  title={captchaCargando && !captchaTimeout ? 'Cargando verificación de seguridad...' : ''}
                 >
                   {enviando ? 'Enviando…' : 'Enviar solicitud'}
                 </button>
