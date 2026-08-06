@@ -111,6 +111,11 @@ async function enviarEmailReclamacion({ solicitudId, comercioId, nombre, email, 
       </p>
     `
 
+    // En desarrollo, enviar a danielmolino@gmail.com (único email verificado en Resend)
+    const esProduccion = process.env.NODE_ENV === 'production'
+    const emailDestino = esProduccion ? email : ADMIN_EMAIL
+    const asuntoConMarca = esProduccion ? asuntoSolicitante : `${asuntoSolicitante} [TEST: ${email}]`
+
     const responseSolicitante = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -119,8 +124,8 @@ async function enviarEmailReclamacion({ solicitudId, comercioId, nombre, email, 
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: email,
-        subject: asuntoSolicitante,
+        to: emailDestino,
+        subject: asuntoConMarca,
         html: contenidoSolicitante,
       }),
     })
@@ -131,7 +136,7 @@ async function enviarEmailReclamacion({ solicitudId, comercioId, nombre, email, 
       return { ok: false, error: error }
     }
 
-    console.log('Emails enviados exitosamente')
+    console.log(`Emails enviados exitosamente${!esProduccion ? ` (confirmación enviada a ${emailDestino}, original: ${email})` : ''}`)
     return { ok: true }
   } catch (error) {
     console.error('Error al enviar emails:', error.message)
