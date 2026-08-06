@@ -2,8 +2,7 @@
 // Registra una solicitud anónima de reclamación de un comercio.
 // Rate-limited por IP + reCAPTCHA v3 validation.
 import { obtenerSql } from './_db.js'
-import { json, leerJson, csrfInvalido, rechazoCsrf } from './_http.js'
-import { limitar, obtenerIp, respuesta429 } from './_ratelimit.js'
+import { limitar, obtenerIp } from './_ratelimit.js'
 
 export const config = { runtime: 'node' }
 
@@ -12,9 +11,14 @@ const RECAPTCHA_SCORE_MIN = 0.5
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = 'danielmolino@gmail.com'
 
-async function verificarRecaptcha(token, req) {
-  // En development, saltarse reCAPTCHA
-  const esLocalhost = req.headers.get('host')?.includes('localhost') || req.headers.get('host')?.includes('127.0.0.1')
+function respuestaJson(res, datos, status = 200) {
+  res.setHeader('Content-Type', 'application/json')
+  res.statusCode = status
+  res.end(JSON.stringify(datos))
+}
+
+async function verificarRecaptcha(token, host) {
+  const esLocalhost = host?.includes('localhost') || host?.includes('127.0.0.1')
   if (esLocalhost) {
     console.log('✓ reCAPTCHA deshabilitado en localhost')
     return { ok: true }
@@ -97,44 +101,48 @@ async function enviarEmailReclamacion({ comercioId, nombre, email, telefono, men
   }
 }
 
-export default async function handler(req) {
+export default async function handler(req, res) {
+  console.log(`[solicitar-reclamacion] ${req.method} ${req.url}`)
+
   if (req.method !== 'POST') {
-    return json({ error: 'Método no permitido' }, 405)
+    return respuestaJson(res, { error: 'Método no permitido' }, 405)
   }
-  if (csrfInvalido(req)) return rechazoCsrf()
 
   const ip = obtenerIp(req)
   const limite = await limitar({ clave: `reclamacion:ip:${ip}`, limite: 5, ventanaS: 60 * 60 })
-  if (!limite.ok) return respuesta429(limite.resetEnS)
+  if (!limite.ok) {
+    return respuestaJson(res, { error: 'Demasiadas solicitudes. Intenta más tarde.' }, 429)
+  }
 
-  const { comercioId, nombre, email, telefono, mensaje, recaptchaToken } = await leerJson(req)
+  const { comercioId, nombre, email, telefono, mensaje, recaptchaToken } = req.body || {}
+  console.log('[solicitar-reclamacion] Body:', { comercioId, nombre, email })
 
   // Validar campos
   if (!comercioId || !nombre || !email || !mensaje) {
-    return json({ error: 'Faltan campos requeridos.' }, 400)
+    return respuestaJson(res, { error: 'Faltan campos requeridos.' }, 400)
   }
 
   if (String(nombre).trim().length === 0 || String(nombre).length > 100) {
-    return json({ error: 'El nombre debe tener entre 1 y 100 caracteres.' }, 400)
+    return respuestaJson(res, { error: 'El nombre debe tener entre 1 y 100 caracteres.' }, 400)
   }
 
   const emailTrimmed = String(email).trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed) || emailTrimmed.length > 254) {
-    return json({ error: 'Email no válido.' }, 400)
+    return respuestaJson(res, { error: 'Email no válido.' }, 400)
   }
 
   if (telefono && String(telefono).length > 20) {
-    return json({ error: 'El teléfono no puede superar 20 caracteres.' }, 400)
+    return respuestaJson(res, { error: 'El teléfono no puede superar 20 caracteres.' }, 400)
   }
 
   if (String(mensaje).length > 500) {
-    return json({ error: 'El mensaje no puede superar 500 caracteres.' }, 400)
+    return respuestaJson(res, { error: 'El mensaje no puede superar 500 caracteres.' }, 400)
   }
 
   // Verificar reCAPTCHA
-  const captcha = await verificarRecaptcha(recaptchaToken, req)
+  const captcha = await verificarRecaptcha(recaptchaToken, req.headers.host)
   if (!captcha.ok) {
-    return json({ error: captcha.error }, 403)
+    return respuestaJson(res, { error: captcha.error }, 403)
   }
 
   try {
@@ -153,6 +161,8 @@ export default async function handler(req) {
       )
     `
 
+    console.log('[solicitar-reclamacion] Solicitud guardada:', comercioId)
+
     // Enviar email al admin (fail-soft: no romper la respuesta si falla)
     const resultadoEmail = await enviarEmailReclamacion({
       comercioId: String(comercioId).trim(),
@@ -163,12 +173,12 @@ export default async function handler(req) {
     })
 
     if (!resultadoEmail.ok && !resultadoEmail.skipped) {
-      console.error('Fallo al enviar email de notificación, pero la solicitud se guardó')
+      console.error('[solicitar-reclamacion] Fallo al enviar email de notificación, pero la solicitud se guardó')
     }
 
-    return json({ ok: true }, 201)
+    return respuestaJson(res, { ok: true }, 201)
   } catch (error) {
-    console.error('Error al registrar solicitud de reclamación:', error)
-    return json({ error: 'Error en el servidor. Intenta de nuevo.' }, 500)
+    console.error('[solicitar-reclamacion] Error:', error)
+    return respuestaJson(res, { error: 'Error en el servidor. Intenta de nuevo.' }, 500)
   }
 }
