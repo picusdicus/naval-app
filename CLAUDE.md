@@ -315,7 +315,7 @@ Tres entidades nuevas en `db/schema.sql`:
 - `src/lib/imageOptimizer.js`: `optimizarImagen(file, maxWidth)` → redimensiona + WebP. `validarImagen()` → tipo + tamaño.
 - `src/lib/horarios.js`: `horarioValido()`, `formatearHorarios()`, `horariosVacios()`.
 - `src/lib/useRecaptcha.js`: Hook React para reCAPTCHA v3.
-- `api/_email.js` (Node): `enviarEmailReclamacion()` → Resend. Usado por reclamaciones de comercios. Hardcodeado a `danielmolino.it@gmail.com` con detalles de la solicitud.
+- `api/_email.js` (Node): `enviarEmailReclamacion()` → Resend (fetch directo a API REST). Usado por reclamaciones de comercios. Hardcodeado a `danielmolino@gmail.com` con detalles de la solicitud. Fail-soft: si falla, la solicitud se guarda igual.
 
 **Env vars nuevas (añadir a `VARIABLES_API` en `vite.config.js`):**
 

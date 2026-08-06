@@ -1,5 +1,5 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const ADMIN_EMAIL = 'danielmolino.it@gmail.com'
+const ADMIN_EMAIL = 'danielmolino@gmail.com'
 
 export async function enviarEmailReclamacion({ comercioId, nombre, email, telefono, mensaje }) {
   if (!RESEND_API_KEY) {
