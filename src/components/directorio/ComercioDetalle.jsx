@@ -242,11 +242,11 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
             </Link>
           ) : (
             <Link
-              to="/registro"
+              to={`/comercios/${comercio.id}`}
               className="gz-boton-tinta flex items-center justify-center gap-2"
             >
-              <MIcon name="app_registration" className="text-[16px]" />
-              Completar Registro
+              <MIcon name="info" className="text-[16px]" />
+              Ver Perfil
             </Link>
           )
         ) : (

@@ -174,13 +174,10 @@ export default function PerfilComercio() {
                 Crear Perfil Comercial
               </Link>
             ) : (
-              <Link
-                to="/registro"
-                className="gz-boton-tinta inline-flex items-center gap-2"
-              >
-                <MIcon name="app_registration" className="text-[16px]" />
-                Completar Registro
-              </Link>
+              <div className="inline-flex items-center gap-2 rounded border border-verde-bosque/30 bg-papel px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-verde-bosque">
+                <MIcon name="check_circle" className="text-[16px]" />
+                Perfil disponible
+              </div>
             )
           ) : (
             <button
