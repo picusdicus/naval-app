@@ -9,6 +9,8 @@ export default function TableReclamaciones() {
   const [estadoFiltro, setEstadoFiltro] = useState('pendiente')
   const [ocupado, setOcupado] = useState(false)
   const [porRechazar, setPorRechazar] = useState(null)
+  const [porAprobar, setPorAprobar] = useState(null)
+  const [esCultural, setEsCultural] = useState(false)
 
   const cargar = useCallback(async () => {
     try {
@@ -30,13 +32,19 @@ export default function TableReclamaciones() {
     cargar()
   }, [cargar])
 
-  const aprobar = async (reclamacion) => {
+  const abrirDialogoAprobar = (reclamacion) => {
+    setPorAprobar(reclamacion)
+    setEsCultural(false)
+  }
+
+  const confirmarAprobar = async () => {
+    const reclamacion = porAprobar
     setOcupado(true)
     try {
       const respuesta = await fetch(`/api/super/reclamaciones?id=${reclamacion.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: 'aprobada' }),
+        body: JSON.stringify({ estado: 'aprobada', esOrganizacionCultural: esCultural }),
       })
 
       const datos = await respuesta.json()
@@ -47,6 +55,7 @@ export default function TableReclamaciones() {
 
       // Actualizar lista
       await cargar()
+      setPorAprobar(null)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -176,7 +185,7 @@ export default function TableReclamaciones() {
                 {r.estado === 'pendiente' && (
                   <>
                     <button
-                      onClick={() => aprobar(r)}
+                      onClick={() => abrirDialogoAprobar(r)}
                       disabled={ocupado}
                       className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border border-verde px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-verde transition-colors hover:enabled:bg-verde-fondo disabled:opacity-50 sm:flex-none"
                     >
@@ -215,7 +224,7 @@ export default function TableReclamaciones() {
         </ul>
       )}
 
-      {/* Diálogo de confirmación */}
+      {/* Diálogo de confirmación para rechazar */}
       <DialogoConfirmacion
         abierto={Boolean(porRechazar)}
         titulo="¿Rechazar esta solicitud?"
@@ -224,6 +233,53 @@ export default function TableReclamaciones() {
         onConfirmar={confirmarRechazar}
         onCancelar={() => setPorRechazar(null)}
       />
+
+      {/* Diálogo de aprobación */}
+      {porAprobar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md border border-tinta bg-papel shadow-cartel">
+            <div className="h-2 bg-tinta-intensa" />
+            <div className="p-6">
+              <h3 className="mb-3 font-serif-dm text-lg text-tinta">Aprobar reclamación</h3>
+              <p className="mb-4 font-serif-spectral text-sm text-pardo">
+                {porAprobar.detallesComercio?.nombre || porAprobar.comercioId}
+              </p>
+
+              <div className="mb-4 space-y-3 border-t border-filete pt-4">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={esCultural}
+                    onChange={(e) => setEsCultural(e.target.checked)}
+                    disabled={ocupado}
+                    className="h-4 w-4 cursor-pointer accent-tinta"
+                  />
+                  <span className="font-serif-spectral text-sm text-tinta">
+                    ¿Es una organización cultural? (podrá gestionar eventos)
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex gap-2 border-t border-filete pt-4">
+                <button
+                  onClick={() => setPorAprobar(null)}
+                  disabled={ocupado}
+                  className="flex-1 border border-filete px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo transition-colors hover:enabled:text-tinta disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarAprobar}
+                  disabled={ocupado}
+                  className="gz-boton-tinta flex-1 disabled:opacity-50"
+                >
+                  {ocupado ? 'Aprobando…' : 'Aprobar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

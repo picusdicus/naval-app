@@ -163,6 +163,8 @@ ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS comercio_id text;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_organizaciones_comercio ON organizaciones (comercio_id) WHERE comercio_id IS NOT NULL;
 
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS es_organizacion_cultural boolean DEFAULT false;
+
 -- Suscripciones push anónimas por dispositivo (fase 1 de NOTIFICACIONES_PUSH.md).
 -- `endpoint` identifica el dispositivo (URL del push service del navegador);
 -- `temas` es la lista plana de intereses ('todos', 'cat:<categoria>',

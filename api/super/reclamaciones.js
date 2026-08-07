@@ -117,7 +117,7 @@ async function listar(sql, estado) {
   })
 }
 
-async function aprobar(sql, solicitudId) {
+async function aprobar(sql, solicitudId, esOrganizacionCultural) {
   cargaComercios()
 
   // 1. Obtener la solicitud
@@ -141,8 +141,8 @@ async function aprobar(sql, solicitudId) {
     const orgNombre = detalles.nombre || solicitud.nombre
     const orgSlug = solicitud.comercio_id
 
-    // Detectar si es cultural (categoría 'ocio_cultura')
-    const esCultural = detalles.categoria === 'ocio_cultura'
+    // Si el admin marca como cultural, o si lo detectamos por categoría
+    const esCultural = esOrganizacionCultural || detalles.categoria === 'ocio_cultura'
     const categoriaDefecto = esCultural ? 'cultura' : null
     const lugarDefecto = null
 
@@ -161,6 +161,7 @@ async function aprobar(sql, solicitudId) {
           comercio_id,
           categoria_defecto,
           lugar_defecto,
+          es_organizacion_cultural,
           activa
         )
         VALUES (
@@ -169,6 +170,7 @@ async function aprobar(sql, solicitudId) {
           ${solicitud.comercio_id},
           ${categoriaDefecto},
           ${lugarDefecto},
+          ${esCultural},
           true
         )
         RETURNING id
@@ -260,9 +262,9 @@ export default async function handler(req) {
         return json({ error: 'ID de solicitud no válido.' }, 400)
       }
 
-      const { estado } = await leerJson(req)
+      const { estado, esOrganizacionCultural } = await leerJson(req)
       if (estado === 'aprobada') {
-        return await aprobar(sql, solicitudId)
+        return await aprobar(sql, solicitudId, esOrganizacionCultural === true)
       } else if (estado === 'rechazada') {
         return await rechazar(sql, solicitudId)
       } else {

@@ -215,14 +215,22 @@ export default function AdminPanel() {
   // Tras cada cambio se recarga la lista: las métricas salen del mismo
   // cálculo que hace Neon, sin llevar una cuenta paralela en el cliente.
   const cargar = useCallback(async () => {
-    const [respuesta, respuestaDestacados] = await Promise.all([
+    const [respuesta, respuestaDestacados, respuestaOrganizacion] = await Promise.all([
       fetch('/api/admin/eventos'),
       fetch('/api/admin/destacados'),
+      fetch('/api/admin/organizacion'),
     ])
     if (respuesta.status === 401) return cerrarSesion()
 
     const cuerpo = await respuesta.json().catch(() => ({}))
     if (!respuesta.ok) throw new Error(cuerpo.error || 'No se pudieron cargar los eventos.')
+
+    // Obtener datos de la organización (incluye es_organizacion_cultural)
+    const cuerpoOrganizacion = await respuestaOrganizacion.json().catch(() => ({}))
+    if (respuestaOrganizacion.ok && cuerpoOrganizacion.organizacion) {
+      cuerpo.organizacion = { ...cuerpo.organizacion, ...cuerpoOrganizacion.organizacion }
+    }
+
     setDatos(cuerpo)
 
     // Los destacados son complementarios: si fallan, el panel sigue operativo
@@ -249,6 +257,13 @@ export default function AdminPanel() {
       vigente = false
     }
   }, [cargar])
+
+  // Si la pestaña actual es eventos pero la org no es cultural, cambiar a comercio
+  useEffect(() => {
+    if (datos && !datos.organizacion?.es_organizacion_cultural && pestana === 'eventos') {
+      setPestana('comercio')
+    }
+  }, [datos, pestana])
 
   const conRecarga = async (peticion) => {
     setOcupado(true)
@@ -394,10 +409,10 @@ export default function AdminPanel() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        {/* Pestañas: eventos, comercio (si vinculado), analíticas. */}
+        {/* Pestañas: eventos (si es cultural), comercio (si vinculado), analíticas. */}
         <div className="mb-6 flex gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta sm:w-fit">
           {[
-            ['eventos', 'event', 'Mis eventos'],
+            ...(datos?.organizacion?.es_organizacion_cultural ? [['eventos', 'event', 'Mis eventos']] : []),
             ['comercio', 'storefront', 'Mi comercio'],
             ['analiticas', 'monitoring', 'Mis analíticas'],
           ].map(([clave, icono, etiqueta]) => (
