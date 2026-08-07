@@ -70,6 +70,12 @@ export function useNoticiasPublicas() {
             fecha: a.publicado_en,
             fechaLimite: a.fecha_limite,
             imagen: a.imagen_url,
+            // La descripción del cartel (extracción por visión: edades,
+            // precio, cómo inscribirse) alimenta el extracto de la tarjeta y
+            // el cuerpo del detalle, que esperan resumen/contenido como las
+            // noticias.
+            resumen: a.descripcion || '',
+            contenido: a.descripcion || '',
           }))
           setDeLaBase([...(noticias.noticias ?? []), ...actividadesConTipo])
         }
