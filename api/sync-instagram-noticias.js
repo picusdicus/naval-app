@@ -29,8 +29,17 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
-import { MAX_POSTS, normalizarPost, obtenerPosts, subirImagen } from './_instagram.js'
-import { extraerActividadesDeHTML } from './_actividades-parser.js'
+import {
+  MAX_POSTS,
+  asegurarOrganizacion,
+  normalizarPost,
+  obtenerPosts,
+  orgDeUsuario,
+  subirImagen,
+} from './_instagram.js'
+import { extraerDeDocumento } from './_actividades-parser.js'
+import { enviarEmailPendientes } from './_email.js'
+import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -71,7 +80,7 @@ const ESQUEMA_EXTRACCION = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['shortCode', 'tipo', 'titulo', 'resumen', 'cuerpo', 'categoria', 'fechaLimite', 'urgente', 'tipoAlerta', 'expiraEn'],
+        required: ['shortCode', 'tipo', 'titulo', 'resumen', 'cuerpo', 'categoria', 'fechaLimite', 'urgente', 'tipoAlerta', 'expiraEn', 'programaEnlazada'],
         properties: {
           shortCode: { type: 'string' },
           tipo: { enum: ['noticia', 'actividad'] },
@@ -84,6 +93,10 @@ const ESQUEMA_EXTRACCION = {
           urgente: { type: 'boolean' },
           tipoAlerta: { enum: [...TIPOS_ALERTA, ''] },
           expiraEn: { type: 'string' },
+          // true si el post remite a una programación/agenda en un enlace
+          // ("consulta la programación", "descarga la agenda") — dispara el
+          // scraping del documento enlazado.
+          programaEnlazada: { type: 'boolean' },
         },
       },
     },
@@ -121,6 +134,7 @@ En caso de duda, urgente=false (es una noticia). tipoAlerta: la opción más apr
 expiraEn: si el caption indica cuándo termina la incidencia ("hasta las 14:00", "corte de 8 a 14 h"), devuélvelo como YYYY-MM-DDTHH:MM resolviendo fechas relativas con el campo "publicado" del post; si no se indica o el post no es urgente, "".
 
 Para cada item (noticia o actividad) devuelve además:
+- programaEnlazada: true SOLO si el post remite a una programación o agenda completa que vive en un ENLACE del caption ("consulta la programación 👇", "descárgala aquí", "toda la agenda en el enlace") — típicamente la agenda cultural en PDF o una página con la programación deportiva. false si el enlace es de otro tipo (precios, un formulario, la web general) o no hay enlace.
 - shortCode: el del post, copiado tal cual.
 - titulo: corto y legible en español (sin mayúsculas gritadas).
 - resumen: una o dos frases, máximo 200 caracteres.
@@ -128,42 +142,86 @@ Para cada item (noticia o actividad) devuelve además:
 
 Devuelve solo los posts que son noticias, alertas o actividades; si ninguno lo es, devuelve la lista vacía.`
 
+// El triaje va en LOTES: con los 50 posts de un run en una sola llamada, la
+// respuesta (título+resumen+cuerpo por item) superaba max_tokens, llegaba
+// truncada y el JSON.parse tumbaba el run entero ("Unterminated string").
+// Con lotes la salida queda acotada, y un lote fallido no arrastra al resto.
+const LOTE_TRIAJE = 10
+
 async function extraerNoticias(posts) {
   const client = new Anthropic()
-  const respuesta = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4096,
-    system: INSTRUCCIONES,
-    output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
-    messages: [{ role: 'user', content: JSON.stringify(posts) }],
-  })
-  if (respuesta.stop_reason === 'refusal') {
-    throw new Error('El modelo rechazó la petición de extracción.')
+  const noticias = []
+  const errores = []
+  for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
+    const lote = posts.slice(i, i + LOTE_TRIAJE)
+    try {
+      const respuesta = await client.messages.create({
+        model: MODEL,
+        max_tokens: 8192,
+        system: INSTRUCCIONES,
+        output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
+        messages: [{ role: 'user', content: JSON.stringify(lote) }],
+      })
+      if (respuesta.stop_reason === 'refusal') {
+        throw new Error('el modelo rechazó la petición de extracción')
+      }
+      if (respuesta.stop_reason === 'max_tokens') {
+        throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
+      }
+      const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"noticias":[]}'
+      noticias.push(...(JSON.parse(texto).noticias || []))
+    } catch (err) {
+      errores.push(`Triaje lote ${Math.floor(i / LOTE_TRIAJE) + 1}: ${err.message}`)
+    }
   }
-  const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"noticias":[]}'
-  return JSON.parse(texto).noticias || []
+  return { noticias, errores }
 }
 
-/** Detecta URLs en el caption del post. */
+/** Primera URL del caption que apunte a la web municipal. Allowlist a
+ * propósito: el caption viene de un tercero (Instagram) y este handler
+ * scrapea lo que encuentre — solo se sigue a navalcarnero.es. */
 function detectarUrl(caption) {
   if (!caption) return null
-  const match = caption.match(/(https?:\/\/[^\s]+)/);
-  return match ? match[1] : null
+  for (const cruda of caption.match(/https?:\/\/[^\s]+/g) || []) {
+    try {
+      const u = new URL(cruda.replace(/[),.;]+$/, ''))
+      if (u.hostname === 'navalcarnero.es' || u.hostname.endsWith('.navalcarnero.es')) {
+        return u.href
+      }
+    } catch {
+      // URL malformada en el caption: se ignora.
+    }
+  }
+  return null
 }
 
-/** Scrapea una URL y extrae el HTML (máximo 50 KB para no saturar). */
-async function scrapearUrl(url) {
+// Un PDF de agenda trimestral ronda 2-5 MB; 15 MB da margen sin acercarse al
+// límite de la API de Anthropic (~32 MB de petición).
+const MAX_PDF_BYTES = 15 * 1024 * 1024
+
+/**
+ * Descarga el documento enlazado y lo clasifica: {tipo: 'pdf', buffer} para
+ * las agendas en PDF, {tipo: 'html', html} (máx 50 KB) para el resto.
+ */
+async function descargarDocumento(url) {
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': 'NavalcarneroCrawler/1.0' },
-      timeout: 10000,
+      signal: AbortSignal.timeout(15_000),
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const contentType = (response.headers.get('content-type') || '').split(';')[0].trim()
+    if (contentType === 'application/pdf' || /\.pdf(?:[?#]|$)/i.test(url)) {
+      const buffer = Buffer.from(await response.arrayBuffer())
+      if (buffer.length === 0 || buffer.length > MAX_PDF_BYTES) {
+        throw new Error(`PDF fuera de límite (${buffer.length} bytes)`)
+      }
+      return { tipo: 'pdf', buffer }
+    }
     const html = await response.text()
-    // Limitar a los primeros 50 KB para no arrastrar demasiado contenido
-    return html.substring(0, 51200)
+    return { tipo: 'html', html: html.substring(0, 51200) }
   } catch (err) {
-    throw new Error(`Error al scrapear ${url}: ${err.message}`)
+    throw new Error(`Error al descargar ${url}: ${err.message}`)
   }
 }
 
@@ -223,6 +281,7 @@ function validarExtraccion(noticias, postsPorShortCode) {
     validas.push({
       shortCode: n.shortCode,
       tipo,
+      programaEnlazada: n.programaEnlazada === true,
       titulo: n.titulo.trim().slice(0, 200),
       resumen: String(n.resumen || '').trim().slice(0, 300),
       cuerpo: String(n.cuerpo || '').trim().slice(0, 2000),
@@ -266,6 +325,12 @@ async function asegurarTablas(sql) {
             ON noticias_instagram (publicado_en DESC)`
   // Carrusel completo del post (ver db/schema.sql); imagen_url no cambia.
   await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS imagenes_url jsonb`
+  // Columnas legacy del diseño de una sola tabla: el webhook ya no las
+  // escribe (las actividades viven en su tabla), pero GET
+  // /api/noticias-instagram las selecciona — sin ellas, una BD nueva
+  // devolvería {noticias: []} en silencio.
+  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS categoria text`
+  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS fecha_limite date`
 
   // actividades: actividades con plazo de inscripción.
   await sql`CREATE TABLE IF NOT EXISTS actividades (
@@ -279,12 +344,17 @@ async function asegurarTablas(sql) {
     lugar             text,
     imagen_url        text,
     url_fuente        text,
+    estado            text NOT NULL DEFAULT 'publicado' CHECK (estado IN ('borrador', 'publicado', 'archivado')),
     publicado_en      timestamptz NOT NULL DEFAULT now(),
     creado_en         timestamptz NOT NULL DEFAULT now(),
     actualizado_en    timestamptz NOT NULL DEFAULT now()
   )`
   await sql`CREATE INDEX IF NOT EXISTS idx_actividades_origen ON actividades (origen_externo_id)`
   await sql`CREATE INDEX IF NOT EXISTS idx_actividades_fecha_limite ON actividades (fecha_limite DESC)`
+  // Validación humana de lo extraído de documentos enlazados: nace 'borrador'
+  // y el superadmin lo publica o archiva desde /admin → Pendientes. Las filas
+  // preexistentes (y las del triaje directo) quedan 'publicado' por el DEFAULT.
+  await sql`ALTER TABLE actividades ADD COLUMN IF NOT EXISTS estado text NOT NULL DEFAULT 'publicado'`
 }
 
 export default async function handler(req, res) {
@@ -338,9 +408,10 @@ export default async function handler(req, res) {
     }
 
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
-    const extraidas = await extraerNoticias(
+    const { noticias: extraidas, errores: erroresTriaje } = await extraerNoticias(
       posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
     )
+    resumen.errores.push(...erroresTriaje)
     const { validas, descartadas } = validarExtraccion(extraidas, postsPorShortCode)
     resumen.noticias = validas.filter(v => v.tipo === 'noticia').length
     resumen.actividades = validas.filter(v => v.tipo === 'actividad').length
@@ -402,48 +473,82 @@ export default async function handler(req, res) {
       }
     }
 
-    // Procesar actividades: si el post tiene URL, scrapearla y extraer actividades.
-    for (const post of posts) {
+    // Programaciones enlazadas + actividades del triaje. Se procesan:
+    // - los posts triados 'actividad' (con o sin enlace), y
+    // - los posts con programaEnlazada=true y enlace municipal (p. ej. una
+    //   noticia "ya está disponible la agenda" con el PDF enlazado).
+    // Del documento enlazado (HTML de galería o PDF de agenda) salen
+    // actividades y también EVENTOS de agenda; todo lo extraído de un
+    // documento nace 'borrador' (un fallo de extracción son decenas de items)
+    // y se valida en /admin → Pendientes, con aviso por email. La actividad
+    // del propio triaje (caption, alta confianza) sigue naciendo 'publicado'.
+    const pendientesEventos = []
+    const pendientesActividades = []
+    const procesables = validas.filter(
+      (v) => v.tipo === 'actividad' || (v.programaEnlazada && detectarUrl(postsPorShortCode.get(v.shortCode).caption))
+    )
+    for (const item of procesables) {
+      const post = postsPorShortCode.get(item.shortCode)
       try {
+        // La foto del post, ya en Blob, como imagen de la fila única y
+        // fallback de las extraídas (la URL cruda del CDN de Instagram
+        // caduca en días).
+        const imagenPost = await subirImagen('instagram-actividades', item.shortCode, item.imagenOrigen)
+        if (imagenPost) resumen.imagenesSubidas++
+
         const url = detectarUrl(post.caption)
-        if (!url) continue
-
-        const html = await scrapearUrl(url)
-        // Nuevo parser: parsing inteligente + Claude + manejo de imágenes
-        const actividadesExtraidas = await extraerActividadesDeHTML(
-          html,
-          url,
-          post.imagen, // Imagen del post de Instagram como fallback
-          post.shortCode
-        )
-        if (actividadesExtraidas.length === 0) continue
-
-        // Debug: verificar imagen_url
-        // IMPORTANTE: Las imágenes están siendo extraídas correctamente por el parser
-        if (actividadesExtraidas.length > 0) {
-          console.log(`[sync-instagram-noticias] ${post.shortCode}: primera actividad`)
-          console.log(`  titulo: ${actividadesExtraidas[0]?.titulo}`)
-          console.log(`  imagen_url: "${actividadesExtraidas[0]?.imagen_url || '(vacío)'}"`)
+        let extraccion = { eventos: [], actividades: [] }
+        if (url && (item.programaEnlazada || item.tipo === 'actividad')) {
+          const doc = await descargarDocumento(url)
+          extraccion = await extraerDeDocumento(doc, url, imagenPost, item.shortCode)
         }
 
-        resumen.actividades += actividadesExtraidas.length
+        // — Actividades: hijas del documento (borrador) o, sin documento ni
+        //   hijas, la del propio triaje (publicado directo, flujo rodado).
+        const filasActividades = extraccion.actividades.length
+          ? extraccion.actividades.map((h, i) => ({
+              origenId: `ig-${item.shortCode}-${i}`,
+              titulo: h.titulo,
+              categoria: h.categoria || item.categoria || 'general',
+              fechaLimite: h.fechaLimite || item.fechaLimite,
+              horario: h.horario,
+              lugar: h.lugar,
+              descripcion: null,
+              imagenUrl: h.imagen_url || imagenPost,
+              estado: 'borrador',
+            }))
+          : item.tipo === 'actividad'
+            ? [
+                {
+                  origenId: `ig-${item.shortCode}`,
+                  titulo: item.titulo,
+                  categoria: item.categoria || 'general',
+                  fechaLimite: item.fechaLimite,
+                  horario: null,
+                  lugar: null,
+                  descripcion: item.resumen || null,
+                  imagenUrl: imagenPost,
+                  estado: 'publicado',
+                },
+              ]
+            : []
 
-        for (let i = 0; i < actividadesExtraidas.length; i++) {
-          const act = actividadesExtraidas[i]
+        for (const fila of filasActividades) {
           try {
-            // ID único: post + índice (en caso de múltiples en el mismo post).
-            const origenId = `ig-${post.shortCode}-${i}`
-
-            await sql`
+            // El UPDATE no toca `estado` a propósito: un borrador ya publicado
+            // o archivado desde /admin no se resetea al re-ejecutar el webhook.
+            const resultado = await sql`
               INSERT INTO actividades
-                (origen_externo_id, titulo, categoria, fecha_limite, horario, lugar,
-                 imagen_url, url_fuente, publicado_en)
+                (origen_externo_id, titulo, descripcion, categoria, fecha_limite, horario,
+                 lugar, imagen_url, url_fuente, estado, publicado_en)
               VALUES
-                (${origenId}, ${act.titulo}, ${act.categoria || 'general'}, ${act.fechaLimite},
-                 ${act.horario}, ${act.lugar}, ${act.imagen_url}, ${url}, ${new Date(post.publicado || Date.now()).toISOString()})
+                (${fila.origenId}, ${fila.titulo}, ${fila.descripcion}, ${fila.categoria},
+                 ${fila.fechaLimite}, ${fila.horario}, ${fila.lugar}, ${fila.imagenUrl},
+                 ${url || post.url}, ${fila.estado}, ${item.publicadoEn})
               ON CONFLICT (origen_externo_id)
               DO UPDATE SET
                 titulo = EXCLUDED.titulo,
+                descripcion = EXCLUDED.descripcion,
                 categoria = EXCLUDED.categoria,
                 fecha_limite = EXCLUDED.fecha_limite,
                 horario = EXCLUDED.horario,
@@ -451,15 +556,97 @@ export default async function handler(req, res) {
                 imagen_url = COALESCE(EXCLUDED.imagen_url, actividades.imagen_url),
                 url_fuente = EXCLUDED.url_fuente,
                 actualizado_en = now()
+              RETURNING (xmax = 0) AS insertada
             `
-            resumen.creadas++
-            if (act.imagen_url) resumen.imagenesSubidas++
+            if (resultado[0]?.insertada) {
+              resumen.creadas++
+              if (fila.estado === 'borrador') {
+                pendientesActividades.push({ titulo: fila.titulo, fecha: fila.fechaLimite })
+              }
+            } else {
+              resumen.actualizadas++
+            }
           } catch (err) {
-            resumen.errores.push(`Actividad ${origenId}: ${err.message}`)
+            resumen.errores.push(`Actividad ${fila.origenId}: ${err.message}`)
+          }
+        }
+
+        // — Eventos del documento (solo PDF de agenda los trae): nacen
+        //   'borrador' bajo la organización del autor del post, con dedup
+        //   contra los eventos ya existentes en esas fechas (misma fecha +
+        //   título equivalente ⇒ se omite). El UPDATE del upsert no toca
+        //   estado ni notificado_en: publicar es decisión del superadmin y,
+        //   al publicar, el digest del cron lo anuncia como a cualquier otro.
+        if (extraccion.eventos.length) {
+          const organizacionId = await asegurarOrganizacion(sql, orgDeUsuario(item.usuario))
+          const fechasDoc = [...new Set(extraccion.eventos.map((e) => e.fecha))]
+          const existentes = await sql`
+            SELECT origen_externo_id, titulo, to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha
+            FROM eventos_usuario
+            WHERE fecha_inicio = ANY(${fechasDoc}::date[])`
+          for (let i = 0; i < extraccion.eventos.length; i++) {
+            const ev = extraccion.eventos[i]
+            const origenId = `ig-${item.shortCode}-${i}`
+            try {
+              const clave = claveTitulo(ev.titulo)
+              const gemelo = existentes.find(
+                (e) =>
+                  e.fecha === ev.fecha &&
+                  e.origen_externo_id !== origenId &&
+                  titulosEquivalentes(claveTitulo(e.titulo), clave)
+              )
+              if (gemelo) continue
+
+              const filas = await sql`
+                INSERT INTO eventos_usuario
+                  (organizacion_id, titulo, descripcion, categoria,
+                   fecha_inicio, hora, lugar, url, imagen_url, estado, origen_externo_id)
+                VALUES
+                  (${organizacionId}, ${ev.titulo}, ${ev.descripcion}, ${ev.categoria},
+                   ${ev.fecha}, ${ev.hora}, ${ev.lugar}, ${url}, ${imagenPost},
+                   'borrador', ${origenId})
+                ON CONFLICT (origen_externo_id) WHERE origen_externo_id IS NOT NULL
+                DO UPDATE SET
+                  titulo = EXCLUDED.titulo,
+                  descripcion = EXCLUDED.descripcion,
+                  categoria = EXCLUDED.categoria,
+                  fecha_inicio = EXCLUDED.fecha_inicio,
+                  hora = EXCLUDED.hora,
+                  lugar = EXCLUDED.lugar,
+                  url = EXCLUDED.url,
+                  imagen_url = COALESCE(EXCLUDED.imagen_url, eventos_usuario.imagen_url),
+                  actualizado_en = now()
+                RETURNING (xmax = 0) AS insertado
+              `
+              if (filas[0]?.insertado) {
+                resumen.creadas++
+                pendientesEventos.push({ titulo: ev.titulo, fecha: ev.fecha })
+                existentes.push({ origen_externo_id: origenId, titulo: ev.titulo, fecha: ev.fecha })
+              } else {
+                resumen.actualizadas++
+              }
+            } catch (err) {
+              resumen.errores.push(`Evento ${origenId}: ${err.message}`)
+            }
           }
         }
       } catch (err) {
-        resumen.errores.push(`Scraping ${post.shortCode}: ${err.message}`)
+        resumen.errores.push(`Scraping ${item.shortCode}: ${err.message}`)
+      }
+    }
+
+    // Aviso por email al superadmin si el run dejó borradores por validar.
+    // Fail-soft: un fallo del email no rompe la sincronización.
+    if (pendientesEventos.length || pendientesActividades.length) {
+      resumen.pendientesValidacion =
+        pendientesEventos.length + pendientesActividades.length
+      try {
+        await enviarEmailPendientes({
+          eventos: pendientesEventos,
+          actividades: pendientesActividades,
+        })
+      } catch (err) {
+        resumen.errores.push(`Email de pendientes: ${err.message}`)
       }
     }
 

@@ -6,6 +6,7 @@ import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosI
 import TableReclamaciones from '../../components/admin/super/TableReclamaciones.jsx'
 import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
 import TablesEventos from '../../components/admin/super/TablesEventos.jsx'
+import TablesPendientes from '../../components/admin/super/TablesPendientes.jsx'
 import TablesComercios from '../../components/admin/super/TablesComercios.jsx'
 import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
 import UmamiStats from '../../components/admin/UmamiStats.jsx'
@@ -51,10 +52,11 @@ export default function AdminSuperPanel() {
     }
   }
 
-  // Solicitudes de destacado sin gestionar, para el contador del tab. Se
-  // recuenta al montar y al cambiar de sección (así se refresca tras aprobar
-  // o rechazar dentro del propio tab); puede ir un refresco por detrás
-  // mientras se gestiona sin salir del tab, y no pasa nada.
+  // Contadores de los tabs con trabajo sin gestionar (solicitudes de
+  // destacado, borradores de la sincronización). Se recuentan al montar y al
+  // cambiar de sección (así se refrescan tras gestionar dentro del propio
+  // tab); pueden ir un refresco por detrás sin salir del tab, y no pasa nada.
+  const [pendientesSync, setPendientesSync] = useState(0)
   useEffect(() => {
     let vigente = true
 
@@ -62,6 +64,13 @@ export default function AdminSuperPanel() {
       .then((r) => (r.ok ? r.json() : { destacados: [] }))
       .then(({ destacados = [] }) => {
         if (vigente) setPendientes(destacados.filter((d) => d.estado === 'pendiente').length)
+      })
+      .catch(() => {})
+
+    fetch('/api/super/pendientes')
+      .then((r) => (r.ok ? r.json() : { eventos: [], actividades: [] }))
+      .then(({ eventos = [], actividades = [] }) => {
+        if (vigente) setPendientesSync(eventos.length + actividades.length)
       })
       .catch(() => {})
 
@@ -75,6 +84,7 @@ export default function AdminSuperPanel() {
     ['codigos', 'card_giftcard', 'Códigos de invitación'],
     ['reclamaciones', 'verified_user', 'Reclamaciones'],
     ['destacados', 'star', 'Destacados'],
+    ['pendientes', 'pending_actions', 'Pendientes'],
     ['eventos', 'event', 'Eventos'],
     ['comercios', 'storefront', 'Comercios'],
     ['analytics', 'analytics', 'Analytics'],
@@ -145,6 +155,11 @@ export default function AdminSuperPanel() {
                   {pendientes}
                 </span>
               )}
+              {clave === 'pendientes' && pendientesSync > 0 && (
+                <span className="min-w-[1.25rem] rounded-full bg-terracota px-1.5 py-0.5 text-center text-[10px] font-bold text-papel">
+                  {pendientesSync}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -155,6 +170,7 @@ export default function AdminSuperPanel() {
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
           {seccionActiva === 'reclamaciones' && <TableReclamaciones />}
           {seccionActiva === 'destacados' && <TablesDestacados />}
+          {seccionActiva === 'pendientes' && <TablesPendientes />}
           {seccionActiva === 'eventos' && <TablesEventos />}
           {seccionActiva === 'comercios' && <TablesComercios />}
           {seccionActiva === 'analytics' && (

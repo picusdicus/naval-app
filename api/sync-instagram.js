@@ -24,8 +24,16 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
-import { MAX_POSTS, normalizarPost, obtenerPosts, subirImagen } from './_instagram.js'
+import {
+  MAX_POSTS,
+  asegurarOrganizacion,
+  normalizarPost,
+  obtenerPosts,
+  orgDeUsuario,
+  subirImagen,
+} from './_instagram.js'
 import { SUBCATEGORIAS_CULTURA } from '../src/lib/eventos.js'
+import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -37,43 +45,9 @@ const CATEGORIAS = ['cultura', 'deporte', 'fiestas', 'gastronomia', 'infantil', 
 // el perfil de las orgs no se tocan). Whitelist compartida con la UI.
 const SUBCATEGORIAS = Object.keys(SUBCATEGORIAS_CULTURA)
 
-// Atribución por autor: ownerUsername del post → organización de la agenda
-// (el "Organiza" de la ficha y la `fuente` del GET público salen del nombre de
-// la organización). Los posts en colaboración con otras cuentas aparecen en el
-// perfil de cultura_navalcarnero con el ownerUsername del coautor: mientras no
-// tengan entrada propia aquí, se atribuyen también a la concejalía.
-const ORG_CULTURA = {
-  nombre: 'Cultura Navalcarnero',
-  slug: 'cultura-navalcarnero',
-  descripcion:
-    'Eventos publicados en Instagram por cultura_navalcarnero y sincronizados automáticamente.',
-  categoriaDefecto: 'cultura',
-  lugarDefecto: 'Navalcarnero',
-}
-
-// El slug 'ayuntamiento' coincide con ORG_POR_FUENTE/ORGANIZADORES_FIJOS de
-// src/lib/temasPush.js: los eventos quedan bajo el tema org:ayuntamiento ya
-// existente en el selector de avisos.
-const ORG_AYUNTAMIENTO = {
-  nombre: 'Ayuntamiento de Navalcarnero',
-  slug: 'ayuntamiento',
-  descripcion:
-    'Eventos publicados en Instagram por ayuntamientonavalcarnero y sincronizados automáticamente.',
-  categoriaDefecto: 'cultura',
-  lugarDefecto: 'Navalcarnero',
-}
-
-const ORG_POR_USUARIO = {
-  cultura_navalcarnero: ORG_CULTURA,
-  ayuntamientonavalcarnero: ORG_AYUNTAMIENTO,
-}
-
-function orgDeUsuario(usuario) {
-  return ORG_POR_USUARIO[String(usuario || '').toLowerCase()] || ORG_CULTURA
-}
-
-// Constantes de posts e imágenes y helpers de Apify/Blob compartidos con el
-// webhook de noticias: en api/_instagram.js.
+// Constantes de posts e imágenes, helpers de Apify/Blob y la atribución por
+// autor (ORG_POR_USUARIO → orgDeUsuario/asegurarOrganizacion) compartidos con
+// el webhook de noticias: en api/_instagram.js.
 
 // El json_schema fuerza la forma de la respuesta; los VALORES se validan
 // aparte en validarExtraccion() — nunca se confía en la salida del modelo.
@@ -106,7 +80,14 @@ const ESQUEMA_EXTRACCION = {
 
 const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Navalcarnero (Madrid) — la concejalía de cultura y el Ayuntamiento — e identifica cuáles anuncian un EVENTO REAL al que un vecino puede asistir.
 
-Un post es un evento SOLO si menciona explícitamente las tres cosas: una fecha concreta, una hora y un lugar. Pueden aparecer en el caption o en el texto del cartel (campo "alt", la descripción automática de la imagen) — es habitual que el caption sea solo la sinopsis y los datos prácticos estén en el cartel. Descarta aperturas de plazos de inscripción, bases de concursos, noticias, agradecimientos, y actos fuera de Navalcarnero.
+Un post es un evento SOLO si menciona explícitamente las tres cosas: una fecha concreta, una hora y un lugar. Pueden aparecer en el caption o en el texto del cartel (campo "alt", la descripción automática de la imagen) — es habitual que el caption sea solo la sinopsis y los datos prácticos estén en el cartel.
+
+Además, un evento de agenda es un ACTO al que el vecino asiste en un momento concreto como público o participante: una función, un concierto, una proyección, una fiesta, un mercado, una carrera popular, un encierro. Tener fecha, hora y lugar NO basta. Descarta aunque los tengan:
+- Aperturas de plazos de inscripción y bases de concursos (cursos de natación, talleres, campamentos).
+- Campañas y servicios: donaciones de sangre, sorteos comerciales, custodia de llaves, objetos perdidos.
+- Horarios de temporada o de instalaciones (piscina municipal, biblioteca, polideportivo).
+- Noticias, agradecimientos, balances y comunicados.
+- Actos fuera de Navalcarnero.
 
 Para cada evento devuelve:
 - shortCode: el del post, copiado tal cual.
@@ -120,20 +101,38 @@ Para cada evento devuelve:
 
 Devuelve solo los posts que son eventos; si ninguno lo es, devuelve la lista vacía.`
 
+// En lotes por el mismo motivo que el triaje de noticias: la respuesta de un
+// run entero (50 posts) puede superar max_tokens y llegar truncada — el
+// JSON.parse del texto cortado tumbaba el run completo.
+const LOTE_TRIAJE = 10
+
 async function extraerEventos(posts) {
   const client = new Anthropic()
-  const respuesta = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4096,
-    system: INSTRUCCIONES,
-    output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
-    messages: [{ role: 'user', content: JSON.stringify(posts) }],
-  })
-  if (respuesta.stop_reason === 'refusal') {
-    throw new Error('El modelo rechazó la petición de extracción.')
+  const eventos = []
+  const errores = []
+  for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
+    const lote = posts.slice(i, i + LOTE_TRIAJE)
+    try {
+      const respuesta = await client.messages.create({
+        model: MODEL,
+        max_tokens: 8192,
+        system: INSTRUCCIONES,
+        output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
+        messages: [{ role: 'user', content: JSON.stringify(lote) }],
+      })
+      if (respuesta.stop_reason === 'refusal') {
+        throw new Error('el modelo rechazó la petición de extracción')
+      }
+      if (respuesta.stop_reason === 'max_tokens') {
+        throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
+      }
+      const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
+      eventos.push(...(JSON.parse(texto).eventos || []))
+    } catch (err) {
+      errores.push(`Extracción lote ${Math.floor(i / LOTE_TRIAJE) + 1}: ${err.message}`)
+    }
   }
-  const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
-  return JSON.parse(texto).eventos || []
+  return { eventos, errores }
 }
 
 /** Valida los valores extraídos contra los posts realmente enviados. */
@@ -188,18 +187,6 @@ async function asegurarColumnaOrigen(sql) {
   await sql`ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS subcategoria text`
 }
 
-/** Auto-provisiona (idempotente) la organización de un autor; devuelve su id. */
-async function asegurarOrganizacion(sql, org) {
-  const filas = await sql`
-    INSERT INTO organizaciones (nombre, slug, descripcion, categoria_defecto, lugar_defecto, activa)
-    VALUES (${org.nombre}, ${org.slug}, ${org.descripcion},
-            ${org.categoriaDefecto}, ${org.lugarDefecto}, true)
-    ON CONFLICT (slug) DO UPDATE SET nombre = EXCLUDED.nombre
-    RETURNING id
-  `
-  return filas[0].id
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido. Usa POST.' })
@@ -232,6 +219,7 @@ export default async function handler(req, res) {
     eventos: 0,
     creados: 0,
     actualizados: 0,
+    duplicadosOmitidos: 0,
     descartadosPorValidacion: 0,
     imagenesSubidas: 0,
     errores: [],
@@ -249,9 +237,10 @@ export default async function handler(req, res) {
     }
 
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
-    const extraidos = await extraerEventos(
+    const { eventos: extraidos, errores: erroresTriaje } = await extraerEventos(
       posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
     )
+    resumen.errores.push(...erroresTriaje)
     const { validos, descartados } = validarExtraccion(extraidos, postsPorShortCode)
     resumen.eventos = validos.length
     resumen.descartadosPorValidacion = descartados.length
@@ -261,6 +250,23 @@ export default async function handler(req, res) {
 
     const sql = obtenerSql()
     await asegurarColumnaOrigen(sql)
+
+    // Dedup servidor Neon↔Neon: el mismo acto anunciado en dos posts (o por
+    // las dos cuentas) no debe crear dos filas — cada fila extra entra en el
+    // digest push y ensucia el panel. Se cargan los eventos ya existentes en
+    // las fechas candidatas y, si un candidato NUEVO (su origen_externo_id no
+    // existe aún) equivale a uno de ellos (misma fecha + título equivalente,
+    // mismos criterios que el dedup de la agenda), se omite. El upsert del
+    // propio post (re-run del webhook) no se ve afectado. Los duplicados con
+    // los eventos estáticos se siguen fusionando en cliente a propósito: ahí
+    // la fila de Neon aporta la foto del cartel.
+    const fechas = [...new Set(validos.map((v) => v.fecha))]
+    const existentes = fechas.length
+      ? await sql`
+          SELECT origen_externo_id, titulo, to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha
+          FROM eventos_usuario
+          WHERE fecha_inicio = ANY(${fechas}::date[])`
+      : []
 
     // Cache por ejecución: una organización se asegura una sola vez aunque
     // firme varios eventos.
@@ -273,6 +279,22 @@ export default async function handler(req, res) {
 
     for (const ev of validos) {
       try {
+        const origenId = `ig-${ev.shortCode}`
+        const yaPropio = existentes.some((e) => e.origen_externo_id === origenId)
+        if (!yaPropio) {
+          const clave = claveTitulo(ev.titulo)
+          const gemelo = existentes.find(
+            (e) =>
+              e.fecha === ev.fecha &&
+              e.origen_externo_id !== origenId &&
+              titulosEquivalentes(claveTitulo(e.titulo), clave)
+          )
+          if (gemelo) {
+            resumen.duplicadosOmitidos++
+            continue
+          }
+        }
+
         const organizacionId = await organizacionDe(ev.usuario)
         const imagenUrl = await subirImagen('instagram', ev.shortCode, ev.imagenOrigen)
         if (imagenUrl) resumen.imagenesSubidas++
@@ -305,6 +327,11 @@ export default async function handler(req, res) {
         `
         if (filas[0]?.insertado) resumen.creados++
         else resumen.actualizados++
+        // Visible para el dedup del resto del run: dos posts del mismo lote
+        // que anuncian el mismo acto tampoco deben crear dos filas.
+        if (!yaPropio) {
+          existentes.push({ origen_externo_id: origenId, titulo: ev.titulo, fecha: ev.fecha })
+        }
       } catch (err) {
         resumen.errores.push(`Evento ${ev.shortCode}: ${err.message}`)
       }

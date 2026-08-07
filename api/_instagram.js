@@ -109,6 +109,53 @@ export async function obtenerPosts(body) {
   return items
 }
 
+// ——— Atribución por autor (compartida por los dos webhooks) ———
+// ownerUsername del post → organización de la agenda auto-provisionada (el
+// "Organiza" de la ficha y la `fuente` del GET público salen de su nombre).
+// Los posts en colaboración aparecen con el ownerUsername del coautor:
+// mientras no tengan entrada propia, caen al fallback de cultura.
+export const ORG_CULTURA = {
+  nombre: 'Cultura Navalcarnero',
+  slug: 'cultura-navalcarnero',
+  descripcion:
+    'Eventos publicados en Instagram por cultura_navalcarnero y sincronizados automáticamente.',
+  categoriaDefecto: 'cultura',
+  lugarDefecto: 'Navalcarnero',
+}
+
+// El slug 'ayuntamiento' coincide con ORG_POR_FUENTE/ORGANIZADORES_FIJOS de
+// src/lib/temasPush.js: los eventos quedan bajo el tema org:ayuntamiento ya
+// existente en el selector de avisos.
+export const ORG_AYUNTAMIENTO = {
+  nombre: 'Ayuntamiento de Navalcarnero',
+  slug: 'ayuntamiento',
+  descripcion:
+    'Eventos publicados en Instagram por ayuntamientonavalcarnero y sincronizados automáticamente.',
+  categoriaDefecto: 'cultura',
+  lugarDefecto: 'Navalcarnero',
+}
+
+const ORG_POR_USUARIO = {
+  cultura_navalcarnero: ORG_CULTURA,
+  ayuntamientonavalcarnero: ORG_AYUNTAMIENTO,
+}
+
+export function orgDeUsuario(usuario) {
+  return ORG_POR_USUARIO[String(usuario || '').toLowerCase()] || ORG_CULTURA
+}
+
+/** Auto-provisiona (idempotente) la organización de un autor; devuelve su id. */
+export async function asegurarOrganizacion(sql, org) {
+  const filas = await sql`
+    INSERT INTO organizaciones (nombre, slug, descripcion, categoria_defecto, lugar_defecto, activa)
+    VALUES (${org.nombre}, ${org.slug}, ${org.descripcion},
+            ${org.categoriaDefecto}, ${org.lugarDefecto}, true)
+    ON CONFLICT (slug) DO UPDATE SET nombre = EXCLUDED.nombre
+    RETURNING id
+  `
+  return filas[0].id
+}
+
 export const hayCredencialesBlob = () =>
   Boolean(
     process.env.BLOB_READ_WRITE_TOKEN ||

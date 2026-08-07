@@ -1,12 +1,59 @@
-// Parsing inteligente de HTML para extraer actividades con imágenes.
-// Estrategia: buscar imágenes en galerías + sus alt texts (que frecuentemente
-// contienen títulos de actividades), luego enriquecer con Claude.
+// Extracción de programaciones enlazadas desde posts de Instagram:
+// - HTML: buscar imágenes de galería + sus alt texts (los títulos de las
+//   actividades suelen vivir ahí), luego estandarizar con Claude.
+// - PDF (agendas municipales): el documento entero viaja a Claude, que
+//   devuelve DOS listas — eventos de agenda (a los que se asiste) y
+//   actividades (a las que uno se apunta o en las que participa).
+// Todo lo extraído de un documento nace `borrador` en quien lo inserta
+// (sync-instagram-noticias.js): un error de extracción aquí no son uno sino
+// decenas de items, así que pasan por validación humana en /admin.
 
 import Anthropic from '@anthropic-ai/sdk'
 import { JSDOM } from 'jsdom'
-import { subirImagen } from './_instagram.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
+
+// Misma taxonomía de eventos que api/sync-instagram.js / la agenda.
+const CATEGORIAS_EVENTO = ['cultura', 'deporte', 'fiestas', 'gastronomia', 'infantil', 'mercado']
+
+// Misma whitelist que el CHECK de la tabla actividades y que
+// CATEGORIAS_ACTIVIDAD en api/sync-instagram-noticias.js.
+const CATEGORIAS_ACTIVIDAD = [
+  'deporte',
+  'talleres',
+  'infantil',
+  'mayores',
+  'educacion',
+  'ayudas',
+  'empleo',
+  'general',
+]
+
+// Mismo patrón que los webhooks: el json_schema fuerza la forma y los valores
+// se re-validan aparte. '' es el sentinel de "no aplica" (sin nullables).
+const ESQUEMA_ACTIVIDADES = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['actividades'],
+  properties: {
+    actividades: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['titulo', 'categoria', 'fechaLimite', 'horario', 'lugar'],
+        properties: {
+          // '' = candidato descartado (no es una actividad real).
+          titulo: { type: 'string' },
+          categoria: { enum: [...CATEGORIAS_ACTIVIDAD, ''] },
+          fechaLimite: { type: 'string' },
+          horario: { type: 'string' },
+          lugar: { type: 'string' },
+        },
+      },
+    },
+  },
+}
 
 /**
  * Parsea el HTML buscando imágenes de galerías con títulos útiles.
@@ -78,51 +125,53 @@ async function validarConClaude(candidatos) {
   if (candidatos.length === 0) return []
 
   const client = new Anthropic()
+  const hoy = new Date().toISOString().slice(0, 10)
 
-  const prompt = `Eres un experto en extracción de datos de actividades deportivas y culturales.
+  const instrucciones = `Analiza títulos extraídos de una página municipal de Navalcarnero (alt text de imágenes de una galería) y decide cuáles describen una ACTIVIDAD para el vecino: algo a lo que puede APUNTARSE o en lo que puede PARTICIPAR — cursos, talleres, escuelas deportivas, campamentos, ayudas, becas, y también pruebas deportivas participativas (torneos, carreras, marchas, memoriales, exhibiciones abiertas), aunque la inscripción sea el mismo día de la prueba.
 
-Se te proporciona una lista de títulos/nombres de actividades (extraídos del alt text de imágenes).
-Para cada uno, retorna un objeto JSON estandarizado:
+NO son actividades (devuélvelas con titulo=""): elementos de navegación o decoración de la web, logos, y títulos que no describan ninguna actividad concreta.
 
-Campos:
-- titulo: string limpio, normalizado (sin números de orden como "39. " si está presente)
-- categoria: una de ['deporte', 'talleres', 'infantil', 'mayores', 'educacion', 'ayudas', 'empleo', 'general']
-- fechaLimite: string YYYY-MM-DD del plazo de inscripción extraído del titulo, o null
-  Ejemplo: si dice "2 Sept" y hoy es 2026-08-05, sería "2026-09-02"
-- horario: string como "10:00h" u "hora TBD", o null
-- lugar: string con ubicación/instalación, o null
-
-Si el titulo no es una actividad clara, devuelve titulo=null para descartarlo.
-
-IMPORTANTE: hoy es 2026-08-05. Resuelve fechas relativas.
-
-Candidatos:
-${JSON.stringify(candidatos.map((c) => ({ titulo: c.titulo })), null, 2)}
-
-Retorna SOLO un array JSON válido, sin comentarios ni markdown.`
+Para cada candidato devuelve, en el mismo orden en que se recibe:
+- titulo: limpio y legible (sin números de orden como "39. ", sin mayúsculas gritadas), o "" para descartarlo.
+- categoria: la más apropiada de la lista permitida ("deporte" para las pruebas deportivas); "" si el título se descarta.
+- fechaLimite: YYYY-MM-DD del plazo de inscripción o, en pruebas de un día, la fecha de la prueba (último día para apuntarse). Hoy es ${hoy}: resuelve fechas relativas con ese ancla. "" si no hay fecha.
+- horario: el horario si el título lo indica (p. ej. "10:00h"); "" si no.
+- lugar: la instalación o ubicación si el título la indica; "" si no.`
 
   try {
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 8192,
+      system: instrucciones,
+      output_config: { format: { type: 'json_schema', schema: ESQUEMA_ACTIVIDADES } },
       messages: [
         {
           role: 'user',
-          content: prompt,
+          content: JSON.stringify(candidatos.map((c) => ({ titulo: c.titulo }))),
         },
       ],
     })
-
-    const texto = response.content.find((b) => b.type === 'text')?.text || '[]'
-    const match = texto.match(/\[[\s\S]*\]/)
-    if (!match) {
-      console.warn('[validarConClaude] No valid JSON found in response')
+    if (response.stop_reason === 'refusal') {
+      console.warn('[validarConClaude] El modelo rechazó la petición')
+      return []
+    }
+    if (response.stop_reason === 'max_tokens') {
+      console.warn('[validarConClaude] Respuesta truncada por max_tokens')
       return []
     }
 
-    const validadas = JSON.parse(match[0])
-    // Filtrar nulls (descartados por Claude)
-    return validadas.filter((a) => a.titulo)
+    const texto = response.content.find((b) => b.type === 'text')?.text || '{"actividades":[]}'
+    const crudas = JSON.parse(texto).actividades || []
+    // Re-validación de valores (nunca se confía en la salida del modelo).
+    return crudas
+      .filter((a) => typeof a.titulo === 'string' && a.titulo.trim())
+      .map((a) => ({
+        titulo: a.titulo.trim().slice(0, 200),
+        categoria: CATEGORIAS_ACTIVIDAD.includes(a.categoria) ? a.categoria : 'general',
+        fechaLimite: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaLimite) ? a.fechaLimite : null,
+        horario: String(a.horario || '').trim().slice(0, 120) || null,
+        lugar: String(a.lugar || '').trim().slice(0, 120) || null,
+      }))
   } catch (err) {
     console.error('[validarConClaude] Error:', err.message)
     return []
@@ -131,9 +180,10 @@ Retorna SOLO un array JSON válido, sin comentarios ni markdown.`
 
 /**
  * Orquesta el parsing, validación y enriquecimiento de actividades.
- * Sube imágenes a Blob y maneja fallbacks.
+ * `imagenFallback` debe ser una URL durable (el blob ya subido de la foto del
+ * post, no la URL cruda del CDN de Instagram, que caduca en días).
  */
-export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstagram, shortCode) {
+export async function extraerActividadesDeHTML(html, urlFuente, imagenFallback, shortCode) {
   // Paso 1: parsing inteligente
   const candidatos = parseHtmlInteligente(html)
   if (candidatos.length === 0) {
@@ -187,10 +237,159 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenPostInstag
       // Las URLs municipales son de confianza y no expiran
       act.imagen_url = urlFinal
     } else {
-      // Sin imagen en el HTML: usar imagen del post
-      act.imagen_url = imagenPostInstagram
+      // Sin imagen en el HTML: el blob de la foto del post (o null).
+      act.imagen_url = imagenFallback || null
     }
   }
 
   return validadas
+}
+
+// ——— PDF (agendas y programaciones municipales) ———
+
+// Mismo patrón que el resto de extracciones: forma por json_schema, valores
+// re-validados aparte. '' = "no aplica".
+const ESQUEMA_DOCUMENTO = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['eventos', 'actividades'],
+  properties: {
+    eventos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['titulo', 'fecha', 'hora', 'lugar', 'categoria', 'descripcion'],
+        properties: {
+          titulo: { type: 'string' },
+          fecha: { type: 'string' },
+          hora: { type: 'string' },
+          lugar: { type: 'string' },
+          categoria: { enum: CATEGORIAS_EVENTO },
+          descripcion: { type: 'string' },
+        },
+      },
+    },
+    actividades: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['titulo', 'categoria', 'fechaLimite', 'horario', 'lugar'],
+        properties: {
+          titulo: { type: 'string' },
+          categoria: { enum: CATEGORIAS_ACTIVIDAD },
+          fechaLimite: { type: 'string' },
+          horario: { type: 'string' },
+          lugar: { type: 'string' },
+        },
+      },
+    },
+  },
+}
+
+/**
+ * Extrae la programación completa de un PDF municipal (agenda cultural,
+ * programación deportiva…): eventos de agenda Y actividades participativas.
+ * Devuelve `{eventos: [], actividades: []}` ya re-validados; ante cualquier
+ * fallo devuelve listas vacías (el post sigue su curso sin programación).
+ */
+async function extraerDePdf(buffer, shortCode) {
+  const client = new Anthropic()
+  const hoy = new Date().toISOString().slice(0, 10)
+
+  const instrucciones = `El documento es una programación o agenda municipal de Navalcarnero (Madrid). Extrae de él dos listas:
+
+1. "eventos": actos de agenda a los que un vecino ASISTE en un momento concreto como público (una función, un concierto, una proyección, una fiesta, un mercado). Cada uno necesita fecha concreta (YYYY-MM-DD; si dura varios días, el día de inicio), hora (HH:MM en 24 h), lugar (el nombre del sitio, sin ", Navalcarnero"), la categoria más apropiada de la lista permitida, y una descripcion breve (máximo 300 caracteres). Descarta los actos sin fecha u hora concretas y los anteriores a hoy (${hoy}).
+
+2. "actividades": cosas a las que el vecino se APUNTA o en las que PARTICIPA — cursos, talleres, escuelas, campamentos, y pruebas deportivas participativas (torneos, carreras, marchas), aunque la inscripción sea el día de la prueba. fechaLimite = fin del plazo de inscripción (o la fecha de la prueba si es de un día), "" si no consta; horario y lugar si constan, "" si no.
+
+Un mismo elemento va en UNA de las dos listas, no en ambas. Si el año no aparece explícito, dedúcelo del contexto del documento (hoy es ${hoy}). Títulos cortos y legibles, sin mayúsculas gritadas.`
+
+  try {
+    const respuesta = await client.messages.create({
+      model: MODEL,
+      max_tokens: 16384,
+      system: instrucciones,
+      output_config: { format: { type: 'json_schema', schema: ESQUEMA_DOCUMENTO } },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: buffer.toString('base64'),
+              },
+            },
+            { type: 'text', text: 'Extrae la programación de este documento.' },
+          ],
+        },
+      ],
+    })
+    if (respuesta.stop_reason === 'refusal') {
+      console.warn(`[extraerDePdf] ${shortCode}: el modelo rechazó la petición`)
+      return { eventos: [], actividades: [] }
+    }
+
+    const texto =
+      respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[],"actividades":[]}'
+    const crudo = JSON.parse(texto)
+
+    const eventos = (crudo.eventos || [])
+      .filter(
+        (e) =>
+          typeof e.titulo === 'string' &&
+          e.titulo.trim() &&
+          /^\d{4}-\d{2}-\d{2}$/.test(e.fecha) &&
+          e.fecha >= hoy &&
+          /^([01]\d|2[0-3]):[0-5]\d$/.test(e.hora) &&
+          typeof e.lugar === 'string' &&
+          e.lugar.trim() &&
+          CATEGORIAS_EVENTO.includes(e.categoria)
+      )
+      .map((e) => ({
+        titulo: e.titulo.trim().slice(0, 200),
+        fecha: e.fecha,
+        hora: e.hora,
+        lugar: e.lugar.trim().slice(0, 120),
+        categoria: e.categoria,
+        descripcion: String(e.descripcion || '').trim().slice(0, 1000),
+      }))
+
+    const actividades = (crudo.actividades || [])
+      .filter((a) => typeof a.titulo === 'string' && a.titulo.trim())
+      .map((a) => ({
+        titulo: a.titulo.trim().slice(0, 200),
+        categoria: CATEGORIAS_ACTIVIDAD.includes(a.categoria) ? a.categoria : 'general',
+        fechaLimite: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaLimite) ? a.fechaLimite : null,
+        horario: String(a.horario || '').trim().slice(0, 120) || null,
+        lugar: String(a.lugar || '').trim().slice(0, 120) || null,
+        imagen_url: null, // un PDF no trae imagen por item; el caller pone el fallback
+      }))
+
+    return { eventos, actividades }
+  } catch (err) {
+    console.error(`[extraerDePdf] ${shortCode}:`, err.message)
+    return { eventos: [], actividades: [] }
+  }
+}
+
+/**
+ * Punto de entrada único para una programación enlazada: HTML (galerías,
+ * solo actividades) o PDF (agenda completa, eventos + actividades).
+ * `doc` viene de descargarDocumento() en el webhook: {tipo, html|buffer}.
+ */
+export async function extraerDeDocumento(doc, urlFuente, imagenFallback, shortCode) {
+  if (doc.tipo === 'pdf') {
+    const resultado = await extraerDePdf(doc.buffer, shortCode)
+    for (const act of resultado.actividades) {
+      if (!act.imagen_url) act.imagen_url = imagenFallback || null
+    }
+    return resultado
+  }
+  const actividades = await extraerActividadesDeHTML(doc.html, urlFuente, imagenFallback, shortCode)
+  return { eventos: [], actividades }
 }

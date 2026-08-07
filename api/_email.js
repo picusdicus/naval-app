@@ -1,5 +1,60 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = 'danielmolino@gmail.com'
+const APP_URL = process.env.APP_URL || 'https://naval-app-one.vercel.app'
+
+/**
+ * Aviso al superadmin de que un run de sincronización dejó eventos/actividades
+ * en borrador pendientes de validar en /admin → Pendientes. Fail-soft, como
+ * el email de reclamaciones: sin RESEND_API_KEY o con error, solo se loguea.
+ */
+export async function enviarEmailPendientes({ eventos = [], actividades = [] }) {
+  if (!RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY no configurado, email de pendientes no enviado')
+    return { ok: true, skipped: true }
+  }
+
+  const total = eventos.length + actividades.length
+  const lista = (items) =>
+    items
+      .map((i) => `<li>${i.titulo}${i.fecha ? ` <span style="color:#777">(${i.fecha})</span>` : ''}</li>`)
+      .join('')
+
+  try {
+    const contenido = `
+      <h2>Hay ${total} ${total === 1 ? 'elemento pendiente' : 'elementos pendientes'} de validar</h2>
+      <p>La sincronización de Instagram ha extraído contenido de una programación enlazada y lo ha dejado en borrador:</p>
+      ${eventos.length ? `<h3>Eventos (${eventos.length})</h3><ul>${lista(eventos)}</ul>` : ''}
+      ${actividades.length ? `<h3>Actividades (${actividades.length})</h3><ul>${lista(actividades)}</ul>` : ''}
+      <p><a href="${APP_URL}/admin" style="background: #b0472f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Revisar en el panel</a></p>
+      <p style="color:#777">Nada de esto es visible en la app hasta que lo publiques; lo que descartes queda archivado y no volverá a aparecer aunque se repita la sincronización.</p>
+    `
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'En Navalcarnero <noreply@ennavalcarnero.es>',
+        to: ADMIN_EMAIL,
+        subject: `${total} ${total === 1 ? 'pendiente' : 'pendientes'} de validar en la agenda`,
+        html: contenido,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('Error al enviar email de pendientes con Resend:', error)
+      return { ok: false, error }
+    }
+    const resultado = await response.json()
+    return { ok: true, id: resultado.id }
+  } catch (error) {
+    console.error('Error al enviar email de pendientes:', error.message)
+    return { ok: false, error: error.message }
+  }
+}
 
 export async function enviarEmailReclamacion({ comercioId, nombre, email, telefono, mensaje }) {
   if (!RESEND_API_KEY) {

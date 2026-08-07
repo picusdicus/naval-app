@@ -260,6 +260,13 @@ CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado ON noticias_instagram (publ
 -- NULL en filas antiguas o posts de imagen única.
 ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS imagenes_url jsonb;
 
+-- Columnas legacy del diseño de una sola tabla (cuando las actividades vivían
+-- aquí): el webhook ya no las escribe, pero GET /api/noticias-instagram las
+-- selecciona y en producción existen — una BD nueva las necesita para que ese
+-- GET no falle en silencio ({noticias: []} con 200).
+ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS categoria text;
+ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS fecha_limite date;
+
 -- Eventos ocultados a mano por el superadmin desde el panel (tab Eventos).
 -- referencia_id = id público del evento, en el mismo formato que usan los
 -- destacados y la bandeja de avisos (ev-…, aytocult-…, bd-<uuid>, ig-…). Cubre
@@ -347,11 +354,18 @@ CREATE TABLE IF NOT EXISTS actividades (
   lugar             text,
   imagen_url        text,
   url_fuente        text,
+  estado            text NOT NULL DEFAULT 'publicado' CHECK (estado IN ('borrador', 'publicado', 'archivado')),
   publicado_en      timestamptz NOT NULL DEFAULT now(),
   creado_en         timestamptz NOT NULL DEFAULT now(),
   actualizado_en    timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_actividades_origen ON actividades (origen_externo_id);
+
+-- Validación humana de lo extraído de documentos enlazados (agendas PDF,
+-- galerías): nace 'borrador', el superadmin publica o archiva en /admin →
+-- Pendientes. Un 'archivado' no resucita: el upsert del webhook no toca
+-- `estado`. Las filas del triaje directo (y las preexistentes) son 'publicado'.
+ALTER TABLE actividades ADD COLUMN IF NOT EXISTS estado text NOT NULL DEFAULT 'publicado';
 
 CREATE INDEX IF NOT EXISTS idx_actividades_fecha_limite ON actividades (fecha_limite DESC);
