@@ -13,7 +13,7 @@ import servicios from '../../src/data/servicios-locales.json' assert { type: 'js
 export const config = { runtime: 'edge' }
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const RESEND_FROM = 'noreply@ennavalcarnero.es'
+const RESEND_FROM = 'En Navalcarnero <noreply@ennavalcarnero.es>'
 const APP_URL = process.env.APP_URL || 'http://localhost:5173'
 
 async function enviarCorreo(email, nombre, codigo, comercioNombre) {
