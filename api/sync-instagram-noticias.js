@@ -54,6 +54,10 @@ const CATEGORIAS_ACTIVIDAD = [
 // publicarse: una incidencia que dura más se re-anuncia con otro post.
 const HORAS_EXPIRACION_DEFECTO = 24
 
+// Tope de fotos por post: los carruseles pueden llegar a 15, pero 12 sobra de
+// margen y acota el tiempo de función (una llamada de red por foto).
+const MAX_IMAGENES_POST = 12
+
 // El json_schema fuerza la forma de la respuesta; los VALORES se validan
 // aparte en validarExtraccion() — nunca se confía en la salida del modelo.
 // Sin nullables: '' es el sentinel de "no aplica" (tipoAlerta/expiraEn).
@@ -120,7 +124,7 @@ Para cada item (noticia o actividad) devuelve además:
 - shortCode: el del post, copiado tal cual.
 - titulo: corto y legible en español (sin mayúsculas gritadas).
 - resumen: una o dos frases, máximo 200 caracteres.
-- cuerpo: el caption limpio de hashtags y menciones, máximo 1500 caracteres.
+- cuerpo: el caption limpio de hashtags y menciones, máximo 1500 caracteres. IMPORTANTE: conserva tal cual cualquier URL que aparezca en el caption (enlaces a navalcarnero.es, formularios, inscripciones…) — no la elimines ni la resumas, aunque esté al final o parezca una llamada a la acción.
 
 Devuelve solo los posts que son noticias, alertas o actividades; si ninguno lo es, devuelve la lista vacía.`
 
@@ -230,6 +234,7 @@ function validarExtraccion(noticias, postsPorShortCode) {
       publicadoEn,
       url: post.url,
       imagenOrigen: post.imagen,
+      imagenesOrigen: post.imagenes,
       usuario: post.usuario,
     })
   }
@@ -259,6 +264,8 @@ async function asegurarTablas(sql) {
   )`
   await sql`CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado
             ON noticias_instagram (publicado_en DESC)`
+  // Carrusel completo del post (ver db/schema.sql); imagen_url no cambia.
+  await sql`ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS imagenes_url jsonb`
 
   // actividades: actividades con plazo de inscripción.
   await sql`CREATE TABLE IF NOT EXISTS actividades (
@@ -348,16 +355,29 @@ export default async function handler(req, res) {
     // Procesar noticias (tipo === 'noticia').
     for (const n of validas.filter(v => v.tipo === 'noticia')) {
       try {
-        const imagenUrl = await subirImagen('instagram-noticias', n.shortCode, n.imagenOrigen)
-        if (imagenUrl) resumen.imagenesSubidas++
+        // Todas las fotos del carrusel, truncadas a MAX_IMAGENES_POST. La
+        // primera (i=0) va sin sufijo para conservar el nombre de blob
+        // histórico; las subidas de un mismo post se paralelizan (no hay
+        // dependencia entre ellas) manteniendo el orden del array — pero
+        // nunca se paraleliza entre posts distintos.
+        const origenes = (n.imagenesOrigen || []).slice(0, MAX_IMAGENES_POST)
+        const subidas = await Promise.all(
+          origenes.map((url, i) =>
+            subirImagen('instagram-noticias', n.shortCode, url, i === 0 ? '' : String(i))
+          )
+        )
+        const imagenes = subidas.filter(Boolean)
+        resumen.imagenesSubidas += imagenes.length
+        const imagenUrl = imagenes[0] || null
+        const imagenesJson = imagenes.length > 0 ? JSON.stringify(imagenes) : null
 
         const filas = await sql`
           INSERT INTO noticias_instagram
-            (origen_externo_id, titulo, resumen, cuerpo, imagen_url, url,
+            (origen_externo_id, titulo, resumen, cuerpo, imagen_url, imagenes_url, url,
              usuario, urgente, tipo_alerta, publicado_en, expira_en)
           VALUES
             (${`ig-${n.shortCode}`}, ${n.titulo}, ${n.resumen}, ${n.cuerpo},
-             ${imagenUrl}, ${n.url}, ${n.usuario}, ${n.urgente}, ${n.tipoAlerta},
+             ${imagenUrl}, ${imagenesJson}::jsonb, ${n.url}, ${n.usuario}, ${n.urgente}, ${n.tipoAlerta},
              ${n.publicadoEn}, ${n.expiraEn})
           ON CONFLICT (origen_externo_id)
           DO UPDATE SET
@@ -365,6 +385,7 @@ export default async function handler(req, res) {
             resumen = EXCLUDED.resumen,
             cuerpo = EXCLUDED.cuerpo,
             imagen_url = COALESCE(EXCLUDED.imagen_url, noticias_instagram.imagen_url),
+            imagenes_url = COALESCE(EXCLUDED.imagenes_url, noticias_instagram.imagenes_url),
             url = EXCLUDED.url,
             usuario = EXCLUDED.usuario,
             urgente = EXCLUDED.urgente,

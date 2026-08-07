@@ -251,6 +251,13 @@ CREATE TABLE IF NOT EXISTS noticias_instagram (
 
 CREATE INDEX IF NOT EXISTS idx_noticias_ig_publicado ON noticias_instagram (publicado_en DESC);
 
+-- Carrusel completo del post (posts "Sidecar" traen varias fotos, cada una
+-- con su propia información — p. ej. una foto por instalación deportiva).
+-- imagen_url sigue siendo la primera foto, sin cambios: imagenes_url guarda
+-- el array completo en el orden del carrusel (imagenes_url[0] === imagen_url).
+-- NULL en filas antiguas o posts de imagen única.
+ALTER TABLE noticias_instagram ADD COLUMN IF NOT EXISTS imagenes_url jsonb;
+
 -- Eventos ocultados a mano por el superadmin desde el panel (tab Eventos).
 -- referencia_id = id público del evento, en el mismo formato que usan los
 -- destacados y la bandeja de avisos (ev-…, aytocult-…, bd-<uuid>, ig-…). Cubre
