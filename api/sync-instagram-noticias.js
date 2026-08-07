@@ -107,13 +107,11 @@ const ESQUEMA_EXTRACCION = {
 const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Navalcarnero (Madrid) — el Ayuntamiento y la concejalía de cultura — e identifica cuáles son NOTICIAS, ALERTAS o ACTIVIDADES de interés práctico para un vecino, y clasifica cada uno en "tipo":
 
 - tipo "actividad": el contenido principal es algo a lo que el vecino puede APUNTARSE o SOLICITAR CON UN PLAZO EXPLÍCITO — inscripciones a talleres, cursos, campamentos, escuelas deportivas, ayudas, becas, subvenciones, bolsas de empleo público. REQUISITO: debe indicar claramente "hasta el X", "plazo abierto del X al Y", "inscripciones abiertas hasta", "solicitudes hasta". Si el post no menciona un plazo específico, es noticia, no actividad.
-- tipo "noticia": el resto de información municipal (obras, comunicados, gestión de emergencias, balances, eventos puntuales, servicios ofrecidos sin plazo). Puede ser además una alerta urgente (ver abajo).
+- tipo "noticia": el resto de información municipal con utilidad práctica para el vecino — obras, comunicados, gestión de emergencias, balances, y también los SERVICIOS MUNICIPALES (objetos perdidos, custodia de llaves, donaciones de sangre, asesorías) y las CAMPAÑAS MUNICIPALES con información práctica (p. ej. el sorteo del comercio local "Yo compro en Navalcarnero"): si el post da teléfonos, horarios, fechas, lugares o explica cómo participar, es noticia. Puede ser además una alerta urgente (ver abajo).
 
 Descarta:
 - Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a un acto puntual con fecha, hora y lugar — esos datos pueden estar en el caption o en el texto del cartel, campo "alt"): ya los cubre la agenda de la app. Un acto al que solo se ASISTE como público (una proyección de cine —incluido el cine de verano—, un concierto, una función) es SIEMPRE un evento de agenda, nunca una actividad, aunque sea recurrente o gratuito. Ojo: si el post anuncia el PLAZO DE INSCRIPCIÓN a una actividad continuada (un taller trimestral, la escuela de fútbol), NO es un evento de agenda: es tipo "actividad".
-- Felicitaciones, saludos institucionales, efemérides y posts sin información práctica.
-- Sorteos, campañas y contenido puramente promocional.
-- Servicios puntuales sin plazo de inscripción (donaciones de sangre puntuales, servicios de custodia, etc.)
+- Felicitaciones, saludos institucionales, efemérides y teasers o promoción SIN información práctica (sin fechas, teléfonos, lugares ni nada que el vecino pueda usar — "pronto llegan las fiestas" no es una noticia; el programa, cuando salga, sí).
 
 Para las actividades devuelve además:
 - categoria: la más apropiada de la lista permitida ("talleres" para cursos y talleres culturales o formativos, "ayudas" para subvenciones y becas, "general" si ninguna encaja). En noticias, "".
@@ -567,7 +565,7 @@ async function procesar(posts, resumen) {
           (post.carrusel?.length || 0) >= 2
         ) {
           hijasCarrusel = await extraerDeCarrusel(
-            post.carrusel.map((c, i) => ({ indice: i, alt: c.alt })),
+            post.carrusel.slice(0, MAX_IMAGENES_POST),
             item.publicadoEn
           )
           // La foto del cartel correspondiente, a Blob con sufijo por índice.
@@ -610,7 +608,9 @@ async function procesar(posts, resumen) {
               fechaLimite: h.fechaLimite || item.fechaLimite,
               horario: h.horario,
               lugar: h.lugar,
-              descripcion: null,
+              // La extracción por visión del carrusel trae los datos
+              // prácticos del cartel (edades, precio, cómo inscribirse).
+              descripcion: h.descripcion || null,
               imagenUrl: h.imagen_url || imagenPost,
               estado: 'borrador',
             }))

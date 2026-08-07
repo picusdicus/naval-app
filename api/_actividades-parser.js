@@ -10,6 +10,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { JSDOM } from 'jsdom'
+import { MAX_IMAGEN_BYTES, TIPOS_IMAGEN } from './_instagram.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -398,7 +399,7 @@ const ESQUEMA_CARRUSEL = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['indice', 'titulo', 'categoria', 'fechaLimite', 'horario', 'lugar'],
+        required: ['indice', 'titulo', 'categoria', 'fechaLimite', 'horario', 'lugar', 'descripcion'],
         properties: {
           indice: { type: 'integer' },
           titulo: { type: 'string' },
@@ -406,56 +407,92 @@ const ESQUEMA_CARRUSEL = {
           fechaLimite: { type: 'string' },
           horario: { type: 'string' },
           lugar: { type: 'string' },
+          descripcion: { type: 'string' },
         },
       },
     },
   },
 }
 
+/** Descarga un cartel y lo devuelve como bloque de imagen para la API, o null
+ * si falla (tipo raro, demasiado grande, red) — en ese caso queda el alt. */
+async function bloqueImagen(url) {
+  if (!url) return null
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    if (!res.ok) return null
+    const tipo = (res.headers.get('content-type') || '').split(';')[0].trim()
+    if (!TIPOS_IMAGEN[tipo]) return null
+    const contenido = Buffer.from(await res.arrayBuffer())
+    if (contenido.length === 0 || contenido.length > MAX_IMAGEN_BYTES) return null
+    return {
+      type: 'image',
+      source: { type: 'base64', media_type: tipo, data: contenido.toString('base64') },
+    }
+  } catch {
+    return null
+  }
+}
+
 /**
- * Extrae una actividad por cartel de un carrusel de Instagram. Cada candidato
- * es {indice, alt}: el alt es el OCR del cartel que genera Instagram, y en los
- * posts municipales de programación lleva todos los datos de la prueba
- * (nombre, fecha, plazo de inscripción, lugar). Devuelve la lista validada,
- * cada item con su `indice` original para emparejar la foto.
+ * Extrae una actividad por cartel de un carrusel de Instagram, LEYENDO LAS
+ * IMÁGENES (visión): cada cartel viaja como imagen adjunta y el alt (el OCR
+ * automático de Instagram, a menudo incompleto o vacío) queda como apoyo y
+ * como único dato si la descarga de la foto falla. `carrusel` viene de
+ * carruselDe(): [{alt, imagen}]. Devuelve la lista validada, cada item con su
+ * `indice` original para emparejar la foto.
  */
-export async function extraerDeCarrusel(candidatos, publicado) {
-  if (!candidatos.length) return []
+export async function extraerDeCarrusel(carrusel, publicado) {
+  if (!carrusel.length) return []
   const client = new Anthropic()
   const hoy = new Date().toISOString().slice(0, 10)
   const ancla = /^\d{4}-\d{2}-\d{2}/.test(publicado || '') ? publicado.slice(0, 10) : hoy
 
-  const instrucciones = `Cada candidato es el texto OCR ("alt") del cartel de una foto de un post municipal de Instagram de Navalcarnero. Decide cuáles anuncian una ACTIVIDAD para el vecino: algo a lo que puede APUNTARSE o en lo que puede PARTICIPAR — torneos, carreras, marchas, cursos, talleres, campamentos, pruebas deportivas (aunque la inscripción sea el mismo día de la prueba).
+  const instrucciones = `Vas a ver los carteles de un post municipal de Instagram de Navalcarnero, cada uno precedido de una línea "Cartel N" (y, si existe, el texto alternativo generado por Instagram como apoyo — la imagen manda si difieren). Decide cuáles anuncian una ACTIVIDAD para el vecino: algo a lo que puede APUNTARSE o en lo que puede PARTICIPAR — torneos, carreras, marchas, cursos, talleres, campamentos, pruebas deportivas (aunque la inscripción sea el mismo día de la prueba).
 
 Devuelve titulo="" para descartar un cartel que no sea una actividad: portadas genéricas ("PROGRAMACIÓN DEPORTIVA EN AGOSTO"), actos a los que solo se asiste como público (conciertos, proyecciones), avisos y carteles sin actividad concreta.
 
 Para cada cartel devuelve:
-- indice: el del candidato, copiado tal cual.
+- indice: el N de su línea "Cartel N", copiado tal cual.
 - titulo: el nombre de la actividad, corto y legible (sin mayúsculas gritadas).
 - categoria: la más apropiada de la lista permitida ("deporte" para pruebas deportivas); "" si se descarta.
-- fechaLimite: YYYY-MM-DD del fin del plazo de inscripción si el cartel lo indica; si no lo indica pero la prueba es de un día, la fecha de la prueba. El post se publicó el ${ancla} (hoy es ${hoy}): resuelve fechas sin año con ese ancla. "" si no hay fecha. Usa SOLO fechas que aparezcan en el texto — no inventes.
+- fechaLimite: YYYY-MM-DD del fin del plazo de inscripción si el cartel lo indica; si no lo indica pero la prueba es de un día, la fecha de la prueba. El post se publicó el ${ancla} (hoy es ${hoy}): resuelve fechas sin año con ese ancla. "" si no hay fecha. Usa SOLO fechas que aparezcan en el cartel — no inventes.
 - horario: el horario del cartel (p. ej. "a partir de las 10.00h"); "" si no consta.
-- lugar: la instalación o ubicación del cartel; "" si no consta.`
+- lugar: la instalación o ubicación del cartel; "" si no consta.
+- descripcion: los datos prácticos restantes del cartel en una o dos frases legibles (categorías/edades, condiciones, precio, cómo inscribirse, teléfono de información), máximo 500 caracteres; "" si no hay más datos.`
 
   try {
+    // Un bloque de texto "Cartel N" (+ alt si existe) seguido de su imagen;
+    // si la imagen no se pudo descargar, el alt solo. Descargas en paralelo.
+    const imagenes = await Promise.all(carrusel.map((c) => bloqueImagen(c.imagen)))
+    const contenido = []
+    carrusel.forEach((c, i) => {
+      contenido.push({
+        type: 'text',
+        text: `Cartel ${i}${c.alt ? ` — texto alternativo: ${c.alt}` : ''}`,
+      })
+      if (imagenes[i]) contenido.push(imagenes[i])
+    })
+    contenido.push({ type: 'text', text: 'Extrae las actividades de estos carteles.' })
+
     const respuesta = await client.messages.create({
       model: MODEL,
       max_tokens: 8192,
       system: instrucciones,
       output_config: { format: { type: 'json_schema', schema: ESQUEMA_CARRUSEL } },
-      messages: [{ role: 'user', content: JSON.stringify(candidatos) }],
+      messages: [{ role: 'user', content: contenido }],
     })
     if (respuesta.stop_reason === 'refusal' || respuesta.stop_reason === 'max_tokens') {
       console.warn(`[extraerDeCarrusel] Respuesta no utilizable (${respuesta.stop_reason})`)
       return []
     }
     const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"actividades":[]}'
-    const indicesValidos = new Set(candidatos.map((c) => c.indice))
     return (JSON.parse(texto).actividades || [])
       .filter(
         (a) =>
           Number.isInteger(a.indice) &&
-          indicesValidos.has(a.indice) &&
+          a.indice >= 0 &&
+          a.indice < carrusel.length &&
           typeof a.titulo === 'string' &&
           a.titulo.trim()
       )
@@ -466,6 +503,7 @@ Para cada cartel devuelve:
         fechaLimite: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaLimite) ? a.fechaLimite : null,
         horario: String(a.horario || '').trim().slice(0, 120) || null,
         lugar: String(a.lugar || '').trim().slice(0, 120) || null,
+        descripcion: String(a.descripcion || '').trim().slice(0, 600) || null,
       }))
       // Plazos ya vencidos fuera, como en el PDF.
       .filter((a) => !a.fechaLimite || a.fechaLimite >= hoy)

@@ -56,7 +56,9 @@ export function carruselDe(post) {
       alt: typeof c?.alt === 'string' ? c.alt.trim() : '',
       imagen: c?.displayUrl || '',
     }))
-    .filter((c) => c.alt)
+    // Con la extracción por visión basta la imagen; el alt (OCR de
+    // Instagram) queda como apoyo/fallback si la descarga falla.
+    .filter((c) => c.alt || c.imagen)
 }
 
 /** shortCode del post: campo directo o, si el actor no lo da (p. ej.
