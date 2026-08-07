@@ -597,12 +597,34 @@ async function procesar(posts, resumen) {
           }
         }
 
+        // Hermanas ya existentes de este post: si una hija nueva tiene título
+        // EQUIVALENTE a una fila previa, se reutiliza su origen_externo_id —
+        // el upsert la actualiza (respetando su estado) en vez de crear una
+        // casi-duplicada. Sin esto, la deriva de títulos entre extracciones
+        // ("…con DJ" vs "…con DJ Piwi") cambiaba el slug y re-proponía como
+        // borrador actividades ya aprobadas. El '_' del shortCode se escapa
+        // (es comodín de LIKE).
+        const patronHermanas = `ig-${item.shortCode.replace(/[\\_%]/g, '\\$&')}-%`
+        const hermanas = hijas.length
+          ? await sql`SELECT origen_externo_id, titulo FROM actividades
+                      WHERE origen_externo_id LIKE ${patronHermanas} ESCAPE '\\'`
+          : []
+        const idDeHija = (titulo, usados) => {
+          const clave = claveTitulo(titulo)
+          const gemela = hermanas.find((x) => titulosEquivalentes(claveTitulo(x.titulo), clave))
+          if (gemela) {
+            usados.add(gemela.origen_externo_id.slice(`ig-${item.shortCode}-`.length))
+            return gemela.origen_externo_id
+          }
+          return `ig-${item.shortCode}-${sufijoDe(titulo, usados)}`
+        }
+
         // — Actividades: hijas del documento o del carrusel (borrador) o, en
         //   su defecto, la del propio triaje (publicado directo, flujo rodado).
         const slugsActividades = new Set()
         const filasActividades = hijas.length
           ? hijas.map((h) => ({
-              origenId: `ig-${item.shortCode}-${sufijoDe(h.titulo, slugsActividades)}`,
+              origenId: idDeHija(h.titulo, slugsActividades),
               titulo: h.titulo,
               categoria: h.categoria || item.categoria || 'general',
               fechaLimite: h.fechaLimite || item.fechaLimite,
