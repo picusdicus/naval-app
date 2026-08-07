@@ -140,17 +140,33 @@ export default function PerfilComercio({ id: idProp }) {
         {/* Overlay gradient oscuro (arriba claro, abajo oscuro) */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/94 via-black/40 to-black/10" />
 
-        {/* Migas de pan (arriba izquierda) */}
-        <div className="absolute top-5 left-5 sm:top-6 sm:left-8 font-mono-ibm text-10px tracking-wider uppercase text-white/75">
-          ← Comercios <span className="text-white/40">/ {cat?.nombre || comercio.categoria} / {nombreComercio}</span>
-        </div>
+        {/* Migas de pan (arriba izquierda): el directorio y la categoría son
+            enlaces; el nombre del comercio, donde ya estamos, no lo es. */}
+        <nav
+          aria-label="Migas de pan"
+          className="absolute top-5 left-5 right-5 sm:top-6 sm:left-8 sm:right-8 flex flex-wrap items-center gap-x-1.5 font-mono-ibm text-[10px] tracking-wider uppercase text-white/75"
+        >
+          <Link to="/comercios" className="inline-flex items-center gap-1 transition-colors hover:text-white">
+            <MIcon name="arrow_back" className="text-[14px]" />
+            Comercios
+          </Link>
+          <span className="text-white/40">/</span>
+          <Link
+            to={`/comercios?categoria=${comercio.categoria}`}
+            className="text-white/60 transition-colors hover:text-white"
+          >
+            {cat?.nombre || comercio.categoria}
+          </Link>
+          <span className="text-white/40">/</span>
+          <span className="text-white/40">{nombreComercio}</span>
+        </nav>
 
         {/* Botones glass (arriba derecha) */}
         <div className="absolute top-5 right-5 sm:top-6 sm:right-8 flex gap-2">
-          <button className="backdrop-blur-md bg-white/15 border border-white/24 text-white px-3 sm:px-4 py-2 rounded-full font-mono-ibm text-10px tracking-wider uppercase hover:bg-white/25 transition">
+          <button className="backdrop-blur-md bg-white/15 border border-white/24 text-white px-3 sm:px-4 py-2 rounded-full font-mono-ibm text-[10px] tracking-wider uppercase hover:bg-white/25 transition">
             ♥ Guardar
           </button>
-          <button className="backdrop-blur-md bg-white/15 border border-white/24 text-white px-3 sm:px-4 py-2 rounded-full font-mono-ibm text-10px tracking-wider uppercase hover:bg-white/25 transition">
+          <button className="backdrop-blur-md bg-white/15 border border-white/24 text-white px-3 sm:px-4 py-2 rounded-full font-mono-ibm text-[10px] tracking-wider uppercase hover:bg-white/25 transition">
             ↗ Compartir
           </button>
         </div>
@@ -158,7 +174,7 @@ export default function PerfilComercio({ id: idProp }) {
         {/* Bottom overlay: foto pequeña + info */}
         <div className="absolute bottom-7 sm:bottom-8 left-5 sm:left-10 right-5 sm:right-10 flex items-end gap-5 sm:gap-6">
           {/* Foto de perfil pequeña */}
-          <div className="flex-shrink-0 w-29 h-29 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl overflow-hidden border-3 border-white/90 shadow-lg">
+          <div className="flex-shrink-0 w-[74px] h-[74px] sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl overflow-hidden border-[3px] border-white/90 shadow-lg">
             {fotoPrincipal ? (
               <img src={fotoPrincipal} alt={nombreComercio} className="w-full h-full object-cover" />
             ) : (
@@ -171,20 +187,22 @@ export default function PerfilComercio({ id: idProp }) {
           {/* Info texto */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <span className="font-mono-ibm text-9px tracking-wider uppercase text-dorado">
+              <span className="font-mono-ibm text-[9px] tracking-wider uppercase text-oro">
                 {cat?.nombre || comercio.categoria}
               </span>
+              {/* Mismo sello que en el listado y en la ficha rápida: oro sobre
+                  tinta, para que "verificado" se lea igual en toda la app. */}
               {tienePerfil && (
-                <span className="inline-flex items-center gap-1 backdrop-blur-md bg-white/16 border border-white/26 text-white px-2.5 py-1 rounded-full font-mono-ibm text-8px tracking-wider uppercase">
-                  ✓ Perfil reclamado
+                <span className="inline-flex items-center gap-1 rounded-full bg-oro px-2.5 py-1 font-mono-ibm text-[8.5px] uppercase tracking-etiqueta text-tinta">
+                  ✓ Verificado
                 </span>
               )}
             </div>
             <h1 className="font-serif-dm text-4xl sm:text-5xl leading-tight text-white break-words">
               {nombreComercio}
             </h1>
-            <div className="flex items-center gap-3 mt-3 font-mono-ibm text-10px tracking-wider text-white/80">
-              <span className="text-dorado">★ 4.9 (34)</span>
+            <div className="flex items-center gap-3 mt-3 font-mono-ibm text-[10px] tracking-wider text-white/80">
+              <span className="text-oro">★ 4.9 (34)</span>
               <span className="w-px h-2.5 bg-white/30" />
               <span>◉ {comercio.ubicacion || 'NAVALCARNERO'}</span>
               <span className="w-px h-2.5 bg-white/30" />
@@ -199,13 +217,13 @@ export default function PerfilComercio({ id: idProp }) {
         <div className="mx-auto max-w-5xl px-5 sm:px-10">
           {/* Botones de acción */}
           <div className="flex gap-2 sm:gap-3 py-3.5 border-b border-filete">
-            <button className="bg-tinta text-papel px-6 sm:px-7 py-3 rounded-full font-mono-ibm text-11px tracking-wider uppercase hover:opacity-90">
+            <button className="bg-tinta text-papel px-6 sm:px-7 py-3 rounded-full font-mono-ibm text-[11px] tracking-wider uppercase hover:opacity-90">
               ☎ Llamar
             </button>
-            <button className="border border-terracota-fondo text-tinta px-5 sm:px-6 py-3 rounded-full font-mono-ibm text-11px tracking-wider uppercase hover:bg-papel-calido">
+            <button className="border border-terracota-fondo text-tinta px-5 sm:px-6 py-3 rounded-full font-mono-ibm text-[11px] tracking-wider uppercase hover:bg-papel-calido">
               ◉ Cómo llegar
             </button>
-            <button className="border border-terracota-fondo text-tinta px-5 sm:px-6 py-3 rounded-full font-mono-ibm text-11px tracking-wider uppercase hover:bg-papel-calido">
+            <button className="border border-terracota-fondo text-tinta px-5 sm:px-6 py-3 rounded-full font-mono-ibm text-[11px] tracking-wider uppercase hover:bg-papel-calido">
               ✉ Escribir
             </button>
             {/* Las redes viven ahora en la tarjeta de Contacto, con un icono por
@@ -219,7 +237,7 @@ export default function PerfilComercio({ id: idProp }) {
               <button
                 key={pesta.id}
                 onClick={() => setPestanaActiva(pesta.id)}
-                className={`font-mono-ibm text-11px tracking-wider uppercase py-4 border-b-2 transition ${
+                className={`font-mono-ibm text-[11px] tracking-wider uppercase py-4 border-b-2 transition ${
                   pestanaActiva === pesta.id
                     ? 'border-terracota text-tinta'
                     : 'border-transparent text-pardo hover:text-tinta'
@@ -241,7 +259,7 @@ export default function PerfilComercio({ id: idProp }) {
             <div className="space-y-8 md:col-span-2">
               {/* Sobre nosotros */}
               <section>
-                <h2 className="font-mono-ibm text-10px tracking-wider uppercase text-terracota mb-2.5">
+                <h2 className="font-mono-ibm text-[10px] tracking-wider uppercase text-terracota mb-2.5">
                   Sobre nosotros
                 </h2>
                 {descripcion ? (
@@ -258,15 +276,15 @@ export default function PerfilComercio({ id: idProp }) {
               {/* Datos rápidos (3 tarjetas) */}
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 <div className="bg-white border border-tinta rounded-lg p-4 sm:p-5 shadow-sm">
-                  <div className="font-mono-ibm text-9px tracking-wider uppercase text-mudo mb-2">Público</div>
+                  <div className="font-mono-ibm text-[9px] tracking-wider uppercase text-mudo mb-2">Público</div>
                   <div className="font-serif-dm text-lg sm:text-xl leading-tight text-tinta">Familiar</div>
                 </div>
                 <div className="bg-white border border-tinta rounded-lg p-4 sm:p-5 shadow-sm">
-                  <div className="font-mono-ibm text-9px tracking-wider uppercase text-mudo mb-2">Servicios</div>
+                  <div className="font-mono-ibm text-[9px] tracking-wider uppercase text-mudo mb-2">Servicios</div>
                   <div className="font-serif-dm text-lg sm:text-xl leading-tight text-tinta">Variados</div>
                 </div>
                 <div className="bg-white border border-tinta rounded-lg p-4 sm:p-5 shadow-sm">
-                  <div className="font-mono-ibm text-9px tracking-wider uppercase text-mudo mb-2">Reservas</div>
+                  <div className="font-mono-ibm text-[9px] tracking-wider uppercase text-mudo mb-2">Reservas</div>
                   <div className="font-serif-dm text-lg sm:text-xl leading-tight text-tinta">Por teléfono</div>
                 </div>
               </div>
@@ -393,7 +411,7 @@ export default function PerfilComercio({ id: idProp }) {
               <div className="bg-white border border-tinta rounded-2xl p-5 shadow-sm">
                 <div className="flex justify-between items-baseline mb-3">
                   <h3 className="font-serif-dm text-lg text-tinta">Horario</h3>
-                  <span className="font-mono-ibm text-8px tracking-wider uppercase bg-papel-calido text-ocre px-2 py-1 rounded-full">
+                  <span className="font-mono-ibm text-[8px] tracking-wider uppercase bg-papel-calido text-ocre px-2 py-1 rounded-full">
                     Sin publicar
                   </span>
                 </div>
@@ -404,7 +422,7 @@ export default function PerfilComercio({ id: idProp }) {
                   <div className="bg-papel-calido rounded-lg p-3 flex gap-2.5">
                     <span className="text-terracota flex-shrink-0">☎</span>
                     <div>
-                      <div className="font-mono-ibm text-8px tracking-wider uppercase text-mudo mb-0.5">
+                      <div className="font-mono-ibm text-[8px] tracking-wider uppercase text-mudo mb-0.5">
                         Consulta disponibilidad
                       </div>
                       <div className="font-serif-dm text-base text-tinta">{telefono}</div>
@@ -450,9 +468,9 @@ export default function PerfilComercio({ id: idProp }) {
               {/* Mapa */}
               {lat && lng && (
                 <div className="bg-white rounded-2xl overflow-hidden h-52 shadow-sm border border-filete">
-                  <div className="w-full h-full bg-gradient-to-br from-verde-fondo to-verde-fondo/50 flex items-center justify-center relative">
+                  <div className="w-full h-full bg-[#e7ecdf] flex items-center justify-center relative">
                     <div className="absolute top-1/2 left-1/2 w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full rounded-bl-none bg-terracota shadow-md" style={{ clip: 'polygon(0 0, 100% 0, 100% 75%, 50% 100%)' }} />
-                    <button className="absolute bottom-3 left-3 right-3 bg-white text-tinta px-4 py-2.5 rounded-full font-mono-ibm text-10px tracking-wider uppercase hover:bg-papel-calido">
+                    <button className="absolute bottom-3 left-3 right-3 bg-white text-tinta px-4 py-2.5 rounded-full font-mono-ibm text-[10px] tracking-wider uppercase hover:bg-papel-calido">
                       Abrir en el mapa
                     </button>
                   </div>
@@ -461,7 +479,7 @@ export default function PerfilComercio({ id: idProp }) {
 
               {/* Nota de gestión */}
               <div className="bg-papel-calido rounded-2xl p-4 border border-filete">
-                <div className="font-mono-ibm text-8px tracking-wider uppercase text-ocre mb-1.5">
+                <div className="font-mono-ibm text-[8px] tracking-wider uppercase text-ocre mb-1.5">
                   Perfil gestionado por el comercio
                 </div>
                 <p className="font-serif-spectral text-xs text-pardo">
@@ -487,11 +505,11 @@ export default function PerfilComercio({ id: idProp }) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="bg-tinta text-papel px-6 py-3 rounded-full font-mono-ibm text-11px tracking-wider uppercase hover:opacity-90 inline-flex items-center justify-center gap-2"
+              className="bg-tinta text-papel px-6 py-3 rounded-full font-mono-ibm text-[11px] tracking-wider uppercase hover:opacity-90 inline-flex items-center justify-center gap-2"
             >
               ← Volver atrás
             </button>
-            <div className="text-center font-serif-spectral text-10px text-pardo">
+            <div className="text-center font-serif-spectral text-[10px] text-pardo">
               Directorios de OpenStreetMap y colaboradores
             </div>
           </div>

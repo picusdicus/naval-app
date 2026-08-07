@@ -218,27 +218,12 @@ export default function Mapa() {
   // columna izquierda. En desktop el scroll es dentro del contenedor (lg:overflow-y-auto),
   // en móvil se usa scrollIntoView normal.
   useEffect(() => {
-    if (seleccionado && detalleRef.current) {
-      const container = columnRef.current
-      if (container && esDesktop) {
-        const detalle = detalleRef.current
-        const detalleRect = detalle.getBoundingClientRect()
-        const containerRect = container.getBoundingClientRect()
-
-        // Posición del detalle relativa al contenedor
-        const detalleTopRelative = detalleRect.top - containerRect.top + container.scrollTop
-        const containerHeight = container.clientHeight
-        const detalleHeight = detalle.clientHeight
-
-        // Scroll para que el detalle aparezca justo debajo, con 16px de padding
-        const newScrollTop = detalleTopRelative - 16
-
-        container.scrollTo({ top: newScrollTop, behavior: 'smooth' })
-      } else {
-        detalleRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      }
-    }
-  }, [seleccionado, esDesktop])
+    if (!seleccionado || !detalleRef.current) return
+    // `nearest`: la ficha se abre pegada a su fila, así que solo se desplaza la
+    // página si se ha quedado fuera de pantalla — sin dar un salto cuando ya
+    // se veía entera.
+    detalleRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [seleccionado])
 
   return (
     <div className="flex flex-col">
@@ -402,9 +387,9 @@ export default function Mapa() {
             </p>
           )}
 
-          {/* Listado: la misma fila en móvil y escritorio. La ficha se abre
-              en línea bajo el comercio en móvil y al final de la lista en
-              escritorio (donde hay mapa al lado y la lista es más larga). */}
+          {/* Listado: la misma fila en móvil y escritorio, y la ficha en línea
+              justo bajo el comercio seleccionado (acordeón) en ambos — al final
+              de la lista quedaba lejos de la fila que la abría. */}
           {comercios.length > 0 && (
             <>
               <div>
@@ -416,7 +401,7 @@ export default function Mapa() {
                       onClick={() => setSeleccionado(c)}
                       fotoPerfil={obtenerPerfil(c.id)}
                     />
-                    {!esDesktop && seleccionado?.id === c.id && (
+                    {seleccionado?.id === c.id && (
                       <div ref={detalleRef} className="py-3">
                         <ComercioDetalle
                           comercio={c}
@@ -431,16 +416,6 @@ export default function Mapa() {
               </div>
               {/* Sentinel para lazy load */}
               <div ref={observerRef} className="h-4" />
-              {esDesktop && seleccionado && comercios.some((c) => c.id === seleccionado.id) && (
-                <div ref={detalleRef} className="mt-6 border-t-2 border-tinta pt-6">
-                  <ComercioDetalle
-                    comercio={seleccionado}
-                    onCerrar={() => setSeleccionado(null)}
-                    esReclamacionPendiente={esReclamacionPendiente(seleccionado.id)}
-                    tieneAprobada={esReclamacionAprobada(seleccionado.id)}
-                  />
-                </div>
-              )}
             </>
           )}
 
