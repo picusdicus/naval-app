@@ -38,7 +38,7 @@ import {
   orgDeUsuario,
   subirImagen,
 } from './_instagram.js'
-import { extraerDeDocumento } from './_actividades-parser.js'
+import { extraerDeCarrusel, extraerDeDocumento } from './_actividades-parser.js'
 import { enviarEmailPendientes } from './_email.js'
 import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 
@@ -110,7 +110,7 @@ const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Nava
 - tipo "noticia": el resto de información municipal (obras, comunicados, gestión de emergencias, balances, eventos puntuales, servicios ofrecidos sin plazo). Puede ser además una alerta urgente (ver abajo).
 
 Descarta:
-- Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a un acto puntual con fecha, hora y lugar — esos datos pueden estar en el caption o en el texto del cartel, campo "alt"): ya los cubre la agenda de la app. Ojo: si el post anuncia el PLAZO DE INSCRIPCIÓN a una actividad continuada (un taller trimestral, la escuela de fútbol), NO es un evento de agenda: es tipo "actividad".
+- Anuncios de eventos de agenda (posts cuyo contenido principal es invitar a un acto puntual con fecha, hora y lugar — esos datos pueden estar en el caption o en el texto del cartel, campo "alt"): ya los cubre la agenda de la app. Un acto al que solo se ASISTE como público (una proyección de cine —incluido el cine de verano—, un concierto, una función) es SIEMPRE un evento de agenda, nunca una actividad, aunque sea recurrente o gratuito. Ojo: si el post anuncia el PLAZO DE INSCRIPCIÓN a una actividad continuada (un taller trimestral, la escuela de fútbol), NO es un evento de agenda: es tipo "actividad".
 - Felicitaciones, saludos institucionales, efemérides y posts sin información práctica.
 - Sorteos, campañas y contenido puramente promocional.
 - Servicios puntuales sin plazo de inscripción (donaciones de sangre puntuales, servicios de custodia, etc.)
@@ -523,6 +523,19 @@ async function procesar(posts, resumen) {
     // del propio triaje (caption, alta confianza) sigue naciendo 'publicado'.
     const pendientesEventos = []
     const pendientesActividades = []
+    // Sufijo ESTABLE por título para los ids de hijas ('ig-<shortCode>-<slug>'):
+    // con índices numéricos, el orden de extracción cambiaba entre runs y el
+    // upsert machacaba una fila con el contenido de otra (un "Reto viajero"
+    // publicado amaneció convertido en "Torneo F7 Veteranos"). Colisiones
+    // dentro del mismo post se numeran (-2, -3…).
+    const sufijoDe = (titulo, usados) => {
+      const base =
+        claveTitulo(titulo).replace(/ /g, '-').slice(0, 48).replace(/-+$/, '') || 'item'
+      let slug = base
+      for (let n = 2; usados.has(slug); n++) slug = `${base}-${n}`
+      usados.add(slug)
+      return slug
+    }
     const procesables = validas.filter(
       (v) => v.tipo === 'actividad' || (v.programaEnlazada && detectarUrl(postsPorShortCode.get(v.shortCode).caption))
     )
@@ -542,11 +555,56 @@ async function procesar(posts, resumen) {
           extraccion = await extraerDeDocumento(doc, url, imagenPost, item.shortCode)
         }
 
-        // — Actividades: hijas del documento (borrador) o, sin documento ni
-        //   hijas, la del propio triaje (publicado directo, flujo rodado).
-        const filasActividades = extraccion.actividades.length
-          ? extraccion.actividades.map((h, i) => ({
-              origenId: `ig-${item.shortCode}-${i}`,
+        // Sin documento (o sin resultados) y con carrusel de carteles: una
+        // actividad por cartel a partir del alt de cada foto — la programación
+        // deportiva viaja así (un cartel por prueba, con plazo y lugar en el
+        // OCR), y el alt del post padre no dice nada. Nacen borrador, como
+        // todo lo extraído en masa.
+        let hijasCarrusel = []
+        if (
+          !extraccion.actividades.length &&
+          item.tipo === 'actividad' &&
+          (post.carrusel?.length || 0) >= 2
+        ) {
+          hijasCarrusel = await extraerDeCarrusel(
+            post.carrusel.map((c, i) => ({ indice: i, alt: c.alt })),
+            item.publicadoEn
+          )
+          // La foto del cartel correspondiente, a Blob con sufijo por índice.
+          for (const h of hijasCarrusel) {
+            const subida = await subirImagen(
+              'instagram-actividades',
+              item.shortCode,
+              post.carrusel[h.indice]?.imagen,
+              `c${h.indice}`
+            )
+            if (subida) resumen.imagenesSubidas++
+            h.imagen_url = subida || imagenPost
+          }
+        }
+
+        // Guarda de la fila única: si este MISMO post ya creó un evento de
+        // agenda (webhook de eventos), la "actividad" del triaje es casi
+        // seguro el mismo acto mal clasificado (p. ej. el cine de verano) —
+        // no se duplica en /actividades.
+        const hijas = extraccion.actividades.length ? extraccion.actividades : hijasCarrusel
+        let crearFilaUnica = !hijas.length && item.tipo === 'actividad'
+        if (crearFilaUnica) {
+          const yaEvento = await sql`
+            SELECT 1 FROM eventos_usuario
+            WHERE origen_externo_id = ${`ig-${item.shortCode}`} LIMIT 1`
+          if (yaEvento.length) {
+            resumen.omitidasPorSerEvento = (resumen.omitidasPorSerEvento || 0) + 1
+            crearFilaUnica = false
+          }
+        }
+
+        // — Actividades: hijas del documento o del carrusel (borrador) o, en
+        //   su defecto, la del propio triaje (publicado directo, flujo rodado).
+        const slugsActividades = new Set()
+        const filasActividades = hijas.length
+          ? hijas.map((h) => ({
+              origenId: `ig-${item.shortCode}-${sufijoDe(h.titulo, slugsActividades)}`,
               titulo: h.titulo,
               categoria: h.categoria || item.categoria || 'general',
               fechaLimite: h.fechaLimite || item.fechaLimite,
@@ -556,7 +614,7 @@ async function procesar(posts, resumen) {
               imagenUrl: h.imagen_url || imagenPost,
               estado: 'borrador',
             }))
-          : item.tipo === 'actividad'
+          : crearFilaUnica
             ? [
                 {
                   origenId: `ig-${item.shortCode}`,
@@ -623,9 +681,9 @@ async function procesar(posts, resumen) {
             SELECT origen_externo_id, titulo, to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha
             FROM eventos_usuario
             WHERE fecha_inicio = ANY(${fechasDoc}::date[])`
-          for (let i = 0; i < extraccion.eventos.length; i++) {
-            const ev = extraccion.eventos[i]
-            const origenId = `ig-${item.shortCode}-${i}`
+          const slugsEventos = new Set()
+          for (const ev of extraccion.eventos) {
+            const origenId = `ig-${item.shortCode}-${sufijoDe(ev.titulo, slugsEventos)}`
             try {
               const clave = claveTitulo(ev.titulo)
               const gemelo = existentes.find(

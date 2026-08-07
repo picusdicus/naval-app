@@ -44,6 +44,21 @@ export function todasLasImagenes(post) {
   return unica ? [unica] : []
 }
 
+/** Pares alt+imagen de cada foto del carrusel (childPosts): los carteles
+ * municipales llevan una actividad por foto con todos sus datos en el alt
+ * (OCR de Instagram) — p. ej. la programación deportiva, un cartel por
+ * prueba. El alt del post padre es solo "Photo by …", así que sin esto los
+ * carteles interiores son invisibles para la extracción. */
+export function carruselDe(post) {
+  if (!Array.isArray(post.childPosts)) return []
+  return post.childPosts
+    .map((c) => ({
+      alt: typeof c?.alt === 'string' ? c.alt.trim() : '',
+      imagen: c?.displayUrl || '',
+    }))
+    .filter((c) => c.alt)
+}
+
 /** shortCode del post: campo directo o, si el actor no lo da (p. ej.
  * instagram-post-scraper), extraído de la url /p/<code>/ o /reel/<code>/. */
 export function shortCodeDe(post) {
@@ -74,6 +89,8 @@ export function normalizarPost(post) {
     // Todas las fotos del post (carrusel completo); imagen sigue siendo solo
     // la primera, para no tocar nada de lo que ya consume ese campo.
     imagenes: todasLasImagenes(post),
+    // alt+imagen por cartel del carrusel (para extraer una actividad por foto).
+    carrusel: carruselDe(post),
     usuario: post.ownerUsername || '',
   }
 }
