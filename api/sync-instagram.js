@@ -22,6 +22,7 @@
 // Serverless (Node) a propósito: el SDK de Anthropic y @vercel/blob (undici)
 // no funcionan en el Edge Runtime.
 import Anthropic from '@anthropic-ai/sdk'
+import { waitUntil } from '@vercel/functions'
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
 import {
@@ -108,29 +109,39 @@ const LOTE_TRIAJE = 10
 
 async function extraerEventos(posts) {
   const client = new Anthropic()
+  const lotes = []
+  for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
+    lotes.push(posts.slice(i, i + LOTE_TRIAJE))
+  }
+  // Lotes en paralelo: el tiempo total pasa a ser ~el de un lote.
+  const resultados = await Promise.all(
+    lotes.map(async (lote, idx) => {
+      try {
+        const respuesta = await client.messages.create({
+          model: MODEL,
+          max_tokens: 8192,
+          system: INSTRUCCIONES,
+          output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
+          messages: [{ role: 'user', content: JSON.stringify(lote) }],
+        })
+        if (respuesta.stop_reason === 'refusal') {
+          throw new Error('el modelo rechazó la petición de extracción')
+        }
+        if (respuesta.stop_reason === 'max_tokens') {
+          throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
+        }
+        const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
+        return { items: JSON.parse(texto).eventos || [] }
+      } catch (err) {
+        return { error: `Extracción lote ${idx + 1}: ${err.message}` }
+      }
+    })
+  )
   const eventos = []
   const errores = []
-  for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
-    const lote = posts.slice(i, i + LOTE_TRIAJE)
-    try {
-      const respuesta = await client.messages.create({
-        model: MODEL,
-        max_tokens: 8192,
-        system: INSTRUCCIONES,
-        output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
-        messages: [{ role: 'user', content: JSON.stringify(lote) }],
-      })
-      if (respuesta.stop_reason === 'refusal') {
-        throw new Error('el modelo rechazó la petición de extracción')
-      }
-      if (respuesta.stop_reason === 'max_tokens') {
-        throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
-      }
-      const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
-      eventos.push(...(JSON.parse(texto).eventos || []))
-    } catch (err) {
-      errores.push(`Extracción lote ${Math.floor(i / LOTE_TRIAJE) + 1}: ${err.message}`)
-    }
+  for (const r of resultados) {
+    if (r.error) errores.push(r.error)
+    else eventos.push(...r.items)
   }
   return { eventos, errores }
 }
@@ -236,6 +247,32 @@ export default async function handler(req, res) {
       return
     }
 
+    // ACK inmediato (202): Apify corta el dispatch a los ~120 s y lo
+    // reintenta entero — el triaje con Opus supera ese margen en runs densos.
+    // El procesado sigue en segundo plano (waitUntil, Fluid); el resumen
+    // final queda en los logs de la función.
+    res.status(202).json({
+      aceptado: true,
+      recibidos: resumen.recibidos,
+      analizados: resumen.analizados,
+    })
+    const tarea = procesar(posts, resumen)
+    try {
+      waitUntil(tarea)
+    } catch {
+      // Fuera de Vercel (dev de Vite): la promesa sigue viva en el proceso.
+    }
+    return
+  } catch (err) {
+    console.error('Error en sync-instagram:', err)
+    resumen.errores.push(err.message)
+    if (!res.headersSent) res.status(500).json(resumen)
+  }
+}
+
+/** Todo el trabajo pesado, ya sin una respuesta HTTP que mantener abierta. */
+async function procesar(posts, resumen) {
+  try {
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const { eventos: extraidos, errores: erroresTriaje } = await extraerEventos(
       posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
@@ -338,10 +375,9 @@ export default async function handler(req, res) {
     }
 
     console.log(JSON.stringify(resumen))
-    res.status(200).json(resumen)
   } catch (err) {
-    console.error('Error en sync-instagram:', err)
+    console.error('Error en sync-instagram (fondo):', err)
     resumen.errores.push(err.message)
-    res.status(500).json(resumen)
+    console.log(JSON.stringify(resumen))
   }
 }

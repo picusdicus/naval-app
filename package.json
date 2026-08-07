@@ -20,6 +20,7 @@
     "@anthropic-ai/sdk": "^0.110.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.6.1",
+    "@vercel/functions": "^3.8.0",
     "jsdom": "^24.0.0",
     "leaflet": "^1.9.4",
     "react": "^18.3.1",

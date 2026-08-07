@@ -369,6 +369,10 @@ Un mismo elemento va en UNA de las dos listas, no en ambas. Si el año no aparec
         lugar: String(a.lugar || '').trim().slice(0, 120) || null,
         imagen_url: null, // un PDF no trae imagen por item; el caller pone el fallback
       }))
+      // Un PDF de agenda trimestral arrastra plazos ya vencidos (la de
+      // jun-jul-ago se sincroniza en agosto): fuera — solo ensuciarían la
+      // bandeja de Pendientes.
+      .filter((a) => !a.fechaLimite || a.fechaLimite >= hoy)
 
     return { eventos, actividades }
   } catch (err) {

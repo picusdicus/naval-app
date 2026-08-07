@@ -27,6 +27,7 @@
 // Serverless (Node) a propósito: el SDK de Anthropic y @vercel/blob (undici)
 // no funcionan en el Edge Runtime.
 import Anthropic from '@anthropic-ai/sdk'
+import { waitUntil } from '@vercel/functions'
 import { igualSeguro } from './_auth.js'
 import { obtenerSql } from './_db.js'
 import {
@@ -150,29 +151,40 @@ const LOTE_TRIAJE = 10
 
 async function extraerNoticias(posts) {
   const client = new Anthropic()
+  const lotes = []
+  for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
+    lotes.push(posts.slice(i, i + LOTE_TRIAJE))
+  }
+  // Lotes en paralelo: el tiempo total del triaje pasa a ser ~el de un lote
+  // (5 llamadas concurrentes están muy lejos de los límites de la API).
+  const resultados = await Promise.all(
+    lotes.map(async (lote, idx) => {
+      try {
+        const respuesta = await client.messages.create({
+          model: MODEL,
+          max_tokens: 8192,
+          system: INSTRUCCIONES,
+          output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
+          messages: [{ role: 'user', content: JSON.stringify(lote) }],
+        })
+        if (respuesta.stop_reason === 'refusal') {
+          throw new Error('el modelo rechazó la petición de extracción')
+        }
+        if (respuesta.stop_reason === 'max_tokens') {
+          throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
+        }
+        const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"noticias":[]}'
+        return { items: JSON.parse(texto).noticias || [] }
+      } catch (err) {
+        return { error: `Triaje lote ${idx + 1}: ${err.message}` }
+      }
+    })
+  )
   const noticias = []
   const errores = []
-  for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
-    const lote = posts.slice(i, i + LOTE_TRIAJE)
-    try {
-      const respuesta = await client.messages.create({
-        model: MODEL,
-        max_tokens: 8192,
-        system: INSTRUCCIONES,
-        output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
-        messages: [{ role: 'user', content: JSON.stringify(lote) }],
-      })
-      if (respuesta.stop_reason === 'refusal') {
-        throw new Error('el modelo rechazó la petición de extracción')
-      }
-      if (respuesta.stop_reason === 'max_tokens') {
-        throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
-      }
-      const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"noticias":[]}'
-      noticias.push(...(JSON.parse(texto).noticias || []))
-    } catch (err) {
-      errores.push(`Triaje lote ${Math.floor(i / LOTE_TRIAJE) + 1}: ${err.message}`)
-    }
+  for (const r of resultados) {
+    if (r.error) errores.push(r.error)
+    else noticias.push(...r.items)
   }
   return { noticias, errores }
 }
@@ -407,6 +419,33 @@ export default async function handler(req, res) {
       return
     }
 
+    // ACK inmediato (202): Apify corta el dispatch del webhook a los ~120 s y
+    // lo REINTENTA entero — el triaje con Opus más los documentos enlazados
+    // superan ese margen de sobra, y cada reintento duplicaba el trabajo. El
+    // procesado sigue en segundo plano (waitUntil, Fluid) y el resumen final
+    // queda en los logs de la función.
+    res.status(202).json({
+      aceptado: true,
+      recibidos: resumen.recibidos,
+      analizados: resumen.analizados,
+    })
+    const tarea = procesar(posts, resumen)
+    try {
+      waitUntil(tarea)
+    } catch {
+      // Fuera de Vercel (dev de Vite): la promesa sigue viva en el proceso.
+    }
+    return
+  } catch (err) {
+    console.error('Error en sync-instagram-noticias:', err)
+    resumen.errores.push(err.message)
+    if (!res.headersSent) res.status(500).json(resumen)
+  }
+}
+
+/** Todo el trabajo pesado, ya sin una respuesta HTTP que mantener abierta. */
+async function procesar(posts, resumen) {
+  try {
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const { noticias: extraidas, errores: erroresTriaje } = await extraerNoticias(
       posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
@@ -651,10 +690,9 @@ export default async function handler(req, res) {
     }
 
     console.log(JSON.stringify(resumen))
-    res.status(200).json(resumen)
   } catch (err) {
-    console.error('Error en sync-instagram-noticias:', err)
+    console.error('Error en sync-instagram-noticias (fondo):', err)
     resumen.errores.push(err.message)
-    res.status(500).json(resumen)
+    console.log(JSON.stringify(resumen))
   }
 }
