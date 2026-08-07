@@ -313,6 +313,17 @@ CREATE TABLE IF NOT EXISTS comercios_perfil (
 
 CREATE INDEX IF NOT EXISTS idx_comercios_perfil_org ON comercios_perfil (organizacion_id);
 
+-- Redes sociales del comercio (linkedIn, facebook, instagram, twitter, tiktok)
+ALTER TABLE comercios_perfil ADD COLUMN IF NOT EXISTS linkedin text;
+
+ALTER TABLE comercios_perfil ADD COLUMN IF NOT EXISTS facebook text;
+
+ALTER TABLE comercios_perfil ADD COLUMN IF NOT EXISTS instagram text;
+
+ALTER TABLE comercios_perfil ADD COLUMN IF NOT EXISTS twitter text;
+
+ALTER TABLE comercios_perfil ADD COLUMN IF NOT EXISTS tiktok text;
+
 -- Vincula un código de invitación con el comercio que reclama (si aplica).
 -- Cuando el superadmin aprueba una reclamación, genera un código aquí con
 -- comercio_id NOT NULL. Al registrarse con ese código, api/registro.js vincula

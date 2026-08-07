@@ -31,7 +31,8 @@ async function obtener(sql, org) {
 
   const [perfil] = await sql`
     SELECT comercio_id, descripcion, horarios, foto_principal, fotos,
-           web, telefono, direccion, lat, lng
+           web, telefono, direccion, lat, lng,
+           linkedin, facebook, instagram, twitter, tiktok
     FROM comercios_perfil
     WHERE comercio_id = ${org.comercio_id}
   `
@@ -47,7 +48,12 @@ async function actualizar(sql, org, cuerpo) {
     return json({ error: 'Org sin comercio vinculado.' }, 404)
   }
 
-  const { descripcion, horarios, fotoPrincipal, fotos, web, telefono, direccion, lat, lng } = cuerpo
+  const { descripcion, horarios, fotoPrincipal, fotos, web, telefono, direccion, lat, lng, linkedin, facebook, instagram, twitter, tiktok } = cuerpo
+
+  // Foto principal es obligatoria
+  if (!fotoPrincipal || !String(fotoPrincipal).trim()) {
+    return json({ error: 'La foto principal es obligatoria.' }, 400)
+  }
 
   // Validar longitudes
   if (descripcion && String(descripcion).length > 1000) {
@@ -63,6 +69,14 @@ async function actualizar(sql, org, cuerpo) {
     return json({ error: 'Dirección no puede superar 255 caracteres.' }, 400)
   }
 
+  // Validar redes sociales
+  const redesSociales = { linkedin, facebook, instagram, twitter, tiktok }
+  for (const [red, valor] of Object.entries(redesSociales)) {
+    if (valor && String(valor).length > 255) {
+      return json({ error: `${red} no puede superar 255 caracteres.` }, 400)
+    }
+  }
+
   // Validar horarios si se proporcionan
   if (horarios && !validarHorarios(horarios)) {
     return json({ error: 'Formato de horarios no válido.' }, 400)
@@ -73,10 +87,14 @@ async function actualizar(sql, org, cuerpo) {
     return json({ error: 'Coordenadas deben ser números.' }, 400)
   }
 
+  // Filtrar fotos vacías (null o strings vacías)
+  const fotosLimpias = fotos ? fotos.filter(f => f && String(f).trim()) : []
+
   try {
     await sql`
       INSERT INTO comercios_perfil (
         comercio_id,
+        organizacion_id,
         descripcion,
         horarios,
         foto_principal,
@@ -85,22 +103,34 @@ async function actualizar(sql, org, cuerpo) {
         telefono,
         direccion,
         lat,
-        lng
+        lng,
+        linkedin,
+        facebook,
+        instagram,
+        twitter,
+        tiktok
       )
       VALUES (
         ${org.comercio_id},
+        ${org.id},
         ${descripcion ? String(descripcion).trim() : null},
         ${horarios ? JSON.stringify(horarios) : null},
-        ${fotoPrincipal || null},
-        ${fotos ? JSON.stringify(fotos) : null},
+        ${String(fotoPrincipal).trim()},
+        ${fotosLimpias.length > 0 ? JSON.stringify(fotosLimpias) : null},
         ${web ? String(web).trim() : null},
         ${telefono ? String(telefono).trim() : null},
         ${direccion ? String(direccion).trim() : null},
         ${lat ?? null},
-        ${lng ?? null}
+        ${lng ?? null},
+        ${linkedin ? String(linkedin).trim() : null},
+        ${facebook ? String(facebook).trim() : null},
+        ${instagram ? String(instagram).trim() : null},
+        ${twitter ? String(twitter).trim() : null},
+        ${tiktok ? String(tiktok).trim() : null}
       )
       ON CONFLICT (comercio_id)
       DO UPDATE SET
+        organizacion_id = EXCLUDED.organizacion_id,
         descripcion = EXCLUDED.descripcion,
         horarios = EXCLUDED.horarios,
         foto_principal = EXCLUDED.foto_principal,
@@ -110,12 +140,18 @@ async function actualizar(sql, org, cuerpo) {
         direccion = EXCLUDED.direccion,
         lat = EXCLUDED.lat,
         lng = EXCLUDED.lng,
+        linkedin = EXCLUDED.linkedin,
+        facebook = EXCLUDED.facebook,
+        instagram = EXCLUDED.instagram,
+        twitter = EXCLUDED.twitter,
+        tiktok = EXCLUDED.tiktok,
         actualizado_en = now()
     `
 
     const [perfil] = await sql`
       SELECT comercio_id, descripcion, horarios, foto_principal, fotos,
-             web, telefono, direccion, lat, lng
+             web, telefono, direccion, lat, lng,
+             linkedin, facebook, instagram, twitter, tiktok
       FROM comercios_perfil
       WHERE comercio_id = ${org.comercio_id}
     `

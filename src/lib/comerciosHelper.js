@@ -34,6 +34,11 @@ export function datosComercios(perfil, jsonComercio) {
     lng: datoComercio(perfil, jsonComercio, 'lng'),
     horarios: datoComercio(perfil, jsonComercio, 'horarios'),
     fotos: datoComercio(perfil, jsonComercio, 'fotos'),
+    linkedin: perfil?.linkedin || null,
+    facebook: perfil?.facebook || null,
+    instagram: perfil?.instagram || null,
+    twitter: perfil?.twitter || null,
+    tiktok: perfil?.tiktok || null,
   }
 }
 

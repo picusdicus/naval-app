@@ -1,9 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import MIcon from '../../components/MIcon.jsx'
 import SelectorImagen from '../../components/admin/SelectorImagen.jsx'
+import SelectorImagenesMultiples from '../../components/admin/SelectorImagenesMultiples.jsx'
 import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
 import { diasSemana, diasDisplay, horariosVacios, horarioValido } from '../../lib/horarios.js'
 import { optimizarImagen, validarImagen } from '../../lib/imageOptimizer.js'
+import { buscarComercioEnJson } from '../../lib/comerciosHelper.js'
+import comercios from '../../data/comercios.json'
+import servicios from '../../data/servicios-locales.json'
 
 const DIAS_DISPLAY = diasDisplay()
 
@@ -31,12 +35,17 @@ export default function AdminComercioForm() {
   const [descripcion, setDescripcion] = useState('')
   const [horarios, setHorarios] = useState(horariosVacios())
   const [fotoPrincipal, setFotoPrincipal] = useState(null)
-  const [fotos, setFotos] = useState([null, null, null, null, null])
+  const [fotos, setFotos] = useState([])
   const [web, setWeb] = useState('')
   const [telefono, setTelefono] = useState('')
   const [direccion, setDireccion] = useState('')
   const [lat, setLat] = useState('')
   const [lng, setLng] = useState('')
+  const [linkedin, setLinkedin] = useState('')
+  const [facebook, setFacebook] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [twitter, setTwitter] = useState('')
+  const [tiktok, setTiktok] = useState('')
 
   const cargar = useCallback(async () => {
     try {
@@ -47,18 +56,45 @@ export default function AdminComercioForm() {
       const datos = await respuesta.json()
       setComercioId(datos.comercioId)
 
+      // Buscar comercio en JSON para pre-llenar datos
+      const comercioJson = buscarComercioEnJson(datos.comercioId, comercios, servicios)
+
       if (datos.perfil) {
+        // Perfil ya existe: cargar datos del perfil (tiene prioridad)
         setPerfil(datos.perfil)
         setDescripcion(datos.perfil.descripcion || '')
         setHorarios(datos.perfil.horarios || horariosVacios())
         setFotoPrincipal(datos.perfil.foto_principal || null)
-        setFotos(datos.perfil.fotos || [null, null, null, null, null])
+        setFotos(datos.perfil.fotos || [])
         setWeb(datos.perfil.web || '')
         setTelefono(datos.perfil.telefono || '')
         setDireccion(datos.perfil.direccion || '')
         setLat(datos.perfil.lat ? String(datos.perfil.lat) : '')
         setLng(datos.perfil.lng ? String(datos.perfil.lng) : '')
+        setLinkedin(datos.perfil.linkedin || '')
+        setFacebook(datos.perfil.facebook || '')
+        setInstagram(datos.perfil.instagram || '')
+        setTwitter(datos.perfil.twitter || '')
+        setTiktok(datos.perfil.tiktok || '')
+      } else if (comercioJson) {
+        // Primer perfil: pre-llenar con datos del JSON
+        setPerfil(null)
+        setDescripcion(comercioJson.descripcion || '')
+        setHorarios(comercioJson.horarios || horariosVacios())
+        setFotoPrincipal(comercioJson.foto || comercioJson.fotoPrincipal || null)
+        setFotos(comercioJson.fotos || [])
+        setWeb(comercioJson.web || '')
+        setTelefono(comercioJson.telefono || '')
+        setDireccion(comercioJson.direccion || '')
+        setLat(comercioJson.lat ? String(comercioJson.lat) : '')
+        setLng(comercioJson.lng ? String(comercioJson.lng) : '')
+        setLinkedin('')
+        setFacebook('')
+        setInstagram(comercioJson.instagram || '')
+        setTwitter('')
+        setTiktok('')
       } else {
+        // Sin perfil ni datos JSON
         setPerfil(null)
       }
     } catch (err) {
@@ -78,6 +114,12 @@ export default function AdminComercioForm() {
     setExito('')
 
     // Validaciones
+    if (!fotoPrincipal || !String(fotoPrincipal).trim()) {
+      setError('La foto principal es obligatoria')
+      setGuardando(false)
+      return
+    }
+
     if (descripcion.length > 1000) {
       setError('Descripción no puede superar 1000 caracteres')
       setGuardando(false)
@@ -108,6 +150,13 @@ export default function AdminComercioForm() {
       return
     }
 
+    // Validar redes sociales
+    if (linkedin.length > 255 || facebook.length > 255 || instagram.length > 255 || twitter.length > 255 || tiktok.length > 255) {
+      setError('Los enlaces de redes sociales no pueden superar 255 caracteres')
+      setGuardando(false)
+      return
+    }
+
     const latNum = lat ? parseFloat(lat) : null
     const lngNum = lng ? parseFloat(lng) : null
     if ((lat || lng) && (isNaN(latNum) || isNaN(lngNum))) {
@@ -117,6 +166,35 @@ export default function AdminComercioForm() {
     }
 
     try {
+      // Subir fotos adicionales si las hay
+      let fotosSubidas = fotos
+      if (fotos.length > 0) {
+        // Filtrar fotos base64 (las que aún no se han subido)
+        const fotosBase64 = fotos.filter(f => f && f.startsWith('data:image'))
+
+        if (fotosBase64.length > 0) {
+          const respuestaFotos = await fetch('/api/admin/imagen-comercio-adicional', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imagenes: fotosBase64 }),
+          })
+
+          const datosFotos = await respuestaFotos.json()
+          if (!respuestaFotos.ok) {
+            throw new Error(datosFotos.error || 'Error al subir fotos')
+          }
+
+          // Reemplazar base64 con URLs subidas
+          fotosSubidas = fotos.map(f => {
+            if (f && f.startsWith('data:image')) {
+              const idx = fotosBase64.indexOf(f)
+              return datosFotos.urls[idx]
+            }
+            return f
+          })
+        }
+      }
+
       const respuesta = await fetch('/api/admin/comercio-perfil', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -124,12 +202,17 @@ export default function AdminComercioForm() {
           descripcion: descripcion || null,
           horarios: horarios || null,
           fotoPrincipal,
-          fotos,
+          fotos: fotosSubidas,
           web: web || null,
           telefono: telefono || null,
           direccion: direccion || null,
           lat: latNum,
           lng: lngNum,
+          linkedin: linkedin || null,
+          facebook: facebook || null,
+          instagram: instagram || null,
+          twitter: twitter || null,
+          tiktok: tiktok || null,
         }),
       })
 
@@ -140,6 +223,7 @@ export default function AdminComercioForm() {
       }
 
       setPerfil(datos.perfil)
+      setFotos(datos.perfil.fotos || [])
       setExito('Perfil actualizado correctamente')
       setTimeout(() => setExito(''), 3000)
     } catch (err) {
@@ -182,16 +266,22 @@ export default function AdminComercioForm() {
         {/* Foto Principal */}
         <div className="gz-tarjeta-impresa p-4">
           <label className="mb-3 block font-serif-dm text-sm font-semibold text-tinta">
-            Foto Principal
+            Foto Principal <span className="text-terracota">*</span>
           </label>
           <SelectorImagen
+            valor={fotoPrincipal}
+            onChange={setFotoPrincipal}
             etiqueta="Foto principal (4:3, hasta 3 MB)"
-            opcional={true}
-            onCargar={(datos, tipo) => setFotoPrincipal(datos)}
+            opcional={false}
           />
           {fotoPrincipal && (
-            <p className="mt-2 text-xs text-pardo">
+            <p className="mt-2 text-xs text-verde">
               ✓ Foto principal cargada
+            </p>
+          )}
+          {!fotoPrincipal && (
+            <p className="mt-2 text-xs text-terracota">
+              Obligatoria para poder guardar
             </p>
           )}
         </div>
@@ -260,20 +350,12 @@ export default function AdminComercioForm() {
 
         {/* Fotos Adicionales */}
         <div className="gz-tarjeta-impresa p-4">
-          <label className="mb-3 block font-serif-dm text-sm font-semibold text-tinta">
-            Fotos adicionales (máximo 5)
-          </label>
-          <div className="grid grid-cols-5 gap-2">
-            {fotos.map((foto, idx) => (
-              <div key={idx} className="flex flex-col items-center gap-2">
-                <div className="h-16 w-16 border border-dashed border-filete bg-papel-calido" />
-                <span className="font-mono-ibm text-[9px] text-pardo">Foto {idx + 1}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-pardo">
-            Funcionalidad de upload en progreso
-          </p>
+          <SelectorImagenesMultiples
+            imagenes={fotos}
+            onCargar={setFotos}
+            maxImagenes={5}
+            etiqueta="Fotos adicionales (máximo 5)"
+          />
         </div>
 
         {/* Contacto */}
@@ -357,6 +439,89 @@ export default function AdminComercioForm() {
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
                 placeholder="-3.7274"
+                className="gz-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Redes Sociales */}
+        <div className="gz-tarjeta-impresa p-4">
+          <label className="mb-3 block font-serif-dm text-sm font-semibold text-tinta">
+            Redes sociales (opcional)
+          </label>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="facebook" className="mb-1 flex items-center gap-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                <MIcon name="facebook" className="text-[14px]" />
+                Facebook
+              </label>
+              <input
+                id="facebook"
+                type="url"
+                value={facebook}
+                onChange={(e) => setFacebook(e.target.value)}
+                placeholder="https://facebook.com/tuempresa"
+                className="gz-input"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="instagram" className="mb-1 flex items-center gap-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                <MIcon name="instagram" className="text-[14px]" />
+                Instagram
+              </label>
+              <input
+                id="instagram"
+                type="url"
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                placeholder="https://instagram.com/tuempresa"
+                className="gz-input"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="twitter" className="mb-1 flex items-center gap-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                <MIcon name="twitter" className="text-[14px]" />
+                Twitter/X
+              </label>
+              <input
+                id="twitter"
+                type="url"
+                value={twitter}
+                onChange={(e) => setTwitter(e.target.value)}
+                placeholder="https://twitter.com/tuempresa"
+                className="gz-input"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="linkedin" className="mb-1 flex items-center gap-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                <MIcon name="linked_in" className="text-[14px]" />
+                LinkedIn
+              </label>
+              <input
+                id="linkedin"
+                type="url"
+                value={linkedin}
+                onChange={(e) => setLinkedin(e.target.value)}
+                placeholder="https://linkedin.com/company/tuempresa"
+                className="gz-input"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="tiktok" className="mb-1 flex items-center gap-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                <MIcon name="music_note" className="text-[14px]" />
+                TikTok
+              </label>
+              <input
+                id="tiktok"
+                type="url"
+                value={tiktok}
+                onChange={(e) => setTiktok(e.target.value)}
+                placeholder="https://tiktok.com/@tuempresa"
                 className="gz-input"
               />
             </div>

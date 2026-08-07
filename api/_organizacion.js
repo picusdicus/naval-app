@@ -5,7 +5,8 @@
 /** Devuelve la fila de la organización del slug, o null si ya no existe. */
 export async function organizacionDeSesion(sql, slug) {
   const [organizacion] = await sql`
-    SELECT id, nombre, slug, categoria_defecto, lugar_defecto, comercio_id
+    SELECT id, nombre, slug, categoria_defecto, lugar_defecto, comercio_id,
+           es_organizacion_cultural
     FROM organizaciones WHERE slug = ${slug}
   `
   return organizacion ?? null

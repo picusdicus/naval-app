@@ -29,9 +29,22 @@ export default async function handler(req) {
 
     const perfil = resultado.length > 0 ? resultado[0] : null
 
+    // Organización que gestiona el comercio, si reclamó su ficha. La ficha
+    // pública la usa para listar "lo que organizan" (sus eventos publicados):
+    // el vínculo bueno es `organizaciones.comercio_id`, no
+    // `comercios_perfil.organizacion_id` (que quedó NULL en los perfiles
+    // guardados antes de arreglar el upsert del panel).
+    const [organizacion] = await sql`
+      SELECT id, slug, nombre
+      FROM organizaciones
+      WHERE comercio_id = ${comercioId} AND activa = true
+      LIMIT 1
+    `
+
     return new Response(
       JSON.stringify({
         perfil,
+        organizacion: organizacion || null,
       }),
       {
         status: 200,

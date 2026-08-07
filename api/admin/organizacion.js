@@ -29,6 +29,15 @@ export default async function handler(req) {
         slug: organizacion.slug,
         categoriaDefecto: organizacion.categoria_defecto,
         lugarDefecto: organizacion.lugar_defecto,
+        esOrganizacionCultural: organizacion.es_organizacion_cultural === true,
+        // Decide si el panel enseña la pestaña "Mis eventos". NO basta con
+        // `es_organizacion_cultural`: esa columna se añadió después y solo la
+        // rellena el flujo de reclamación de comercios, así que las orgs de
+        // siempre (TYL TYL, Teatro Municipal, La Nave, Ayuntamiento) la tienen
+        // en false. Lo que de verdad habilita publicar es tener perfil de
+        // eventos — `categoria_defecto` — porque es con lo que se publican.
+        puedePublicarEventos:
+          organizacion.es_organizacion_cultural === true || Boolean(organizacion.categoria_defecto),
       },
     })
   } catch (error) {

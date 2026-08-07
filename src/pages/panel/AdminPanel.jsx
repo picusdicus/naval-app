@@ -260,7 +260,7 @@ export default function AdminPanel() {
 
   // Si la pestaña actual es eventos pero la org no es cultural, cambiar a comercio
   useEffect(() => {
-    if (datos && !datos.organizacion?.es_organizacion_cultural && pestana === 'eventos') {
+    if (datos && !datos.organizacion?.puedePublicarEventos && pestana === 'eventos') {
       setPestana('comercio')
     }
   }, [datos, pestana])
@@ -412,7 +412,7 @@ export default function AdminPanel() {
         {/* Pestañas: eventos (si es cultural), comercio (si vinculado), analíticas. */}
         <div className="mb-6 flex gap-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta sm:w-fit">
           {[
-            ...(datos?.organizacion?.es_organizacion_cultural ? [['eventos', 'event', 'Mis eventos']] : []),
+            ...(datos?.organizacion?.puedePublicarEventos ? [['eventos', 'event', 'Mis eventos']] : []),
             ['comercio', 'storefront', 'Mi comercio'],
             ['analiticas', 'monitoring', 'Mis analíticas'],
           ].map(([clave, icono, etiqueta]) => (

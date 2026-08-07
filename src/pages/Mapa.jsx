@@ -7,7 +7,6 @@ import { etiquetaCocina } from '../lib/cocinas.js'
 import MapaComercios from '../components/directorio/MapaComercios.jsx'
 import FiltrosCategoria from '../components/directorio/FiltrosCategoria.jsx'
 import ComercioCard from '../components/directorio/ComercioCard.jsx'
-import ComercioFila from '../components/directorio/ComercioFila.jsx'
 import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
 import LandingComercios from '../components/directorio/LandingComercios.jsx'
@@ -17,6 +16,7 @@ import { buscarDirectorio } from '../lib/busqueda.js'
 import { useDestacados } from '../lib/useDestacados.js'
 import { useLazyLoad } from '../lib/useLazyLoad.js'
 import { useReclamacionesComercios } from '../lib/useReclamacionesComercios.js'
+import { usePerfilesComercios } from '../lib/usePerfilesComercios.js'
 import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
 import MIcon from '../components/MIcon.jsx'
@@ -47,11 +47,12 @@ export default function Mapa() {
   // Cargar estado de reclamaciones de comercios
   const { reclamaciones, esReclamacionPendiente, esReclamacionAprobada } = useReclamacionesComercios()
 
+  // Perfiles enriquecidos (foto, descripción): marcan qué fichas están reclamadas
+  const todos = useMemo(() => [...comerciosData, ...serviciosLocales], [])
+  const { obtenerPerfil } = usePerfilesComercios()
+
   // El mapa (columna derecha) solo existe en escritorio (>= 1024px).
   const esDesktop = useMediaQuery('(min-width: 1024px)')
-
-  // OSM (con coordenadas) + servicios locales curados (sin ubicación fija).
-  const todos = useMemo(() => [...comerciosData, ...serviciosLocales], [])
 
   // La vista se deriva de la URL (nada de estado duplicado):
   //   /comercios                          → landing por tipo de negocio
@@ -198,6 +199,20 @@ export default function Mapa() {
 
   // Lazy loading: mostrar 12 iniciales, cargar 12 más al hacer scroll
   const { items: comerciosVisibles, observerRef } = useLazyLoad(comercios, 12)
+
+  // Cabecera del listado: de qué es la lista y cuántos hay (de ellos, cuántos
+  // con ficha reclamada — el sello "verificado" de cada fila).
+  const tituloListado = sub
+    ? infoSubtipo(sub).nombre
+    : categoria
+      ? CATEGORIAS[categoria].nombre
+      : busqueda
+        ? 'Resultados'
+        : 'Todos los comercios'
+  const reclamados = useMemo(
+    () => comercios.filter((c) => obtenerPerfil(c.id)).length,
+    [comercios, obtenerPerfil],
+  )
 
   // Al seleccionar un comercio, scroll la ficha a la vista dentro del contenedor de la
   // columna izquierda. En desktop el scroll es dentro del contenedor (lg:overflow-y-auto),
@@ -353,14 +368,25 @@ export default function Mapa() {
           className="hide-scrollbar flex flex-col gap-6 flex-1 lg:min-w-0"
         >
   
-          <div className="flex items-center justify-between border-t border-tinta pt-3">
-            <p className="gz-label text-mudo">
-              {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}
-            </p>
+          {/* Cabecera del listado: título de la lista + recuento.
+              Móvil: una línea mono. Escritorio: titular serif y recuento. */}
+          <div>
+            <div className="flex items-baseline justify-between gap-3 border-b-2 border-tinta pb-2 lg:pb-3">
+              <h2 className="hidden font-serif-dm text-2xl leading-none text-tinta lg:block">
+                {tituloListado}
+              </h2>
+              <p className="gz-label truncate text-mudo lg:hidden">
+                {tituloListado} · {comercios.length}
+              </p>
+              <p className="hidden flex-none gz-label text-mudo lg:block">
+                {comercios.length} {comercios.length === 1 ? 'comercio' : 'comercios'}
+                {reclamados > 0 && ` · ${reclamados} ${reclamados === 1 ? 'reclamado' : 'reclamados'}`}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setSugiriendo(true)}
-              className="flex items-center gap-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
+              className="ml-auto mt-2 flex items-center gap-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
             >
               <MIcon name="add" className="text-[14px]" />
               ¿Falta un comercio?
@@ -376,35 +402,10 @@ export default function Mapa() {
             </p>
           )}
 
-          {/* Lista de comercios (solo desktop) */}
-          {esDesktop && comercios.length > 0 && (
-            <>
-              <div className="space-y-0">
-                {comerciosVisibles.map((c) => (
-                  <ComercioFila
-                    key={c.id}
-                    comercio={c}
-                    onClick={() => setSeleccionado(c)}
-                  />
-                ))}
-              </div>
-              {/* Sentinel para lazy load */}
-              <div ref={observerRef} className="h-4" />
-              {seleccionado && comercios.some((c) => c.id === seleccionado.id) && (
-                <div ref={detalleRef} className="mt-6 border-t-2 border-tinta pt-6">
-                  <ComercioDetalle
-                    comercio={seleccionado}
-                    onCerrar={() => setSeleccionado(null)}
-                    esReclamacionPendiente={esReclamacionPendiente(seleccionado.id)}
-                    tieneAprobada={esReclamacionAprobada(seleccionado.id)}
-                  />
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Lista de comercios (solo móvil) */}
-          {!esDesktop && (
+          {/* Listado: la misma fila en móvil y escritorio. La ficha se abre
+              en línea bajo el comercio en móvil y al final de la lista en
+              escritorio (donde hay mapa al lado y la lista es más larga). */}
+          {comercios.length > 0 && (
             <>
               <div>
                 {comerciosVisibles.map((c) => (
@@ -413,8 +414,9 @@ export default function Mapa() {
                       comercio={c}
                       activo={seleccionado?.id === c.id}
                       onClick={() => setSeleccionado(c)}
+                      fotoPerfil={obtenerPerfil(c.id)}
                     />
-                    {seleccionado?.id === c.id && (
+                    {!esDesktop && seleccionado?.id === c.id && (
                       <div ref={detalleRef} className="py-3">
                         <ComercioDetalle
                           comercio={c}
@@ -429,6 +431,16 @@ export default function Mapa() {
               </div>
               {/* Sentinel para lazy load */}
               <div ref={observerRef} className="h-4" />
+              {esDesktop && seleccionado && comercios.some((c) => c.id === seleccionado.id) && (
+                <div ref={detalleRef} className="mt-6 border-t-2 border-tinta pt-6">
+                  <ComercioDetalle
+                    comercio={seleccionado}
+                    onCerrar={() => setSeleccionado(null)}
+                    esReclamacionPendiente={esReclamacionPendiente(seleccionado.id)}
+                    tieneAprobada={esReclamacionAprobada(seleccionado.id)}
+                  />
+                </div>
+              )}
             </>
           )}
 

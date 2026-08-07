@@ -144,7 +144,12 @@ async function aprobar(sql, solicitudId, esOrganizacionCultural) {
     // Si el admin marca como cultural, o si lo detectamos por categoría
     const esCultural = esOrganizacionCultural || detalles.categoria === 'ocio_cultura'
     const categoriaDefecto = esCultural ? 'cultura' : null
-    const lugarDefecto = null
+    // El formulario de eventos exige categoría **y** lugar en el perfil de la
+    // org (los publica con ellos, el gestor no los elige): sin lugar la
+    // pestaña "Mis eventos" aparece pero no deja guardar nada. Para un comercio
+    // el lugar natural es él mismo; el superadmin puede cambiarlo luego en
+    // "Perfil de eventos" (p. ej. si actúa en el Teatro Municipal).
+    const lugarDefecto = esCultural ? orgNombre : null
 
     const [orgExistente] = await sql`
       SELECT id FROM organizaciones WHERE comercio_id = ${solicitud.comercio_id}
