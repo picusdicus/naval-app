@@ -173,6 +173,15 @@ export default function Noticias() {
                       <MIcon name={n.icono} className="text-[56px] text-white" />
                     </div>
                   )}
+                  {/* Indicador de carrusel: la galería completa solo se ve en
+                      el detalle (un scroll horizontal dentro de la tarjeta
+                      chocaría con el scroll vertical del listado). */}
+                  {n.imagenes?.length > 1 && (
+                    <div className="absolute right-2 top-2 flex items-center gap-1 bg-tinta/80 px-2 py-1 font-mono-ibm text-[10px] tracking-wider text-papel">
+                      <MIcon name="collections" className="text-[14px]" />
+                      {n.imagenes.length}
+                    </div>
+                  )}
                 </div>
                 <div className="p-5">
                   <p className="font-serif-dm text-lg leading-tight text-tinta">{n.titulo}</p>

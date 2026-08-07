@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
+import GaleriaNoticia from '../components/noticias/GaleriaNoticia.jsx'
 import MIcon from '../components/MIcon.jsx'
+import { partesConEnlaces } from '../lib/linkify.js'
 import { ETIQUETAS_ACTIVIDAD, ETIQUETAS_ALERTA, useNoticiasPublicas } from '../lib/useNoticiasPublicas.js'
 
 function formatearFechaLarga(fechaISO) {
@@ -92,16 +94,34 @@ export default function NoticiaDetalle() {
 
       <div className="mt-5 h-px bg-filete" />
 
-      {noticia.imagen && (
-        <img
-          src={noticia.imagen}
-          alt=""
-          className="mt-5 max-h-[420px] w-full border border-tinta object-contain"
-        />
+      {noticia.imagenes?.length > 1 ? (
+        <GaleriaNoticia imagenes={noticia.imagenes} titulo={noticia.titulo} />
+      ) : (
+        noticia.imagen && (
+          <img
+            src={noticia.imagen}
+            alt=""
+            className="mt-5 max-h-[420px] w-full border border-tinta object-contain"
+          />
+        )
       )}
 
       <div className="mt-5 whitespace-pre-wrap break-words font-serif-spectral text-[15px] leading-relaxed text-tinta-suave">
-        {noticia.contenido || noticia.resumen || null}
+        {partesConEnlaces(noticia.contenido || noticia.resumen).map((parte, i) =>
+          parte.url ? (
+            <a
+              key={i}
+              href={parte.valor}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-terracota hover:underline"
+            >
+              {parte.valor}
+            </a>
+          ) : (
+            <span key={i}>{parte.valor}</span>
+          )
+        )}
       </div>
 
       {/* Enlace a la fuente solo para noticias del RSS (artículo completo en la

@@ -31,7 +31,7 @@ export default async function handler(req) {
     // El OR mantiene visibles fuera de la ventana de historial tanto una
     // alerta vigente como una actividad cuyo plazo sigue abierto.
     const filas = await sql`
-      SELECT origen_externo_id, titulo, resumen, cuerpo, imagen_url, url, usuario,
+      SELECT origen_externo_id, titulo, resumen, cuerpo, imagen_url, imagenes_url, url, usuario,
              tipo, categoria, urgente, tipo_alerta,
              to_char(fecha_limite, 'YYYY-MM-DD') AS fecha_limite,
              to_char(publicado_en, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS publicado_en,
@@ -55,6 +55,9 @@ export default async function handler(req) {
       url: f.url || '',
       autor: 'Ayuntamiento de Navalcarnero',
       imagen: f.imagen_url || '',
+      // Array completo del carrusel; nunca null para que la UI no tenga que
+      // defenderse (filas antiguas o posts de imagen única traen NULL en BD).
+      imagenes: Array.isArray(f.imagenes_url) ? f.imagenes_url : [],
       tipo: f.tipo || 'noticia',
       categoria: f.categoria,
       fechaLimite: f.fecha_limite,

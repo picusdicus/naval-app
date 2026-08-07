@@ -26,6 +26,24 @@ export function primeraImagen(post) {
   return post.displayUrl || post.imageUrl || post.thumbnailUrl || post.image || ''
 }
 
+/** Todas las fotos del post, en orden de carrusel (o una sola si no lo es).
+ * Mismo baile de campos entre actores que primeraImagen(): un carrusel real
+ * (type "Sidecar") trae varias entradas en `images`/`childPosts`; si no,
+ * cae a la imagen única. Se usa para no perder el resto de fotos de un post
+ * como el de instalaciones deportivas (una foto por instalación). */
+export function todasLasImagenes(post) {
+  if (Array.isArray(post.images) && post.images.length > 0) {
+    const urls = post.images.filter(Boolean)
+    if (urls.length > 0) return urls
+  }
+  if (Array.isArray(post.childPosts) && post.childPosts.length > 0) {
+    const urls = post.childPosts.map((c) => c?.displayUrl).filter(Boolean)
+    if (urls.length > 0) return urls
+  }
+  const unica = primeraImagen(post)
+  return unica ? [unica] : []
+}
+
 /** shortCode del post: campo directo o, si el actor no lo da (p. ej.
  * instagram-post-scraper), extraído de la url /p/<code>/ o /reel/<code>/. */
 export function shortCodeDe(post) {
@@ -53,6 +71,9 @@ export function normalizarPost(post) {
     publicado: post.timestamp || '',
     url: post.url || `https://www.instagram.com/p/${shortCode}/`,
     imagen: primeraImagen(post),
+    // Todas las fotos del post (carrusel completo); imagen sigue siendo solo
+    // la primera, para no tocar nada de lo que ya consume ese campo.
+    imagenes: todasLasImagenes(post),
     usuario: post.ownerUsername || '',
   }
 }
@@ -96,11 +117,14 @@ export const hayCredencialesBlob = () =>
 
 /**
  * Descarga la foto del post y la sube a Blob con nombre determinista
- * (<prefijo>/<shortCode>.<ext>): re-ejecutar el webhook sobrescribe el mismo
- * blob en vez de acumular copias. Devuelve la URL o null (la imagen es
- * opcional: un fallo aquí no descarta el item).
+ * (<prefijo>/<shortCode>.<ext>, o <prefijo>/<shortCode>-<sufijo>.<ext> si se
+ * pasa `sufijo`): re-ejecutar el webhook sobrescribe el mismo blob en vez de
+ * acumular copias. El sufijo permite subir el resto de fotos de un carrusel
+ * sin tocar el nombre histórico de la primera (sufijo vacío = comportamiento
+ * de siempre). Devuelve la URL o null (la imagen es opcional: un fallo aquí
+ * no descarta el item).
  */
-export async function subirImagen(prefijo, shortCode, urlOrigen) {
+export async function subirImagen(prefijo, shortCode, urlOrigen, sufijo = '') {
   // Sin credenciales: devolver URL original como fallback
   if (!urlOrigen) return null
   if (!hayCredencialesBlob()) return urlOrigen
@@ -114,7 +138,8 @@ export async function subirImagen(prefijo, shortCode, urlOrigen) {
     if (contenido.length === 0 || contenido.length > MAX_IMAGEN_BYTES) {
       throw new Error(`tamaño fuera de límite (${contenido.length} bytes)`)
     }
-    const { url } = await put(`${prefijo}/${shortCode}.${extension}`, contenido, {
+    const nombre = sufijo ? `${prefijo}/${shortCode}-${sufijo}.${extension}` : `${prefijo}/${shortCode}.${extension}`
+    const { url } = await put(nombre, contenido, {
       access: 'public',
       contentType: tipo,
       addRandomSuffix: false,
