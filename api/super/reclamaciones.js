@@ -13,6 +13,7 @@ import servicios from '../../src/data/servicios-locales.json' assert { type: 'js
 export const config = { runtime: 'edge' }
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
+const RESEND_FROM = 'noreply@ennavalcarnero.es'
 const APP_URL = process.env.VITE_APP_URL || 'http://localhost:5173'
 
 async function enviarCorreo(email, nombre, codigo, comercioNombre) {
@@ -32,7 +33,7 @@ async function enviarCorreo(email, nombre, codigo, comercioNombre) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev',
+        from: RESEND_FROM,
         to: emailDest,
         subject: `Reclamación aprobada: ${comercioNombre} - En Navalcarnero${process.env.NODE_ENV !== 'production' ? ' [TEST]' : ''}`,
         html: `
