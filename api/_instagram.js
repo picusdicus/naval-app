@@ -71,6 +71,51 @@ export function shortCodeDe(post) {
   return m ? m[1] : ''
 }
 
+// Instagram genera esta fórmula fija cuando no tiene nada que decir de la
+// foto ("Photo by Ayuntamiento de Navalcarnero on August 03, 2026."). Es el
+// alt que trae SIEMPRE el post padre de un carrusel — nunca aporta contenido,
+// así que se descarta en vez de mandarlo a Claude como si fuera texto real.
+const ALT_GENERICO_RE = /^Photo by .+ on \w+ \d{1,2}, \d{4}\.?$/i
+
+function altUtil(alt) {
+  const limpio = typeof alt === 'string' ? alt.trim() : ''
+  if (!limpio || ALT_GENERICO_RE.test(limpio)) return ''
+  return limpio
+}
+
+const MAX_FOTOS_ALT = 10
+const MAX_CHARS_ALT = 4000
+
+/**
+ * Alt combinado del post: el del padre (si dice algo) más el de cada foto
+ * del carrusel (childPosts), marcado con "[Imagen N]" — N es la posición real
+ * de la foto en el carrusel, así que un hueco (una foto sin alt útil) no
+ * desplaza la numeración de las siguientes. En un post "Sidecar" el alt del
+ * padre es siempre la fórmula genérica y el contenido real (fecha, hora,
+ * lugar, plazo, precio…) vive en el alt de cada hijo — sin esto, un carrusel
+ * municipal (un cartel de actividad por foto) llegaba a Claude prácticamente
+ * ciego. En un post de foto única no hay childPosts, así que el resultado es
+ * exactamente el alt del padre, como hasta ahora. Limitado a las primeras
+ * MAX_FOTOS_ALT fotos y a MAX_CHARS_ALT caracteres para no disparar tokens en
+ * carruseles largos.
+ */
+function altCompletoDe(post) {
+  const partes = []
+  const altPadre = altUtil(post.alt)
+  if (altPadre) partes.push(altPadre)
+
+  if (Array.isArray(post.childPosts)) {
+    post.childPosts.slice(0, MAX_FOTOS_ALT).forEach((hijo, indice) => {
+      const altHijo = altUtil(hijo?.alt)
+      if (altHijo) partes.push(`[Imagen ${indice + 1}] ${altHijo}`)
+    })
+  }
+
+  let texto = partes.join('\n')
+  if (texto.length > MAX_CHARS_ALT) texto = texto.slice(0, MAX_CHARS_ALT).trimEnd() + '…'
+  return texto
+}
+
 /** Reduce un post de Apify a lo que Claude necesita para decidir. */
 export function normalizarPost(post) {
   if (!post || typeof post !== 'object') return null
@@ -80,10 +125,13 @@ export function normalizarPost(post) {
   return {
     shortCode,
     caption,
-    // Texto alternativo de la imagen que genera Instagram (OCR del cartel):
-    // los posts municipales suelen poner fecha/hora/lugar solo en el cartel,
-    // así que sin este campo Claude no puede reconocerlos como eventos.
-    alt: typeof post.alt === 'string' ? post.alt.trim() : '',
+    // Texto alternativo de la(s) imagen(es) que genera Instagram (OCR del
+    // cartel): los posts municipales suelen poner fecha/hora/lugar solo en el
+    // cartel, así que sin este campo Claude no puede reconocerlos como
+    // eventos. En un carrusel esto incluye el alt de cada foto (ver
+    // altCompletoDe) — el del post padre por sí solo es siempre la fórmula
+    // genérica de Instagram, sin ningún dato del cartel.
+    alt: altCompletoDe(post),
     // La fecha de publicación ancla las fechas relativas ("este sábado 18").
     publicado: post.timestamp || '',
     url: post.url || `https://www.instagram.com/p/${shortCode}/`,
