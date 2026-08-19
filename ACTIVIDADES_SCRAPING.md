@@ -54,6 +54,29 @@ ig-{shortCode}-{slug-del-titulo}
 2. Decidir sobre limpieza de duplicados históricos (hay 6+ pares actuales)
 3. Implementar y verificar idempotencia
 
+### 3. **Distinción: fecha de celebración vs. fecha límite** ✓
+**Problema**: La app solo guardaba `fecha_limite` (cuándo cierra el plazo). El vecino necesita saber **cuándo se celebra** la actividad.
+
+**Solución implementada** (commit bd7b6ca):
+- ✓ Nueva columna `fecha_evento` en tabla `actividades` (date, nullable)
+- ✓ Extracción de ambas fechas por Claude con marcadores textuales distintos:
+  - `fechaEvento`: "Viernes, 21 de agosto" / cabecera de día
+  - `fechaLimite`: "Inscripciones: hasta 20 de agosto"
+- ✓ Re-validación servidor: descarta pares incoherentes (`fecha_limite > fecha_evento`)
+- ✓ Mapeo frontend: ordena por `fecha_evento` (cuándo es), fallback a `fecha_limite`
+- ✓ Ambas fechas expuestas en API (`GET /api/actividades`)
+
+**Ejemplo**: Tardeo deportivo
+```
+Texto fuente: "VIERNES, 21 DE AGOSTO. Horario: 19.30h. Inscripciones: hasta 20 de agosto."
+fecha_evento: 2026-08-21  (cuándo se celebra)
+fecha_limite: 2026-08-20  (cuándo cierra inscripción)
+```
+
+**Próximos pasos**:
+- Después de resolver bugs A y B, reprocesar página municipal para verificar extracción de ambas fechas
+- Actualizar UI: mostrar "21 de agosto" (evento) como dato principal, plazo como secundario
+
 ---
 
 ## Detalles técnicos: Extracción de actividades desde URL
@@ -102,6 +125,20 @@ const imgs = doc.querySelectorAll('img[alt]')
 ```
 
 **Límite de candidatos**: 50 para no saturar Claude (con warning si se excede)
+
+**Nota sobre carteles "fin de plazo"**: La galería municipal contiene carteles como:
+```
+12. fin de plazo TORNEO DE FÚTBOL 27 Agosto
+13. fin plazo TENIS DE MESA 27 de agosto
+```
+
+Estos son **recordatorios del plazo**, no actividades independientes. Se refieren a un torneo que ya está en la galería con su propio cartel. Darlos de alta como actividades crea duplicados.
+
+**Tratamiento** (futuro, tras resolver bugs A y B):
+- Detectar por marcador: `fin de plazo`/`fin plazo`/`fin-plazo` en título o nombre del fichero
+- No crear actividad propia si se detecta el marcador
+- Opcionalmente: usar para completar `fecha_limite` de la actividad real si se puede emparejar por nombre del evento
+- Loguear cantidad de carteles detectados y emparejados
 
 ### Validación con Claude
 
