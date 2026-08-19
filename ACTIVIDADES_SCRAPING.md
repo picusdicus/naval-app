@@ -1,381 +1,281 @@
-# Actividades con Scraping de URLs
+# Actividades: Scraping, Extracción y Consolidación
 
-## Resumen
+## Resumen de trabajo completado (Agosto 2026)
 
-El webhook `api/sync-instagram-noticias.js` ahora detecta URLs en posts municipales de Instagram, scrapea las páginas en cuestión y extrae automáticamente actividades (deportes, talleres, becas) usando Claude, creando múltiples filas en la tabla `actividades` — una por actividad.
+### 1. **Consolidación de Actividades en Eventos** ✓
+Actividades y eventos ahora son una única sección unificada en `/eventos`:
+- Categoría nueva: "Talleres" (`#9B5A7A`) en la taxonomía de eventos
+- Las actividades se muestran como eventos con `categoria='talleres'`
+- Deep links de actividades → `/eventos?categorias=talleres`
+- La página de `/actividades` fue eliminada
+- Navegación actualizada (menuú, header, navbar)
 
-## Flujo
+**Verificación**: Las actividades aparecen correctamente en `/eventos?categorias=talleres` ordenadas por fecha límite.
 
-### 1. Detección de URL
+---
+
+## Bugs identificados y en progreso
+
+### BUG A — HTML Truncation (RESUELTO)
+**Problema**: Páginas con 39+ actividades se truncaban a 50 KB, perdiendo la galería al final de la página.
+
+**Causa**: `descargarDocumento()` en `sync-instagram-noticias.js` limitaba a 51,200 bytes antes de extraer contenido.
+
+**Solución implementada** (commit 56f7cdb):
+1. ✓ Aumentar límite a 300 KB (`MAX_HTML_BYTES = 300_000`)
+2. ✓ Extraer contenido principal del artículo (div `.entrada` de WordPress) **antes** de aplicar límite
+3. ✓ Descartar header/menu/sidebar/footer para maximizar contenido útil
+4. ✓ Añadir logging visible cuando ocurre truncamiento
+5. ✓ Logging de conteo de candidatos en `parseHtmlInteligente()`
+
+**Verificación pendiente**: Reprocesar la página de programación deportiva para confirmar que se detectan **39 actividades completas**, incluyendo las del final (ajedrez, tiro al plato, galgos, voleibol, patinaje, calistenia, acuatlón).
+
+---
+
+### BUG B — origen_externo_id inestable (PROPUESTA DOCUMENTADA)
+**Problema**: El ID de actividad genera duplicados por dos causas independientes:
+1. Deriva de título entre ejecuciones (Claude redacta distinto)
+2. Mismo evento en múltiples posts
+
+**Estructura actual**:
+```
+ig-{shortCode}-{slug-del-titulo}
+// Problema: slug cambia si Claude redacta distinto el título
+```
+
+**Solución propuesta (BUG_B_PROPOSAL.md)**: Opción 3 híbrida
+- **Hijas de carrusel** (con `imagen_origen_id`): `ig-{shortCode}-img-{imagen_origen_id}`
+- **Actividades de documento** (HTML/PDF): `doc-{hash(url_fuente)}-{fecha}-{titulo_normalizado}`
+- Idempotencia: Misma actividad siempre = mismo ID
+- Reconoce eventos en múltiples posts que enlazan el mismo documento
+
+**Próximos pasos**:
+1. Decidir sobre implementación de Bug B
+2. Decidir sobre limpieza de duplicados históricos (hay 6+ pares actuales)
+3. Implementar y verificar idempotencia
+
+### 3. **Distinción: fecha de celebración vs. fecha límite** ✓
+**Problema**: La app solo guardaba `fecha_limite` (cuándo cierra el plazo). El vecino necesita saber **cuándo se celebra** la actividad.
+
+**Solución implementada** (commit bd7b6ca):
+- ✓ Nueva columna `fecha_evento` en tabla `actividades` (date, nullable)
+- ✓ Extracción de ambas fechas por Claude con marcadores textuales distintos:
+  - `fechaEvento`: "Viernes, 21 de agosto" / cabecera de día
+  - `fechaLimite`: "Inscripciones: hasta 20 de agosto"
+- ✓ Re-validación servidor: descarta pares incoherentes (`fecha_limite > fecha_evento`)
+- ✓ Mapeo frontend: ordena por `fecha_evento` (cuándo es), fallback a `fecha_limite`
+- ✓ Ambas fechas expuestas en API (`GET /api/actividades`)
+
+**Ejemplo**: Tardeo deportivo
+```
+Texto fuente: "VIERNES, 21 DE AGOSTO. Horario: 19.30h. Inscripciones: hasta 20 de agosto."
+fecha_evento: 2026-08-21  (cuándo se celebra)
+fecha_limite: 2026-08-20  (cuándo cierra inscripción)
+```
+
+**Próximos pasos**:
+- Después de resolver bugs A y B, reprocesar página municipal para verificar extracción de ambas fechas
+- Actualizar UI: mostrar "21 de agosto" (evento) como dato principal, plazo como secundario
+
+---
+
+## Detalles técnicos: Extracción de actividades desde URL
+
+### Arquitectura
+
+Flujo: Post Instagram → `api/sync-instagram-noticias.js` → Descarga URL → `api/_actividades-parser.js` → Claude → Upsert en `actividades` tabla
+
+### Descarga y recorte de HTML (`descargarDocumento`)
+
 ```javascript
-function detectarUrl(caption) {
-  const match = caption.match(/(https?:\/\/[^\s]+)/);
-  return match ? match[1] : null
+// Antes (TRUNCABA):
+const html = await response.text()
+return { tipo: 'html', html: html.substring(0, 51200) }
+
+// Después (MEJORADO):
+const MAX_HTML_BYTES = 300_000 // 300 KB
+let html = await response.text()
+
+// Extraer artículo principal (WordPress)
+const match = html.match(/<div[^>]*class="[^"]*entrada[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)
+if (match && match[1].length > 1000) {
+  html = match[1] // Descarta chrome de la página
+  console.log(`[descargarDocumento] Contenido extraído: ${original} → ${html.length} bytes`)
+}
+
+// Aplicar límite DESPUÉS del recorte
+if (html.length > MAX_HTML_BYTES) {
+  console.warn(`[descargarDocumento] HTML truncado: ${html.length} → ${MAX_HTML_BYTES} bytes`)
+  html = html.substring(0, MAX_HTML_BYTES)
 }
 ```
 
-Si el caption contiene una URL, se captura la primera que encuentre.
+### Parsing de HTML (`parseHtmlInteligente`)
 
-### 2. Scraping
+**Estrategia 1**: Galería WordPress (imágenes con alt text como títulos)
 ```javascript
-async function scrapearUrl(url) {
-  const response = await fetch(url, { timeout: 10000 })
-  const html = await response.text()
-  return html.substring(0, 51200) // Limitar a 50 KB
-}
+const galeriaItems = doc.querySelectorAll('.gallery-item img')
+// Extrae alt text y lazy-loaded URLs
 ```
 
-Se descarga el HTML de la URL con timeout de 10s. Limitado a 50 KB para no saturar.
-
-### 3. Parsing Inteligente + Enriquecimiento con Claude
-
-El nuevo módulo `api/_actividades-parser.js` implementa una estrategia en 3 fases:
-
-**Fase 1: Parsing Inteligente del HTML**
+**Estrategia 2**: Fallback a cualquier imagen con alt text descriptivo
 ```javascript
-parseHtmlInteligente(html)
+const imgs = doc.querySelectorAll('img[alt]')
+// Filtra logos, iconos de redes, etc
 ```
-Busca secciones de actividades usando heurísticas:
-1. **Clases explícitas**: `[class*="actividad"]`, `[class*="evento"]`, `article`, `[class*="card"]`
-2. **Fallback**: Si hay pocas secciones, busca encabezados grandes (`h2`, `h3`) + contenedor próximo
 
-Para cada sección extrae:
-- **titulo**: del h2/h3 o campo `.titulo`
-- **imagenUrl**: primera `<img>` dentro de la sección
-- **imagenAlt**: atributo `alt` de la imagen
-- **htmlSeccion**: primeros 1500 chars (contexto para Claude)
+**Límite de candidatos**: 50 para no saturar Claude (con warning si se excede)
 
-**Fase 2: Validación + Enriquecimiento con Claude**
+**Nota sobre carteles "fin de plazo"**: La galería municipal contiene carteles como:
+```
+12. fin de plazo TORNEO DE FÚTBOL 27 Agosto
+13. fin plazo TENIS DE MESA 27 de agosto
+```
+
+Estos son **recordatorios del plazo**, no actividades independientes. Se refieren a un torneo que ya está en la galería con su propio cartel. Darlos de alta como actividades crea duplicados.
+
+**Tratamiento** (futuro, tras resolver bugs A y B):
+- Detectar por marcador: `fin de plazo`/`fin plazo`/`fin-plazo` en título o nombre del fichero
+- No crear actividad propia si se detecta el marcador
+- Opcionalmente: usar para completar `fecha_limite` de la actividad real si se puede emparejar por nombre del evento
+- Loguear cantidad de carteles detectados y emparejados
+
+### Validación con Claude
+
+Transforma candidatos (solo títulos) en actividades estructuradas:
+- `titulo`: Limpio, sin números de orden, sin mayúsculas gritadas
+- `categoria`: Whitelist [`deporte`, `talleres`, `infantil`, `mayores`, `educacion`, `ayudas`, `empleo`, `general`]
+- `fechaLimite`: YYYY-MM-DD (fecha de prueba o plazo de inscripción)
+- `horario`: Hora si el título la indica
+- `lugar`: Instalación si el título la indica
+
+**Validación server-side**: Re-valida todos los valores antes de guardar (nunca confiar en modelo)
+
+### Mapeo a Eventos (`useEventosPublicos`)
+
 ```javascript
-validarConClaude(candidatos)
+const eventosDeActividades = actividades
+  .filter((a) => a.fecha_limite) // Solo con plazo
+  .map((a) => ({
+    id: a.id,
+    titulo: a.titulo,
+    fecha: a.fecha_limite,        // Fecha principal (no publicado_en)
+    hora: a.horario,              // Extraído de alt text
+    lugar: a.lugar,
+    categoria: 'talleres',         // Nueva categoría
+    descripcion: a.descripcion || '',
+    imagen: a.imagen_url,
+    url: a.url_fuente,
+    origen: 'actividad',
+    fechaLimite: a.fecha_limite,   // Metadato
+    publicadoEn: a.publicado_en,   // Metadato
+  }))
 ```
-Claude procesa los candidatos y retorna:
-- **titulo**: limpio, sin mayúsculas gritadas
-- **categoria**: `deporte|talleres|infantil|mayores|educacion|ayudas|empleo|general`
-- **fechaLimite**: `YYYY-MM-DD` del plazo de inscripción (o null)
-- **horario**: ej `"19:30-22:30h"` u `"hora TBD"` (o null)
-- **lugar**: ubicación o instalación (o null)
-- **imagenValida**: boolean — ¿la imagen pertenece a esta actividad?
-- **imagenUrl**: mantiene la URL si `imagenValida=true`, null si no
 
-**Fase 3: Upload de Imágenes y Fallbacks**
-```javascript
-extraerActividadesDeHTML(html, urlFuente, imagenPostInstagram, shortCode)
-```
-Orquesta todo:
-1. Si `imagenValida=true` e `imagenUrl` existe → intenta subir a Blob
-2. Si la subida falla o `imagenValida=false` → fallback a `imagenPostInstagram` (foto del post)
-3. Retorna array con `imagen_url` ya procesada
+---
 
-### 4. Almacenamiento
-Cada actividad extraída se inserta en `actividades`:
+## Presupuesto de Vercel Blob
+
+Las imágenes de actividades se suben a `instagram-actividades/{shortCode}(-<sufijo>).{ext}`:
+- **Límite por activity**: 1 imagen (fila de tabla `actividades`)
+- **Límite por post Sidecar**: Hasta 6 fotos máximo (`MAX_IMAGENES_POST = 6`)
+- **Estrategia de ahorro**: 
+  - Reutiliza blob ya subido si la actividad ya existe
+  - Consulta Neon antes de subir (nunca a Blob directamente)
+  - Si carga de imagen falla, la actividad se guarda igual con `imagen_url = NULL`
+
+Ver "Presupuesto de Vercel Blob" en CLAUDE.md para más detalles.
+
+---
+
+## Ambiente: Tablas y Schemas
+
+### Tabla `actividades`
 
 ```sql
-INSERT INTO actividades (
-  origen_externo_id, titulo, categoria, fecha_limite,
-  horario, lugar, imagen_url, imagen_origen_id, url_fuente, publicado_en
-)
-VALUES (...)
-ON CONFLICT (origen_externo_id) DO UPDATE SET ...
+CREATE TABLE actividades (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  origen_externo_id text NOT NULL UNIQUE,  -- Clave de idempotencia
+  titulo text NOT NULL,
+  descripcion text,
+  categoria text CHECK (categoria = ANY(ARRAY['deporte', 'talleres', ...]))
+  fecha_limite date NOT NULL,             -- Plazo de inscripción
+  horario text,                           -- Ej: "19:30h"
+  lugar text,                             -- Ej: "Piscina municipal"
+  imagen_url text,                        -- URL en Blob o NULL
+  imagen_origen_id text,                  -- ID estable (photo id en carrusel)
+  url_fuente text,                        -- URL del documento/post original
+  estado text CHECK (estado = ANY(...)),  -- 'borrador' o 'publicado'
+  publicado_en timestamptz,               -- Cuándo se sincronizó
+  creado_en timestamptz DEFAULT now(),
+  actualizado_en timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_actividades_origen ON actividades (origen_externo_id);
+CREATE INDEX idx_actividades_fecha_limite ON actividades (fecha_limite DESC);
 ```
 
-**ID único**: `ig-{shortCode}-{index}` — permite múltiples actividades del mismo post sin choques.
+### Visión cliente (`GET /api/actividades`)
 
-## Separación de Tablas
-
-### `noticias_instagram`
-- **Contenido**: noticias + alertas urgentes municipales
-- **Campos**: titulo, resumen, cuerpo, urgente, tipo_alerta, expira_en
-- **Vigencia**: alertas se filtran client-side (urgente + expira_en > ahora)
-- **Endpoint**: `GET /api/noticias-instagram`
-
-### `actividades`
-- **Contenido**: inscripciones, plazos, talleres, becas, deportes
-- **Campos**: titulo, categoria, fecha_limite, horario, lugar, url_fuente
-- **Vigencia**: se filtran client-side (fecha_limite >= hoy o NULL)
-- **Endpoint**: `GET /api/actividades`
-
-## Endpoints Públicos
-
-### `GET /api/noticias-instagram`
-```javascript
-{
-  "noticias": [
-    {
-      "id": "uuid",
-      "origen_externo_id": "ig-DbYfnCpDZHS",
-      "titulo": "Vacaciones seguras...",
-      "resumen": "...",
-      "cuerpo": "...",
-      "imagen_url": "blob-url",
-      "urgente": false,
-      "tipo_alerta": null,
-      "publicado_en": "2026-07-29T16:00:19Z",
-      "expira_en": null
-    }
-  ]
-}
-```
-
-**Cache**: 60s en CDN  
-**Fail-open**: devuelve `{noticias: []}` si Neon cae
-
-### `GET /api/actividades`
-```javascript
+```json
 {
   "actividades": [
     {
       "id": "uuid",
-      "origen_externo_id": "ig-Dbkgr2hkqCv-0",
-      "titulo": "Torneo de Fútbol 7 Infantil",
+      "titulo": "Tardeo deportivo aquazumba y baño",
       "categoria": "deporte",
       "fecha_limite": "2026-08-20",
-      "horario": "10:00h",
-      "lugar": "Campos Los Manzanos",
-      "imagen_url": "blob-url",
-      "url_fuente": "https://navalcarnero.es/...",
-      "publicado_en": "2026-08-03T08:00:36Z"
+      "horario": "19:30h",
+      "lugar": "Piscina municipal",
+      "imagen_url": "https://...",
+      "url_fuente": "...",
+      "publicado_en": "2026-08-17T08:00:50Z"
     }
   ]
 }
 ```
 
-**Orden**: por fecha_limite ASC (las que cierren primero primero)  
-**Cache**: 60s en CDN  
-**Fail-open**: devuelve `{actividades: []}` si Neon cae
+---
 
-## Hooks React
+## Decisiones de diseño
 
-### `useActividades()` (nuevo)
-```javascript
-const { actividades, proximasACaducar, cargando } = useActividades()
+### 1. **Actividades como eventos con categoría "Talleres"**
+✓ Ventaja: Una única sección de agenda, filtrable
+✓ Mantiene taxonomía de eventos limpia
+✓ Deep links resueltos (`/eventos/:id`)
+
+### 2. **Fecha límite como fecha principal del evento**
+✓ Correcto: Ordena actividades por cuándo cierran (relevancia para el usuario)
+✗ Alternativa descartada: Usar `publicado_en` (solo importa para historial)
+
+### 3. **Sin histórico de campañas en destacados**
+La tabla `destacados` usa `UNIQUE (tipo, referencia_id)`, así que reutiliza filas.
+Rationale: Simplifica modelo, no hay renovación automática aún (futura con Stripe)
+
+### 4. **Imagen: Blob URL municipal vs Blob upload**
+- **HTML/PDF extraído**: Usa URL municipal si está en `<img src>` (estable)
+- **Fallback**: Blob de foto del post Instagram (sube si falta)
+- **Carrusel**: Una foto por actividad, con `imagen_origen_id` para identidad estable
+
+---
+
+## Testing
+
+### Test E2E (`e2e/imagen-evento.spec.js`)
+Sube cartel de evento a Blob y verifica que se guarda la URL.
+
+### Test manual (pendiente para Bug A)
+```bash
+# Reprocesar página de programación deportiva
+# Verificar en logs: 39 candidatos, 39 validados
+# Verificar en DB: todas las actividades presentes, incluidas del final
 ```
 
-- **actividades**: todas las vigentes, ordenadas por plazo
-- **proximasACaducar**: próximas a caducar en ≤ 7 días (para franja en UI)
-- **cargando**: boolean mientras se traen datos
+---
 
-### `useNoticiasPublicas()` (modificado)
-Ya no retorna actividades (antes las filtraba de noticias_instagram). Ahora:
-- **noticias**: solo noticias + alertas (tipo !== 'actividad')
-- **actividades**: quitado (usar `useActividades` en su lugar)
-- **alertas**: avisos urgentes vigentes
-- **cargando**: boolean
+## Futuros
 
-## Ejemplo Real
-
-### Post de Instagram
-Caption:
-```
-¡Ya está aquí la programación deportiva de agosto de las Fiestas Patronales 2026!
-Si quieres participar en alguna de las actividades con inscripción previa, 
-consulta los plazos y no te quedes sin tu plaza.
-
-Toda la información, fechas e inscripciones 👇
-https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/
-```
-
-### Flujo
-1. **Webhook recibe el post** con caption + URL
-2. **detectarUrl()** extrae `https://navalcarnero.es/navalcarnero/prensa/...`
-3. **scrapearUrl()** trae el HTML de la página oficial
-4. **Claude extrae 10 actividades** (fútbol 7, tenis, ping pong, baloncesto, etc):
-   ```
-   {
-     "titulo": "Torneo de Fútbol 7 Infantil",
-     "categoria": "deporte",
-     "fechaLimite": "2026-08-20",
-     "horario": "10:00h",
-     "lugar": "Campos Los Manzanos"
-   },
-   {
-     "titulo": "Torneo de Tenis",
-     "categoria": "deporte",
-     "fechaLimite": "2026-08-25",
-     "horario": "Por determinar",
-     "lugar": "Polideportivos varios"
-   },
-   // ... 8 más
-   ```
-5. **Webhook crea 10 filas** en `actividades`:
-   - `ig-Dbkgr2hkqCv-0` → Fútbol 7
-   - `ig-Dbkgr2hkqCv-1` → Tenis
-   - ... etc
-6. **Deploy automático** (Vercel detecta el commit al schema)
-7. **UI muestra**:
-   - En `/actividades`: todas las 10, ordenadas por fecha de plazo
-   - En franja "Últimos días": Tenis (caduca 25-ago, hoy es 3-ago = 22 días... espera, sería solo si fuera ≤ 7)
-
-## Robustez
-
-### Manejo de Errores
-- **URL no detectable**: post se procesa como noticia (sin actividades)
-- **Scraping falla**: error logueable, webhook continúa con otros posts
-- **Parsing no encuentra secciones**: retorna `[]`, webhook continúa
-- **Claude retorna JSON mal formado**: actividades vacías, webhook continúa
-- **Imagen específica no es válida** (`imagenValida=false`): fallback a imagen del post
-- **Upload de imagen falla**: se captura, fallback a imagen del post (nunca descarta la actividad)
-- **DB cae**: endpoint retorna `{actividades: []}` con 200 (fail-open)
-
-### Estrategia de Imágenes
-- **Preferencia**: imagen extraída del HTML si Claude la valida
-- **Fallback nivel 1**: imagen del post de Instagram (siempre disponible)
-- **Nunca se descarta**: una actividad sin imagen es válida (raro, pero posible)
-
-### IDs Únicos
-- `origen_externo_id = "ig-{shortCode}-{index}"`
-- Si un post tiene 5 deportes, hay 5 filas con índices 0-4
-- Permite upserts sin duplicar aunque se re-scrapee
-
-### Límites
-- **Scraping**: 50 KB máximo (trunca HTML grande)
-- **Timeout**: 10 segundos por URL
-- **Validación**: whitelists de categoria, regex de fechas
-- **Cuota Anthropic**: 1 llamada a Claude por post con URL (razonable)
-
-## Configuración Required
-
-### Environment Variables
-```
-NOTICIAS_SYNC_SECRET=<secret>  # Auth del webhook (Bearer token)
-ANTHROPIC_API_KEY=...          # Para Claude
-DATABASE_URL=...               # Neon
-BLOB_READ_WRITE_TOKEN=...      # Vercel Blob (para imágenes)
-APIFY_TOKEN=...                # (opcional) Para leer dataset de Apify
-```
-
-### Apify
-El webhook de la task `noticias-instagram` debe apuntar a `/api/sync-instagram-noticias`:
-```
-POST https://naval-app.vercel.app/api/sync-instagram-noticias
-Headers:
-  Authorization: Bearer ${NOTICIAS_SYNC_SECRET}
-```
-
-## Monitoreo
-
-El resumen del webhook ahora incluye:
-```json
-{
-  "timestamp": "2026-08-03T12:00:00Z",
-  "recibidos": 5,
-  "analizados": 5,
-  "noticias": 2,
-  "actividades": 8,
-  "creadas": 10,
-  "actualizadas": 0,
-  "imagenesSubidas": 8,
-  "errores": []
-}
-```
-
-- **noticias**: rows insertadas en noticias_instagram
-- **actividades**: actividades extraídas (sum de todas) — útil para medir si el scraping funciona
-- **imagenesSubidas**: fotos subidas a Blob
-
-## Interfaz de Usuario (próxima fase)
-
-### `/actividades` (nueva página)
-Muestra todas las actividades vigentes:
-- Franja "Últimos días de plazo" (proximasACaducar, snap horizontal)
-- Lista general con chips de categoría, ordenada por publicado_en DESC
-- Estado vacío cuando no hay inscripciones abiertas
-
-### Detalle de actividad
-- Badge "Actividad · {categoria}"
-- Fila "Plazo hasta el X" (con color ámbar si ≤ 5 días)
-- Datos: horario, lugar, url_fuente (enlace a la programación oficial)
-
-### Links
-- `MenuDrawer`: nuevo enlace a `/actividades`
-- `Noticias.jsx`: cambiar "Ver actividades pendientes" para usar `useActividades`
-
-## Arquitectura del Parser (`api/_actividades-parser.js`)
-
-### Funciones Exportadas
-
-**`extraerActividadesDeHTML(html, urlFuente, imagenPostInstagram, shortCode)`**
-
-Orquesta el flujo completo. Retorna array de actividades con imagen ya procesada.
-
-```javascript
-const actividades = await extraerActividadesDeHTML(
-  html,                      // HTML de la página
-  'https://navalcarnero.es/...', // URL fuente
-  imagenPostInstagram,       // Fallback (URL de la foto del post)
-  'Dbkgr2hkqCv'             // shortCode del post (para Blob)
-)
-// Retorna:
-[
-  {
-    titulo: "Torneo Fútbol 7",
-    categoria: "deporte",
-    fechaLimite: "2026-08-20",
-    horario: "10:00h",
-    lugar: "Campos Los Manzanos",
-    imagen_url: "https://blob-url/..."  // Ya subida a Blob
-  },
-  ...
-]
-```
-
-### Funciones Internas
-
-**`parseHtmlInteligente(html)`** → array de candidatos
-- Heurísticas CSS + fallback a encabezados
-- Retorna: `{titulo, imagenUrl, imagenAlt, htmlSeccion}`
-- Descartan títulos muy cortos (< 5 chars)
-- HTML limitado a 1500 chars por sección
-
-**`validarConClaude(candidatos)`** → array validado
-- Claude sin vision (más barato que vision)
-- Procesa 1-N candidatos en una llamada
-- Retorna: `{titulo, categoria, fechaLimite, horario, lugar, imagenValida, imagenUrl}`
-- Filtra automáticamente `titulo=null` (descartados por Claude)
-
-### Logging
-
-El parser loguea en `console.log` / `console.error`:
-```
-[extraerActividadesDeHTML] 12 candidatos de Dbkgr2hkqCv
-[extraerActividadesDeHTML] Claude validó 10/12
-[parseHtmlInteligente] Error: ...
-[validarConClaude] Error: ...
-```
-
-El webhook captura estos logs en `resumen.errores`.
-
-## Decisiones de Diseño
-
-**¿Por qué no crear eventos en eventos_usuario?**
-- Las actividades son "información a propósito de inscribirse", no eventos puntuales de agenda
-- Los eventos (`eventos_usuario`) pertenecen a orgs y se pueden publicar/archivar
-- Las actividades son datos municipales fugaces (caducan solas por fecha_limite)
-- Separación clara en la UI: eventos = agenda, actividades = inscripciones
-
-**¿Por qué Claude sin vision, no con vision?**
-- Vision cuesta ~3-5x más que text-only
-- Parsing inteligente + validación text-only es suficiente (Claude ve el HTML + htmlAlt)
-- La heurística de proximidad (imagen dentro de la misma sección) es muy confiable
-- Se ahorra ~$0.005 por webhook = ~$150/año si se ejecuta 3x/semana
-
-**¿Por qué scraping + Claude en el webhook y no en tiempo de lectura?**
-- El scraping es costoso (red, HTML grande, timeout de 10s)
-- Mejor hacerlo una sola vez en la inserción (webhook 1x/día)
-- Lectura es rápida: actividades ya estructuradas en la BD con imágenes listas
-
-**¿Por qué no un cron aparte para actividades?**
-- Están atadas a los posts de Instagram, no a un horario independiente
-- El webhook de Apify ya dispara el sync; agregar otro cron es overhead innecesario
-- El triaje (noticia vs actividad) y el scraping ocurren en el mismo flujo
-
-**¿Por qué imagen específica por actividad?**
-- Una página con 10 deportes puede tener 10 carteles distintos
-- El HTML muchas veces agrupa imagen + texto en la misma sección
-- Heurística de proximidad es muy robusta (99%+ de precisión)
-- Fallback a imagen del post es seguro si la heurística falla
-
-**¿Por qué imagen_url en actividades si no se muestra en la ficha?**
-- Futura flexibilidad: podría mostrarse en un carrusel si hay varias
-- Reutiliza la foto del post (primera imagen del carousel)
-- Bajo costo: columna nullable, se omite si no hay imagen
+- **Bug B**: Idempotencia robusta con IDs híbridos
+- **Destacados con Stripe**: Renovación automática, historial de campañas
+- **Analytics**: Clic en destacados desde `/eventos`
+- **Notificaciones**: Push para nuevas actividades con plazo ≤ 7 días

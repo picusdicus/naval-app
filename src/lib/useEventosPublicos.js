@@ -64,21 +64,27 @@ export function useEventosPublicos() {
   }, [])
 
   // Convierte actividades a eventos con categoría 'talleres'.
+  // Usa fecha_evento (cuándo se celebra) como fecha principal, no fecha_limite (plazo).
   const eventosDeActividades = useMemo(() => {
-    return actividades.map((a) => ({
-      id: a.id,
-      titulo: a.titulo,
-      fecha: a.publicado_en,
-      hora: undefined,
-      lugar: a.lugar,
-      categoria: 'talleres',
-      descripcion: a.descripcion || '',
-      imagen: a.imagen_url,
-      url: a.url_fuente,
-      origen: 'actividad',
-      // Campos adicionales del contexto de actividad
-      fechaLimite: a.fecha_limite,
-    }))
+    return actividades
+      .filter((a) => a.fecha_evento || a.fecha_limite) // Al menos una fecha conocida
+      .map((a) => ({
+        id: a.id,
+        titulo: a.titulo,
+        // Prioridad: fecha_evento (cuándo se celebra) > fecha_limite (plazo)
+        fecha: a.fecha_evento || a.fecha_limite,
+        hora: a.horario,
+        lugar: a.lugar,
+        categoria: 'talleres',
+        descripcion: a.descripcion || '',
+        imagen: a.imagen_url,
+        url: a.url_fuente,
+        origen: 'actividad',
+        // Metadatos adicionales para UI
+        fechaEvento: a.fecha_evento,
+        fechaLimite: a.fecha_limite,
+        publicadoEn: a.publicado_en,
+      }))
   }, [actividades])
 
   // Identidad estable mientras no lleguen datos nuevos: quien reciba `eventos`

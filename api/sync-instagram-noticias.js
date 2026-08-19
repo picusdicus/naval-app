@@ -744,7 +744,16 @@ async function procesar(posts, resumen) {
             usados.add(gemela.origen_externo_id.slice(`ig-${item.shortCode}-`.length))
             return gemela.origen_externo_id
           }
-          return `ig-${item.shortCode}-${sufijoDe(h.titulo, usados)}`
+          // Bug B fix: usar imagen_origen_id como identidad estable si está disponible.
+          // Caso galerías (mayoría): foto estable = id estable (no depende de cómo Claude redacta).
+          if (h.imagenOrigenId) {
+            return `ig-${item.shortCode}-img-${h.imagenOrigenId}`
+          }
+          // Fallback (caso minoritario, sin imagen): posición ordinal en el candidato.
+          // La posición la asigna la página/Claude, no cambia entre runs.
+          const sufijo = `posicion-${Array.from(usados).filter((s) => s.startsWith('posicion-')).length}`
+          usados.add(sufijo)
+          return `ig-${item.shortCode}-${sufijo}`
         }
 
         // — Actividades: hijas del documento o del carrusel (borrador) o, en
@@ -755,6 +764,7 @@ async function procesar(posts, resumen) {
               origenId: idDeHija(h, slugsActividades),
               titulo: h.titulo,
               categoria: h.categoria || item.categoria || 'general',
+              fechaEvento: h.fechaEvento || item.fechaEvento || null,
               fechaLimite: h.fechaLimite || item.fechaLimite,
               horario: h.horario,
               lugar: h.lugar,
@@ -773,6 +783,7 @@ async function procesar(posts, resumen) {
                   origenId: `ig-${item.shortCode}`,
                   titulo: item.titulo,
                   categoria: item.categoria || 'general',
+                  fechaEvento: item.fechaEvento || null,
                   fechaLimite: item.fechaLimite,
                   horario: null,
                   lugar: null,
@@ -790,17 +801,18 @@ async function procesar(posts, resumen) {
             // o archivado desde /admin no se resetea al re-ejecutar el webhook.
             const resultado = await sql`
               INSERT INTO actividades
-                (origen_externo_id, titulo, descripcion, categoria, fecha_limite, horario,
+                (origen_externo_id, titulo, descripcion, categoria, fecha_evento, fecha_limite, horario,
                  lugar, imagen_url, imagen_origen_id, url_fuente, estado, publicado_en)
               VALUES
                 (${fila.origenId}, ${fila.titulo}, ${fila.descripcion}, ${fila.categoria},
-                 ${fila.fechaLimite}, ${fila.horario}, ${fila.lugar}, ${fila.imagenUrl},
+                 ${fila.fechaEvento}, ${fila.fechaLimite}, ${fila.horario}, ${fila.lugar}, ${fila.imagenUrl},
                  ${fila.imagenOrigenId}, ${url || post.url}, ${fila.estado}, ${item.publicadoEn})
               ON CONFLICT (origen_externo_id)
               DO UPDATE SET
                 titulo = EXCLUDED.titulo,
                 descripcion = EXCLUDED.descripcion,
                 categoria = EXCLUDED.categoria,
+                fecha_evento = EXCLUDED.fecha_evento,
                 fecha_limite = EXCLUDED.fecha_limite,
                 horario = EXCLUDED.horario,
                 lugar = EXCLUDED.lugar,

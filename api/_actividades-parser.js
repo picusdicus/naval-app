@@ -42,12 +42,13 @@ const ESQUEMA_ACTIVIDADES = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['titulo', 'categoria', 'fechaLimite', 'horario', 'lugar'],
+        required: ['titulo', 'categoria', 'fechaEvento', 'fechaLimite', 'horario', 'lugar'],
         properties: {
           // '' = candidato descartado (no es una actividad real).
           titulo: { type: 'string' },
           categoria: { enum: [...CATEGORIAS_ACTIVIDAD, ''] },
-          fechaLimite: { type: 'string' },
+          fechaEvento: { type: 'string' }, // YYYY-MM-DD: cuándo se celebra. "" si no clara
+          fechaLimite: { type: 'string' }, // YYYY-MM-DD: hasta cuándo inscribirse. "" si no clara
           horario: { type: 'string' },
           lugar: { type: 'string' },
         },
@@ -133,12 +134,22 @@ async function validarConClaude(candidatos) {
 
   const instrucciones = `Analiza títulos extraídos de una página municipal de Navalcarnero (alt text de imágenes de una galería) y decide cuáles describen una ACTIVIDAD para el vecino: algo a lo que puede APUNTARSE o en lo que puede PARTICIPAR — cursos, talleres, escuelas deportivas, campamentos, ayudas, becas, y también pruebas deportivas participativas (torneos, carreras, marchas, memoriales, exhibiciones abiertas), aunque la inscripción sea el mismo día de la prueba.
 
-NO son actividades (devuélvelas con titulo=""): elementos de navegación o decoración de la web, logos, y títulos que no describan ninguna actividad concreta.
+NO son actividades (devuélvelas con titulo=""): elementos de navegación o decoración de la web, logos, carteles de "fin de plazo" sin más info, y títulos que no describan ninguna actividad concreta.
+
+**IMPORTANTE: Distingue la fecha de celebración (fechaEvento) de la fecha límite de inscripción (fechaLimite).**
+
+Marcadores textuales:
+- fechaEvento: día de la semana + fecha ("viernes, 21 de agosto"), o cabecera de día en la página. Rango: usa la fecha de inicio.
+- fechaLimite: "Inscripciones:", "hasta", "fin de plazo" — cierra el plazo de apuntarse.
+
+EJEMPLO: "TARDEO DEPORTIVO AQUAZUMBA CON DJ PIWI. VIERNES, 21 DE AGOSTO. Horario: 19.30h a 22.30h. Inscripciones: hasta 20 de agosto."
+→ fechaEvento: 2026-08-21, fechaLimite: 2026-08-20
 
 Para cada candidato devuelve, en el mismo orden en que se recibe:
 - titulo: limpio y legible (sin números de orden como "39. ", sin mayúsculas gritadas), o "" para descartarlo.
 - categoria: la más apropiada de la lista permitida ("deporte" para las pruebas deportivas); "" si el título se descarta.
-- fechaLimite: YYYY-MM-DD del plazo de inscripción o, en pruebas de un día, la fecha de la prueba (último día para apuntarse). Hoy es ${hoy}: resuelve fechas relativas con ese ancla. "" si no hay fecha.
+- fechaEvento: YYYY-MM-DD cuándo se celebra la actividad. Hoy es ${hoy}: resuelve fechas relativas con ese ancla. "" si no está clara.
+- fechaLimite: YYYY-MM-DD hasta cuándo inscribirse. Hoy es ${hoy}. "" si no hay fecha.
 - horario: el horario si el título lo indica (p. ej. "10:00h"); "" si no.
 - lugar: la instalación o ubicación si el título la indica; "" si no.`
 
@@ -169,13 +180,35 @@ Para cada candidato devuelve, en el mismo orden en que se recibe:
     // Re-validación de valores (nunca se confía en la salida del modelo).
     return crudas
       .filter((a) => typeof a.titulo === 'string' && a.titulo.trim())
-      .map((a) => ({
-        titulo: a.titulo.trim().slice(0, 200),
-        categoria: CATEGORIAS_ACTIVIDAD.includes(a.categoria) ? a.categoria : 'general',
-        fechaLimite: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaLimite) ? a.fechaLimite : null,
-        horario: String(a.horario || '').trim().slice(0, 120) || null,
-        lugar: String(a.lugar || '').trim().slice(0, 120) || null,
-      }))
+      .map((a) => {
+        const fechaEvento = /^\d{4}-\d{2}-\d{2}$/.test(a.fechaEvento) ? a.fechaEvento : null
+        const fechaLimite = /^\d{4}-\d{2}-\d{2}$/.test(a.fechaLimite) ? a.fechaLimite : null
+
+        // Validación de coherencia: si ambas fechas existen, fecha_limite <= fecha_evento
+        if (fechaEvento && fechaLimite && fechaLimite > fechaEvento) {
+          console.warn(
+            `[validarConClaude] Fechas incoherentes para "${a.titulo}": ` +
+              `evento=${fechaEvento}, limite=${fechaLimite}. Descartando ambas.`
+          )
+          return {
+            titulo: a.titulo.trim().slice(0, 200),
+            categoria: CATEGORIAS_ACTIVIDAD.includes(a.categoria) ? a.categoria : 'general',
+            fechaEvento: null,
+            fechaLimite: null,
+            horario: String(a.horario || '').trim().slice(0, 120) || null,
+            lugar: String(a.lugar || '').trim().slice(0, 120) || null,
+          }
+        }
+
+        return {
+          titulo: a.titulo.trim().slice(0, 200),
+          categoria: CATEGORIAS_ACTIVIDAD.includes(a.categoria) ? a.categoria : 'general',
+          fechaEvento,
+          fechaLimite,
+          horario: String(a.horario || '').trim().slice(0, 120) || null,
+          lugar: String(a.lugar || '').trim().slice(0, 120) || null,
+        }
+      })
   } catch (err) {
     console.error('[validarConClaude] Error:', err.message)
     return []
@@ -279,11 +312,12 @@ const ESQUEMA_DOCUMENTO = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['titulo', 'categoria', 'fechaLimite', 'horario', 'lugar'],
+        required: ['titulo', 'categoria', 'fechaEvento', 'fechaLimite', 'horario', 'lugar'],
         properties: {
           titulo: { type: 'string' },
           categoria: { enum: CATEGORIAS_ACTIVIDAD },
-          fechaLimite: { type: 'string' },
+          fechaEvento: { type: 'string' },   // YYYY-MM-DD: cuándo se celebra. "" si no clara
+          fechaLimite: { type: 'string' },   // YYYY-MM-DD: plazo de inscripción. "" si no clara
           horario: { type: 'string' },
           lugar: { type: 'string' },
         },
@@ -402,11 +436,12 @@ const ESQUEMA_CARRUSEL = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['indice', 'titulo', 'categoria', 'fechaLimite', 'horario', 'lugar', 'descripcion'],
+        required: ['indice', 'titulo', 'categoria', 'fechaEvento', 'fechaLimite', 'horario', 'lugar', 'descripcion'],
         properties: {
           indice: { type: 'integer' },
           titulo: { type: 'string' },
           categoria: { enum: [...CATEGORIAS_ACTIVIDAD, ''] },
+          fechaEvento: { type: 'string' },
           fechaLimite: { type: 'string' },
           horario: { type: 'string' },
           lugar: { type: 'string' },
@@ -459,7 +494,8 @@ Para cada cartel devuelve:
 - indice: el N de su línea "Cartel N", copiado tal cual.
 - titulo: el nombre de la actividad, corto y legible (sin mayúsculas gritadas).
 - categoria: la más apropiada de la lista permitida ("deporte" para pruebas deportivas); "" si se descarta.
-- fechaLimite: YYYY-MM-DD del fin del plazo de inscripción si el cartel lo indica; si no lo indica pero la prueba es de un día, la fecha de la prueba. El post se publicó el ${ancla} (hoy es ${hoy}): resuelve fechas sin año con ese ancla. "" si no hay fecha. Usa SOLO fechas que aparezcan en el cartel — no inventes.
+- fechaEvento: YYYY-MM-DD de cuándo se celebra la actividad — cuándo ocurre, cuándo es la prueba. Puede estar en el caption ("VIERNES, 21 DE AGOSTO") o en el alt del cartel. El post se publicó el ${ancla} (hoy es ${hoy}): resuelve fechas sin año con ese ancla. "" si no hay fecha clara. Usa SOLO fechas del cartel — no inventes.
+- fechaLimite: YYYY-MM-DD del fin del plazo de inscripción si el cartel lo indica explícitamente ("inscripciones hasta", "plazo", "hasta el X"). Si la prueba es de un día, puede coincidir con fechaEvento. El post se publicó el ${ancla}: resuelve fechas relativas. "" si no hay plazo. Usa SOLO fechas del cartel — no inventes.
 - horario: el horario del cartel (p. ej. "a partir de las 10.00h"); "" si no consta.
 - lugar: la instalación o ubicación del cartel; "" si no consta.
 - descripcion: los datos prácticos restantes del cartel en una o dos frases legibles (categorías/edades, condiciones, precio, cómo inscribirse, teléfono de información), máximo 500 caracteres; "" si no hay más datos.`
@@ -503,13 +539,22 @@ Para cada cartel devuelve:
         indice: a.indice,
         titulo: a.titulo.trim().slice(0, 200),
         categoria: CATEGORIAS_ACTIVIDAD.includes(a.categoria) ? a.categoria : 'general',
+        fechaEvento: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaEvento) ? a.fechaEvento : null,
         fechaLimite: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaLimite) ? a.fechaLimite : null,
         horario: String(a.horario || '').trim().slice(0, 120) || null,
         lugar: String(a.lugar || '').trim().slice(0, 120) || null,
         descripcion: String(a.descripcion || '').trim().slice(0, 600) || null,
       }))
-      // Plazos ya vencidos fuera, como en el PDF.
-      .filter((a) => !a.fechaLimite || a.fechaLimite >= hoy)
+      // Validación: if both dates exist, fechaLimite <= fechaEvento (can't close after event starts)
+      .filter((a) => {
+        if (a.fechaEvento && a.fechaLimite && a.fechaLimite > a.fechaEvento) {
+          console.warn(
+            `[extraerDeCarrusel] Incoherent dates: "${a.titulo}" — fechaLimite (${a.fechaLimite}) > fechaEvento (${a.fechaEvento}), discarding fechaLimite`
+          )
+          a.fechaLimite = null
+        }
+        return !a.fechaLimite || a.fechaLimite >= hoy
+      })
   } catch (err) {
     console.error('[extraerDeCarrusel] Error:', err.message)
     return []

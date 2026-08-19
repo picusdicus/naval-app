@@ -378,3 +378,9 @@ CREATE INDEX IF NOT EXISTS idx_actividades_fecha_limite ON actividades (fecha_li
 -- que no vienen de un carrusel (documento PDF/HTML, fila única) y en las
 -- filas creadas antes de este campo (siguen emparejándose por título).
 ALTER TABLE actividades ADD COLUMN IF NOT EXISTS imagen_origen_id text;
+
+-- Fecha de celebración/realización de la actividad, distinto de fecha_limite
+-- (cuándo cierra el plazo de inscripción). Nullable: actividades sin fecha
+-- clara (cursos de duración variable, plazos sin fecha de realización concreta).
+-- Validación de servidor: si ambas fechas existen, fecha_limite <= fecha_evento.
+ALTER TABLE actividades ADD COLUMN IF NOT EXISTS fecha_evento date;
