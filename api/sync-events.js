@@ -7,6 +7,7 @@ import { temasDeEvento } from '../src/lib/temasPush.js'
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
+const REDTEATROS_URL = 'https://www.madrid.org/clas_artes/red/navalcarnero.html'
 const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
 
 // Leer eventos actuales desde GitHub API (evita EROFS en Vercel runtime)
@@ -206,6 +207,154 @@ function fechaISO(dia, mes, refDate, textoAnyo) {
   const mm = String(mes).padStart(2, '0')
   const dd = String(dia).padStart(2, '0')
   return `${anyo}-${mm}-${dd}`
+}
+
+// Red de Teatros de la Comunidad de Madrid
+async function eventosRedTeatros() {
+  const eventos = []
+  const MAX_FICHAS = 30
+
+  try {
+    const html = await descargarTexto(REDTEATROS_URL)
+
+    // Extraer el año del encabezado: "Programación 2º Semestre 2026"
+    const encabezado = html.match(
+      /Programación\s+(?:\d+º\s+)?(?:Semestre|Trimestre|Cuatrimestre)\s+(\d{4})/i,
+    )
+    if (!encabezado) {
+      throw new Error('No se encontró año en el encabezado del periodo')
+    }
+    const anyo = parseInt(encabezado[1], 10)
+
+    // Parsear cada obra: buscar patrones de enlace + datos
+    // Extrae: href, titulo, compañía, categoría, fecha (sin año), hora
+    const enlaceRegex = /<a\s+href="([^"]+\.html)"\s*>[\s\S]*?<li class="first-child"><span[^>]*>([^<]+)<\/span><\/li>[\s\S]*?<li class="2-child">([^<]+)<br>\s*([^<]+?)\s*<\/li>[\s\S]*?<li><i[^>]*><\/i>\s*([^-]+?)\s*-[\s\S]*?<i[^>]*><\/i>\s*(\d{1,2}:\d{2})\s*h/gi
+
+    let m
+    let fichasDescargadas = 0
+
+    while ((m = enlaceRegex.exec(html)) !== null && fichasDescargadas < MAX_FICHAS) {
+      const [, href, tituloCrudo, compania, categoriaCruda, fecha, hora] = m
+
+      // Limpiar espacios en blanco/saltos de línea
+      const titulo = tituloCrudo.replace(/\s+/g, ' ').trim()
+      const categoria = categoriaCruda.replace(/\s+/g, ' ').trim()
+
+      // Parsear fecha: "18 de diciembre"
+      const dm = extraerDiaMes(fecha)
+      if (!dm) continue
+
+      const mes = String(dm.mes).padStart(2, '0')
+      const dia = String(dm.dia).padStart(2, '0')
+      const fechaISO = `${anyo}-${mes}-${dia}`
+
+      const url = new URL(href, REDTEATROS_URL).href
+      const slug = href.replace(/\.html$/, '').toLowerCase()
+
+      // Enriquecer desde la ficha (título legible, sinopsis, intérpretes, duración, edad, fotos)
+      let sinopsis = ''
+      let interpretes = ''
+      let duracion = ''
+      let edadRecomendada = ''
+      let imagenes = []
+
+      try {
+        const fichaHtml = await descargarTexto(url)
+
+        // Sinopsis (entre <strong>SINOPSIS</strong> y el siguiente <h4> o </div>)
+        const sinopsisMatch = fichaHtml.match(
+          /<strong>SINOPSIS<\/strong>[\s\S]*?<p>([\s\S]*?)<\/p>/i,
+        )
+        if (sinopsisMatch) {
+          sinopsis = limpiarTexto(sinopsisMatch[1], 400)
+        }
+
+        // Intérpretes, duración, edad recomendada (líneas con <li class="ficha-tipo">)
+        const interpMatch = fichaHtml.match(
+          /<li class="ficha-tipo">Intérpretes:\s*<\/li>\s*<li>([^<]+)<\/li>/i,
+        )
+        if (interpMatch) interpretes = interpMatch[1].trim()
+
+        const durMatch = fichaHtml.match(
+          /<li class="ficha-tipo">Duración:\s*<\/li>\s*<li>([^<]+)<\/li>/i,
+        )
+        if (durMatch) duracion = durMatch[1].trim()
+
+        const edadMatch = fichaHtml.match(
+          /<li class="ficha-tipo">Edad recomendada:\s*<\/li>\s*<li>([^<]+)<\/li>/i,
+        )
+        if (edadMatch) edadRecomendada = edadMatch[1].trim()
+
+        // Fotos: <img alt="..." src="fotos/fichas/.../.jpg">
+        const fotosRegex = /src="(fotos\/fichas\/[^"]+\.jpg)"/gi
+        let fotoMatch
+        while ((fotoMatch = fotosRegex.exec(fichaHtml)) !== null) {
+          const fotoUrl = new URL(fotoMatch[1], REDTEATROS_URL).href
+          imagenes.push(fotoUrl)
+        }
+      } catch (err) {
+        // Fail-soft: si falla la ficha, el evento entra igual con los datos del listado
+        console.warn(`Ficha de ${titulo}: ${err.message}`)
+      }
+
+      // Mapeo de categoría → subcategoría
+      let subcategoria = null
+      const catLower = categoria.toLowerCase()
+      if (
+        catLower.includes('teatro') ||
+        catLower.includes('público familiar - teatro')
+      ) {
+        subcategoria = 'teatro'
+      } else if (
+        catLower.includes('danza') ||
+        catLower.includes('público familiar - danza')
+      ) {
+        subcategoria = 'danza'
+      } else if (
+        catLower.includes('música') ||
+        catLower.includes('público familiar - música')
+      ) {
+        subcategoria = 'musica'
+      } else if (catLower.includes('circo')) {
+        subcategoria = 'teatro' // fallback si no hay subcategoría específica
+      }
+
+      const descripcionParts = []
+      if (interpretes) descripcionParts.push(`Intérpretes: ${interpretes}`)
+      if (edadRecomendada) descripcionParts.push(`Edad: ${edadRecomendada}`)
+      if (duracion) descripcionParts.push(`Duración: ${duracion}`)
+      if (sinopsis) descripcionParts.push(sinopsis)
+      const descripcion = descripcionParts.join('\n\n')
+
+      eventos.push({
+        id: `redteatros-${slug}`,
+        titulo: tituloLegible(titulo),
+        fecha: fechaISO,
+        hora,
+        lugar: 'Teatro Municipal Centro',
+        categoria: 'cultura',
+        subcategoria,
+        origen: 'cultural',
+        descripcion: limpiarTexto(descripcion, 400),
+        url,
+        imagen: imagenes.length > 0 ? imagenes[0] : '',
+        imagenes, // todas las fotos para futuro uso
+        fuente: 'Red de Teatros',
+      })
+
+      fichasDescargadas++
+    }
+
+    // Validación: si no hay eventos y la página respondió 200, algo se rompió
+    if (eventos.length === 0 && html.length > 0) {
+      console.warn('Red de Teatros: página respondió pero sin eventos válidos')
+    }
+
+    return eventos
+  } catch (err) {
+    // Descripción clara del error para traceabilidad
+    throw new Error(`Red de Teatros: ${err.message}`)
+  }
 }
 
 // TYL TYL API
@@ -437,9 +586,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Paso 1: Descargar nuevos eventos de ambas fuentes externas
+    // Paso 1: Descargar nuevos eventos de las tres fuentes externas
     let tyltyl = []
     let cultura = []
+    let redTeatros = []
 
     try {
       tyltyl = await eventosTyltyl()
@@ -455,8 +605,15 @@ export default async function handler(req, res) {
       resultado.errores.push(`Cultura Ayto: ${err.message}`)
     }
 
+    try {
+      redTeatros = await eventosRedTeatros()
+      resultado.estadisticas = { ...resultado.estadisticas, redTeatros: redTeatros.length }
+    } catch (err) {
+      resultado.errores.push(`Red de Teatros: ${err.message}`)
+    }
+
     // Paso 2: Combinar sin duplicados
-    const eventosNuevos = combinarSinDuplicados(tyltyl, cultura)
+    const eventosNuevos = combinarSinDuplicados(tyltyl, cultura, redTeatros)
     eventosNuevos.sort(
       (a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''),
     )

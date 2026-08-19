@@ -178,9 +178,9 @@ Static JSON is still the store for the read-only content below (events, news, di
 
 ### Automatic event sync
 
-- `api/sync-events.js` — Vercel Cron Job endpoint that runs **daily at 07:00 UTC** to fetch and sync events from both external sources.
+- `api/sync-events.js` — Vercel Cron Job endpoint that runs **daily at 07:00 UTC** to fetch and sync events from external sources.
   - **Execution order** (ensures fresh data, no caching shortcuts):
-    1. Fetch all events from external sources: TYL TYL API + Ayuntamiento RSS
+    1. Fetch all events from external sources: TYL TYL API + Ayuntamiento RSS + Red de Teatros
     2. Combine events without duplicates and sort by date
     3. Read current `eventos-externos.json` from GitHub API
     4. Compare fetched events with the current version
@@ -193,6 +193,20 @@ Static JSON is still the store for the read-only content below (events, news, di
   - Vercel detects the commit and redeploys automatically, at which point the new JSON becomes available on disk.
 - Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
 - Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).
+
+### Red de Teatros de la Comunidad de Madrid
+
+`eventosRedTeatros()` (in `api/sync-events.js`) — harvests events from the Madrid regional theater network's Navalcarnero venue calendar.
+
+- **Source**: `https://www.madrid.org/clas_artes/red/navalcarnero.html` — public HTML page with listings by season (e.g., "Programación 2º Semestre 2026"). Content is replaced each semester; there is no date range beyond the current/next semester available.
+- **Year resolution — critical**: The page contains **only the season header with the year**, not per-event years. Dates are unparsed ("18 de diciembre") and must be resolved against the extracted year. **No heuristics**: extract the year from the encabezado `Programación \d+º Semestre YYYY` with a regex and apply it uniformly to all events in that run. If the header is unparseable, **discard the entire source** (return error, do not guess). This prevents year mismatches; a wrongly-dated event is worse than no event.
+- **Enrichment model**: the listing yields ~4–8 events (title, company, category, date, time, href). Each event detail page is then fetched to extract synopsis (from `<strong>SINOPSIS</strong>`), cast (`Intérpretes:`), duration, recommended age, and all images (up to the first `<img>` inside `<img[^>]+src="fotos/fichas/..."`). Enrichment is **fail-soft per ficha**: if a detail page fails to fetch, the event is admitted with listing-only data; no re-fetch.
+- **Image handling**: URLs are stored directly (not uploaded to Vercel Blob) as `imagen` (first photo only) and `imagenes` (array of all URLs from the ficha). URLs are stable institutional links at `madrid.org`. Future UI work (galleries, etc.) will find the URLs already in place.
+- **Categorization**: The listing provides `categoria` as plain text (Teatro, Danza, Música, Circo, Público familiar - Teatro, etc.). This maps to `subcategoria` without AI: `teatro|danza|musica` and a fallback of `teatro` for unrecognized types. `categoria` is always `'cultura'` and `origen` is always `'cultural'`.
+- **Dedup with other sources**: Combined with TYL TYL and Ayuntamiento RSS events via `combinarSinDuplicados()` using the same `claveNorm(titulo)` + `fecha` matching as other sources. Example: if Ayuntamiento's press RSS also announces a Red de Teatros show, the dedup will recognize it (matching titles after normalization + same date).
+- **Defensive limits**: A maximum of 30 detail fetches per run (MAX_FICHAS constant) to prevent runaway parsing if the page structure changes unexpectedly. If 0 events are returned despite a successful page download, the parser will log a warning to `resultado.estadisticas` so the issue is visible.
+- **Schema in `eventos-externos.json`**: Events carry `id: 'redteatros-<slug>'` (slug derived from the detail page href), plus standard fields: `titulo` (converted to readable case via `tituloLegible()`), `fecha` (YYYY-MM-DD), `hora`, `lugar` (always 'Teatro Municipal Centro'), `categoria`, `subcategoria`, `origen`, `descripcion` (synopsis + metadata), `url`, `imagen`, `imagenes`, `fuente: 'Red de Teatros'`.
+- **Fail-soft in the cron**: wrapped in its own try-catch that logs to `resultado.errores` if the source fails; never breaks event sync or the commit.
 
 ### Instagram sync (webhook de Apify)
 
