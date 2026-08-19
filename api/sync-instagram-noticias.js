@@ -216,7 +216,14 @@ const MAX_PDF_BYTES = 15 * 1024 * 1024
  * Descarga el documento enlazado y lo clasifica: {tipo: 'pdf', buffer} para
  * las agendas en PDF, {tipo: 'html', html} (máx 50 KB) para el resto.
  */
+/**
+ * Descarga HTML o PDF desde una URL. Para HTML, extrae el contenido principal
+ * del artículo y descarta cabecera, menú, sidebar para maximizar el contenido útil
+ * antes de aplicar el límite de tamaño (evita truncamiento de galerias al final).
+ */
 async function descargarDocumento(url) {
+  const MAX_HTML_BYTES = 300_000 // 300 KB: páginas municipales largas (39+ actividades)
+
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': 'NavalcarneroCrawler/1.0' },
@@ -231,8 +238,29 @@ async function descargarDocumento(url) {
       }
       return { tipo: 'pdf', buffer }
     }
-    const html = await response.text()
-    return { tipo: 'html', html: html.substring(0, 51200) }
+
+    let html = await response.text()
+    const htmlOriginalSize = html.length
+
+    // Recortar por contenido: extraer solo el artículo principal (WordPress)
+    // y descartar cabecera, menú, sidebar para maximizar contenido útil.
+    // Los selectores son específicos del WordPress de Navalcarnero.
+    const match = html.match(/<div[^>]*class="[^"]*entrada[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)
+    if (match && match[1].length > 1000) {
+      // Si el contenido extraído es significativo, úsalo (descarta chrome de la página)
+      html = match[1]
+      console.log(`[descargarDocumento] Contenido extraído: ${htmlOriginalSize} → ${html.length} bytes`)
+    }
+
+    // Aplicar límite de tamaño DESPUÉS del recorte por contenido
+    if (html.length > MAX_HTML_BYTES) {
+      console.warn(
+        `[descargarDocumento] HTML truncado: ${html.length} → ${MAX_HTML_BYTES} bytes (límite) de ${url}`
+      )
+      html = html.substring(0, MAX_HTML_BYTES)
+    }
+
+    return { tipo: 'html', html }
   } catch (err) {
     throw new Error(`Error al descargar ${url}: ${err.message}`)
   }

@@ -110,7 +110,10 @@ function parseHtmlInteligente(html) {
       }
     }
 
-    console.log(`[parseHtmlInteligente] Total candidatos: ${actividades.length}`)
+    console.log(`[parseHtmlInteligente] Total candidatos encontrados: ${actividades.length}`)
+    if (actividades.length > 50) {
+      console.warn(`[parseHtmlInteligente] Se limitan a 50 candidatos para Claude (${actividades.length} encontrados)`)
+    }
     return actividades.slice(0, 50) // Limitar a 50 para no saturar Claude
   } catch (err) {
     console.error('[parseHtmlInteligente] Error:', err.message)
@@ -192,7 +195,7 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenFallback, 
     return []
   }
 
-  console.log(`[extraerActividadesDeHTML] ${candidatos.length} candidatos de ${shortCode}`)
+  console.log(`[extraerActividadesDeHTML] ${candidatos.length} candidatos extraídos de ${shortCode} (${urlFuente})`)
 
   // Paso 2: validar + enriquecer con Claude
   const validadas = await validarConClaude(candidatos)
@@ -201,7 +204,7 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenFallback, 
     return []
   }
 
-  console.log(`[extraerActividadesDeHTML] Claude validó ${validadas.length}/${candidatos.length}`)
+  console.log(`[extraerActividadesDeHTML] Claude validó ${validadas.length}/${candidatos.length} actividades`)
 
   // Paso 3: procesar imágenes
   // Mapear validadas con candidatos originales para obtener URLs de las imágenes del HTML
