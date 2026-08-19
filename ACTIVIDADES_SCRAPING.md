@@ -73,7 +73,7 @@ Cada actividad extraída se inserta en `actividades`:
 ```sql
 INSERT INTO actividades (
   origen_externo_id, titulo, categoria, fecha_limite,
-  horario, lugar, imagen_url, url_fuente, publicado_en
+  horario, lugar, imagen_url, imagen_origen_id, url_fuente, publicado_en
 )
 VALUES (...)
 ON CONFLICT (origen_externo_id) DO UPDATE SET ...

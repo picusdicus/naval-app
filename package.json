@@ -11,6 +11,7 @@
     "fetch:noticias": "node scripts/fetch-noticias.mjs",
     "fetch:transporte": "node scripts/fetch-transporte.mjs",
     "optimizar:imagenes": "node scripts/optimizar-imagenes.mjs",
+    "rellenar:imagenes": "node scripts/rellenar-imagenes.mjs",
     "test:e2e": "playwright test",
     "build": "vite build",
     "preview": "vite preview",

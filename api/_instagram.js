@@ -15,6 +15,25 @@ export const TIPOS_IMAGEN = {
 export const MAX_IMAGEN_BYTES = 4 * 1024 * 1024
 export const MAX_POSTS = 50
 
+// Cada run de Apify reenvía sus ~50 posts más recientes, incluidos los de
+// runs anteriores: sin este corte, un post ya procesado hace semanas se
+// vuelve a mandar entero a Claude cada día (coste de tokens) y, antes de este
+// cambio, también generaba subidas de Blob repetidas. 30 días cubre de sobra
+// el ciclo de publicación municipal (nada se anuncia con tanta antelación).
+export const MAX_DIAS_ANTIGUEDAD = 30
+
+/**
+ * true si el post es reciente (dentro de MAX_DIAS_ANTIGUEDAD) o si no tiene
+ * una fecha de publicación parseable — un post sin `timestamp` no se
+ * descarta, para no romper el reproceso manual (posts de prueba pasados
+ * directamente en el body, que a menudo no llevan esa fecha).
+ */
+export function esPostReciente(post, maxDias = MAX_DIAS_ANTIGUEDAD) {
+  const t = Date.parse(post?.publicado)
+  if (!Number.isFinite(t)) return true
+  return Date.now() - t <= maxDias * 24 * 3600 * 1000
+}
+
 /** Primera foto del post: carrusel (childPosts/images) o imagen única. Los
  * actores de Instagram no coinciden en el nombre del campo, así que se prueban
  * varios (instagram-scraper usa displayUrl/images; otros, imageUrl/thumbnail). */
@@ -44,7 +63,25 @@ export function todasLasImagenes(post) {
   return unica ? [unica] : []
 }
 
-/** Pares alt+imagen de cada foto del carrusel (childPosts): los carteles
+/** id estable de una foto de carrusel: Instagram asigna a cada hija de un
+ * Sidecar su propio media id/shortcode (independiente del índice y del
+ * shortCode del post), así que sobrevive a que el post se reedite y las
+ * fotos cambien de orden o de número — a diferencia de emparejar por título,
+ * que puede confundir dos actividades con títulos parecidos ("Torneo de
+ * Pádel" / "Torneo de Pádel Infantil"). El nombre del campo varía entre
+ * actores de Apify (no todos lo exponen igual, o no lo exponen); se prueban
+ * los más plausibles y se cae a null si ninguno está — en ese caso el
+ * llamador cae a emparejar por título, como antes de este campo. */
+function idDeFotoCarrusel(childPost) {
+  const c = childPost || {}
+  if (typeof c.id === 'string' && c.id) return c.id
+  if (typeof c.shortCode === 'string' && c.shortCode) return c.shortCode
+  if (typeof c.pk === 'string' && c.pk) return c.pk
+  if (typeof c.pk === 'number') return String(c.pk)
+  return null
+}
+
+/** Pares alt+imagen+id de cada foto del carrusel (childPosts): los carteles
  * municipales llevan una actividad por foto con todos sus datos en el alt
  * (OCR de Instagram) — p. ej. la programación deportiva, un cartel por
  * prueba. El alt del post padre es solo "Photo by …", así que sin esto los
@@ -55,6 +92,7 @@ export function carruselDe(post) {
     .map((c) => ({
       alt: typeof c?.alt === 'string' ? c.alt.trim() : '',
       imagen: c?.displayUrl || '',
+      id: idDeFotoCarrusel(c),
     }))
     // Con la extracción por visión basta la imagen; el alt (OCR de
     // Instagram) queda como apoyo/fallback si la descarga falla.
@@ -71,6 +109,51 @@ export function shortCodeDe(post) {
   return m ? m[1] : ''
 }
 
+// Instagram genera esta fórmula fija cuando no tiene nada que decir de la
+// foto ("Photo by Ayuntamiento de Navalcarnero on August 03, 2026."). Es el
+// alt que trae SIEMPRE el post padre de un carrusel — nunca aporta contenido,
+// así que se descarta en vez de mandarlo a Claude como si fuera texto real.
+const ALT_GENERICO_RE = /^Photo by .+ on \w+ \d{1,2}, \d{4}\.?$/i
+
+function altUtil(alt) {
+  const limpio = typeof alt === 'string' ? alt.trim() : ''
+  if (!limpio || ALT_GENERICO_RE.test(limpio)) return ''
+  return limpio
+}
+
+const MAX_FOTOS_ALT = 10
+const MAX_CHARS_ALT = 4000
+
+/**
+ * Alt combinado del post: el del padre (si dice algo) más el de cada foto
+ * del carrusel (childPosts), marcado con "[Imagen N]" — N es la posición real
+ * de la foto en el carrusel, así que un hueco (una foto sin alt útil) no
+ * desplaza la numeración de las siguientes. En un post "Sidecar" el alt del
+ * padre es siempre la fórmula genérica y el contenido real (fecha, hora,
+ * lugar, plazo, precio…) vive en el alt de cada hijo — sin esto, un carrusel
+ * municipal (un cartel de actividad por foto) llegaba a Claude prácticamente
+ * ciego. En un post de foto única no hay childPosts, así que el resultado es
+ * exactamente el alt del padre, como hasta ahora. Limitado a las primeras
+ * MAX_FOTOS_ALT fotos y a MAX_CHARS_ALT caracteres para no disparar tokens en
+ * carruseles largos.
+ */
+function altCompletoDe(post) {
+  const partes = []
+  const altPadre = altUtil(post.alt)
+  if (altPadre) partes.push(altPadre)
+
+  if (Array.isArray(post.childPosts)) {
+    post.childPosts.slice(0, MAX_FOTOS_ALT).forEach((hijo, indice) => {
+      const altHijo = altUtil(hijo?.alt)
+      if (altHijo) partes.push(`[Imagen ${indice + 1}] ${altHijo}`)
+    })
+  }
+
+  let texto = partes.join('\n')
+  if (texto.length > MAX_CHARS_ALT) texto = texto.slice(0, MAX_CHARS_ALT).trimEnd() + '…'
+  return texto
+}
+
 /** Reduce un post de Apify a lo que Claude necesita para decidir. */
 export function normalizarPost(post) {
   if (!post || typeof post !== 'object') return null
@@ -80,10 +163,13 @@ export function normalizarPost(post) {
   return {
     shortCode,
     caption,
-    // Texto alternativo de la imagen que genera Instagram (OCR del cartel):
-    // los posts municipales suelen poner fecha/hora/lugar solo en el cartel,
-    // así que sin este campo Claude no puede reconocerlos como eventos.
-    alt: typeof post.alt === 'string' ? post.alt.trim() : '',
+    // Texto alternativo de la(s) imagen(es) que genera Instagram (OCR del
+    // cartel): los posts municipales suelen poner fecha/hora/lugar solo en el
+    // cartel, así que sin este campo Claude no puede reconocerlos como
+    // eventos. En un carrusel esto incluye el alt de cada foto (ver
+    // altCompletoDe) — el del post padre por sí solo es siempre la fórmula
+    // genérica de Instagram, sin ningún dato del cartel.
+    alt: altCompletoDe(post),
     // La fecha de publicación ancla las fechas relativas ("este sábado 18").
     publicado: post.timestamp || '',
     url: post.url || `https://www.instagram.com/p/${shortCode}/`,

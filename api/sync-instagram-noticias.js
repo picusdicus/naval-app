@@ -33,6 +33,7 @@ import { obtenerSql } from './_db.js'
 import {
   MAX_POSTS,
   asegurarOrganizacion,
+  esPostReciente,
   normalizarPost,
   obtenerPosts,
   orgDeUsuario,
@@ -64,9 +65,11 @@ const CATEGORIAS_ACTIVIDAD = [
 // publicarse: una incidencia que dura más se re-anuncia con otro post.
 const HORAS_EXPIRACION_DEFECTO = 24
 
-// Tope de fotos por post: los carruseles pueden llegar a 15, pero 12 sobra de
-// margen y acota el tiempo de función (una llamada de red por foto).
-const MAX_IMAGENES_POST = 12
+// Tope de fotos por post: los carruseles pueden llegar a 15, pero 6 cubre la
+// práctica totalidad de los carteles municipales y acota tanto el tiempo de
+// función como el número de Advanced Requests de Blob que puede llegar a
+// costar un solo post (ver "Presupuesto de Vercel Blob" en CLAUDE.md).
+const MAX_IMAGENES_POST = 6
 
 // El json_schema fuerza la forma de la respuesta; los VALORES se validan
 // aparte en validarExtraccion() — nunca se confía en la salida del modelo.
@@ -365,6 +368,11 @@ async function asegurarTablas(sql) {
   // y el superadmin lo publica o archiva desde /admin → Pendientes. Las filas
   // preexistentes (y las del triaje directo) quedan 'publicado' por el DEFAULT.
   await sql`ALTER TABLE actividades ADD COLUMN IF NOT EXISTS estado text NOT NULL DEFAULT 'publicado'`
+  // Id estable de la foto de origen (media id/shortcode de Instagram) para
+  // reconocer si la imagen de una hija de carrusel ya está subida aunque el
+  // post se reedite y las fotos cambien de orden — ver carruselDe() en
+  // api/_instagram.js. NULL fuera de carruseles y en filas anteriores a esto.
+  await sql`ALTER TABLE actividades ADD COLUMN IF NOT EXISTS imagen_origen_id text`
 }
 
 export default async function handler(req, res) {
@@ -397,12 +405,14 @@ export default async function handler(req, res) {
     timestamp: new Date().toISOString(),
     recibidos: 0,
     analizados: 0,
+    descartadosPorAntiguedad: 0,
     noticias: 0,
     actividades: 0,
     creadas: 0,
     actualizadas: 0,
     descartadasPorValidacion: 0,
     imagenesSubidas: 0,
+    imagenesReutilizadas: 0,
     errores: [],
   }
 
@@ -410,7 +420,9 @@ export default async function handler(req, res) {
     const crudos = await obtenerPosts(req.body)
     resumen.recibidos = crudos.length
 
-    const posts = crudos.map(normalizarPost).filter(Boolean).slice(0, MAX_POSTS)
+    const normalizados = crudos.map(normalizarPost).filter(Boolean)
+    const posts = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
+    resumen.descartadosPorAntiguedad = normalizados.length - posts.length
     resumen.analizados = posts.length
     if (posts.length === 0) {
       res.status(200).json(resumen)
@@ -460,24 +472,46 @@ async function procesar(posts, resumen) {
     const sql = obtenerSql()
     await asegurarTablas(sql)
 
+    // Imágenes ya subidas de las noticias (misma idea que en el webhook de
+    // eventos: una sola consulta antes del bucle, cuota de Blob — ver
+    // "Presupuesto de Vercel Blob" en CLAUDE.md). Se trata la galería como un
+    // bloque: si la fila ya tiene imagen_url, se reutiliza también su
+    // imagenes_url guardada sin volver a pedir ninguna foto del carrusel.
+    const idsNoticias = validas.filter((v) => v.tipo === 'noticia').map((n) => `ig-${n.shortCode}`)
+    const imagenesNoticiasPrevias = idsNoticias.length
+      ? await sql`
+          SELECT origen_externo_id, imagen_url, imagenes_url
+          FROM noticias_instagram
+          WHERE origen_externo_id = ANY(${idsNoticias}::text[])`
+      : []
+    const noticiaPorOrigenId = new Map(imagenesNoticiasPrevias.map((f) => [f.origen_externo_id, f]))
+
     // Procesar noticias (tipo === 'noticia').
     for (const n of validas.filter(v => v.tipo === 'noticia')) {
       try {
-        // Todas las fotos del carrusel, truncadas a MAX_IMAGENES_POST. La
-        // primera (i=0) va sin sufijo para conservar el nombre de blob
-        // histórico; las subidas de un mismo post se paralelizan (no hay
-        // dependencia entre ellas) manteniendo el orden del array — pero
-        // nunca se paraleliza entre posts distintos.
-        const origenes = (n.imagenesOrigen || []).slice(0, MAX_IMAGENES_POST)
-        const subidas = await Promise.all(
-          origenes.map((url, i) =>
-            subirImagen('instagram-noticias', n.shortCode, url, i === 0 ? '' : String(i))
+        const previa = noticiaPorOrigenId.get(`ig-${n.shortCode}`)
+        let imagenUrl, imagenesJson
+        if (previa?.imagen_url) {
+          imagenUrl = previa.imagen_url
+          imagenesJson = Array.isArray(previa.imagenes_url) ? JSON.stringify(previa.imagenes_url) : null
+          resumen.imagenesReutilizadas++
+        } else {
+          // Todas las fotos del carrusel, truncadas a MAX_IMAGENES_POST. La
+          // primera (i=0) va sin sufijo para conservar el nombre de blob
+          // histórico; las subidas de un mismo post se paralelizan (no hay
+          // dependencia entre ellas) manteniendo el orden del array — pero
+          // nunca se paraleliza entre posts distintos.
+          const origenes = (n.imagenesOrigen || []).slice(0, MAX_IMAGENES_POST)
+          const subidas = await Promise.all(
+            origenes.map((url, i) =>
+              subirImagen('instagram-noticias', n.shortCode, url, i === 0 ? '' : String(i))
+            )
           )
-        )
-        const imagenes = subidas.filter(Boolean)
-        resumen.imagenesSubidas += imagenes.length
-        const imagenUrl = imagenes[0] || null
-        const imagenesJson = imagenes.length > 0 ? JSON.stringify(imagenes) : null
+          const imagenes = subidas.filter(Boolean)
+          resumen.imagenesSubidas += imagenes.length
+          imagenUrl = imagenes[0] || null
+          imagenesJson = imagenes.length > 0 ? JSON.stringify(imagenes) : null
+        }
 
         const filas = await sql`
           INSERT INTO noticias_instagram
@@ -521,6 +555,27 @@ async function procesar(posts, resumen) {
     // del propio triaje (caption, alta confianza) sigue naciendo 'publicado'.
     const pendientesEventos = []
     const pendientesActividades = []
+    // Encuentra, entre las hermanas ya existentes de un post, la que
+    // corresponde a esta foto/actividad — por id estable de la foto si está
+    // disponible en ambos lados (Instagram no lo cambia si el post se
+    // reedita), si no por título equivalente. MISMO criterio para las dos
+    // decisiones que dependen de "es esta la misma hija de antes": qué
+    // imagen reutilizar (más abajo) y qué origen_externo_id reutilizar
+    // (idDeHija) — así no pueden discrepar entre sí. El título por sí solo
+    // es frágil como identidad: Claude puede redactar el mismo cartel
+    // distinto entre dos extracciones ("Torneo de Pádel" / "Torneo de
+    // pádel otoñal"), y confundir dos actividades reales con nombres
+    // parecidos ("Torneo de Pádel" / "Torneo de Pádel Infantil"). Es el
+    // único criterio disponible para actividades sin foto propia
+    // (documentos PDF/HTML) o cuando el actor de Apify no da el id.
+    const hermanaDe = (hermanas, { imagenOrigenId, titulo }) => {
+      if (imagenOrigenId) {
+        const porId = hermanas.find((x) => x.imagen_origen_id === imagenOrigenId)
+        if (porId) return porId
+      }
+      const clave = claveTitulo(titulo)
+      return hermanas.find((x) => titulosEquivalentes(claveTitulo(x.titulo), clave))
+    }
     // Sufijo ESTABLE por título para los ids de hijas ('ig-<shortCode>-<slug>'):
     // con índices numéricos, el orden de extracción cambiaba entre runs y el
     // upsert machacaba una fila con el contenido de otra (un "Reto viajero"
@@ -537,14 +592,48 @@ async function procesar(posts, resumen) {
     const procesables = validas.filter(
       (v) => v.tipo === 'actividad' || (v.programaEnlazada && detectarUrl(postsPorShortCode.get(v.shortCode).caption))
     )
+
+    // Imágenes y hermanas ya existentes de los posts a procesar: una sola
+    // consulta antes del bucle (cuota de Blob — ver "Presupuesto de Vercel
+    // Blob" en CLAUDE.md), en vez de la consulta por-post que había antes.
+    // Un patrón 'ig-<shortCode>%' cubre a la vez la fila única
+    // (ig-<shortCode>) y sus hijas (ig-<shortCode>-<slug>); el '_'/'%' del
+    // shortCode se escapa (son comodines de LIKE — Postgres usa '\' como
+    // escape por defecto sin necesidad de ESCAPE explícito).
+    const escaparLike = (s) => String(s).replace(/[\\_%]/g, '\\$&')
+    const patronesProcesables = procesables.map((item) => `ig-${escaparLike(item.shortCode)}%`)
+    const actividadesPrevias = patronesProcesables.length
+      ? await sql`
+          SELECT origen_externo_id, titulo, imagen_url, imagen_origen_id
+          FROM actividades
+          WHERE origen_externo_id LIKE ANY(${patronesProcesables}::text[])`
+      : []
+
     for (const item of procesables) {
       const post = postsPorShortCode.get(item.shortCode)
       try {
+        const prefijoPropio = `ig-${item.shortCode}`
+        // Filas ya en Neon de ESTE post: la propia (fila única) y sus hijas.
+        const relacionadas = actividadesPrevias.filter(
+          (e) => e.origen_externo_id === prefijoPropio || e.origen_externo_id.startsWith(`${prefijoPropio}-`)
+        )
+        // Hermanas (solo hijas, sin la fila única) — la usa idDeHija más abajo.
+        const hermanas = relacionadas.filter((e) => e.origen_externo_id !== prefijoPropio)
+
         // La foto del post, ya en Blob, como imagen de la fila única y
         // fallback de las extraídas (la URL cruda del CDN de Instagram
-        // caduca en días).
-        const imagenPost = await subirImagen('instagram-actividades', item.shortCode, item.imagenOrigen)
-        if (imagenPost) resumen.imagenesSubidas++
+        // caduca en días). El blob es el mismo para cualquier fila de este
+        // post (mismo shortCode), así que basta con que UNA relacionada ya
+        // tenga imagen para reutilizarla sin volver a descargar ni subir.
+        const imagenPostExistente = relacionadas.find((e) => e.imagen_url)?.imagen_url || null
+        let imagenPost
+        if (imagenPostExistente) {
+          imagenPost = imagenPostExistente
+          resumen.imagenesReutilizadas++
+        } else {
+          imagenPost = await subirImagen('instagram-actividades', item.shortCode, item.imagenOrigen)
+          if (imagenPost) resumen.imagenesSubidas++
+        }
 
         const url = detectarUrl(post.caption)
         let extraccion = { eventos: [], actividades: [] }
@@ -568,8 +657,19 @@ async function procesar(posts, resumen) {
             post.carrusel.slice(0, MAX_IMAGENES_POST),
             item.publicadoEn
           )
-          // La foto del cartel correspondiente, a Blob con sufijo por índice.
+          // La foto del cartel correspondiente, a Blob con sufijo por índice
+          // — salvo que ya exista una hermana con esa misma foto y con
+          // imagen: entonces se reutiliza la suya en vez de volver a
+          // descargarla y subirla (ver hermanaDe() más arriba).
           for (const h of hijasCarrusel) {
+            const fotoId = post.carrusel[h.indice]?.id || null
+            const gemela = hermanaDe(hermanas, { imagenOrigenId: fotoId, titulo: h.titulo })
+            if (gemela?.imagen_url) {
+              h.imagen_url = gemela.imagen_url
+              h.imagenOrigenId = gemela.imagen_origen_id || fotoId
+              resumen.imagenesReutilizadas++
+              continue
+            }
             const subida = await subirImagen(
               'instagram-actividades',
               item.shortCode,
@@ -578,6 +678,7 @@ async function procesar(posts, resumen) {
             )
             if (subida) resumen.imagenesSubidas++
             h.imagen_url = subida || imagenPost
+            h.imagenOrigenId = fotoId
           }
         }
 
@@ -597,26 +698,25 @@ async function procesar(posts, resumen) {
           }
         }
 
-        // Hermanas ya existentes de este post: si una hija nueva tiene título
-        // EQUIVALENTE a una fila previa, se reutiliza su origen_externo_id —
-        // el upsert la actualiza (respetando su estado) en vez de crear una
-        // casi-duplicada. Sin esto, la deriva de títulos entre extracciones
-        // ("…con DJ" vs "…con DJ Piwi") cambiaba el slug y re-proponía como
-        // borrador actividades ya aprobadas. El '_' del shortCode se escapa
-        // (es comodín de LIKE).
-        const patronHermanas = `ig-${item.shortCode.replace(/[\\_%]/g, '\\$&')}-%`
-        const hermanas = hijas.length
-          ? await sql`SELECT origen_externo_id, titulo FROM actividades
-                      WHERE origen_externo_id LIKE ${patronHermanas} ESCAPE '\\'`
-          : []
-        const idDeHija = (titulo, usados) => {
-          const clave = claveTitulo(titulo)
-          const gemela = hermanas.find((x) => titulosEquivalentes(claveTitulo(x.titulo), clave))
+        // Reutiliza el origen_externo_id de una hermana ya existente (mismo
+        // criterio que hermanaDe(): id de foto primero, título como
+        // fallback — ver el comentario de más arriba). El upsert actualiza
+        // esa fila (respetando su estado) en vez de crear una
+        // casi-duplicada. Esto era antes solo por título: la deriva de
+        // títulos entre extracciones ("…con DJ" vs "…con DJ Piwi") cambiaba
+        // el slug y re-proponía como borrador actividades ya aprobadas —
+        // pero un título parecido de OTRA actividad real ("Torneo de Pádel"
+        // / "Torneo de Pádel Infantil") también podía emparejar mal y hacer
+        // que el upsert sobreescribiera una fila con los datos de otra. Con
+        // id de foto disponible (hijas de carrusel), la identidad ya no
+        // depende de cómo Claude redacte el título esta vez.
+        const idDeHija = (h, usados) => {
+          const gemela = hermanaDe(hermanas, h)
           if (gemela) {
             usados.add(gemela.origen_externo_id.slice(`ig-${item.shortCode}-`.length))
             return gemela.origen_externo_id
           }
-          return `ig-${item.shortCode}-${sufijoDe(titulo, usados)}`
+          return `ig-${item.shortCode}-${sufijoDe(h.titulo, usados)}`
         }
 
         // — Actividades: hijas del documento o del carrusel (borrador) o, en
@@ -624,7 +724,7 @@ async function procesar(posts, resumen) {
         const slugsActividades = new Set()
         const filasActividades = hijas.length
           ? hijas.map((h) => ({
-              origenId: idDeHija(h.titulo, slugsActividades),
+              origenId: idDeHija(h, slugsActividades),
               titulo: h.titulo,
               categoria: h.categoria || item.categoria || 'general',
               fechaLimite: h.fechaLimite || item.fechaLimite,
@@ -634,6 +734,9 @@ async function procesar(posts, resumen) {
               // prácticos del cartel (edades, precio, cómo inscribirse).
               descripcion: h.descripcion || null,
               imagenUrl: h.imagen_url || imagenPost,
+              // Solo las hijas de un carrusel traen id de foto (ver arriba);
+              // las de un documento (PDF/HTML) van a NULL.
+              imagenOrigenId: h.imagenOrigenId || null,
               estado: 'borrador',
             }))
           : crearFilaUnica
@@ -647,6 +750,7 @@ async function procesar(posts, resumen) {
                   lugar: null,
                   descripcion: item.resumen || null,
                   imagenUrl: imagenPost,
+                  imagenOrigenId: null,
                   estado: 'publicado',
                 },
               ]
@@ -659,11 +763,11 @@ async function procesar(posts, resumen) {
             const resultado = await sql`
               INSERT INTO actividades
                 (origen_externo_id, titulo, descripcion, categoria, fecha_limite, horario,
-                 lugar, imagen_url, url_fuente, estado, publicado_en)
+                 lugar, imagen_url, imagen_origen_id, url_fuente, estado, publicado_en)
               VALUES
                 (${fila.origenId}, ${fila.titulo}, ${fila.descripcion}, ${fila.categoria},
                  ${fila.fechaLimite}, ${fila.horario}, ${fila.lugar}, ${fila.imagenUrl},
-                 ${url || post.url}, ${fila.estado}, ${item.publicadoEn})
+                 ${fila.imagenOrigenId}, ${url || post.url}, ${fila.estado}, ${item.publicadoEn})
               ON CONFLICT (origen_externo_id)
               DO UPDATE SET
                 titulo = EXCLUDED.titulo,
@@ -673,6 +777,7 @@ async function procesar(posts, resumen) {
                 horario = EXCLUDED.horario,
                 lugar = EXCLUDED.lugar,
                 imagen_url = COALESCE(EXCLUDED.imagen_url, actividades.imagen_url),
+                imagen_origen_id = COALESCE(EXCLUDED.imagen_origen_id, actividades.imagen_origen_id),
                 url_fuente = EXCLUDED.url_fuente,
                 actualizado_en = now()
               RETURNING (xmax = 0) AS insertada
