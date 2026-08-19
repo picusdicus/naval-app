@@ -28,6 +28,7 @@ import { obtenerSql } from './_db.js'
 import {
   MAX_POSTS,
   asegurarOrganizacion,
+  esPostReciente,
   normalizarPost,
   obtenerPosts,
   orgDeUsuario,
@@ -227,12 +228,14 @@ export default async function handler(req, res) {
     timestamp: new Date().toISOString(),
     recibidos: 0,
     analizados: 0,
+    descartadosPorAntiguedad: 0,
     eventos: 0,
     creados: 0,
     actualizados: 0,
     duplicadosOmitidos: 0,
     descartadosPorValidacion: 0,
     imagenesSubidas: 0,
+    imagenesReutilizadas: 0,
     errores: [],
   }
 
@@ -240,7 +243,9 @@ export default async function handler(req, res) {
     const crudos = await obtenerPosts(req.body)
     resumen.recibidos = crudos.length
 
-    const posts = crudos.map(normalizarPost).filter(Boolean).slice(0, MAX_POSTS)
+    const normalizados = crudos.map(normalizarPost).filter(Boolean)
+    const posts = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
+    resumen.descartadosPorAntiguedad = normalizados.length - posts.length
     resumen.analizados = posts.length
     if (posts.length === 0) {
       res.status(200).json(resumen)
@@ -305,6 +310,21 @@ async function procesar(posts, resumen) {
           WHERE fecha_inicio = ANY(${fechas}::date[])`
       : []
 
+    // Imágenes ya subidas (cuota de Blob: cada put() cuenta como Advanced
+    // Request — ver "Presupuesto de Vercel Blob" en CLAUDE.md). Una sola
+    // consulta por origen_externo_id, antes del bucle: si la fila ya existe
+    // con imagen, se reutiliza su URL sin volver a llamar a subirImagen. Solo
+    // se sube si el post es nuevo o si una subida anterior dejó imagen_url a
+    // NULL (reintento).
+    const idsEventos = validos.map((v) => `ig-${v.shortCode}`)
+    const imagenesPrevias = idsEventos.length
+      ? await sql`
+          SELECT origen_externo_id, imagen_url
+          FROM eventos_usuario
+          WHERE origen_externo_id = ANY(${idsEventos}::text[])`
+      : []
+    const imagenPorOrigenId = new Map(imagenesPrevias.map((f) => [f.origen_externo_id, f.imagen_url]))
+
     // Cache por ejecución: una organización se asegura una sola vez aunque
     // firme varios eventos.
     const orgIds = new Map()
@@ -333,8 +353,15 @@ async function procesar(posts, resumen) {
         }
 
         const organizacionId = await organizacionDe(ev.usuario)
-        const imagenUrl = await subirImagen('instagram', ev.shortCode, ev.imagenOrigen)
-        if (imagenUrl) resumen.imagenesSubidas++
+        const imagenExistente = imagenPorOrigenId.get(origenId)
+        let imagenUrl
+        if (imagenExistente) {
+          imagenUrl = imagenExistente
+          resumen.imagenesReutilizadas++
+        } else {
+          imagenUrl = await subirImagen('instagram', ev.shortCode, ev.imagenOrigen)
+          if (imagenUrl) resumen.imagenesSubidas++
+        }
 
         // xmax = 0 distingue INSERT de UPDATE. En el UPDATE no se tocan ni
         // estado ni notificado_en (ver cabecera del fichero), y la imagen

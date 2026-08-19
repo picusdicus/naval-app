@@ -15,6 +15,25 @@ export const TIPOS_IMAGEN = {
 export const MAX_IMAGEN_BYTES = 4 * 1024 * 1024
 export const MAX_POSTS = 50
 
+// Cada run de Apify reenvía sus ~50 posts más recientes, incluidos los de
+// runs anteriores: sin este corte, un post ya procesado hace semanas se
+// vuelve a mandar entero a Claude cada día (coste de tokens) y, antes de este
+// cambio, también generaba subidas de Blob repetidas. 30 días cubre de sobra
+// el ciclo de publicación municipal (nada se anuncia con tanta antelación).
+export const MAX_DIAS_ANTIGUEDAD = 30
+
+/**
+ * true si el post es reciente (dentro de MAX_DIAS_ANTIGUEDAD) o si no tiene
+ * una fecha de publicación parseable — un post sin `timestamp` no se
+ * descarta, para no romper el reproceso manual (posts de prueba pasados
+ * directamente en el body, que a menudo no llevan esa fecha).
+ */
+export function esPostReciente(post, maxDias = MAX_DIAS_ANTIGUEDAD) {
+  const t = Date.parse(post?.publicado)
+  if (!Number.isFinite(t)) return true
+  return Date.now() - t <= maxDias * 24 * 3600 * 1000
+}
+
 /** Primera foto del post: carrusel (childPosts/images) o imagen única. Los
  * actores de Instagram no coinciden en el nombre del campo, así que se prueban
  * varios (instagram-scraper usa displayUrl/images; otros, imageUrl/thumbnail). */
@@ -44,7 +63,25 @@ export function todasLasImagenes(post) {
   return unica ? [unica] : []
 }
 
-/** Pares alt+imagen de cada foto del carrusel (childPosts): los carteles
+/** id estable de una foto de carrusel: Instagram asigna a cada hija de un
+ * Sidecar su propio media id/shortcode (independiente del índice y del
+ * shortCode del post), así que sobrevive a que el post se reedite y las
+ * fotos cambien de orden o de número — a diferencia de emparejar por título,
+ * que puede confundir dos actividades con títulos parecidos ("Torneo de
+ * Pádel" / "Torneo de Pádel Infantil"). El nombre del campo varía entre
+ * actores de Apify (no todos lo exponen igual, o no lo exponen); se prueban
+ * los más plausibles y se cae a null si ninguno está — en ese caso el
+ * llamador cae a emparejar por título, como antes de este campo. */
+function idDeFotoCarrusel(childPost) {
+  const c = childPost || {}
+  if (typeof c.id === 'string' && c.id) return c.id
+  if (typeof c.shortCode === 'string' && c.shortCode) return c.shortCode
+  if (typeof c.pk === 'string' && c.pk) return c.pk
+  if (typeof c.pk === 'number') return String(c.pk)
+  return null
+}
+
+/** Pares alt+imagen+id de cada foto del carrusel (childPosts): los carteles
  * municipales llevan una actividad por foto con todos sus datos en el alt
  * (OCR de Instagram) — p. ej. la programación deportiva, un cartel por
  * prueba. El alt del post padre es solo "Photo by …", así que sin esto los
@@ -55,6 +92,7 @@ export function carruselDe(post) {
     .map((c) => ({
       alt: typeof c?.alt === 'string' ? c.alt.trim() : '',
       imagen: c?.displayUrl || '',
+      id: idDeFotoCarrusel(c),
     }))
     // Con la extracción por visión basta la imagen; el alt (OCR de
     // Instagram) queda como apoyo/fallback si la descarga falla.

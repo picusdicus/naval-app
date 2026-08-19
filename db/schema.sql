@@ -369,3 +369,12 @@ CREATE INDEX IF NOT EXISTS idx_actividades_origen ON actividades (origen_externo
 ALTER TABLE actividades ADD COLUMN IF NOT EXISTS estado text NOT NULL DEFAULT 'publicado';
 
 CREATE INDEX IF NOT EXISTS idx_actividades_fecha_limite ON actividades (fecha_limite DESC);
+
+-- Identificador estable de la foto de origen dentro de un carrusel de
+-- Instagram (media id/shortcode de la hija — ver carruselDe() en
+-- api/_instagram.js), no el índice ni el título: permite reconocer que la
+-- imagen ya subida de una actividad sigue siendo la correcta aunque el post
+-- se reedite y las fotos cambien de orden o de número. NULL en actividades
+-- que no vienen de un carrusel (documento PDF/HTML, fila única) y en las
+-- filas creadas antes de este campo (siguen emparejándose por título).
+ALTER TABLE actividades ADD COLUMN IF NOT EXISTS imagen_origen_id text;
