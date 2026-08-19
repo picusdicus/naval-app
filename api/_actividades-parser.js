@@ -526,7 +526,9 @@ Para cada cartel devuelve:
       return []
     }
     const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"actividades":[]}'
-    return (JSON.parse(texto).actividades || [])
+    const parsed = JSON.parse(texto)
+    console.log('[extraerDeCarrusel] Respuesta bruta del modelo:', JSON.stringify(parsed, null, 2))
+    return (parsed.actividades || [])
       .filter(
         (a) =>
           Number.isInteger(a.indice) &&

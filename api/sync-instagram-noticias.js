@@ -187,6 +187,7 @@ async function extraerNoticias(posts) {
     if (r.error) errores.push(r.error)
     else noticias.push(...r.items)
   }
+  console.log('[webhook] Triaje: noticias=', noticias.map(n => ({ shortCode: n.shortCode, tipo: n.tipo, titulo: n.titulo })))
   return { noticias, errores }
 }
 
@@ -401,6 +402,9 @@ async function asegurarTablas(sql) {
   // post se reedite y las fotos cambien de orden — ver carruselDe() en
   // api/_instagram.js. NULL fuera de carruseles y en filas anteriores a esto.
   await sql`ALTER TABLE actividades ADD COLUMN IF NOT EXISTS imagen_origen_id text`
+  // Fecha de celebración/realización de la actividad, distinto de fecha_limite
+  // (cuándo cierra el plazo de inscripción). Nullable: actividades sin fecha.
+  await sql`ALTER TABLE actividades ADD COLUMN IF NOT EXISTS fecha_evento date`
 }
 
 export default async function handler(req, res) {
