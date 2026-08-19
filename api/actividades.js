@@ -33,6 +33,7 @@ export default async function handler(req) {
         titulo,
         descripcion,
         categoria,
+        to_char(fecha_evento, 'YYYY-MM-DD') AS fecha_evento,
         to_char(fecha_limite, 'YYYY-MM-DD') AS fecha_limite,
         horario,
         lugar,
@@ -44,7 +45,7 @@ export default async function handler(req) {
         AND (fecha_limite >= CURRENT_DATE
              OR (fecha_limite IS NULL
                  AND publicado_en >= now() - (${DIAS_SIN_PLAZO} || ' days')::interval))
-      ORDER BY fecha_limite ASC NULLS LAST, publicado_en DESC
+      ORDER BY fecha_evento ASC NULLS LAST, fecha_limite ASC NULLS LAST, publicado_en DESC
       LIMIT ${LIMITE}
     `;
 
