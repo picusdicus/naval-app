@@ -244,8 +244,8 @@ async function descargarDocumento(url) {
 
     // Recortar por contenido: extraer solo el artículo principal (WordPress)
     // y descartar cabecera, menú, sidebar para maximizar contenido útil.
-    // Los selectores son específicos del WordPress de Navalcarnero.
-    const match = html.match(/<div[^>]*class="[^"]*entrada[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)
+    // Los selectores son específicos del WordPress de Navalcarnero (art-postcontent o entrada).
+    const match = html.match(/<div[^>]*class="[^"]*(?:entrada|art-postcontent)[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)
     if (match && match[1].length > 1000) {
       // Si el contenido extraído es significativo, úsalo (descarta chrome de la página)
       html = match[1]
