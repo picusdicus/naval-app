@@ -292,34 +292,56 @@ async function eventosRedTeatros() {
           const fotoUrl = new URL(fotoMatch[1], REDTEATROS_URL).href
           imagenes.push(fotoUrl)
         }
+
+        // Verificación cruzada de fecha: "Información práctica" de Navalcarnero en la ficha
+        // Detecta cambios en la programación o errores de parseo. Regex busca el bloque
+        // <li><strong>Navalcarnero</strong></li> ... <li>TEATRO ... - <fecha> <hora>h.</li>
+        const navalMatch = fichaHtml.match(
+          /<li><strong>Navalcarnero<\/strong><\/li>\s*<li><span>([^<]+)<\/span><\/li>\s*<li>([^-]+?)\s*-\s*(\d{1,2}:\d{2})\s*h\./i,
+        )
+        if (navalMatch) {
+          const [, sala, fechaEnFicha, horaEnFicha] = navalMatch
+          const diaEnFicha = extraerDiaMes(fechaEnFicha)
+          if (diaEnFicha) {
+            const mesEnFicha = String(diaEnFicha.mes).padStart(2, '0')
+            const diaEnFichaStr = String(diaEnFicha.dia).padStart(2, '0')
+            const fechaISO_Ficha = `${anyo}-${mesEnFicha}-${diaEnFichaStr}`
+            if (fechaISO_Ficha !== fechaISO) {
+              console.warn(
+                `Discrepancia de fecha en ${titulo}: listado dice ${fechaISO}, ficha dice ${fechaISO_Ficha}`,
+              )
+            }
+          }
+        }
       } catch (err) {
         // Fail-soft: si falla la ficha, el evento entra igual con los datos del listado
         console.warn(`Ficha de ${titulo}: ${err.message}`)
       }
 
-      // Mapeo de categoría → subcategoría
+      // Mapeo de categoría → subcategoría. Captura "Público familiar" para preservar
+      // la información, aunque no sea una subcategoría separada (el proyecto usa
+      // 'infantil' como categoría principal, pero los eventos del teatro rojo-teatros
+      // se mantienen en 'cultura' porque son actos culturales, no infantiles per se).
       let subcategoria = null
+      let esPublicoFamiliar = false
       const catLower = categoria.toLowerCase()
-      if (
-        catLower.includes('teatro') ||
-        catLower.includes('público familiar - teatro')
-      ) {
+
+      if (catLower.includes('teatro')) {
         subcategoria = 'teatro'
-      } else if (
-        catLower.includes('danza') ||
-        catLower.includes('público familiar - danza')
-      ) {
+        esPublicoFamiliar = catLower.includes('público familiar')
+      } else if (catLower.includes('danza')) {
         subcategoria = 'danza'
-      } else if (
-        catLower.includes('música') ||
-        catLower.includes('público familiar - música')
-      ) {
+        esPublicoFamiliar = catLower.includes('público familiar')
+      } else if (catLower.includes('música')) {
         subcategoria = 'musica'
+        esPublicoFamiliar = catLower.includes('público familiar')
       } else if (catLower.includes('circo')) {
-        subcategoria = 'teatro' // fallback si no hay subcategoría específica
+        subcategoria = 'teatro'
+        esPublicoFamiliar = catLower.includes('público familiar')
       }
 
       const descripcionParts = []
+      if (esPublicoFamiliar) descripcionParts.push('👨‍👩‍👧 Público familiar')
       if (interpretes) descripcionParts.push(`Intérpretes: ${interpretes}`)
       if (edadRecomendada) descripcionParts.push(`Edad: ${edadRecomendada}`)
       if (duracion) descripcionParts.push(`Duración: ${duracion}`)
@@ -345,9 +367,11 @@ async function eventosRedTeatros() {
       fichasDescargadas++
     }
 
-    // Validación: si no hay eventos y la página respondió 200, algo se rompió
+    // Validación: si no hay eventos y la página respondió 200, algo se rompió en el parseo
+    // (estructura HTML cambió, regex no matchea, etc.). Esto merece un aviso porque el
+    // cron reescribe eventos-externos.json y estos eventos desaparecen silenciosamente.
     if (eventos.length === 0 && html.length > 0) {
-      console.warn('Red de Teatros: página respondió pero sin eventos válidos')
+      throw new Error('Página respondió 200 pero sin eventos válidos — estructura HTML cambió')
     }
 
     return eventos
