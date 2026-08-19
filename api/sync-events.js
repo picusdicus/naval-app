@@ -341,7 +341,6 @@ async function eventosRedTeatros() {
       }
 
       const descripcionParts = []
-      if (esPublicoFamiliar) descripcionParts.push('👨‍👩‍👧 Público familiar')
       if (interpretes) descripcionParts.push(`Intérpretes: ${interpretes}`)
       if (edadRecomendada) descripcionParts.push(`Edad: ${edadRecomendada}`)
       if (duracion) descripcionParts.push(`Duración: ${duracion}`)
@@ -361,6 +360,7 @@ async function eventosRedTeatros() {
         url,
         imagen: imagenes.length > 0 ? imagenes[0] : '',
         imagenes, // todas las fotos para futuro uso
+        publicoFamiliar: esPublicoFamiliar,
         fuente: 'Red de Teatros',
       })
 
