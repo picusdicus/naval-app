@@ -555,6 +555,27 @@ async function procesar(posts, resumen) {
     // del propio triaje (caption, alta confianza) sigue naciendo 'publicado'.
     const pendientesEventos = []
     const pendientesActividades = []
+    // Encuentra, entre las hermanas ya existentes de un post, la que
+    // corresponde a esta foto/actividad — por id estable de la foto si está
+    // disponible en ambos lados (Instagram no lo cambia si el post se
+    // reedita), si no por título equivalente. MISMO criterio para las dos
+    // decisiones que dependen de "es esta la misma hija de antes": qué
+    // imagen reutilizar (más abajo) y qué origen_externo_id reutilizar
+    // (idDeHija) — así no pueden discrepar entre sí. El título por sí solo
+    // es frágil como identidad: Claude puede redactar el mismo cartel
+    // distinto entre dos extracciones ("Torneo de Pádel" / "Torneo de
+    // pádel otoñal"), y confundir dos actividades reales con nombres
+    // parecidos ("Torneo de Pádel" / "Torneo de Pádel Infantil"). Es el
+    // único criterio disponible para actividades sin foto propia
+    // (documentos PDF/HTML) o cuando el actor de Apify no da el id.
+    const hermanaDe = (hermanas, { imagenOrigenId, titulo }) => {
+      if (imagenOrigenId) {
+        const porId = hermanas.find((x) => x.imagen_origen_id === imagenOrigenId)
+        if (porId) return porId
+      }
+      const clave = claveTitulo(titulo)
+      return hermanas.find((x) => titulosEquivalentes(claveTitulo(x.titulo), clave))
+    }
     // Sufijo ESTABLE por título para los ids de hijas ('ig-<shortCode>-<slug>'):
     // con índices numéricos, el orden de extracción cambiaba entre runs y el
     // upsert machacaba una fila con el contenido de otra (un "Reto viajero"
@@ -639,25 +660,10 @@ async function procesar(posts, resumen) {
           // La foto del cartel correspondiente, a Blob con sufijo por índice
           // — salvo que ya exista una hermana con esa misma foto y con
           // imagen: entonces se reutiliza la suya en vez de volver a
-          // descargarla y subirla. Emparejamiento en dos pasos:
-          // 1) por `id` estable de la foto (media id/shortcode de Instagram,
-          //    ver carruselDe() en api/_instagram.js) — sobrevive a que el
-          //    post se reedite y las fotos cambien de orden o de número.
-          // 2) si no hay id de un lado o del otro (actor sin ese campo, o
-          //    fila creada antes de este cambio), cae a título equivalente
-          //    — el criterio de antes, con el riesgo ya conocido de
-          //    confundir dos actividades con títulos parecidos ("Torneo de
-          //    Pádel" / "Torneo de Pádel Infantil"); por eso el id manda
-          //    siempre que esté disponible en ambos lados.
+          // descargarla y subirla (ver hermanaDe() más arriba).
           for (const h of hijasCarrusel) {
             const fotoId = post.carrusel[h.indice]?.id || null
-            let gemela = fotoId
-              ? hermanas.find((x) => x.imagen_origen_id && x.imagen_origen_id === fotoId)
-              : null
-            if (!gemela) {
-              const clave = claveTitulo(h.titulo)
-              gemela = hermanas.find((x) => titulosEquivalentes(claveTitulo(x.titulo), clave))
-            }
+            const gemela = hermanaDe(hermanas, { imagenOrigenId: fotoId, titulo: h.titulo })
             if (gemela?.imagen_url) {
               h.imagen_url = gemela.imagen_url
               h.imagenOrigenId = gemela.imagen_origen_id || fotoId
@@ -692,21 +698,25 @@ async function procesar(posts, resumen) {
           }
         }
 
-        // Reutiliza el origen_externo_id de una hermana ya existente (misma
-        // idea que arriba con la imagen): si una hija nueva tiene título
-        // EQUIVALENTE a una fila previa (`hermanas`, calculada al principio
-        // del item), el upsert la actualiza (respetando su estado) en vez de
-        // crear una casi-duplicada. Sin esto, la deriva de títulos entre
-        // extracciones ("…con DJ" vs "…con DJ Piwi") cambiaba el slug y
-        // re-proponía como borrador actividades ya aprobadas.
-        const idDeHija = (titulo, usados) => {
-          const clave = claveTitulo(titulo)
-          const gemela = hermanas.find((x) => titulosEquivalentes(claveTitulo(x.titulo), clave))
+        // Reutiliza el origen_externo_id de una hermana ya existente (mismo
+        // criterio que hermanaDe(): id de foto primero, título como
+        // fallback — ver el comentario de más arriba). El upsert actualiza
+        // esa fila (respetando su estado) en vez de crear una
+        // casi-duplicada. Esto era antes solo por título: la deriva de
+        // títulos entre extracciones ("…con DJ" vs "…con DJ Piwi") cambiaba
+        // el slug y re-proponía como borrador actividades ya aprobadas —
+        // pero un título parecido de OTRA actividad real ("Torneo de Pádel"
+        // / "Torneo de Pádel Infantil") también podía emparejar mal y hacer
+        // que el upsert sobreescribiera una fila con los datos de otra. Con
+        // id de foto disponible (hijas de carrusel), la identidad ya no
+        // depende de cómo Claude redacte el título esta vez.
+        const idDeHija = (h, usados) => {
+          const gemela = hermanaDe(hermanas, h)
           if (gemela) {
             usados.add(gemela.origen_externo_id.slice(`ig-${item.shortCode}-`.length))
             return gemela.origen_externo_id
           }
-          return `ig-${item.shortCode}-${sufijoDe(titulo, usados)}`
+          return `ig-${item.shortCode}-${sufijoDe(h.titulo, usados)}`
         }
 
         // — Actividades: hijas del documento o del carrusel (borrador) o, en
@@ -714,7 +724,7 @@ async function procesar(posts, resumen) {
         const slugsActividades = new Set()
         const filasActividades = hijas.length
           ? hijas.map((h) => ({
-              origenId: idDeHija(h.titulo, slugsActividades),
+              origenId: idDeHija(h, slugsActividades),
               titulo: h.titulo,
               categoria: h.categoria || item.categoria || 'general',
               fechaLimite: h.fechaLimite || item.fechaLimite,
