@@ -24,7 +24,7 @@ export const ETIQUETAS_ALERTA = {
 }
 
 // Categorías de actividad (misma whitelist que api/sync-instagram-noticias.js
-// y el CHECK de la tabla). El orden decide el de los chips de /actividades.
+// y el CHECK de la tabla). El orden decide el de los chips de /eventos?categorias=talleres.
 export const ETIQUETAS_ACTIVIDAD = {
   deporte: 'Deporte',
   talleres: 'Talleres y cursos',
@@ -93,7 +93,7 @@ export function useNoticiasPublicas() {
 
   // Mezcla RSS + Instagram, descarta lo de más de un mes y ordena por fecha
   // descendente (sin el sort, las de Instagram quedarían detrás del RSS).
-  // Las actividades (tipo 'actividad') no son noticias: viven en /actividades.
+  // Las actividades (tipo 'actividad') no son noticias: se las trata por separado.
   const noticias = useMemo(() => {
     const limite = fechaLimiteUnMes()
     return [...ESTATICAS, ...deLaBase]

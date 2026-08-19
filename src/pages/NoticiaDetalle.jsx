@@ -28,8 +28,8 @@ function VolverLink({ arriba = false, actividad = false }) {
 export default function NoticiaDetalle() {
   const { id } = useParams()
   const { noticias, actividades, cargando } = useNoticiasPublicas()
-  // Las actividades no están en `noticias` (viven en /actividades), pero sus
-  // deep links ig-… se resuelven igual desde esta página de detalle.
+  // Las actividades no están en `noticias` (ahora son eventos con categoría 'talleres'),
+  // pero sus deep links ig-… se resuelven igual desde esta página de detalle.
   const noticia = noticias.find((n) => n.id === id) || actividades.find((n) => n.id === id)
 
   if (!noticia) {
