@@ -12,7 +12,6 @@ import ProgramaDelDia from './pages/ProgramaDelDia.jsx'
 import Mapa from './pages/Mapa.jsx'
 import Noticias from './pages/Noticias.jsx'
 import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
-import Actividades from './pages/Actividades.jsx'
 import Transporte from './pages/Transporte.jsx'
 import FAQ from './pages/FAQ.jsx'
 import Sugerencias from './pages/Sugerencias.jsx'
@@ -101,7 +100,6 @@ export default function App() {
             <Route path="/comercios/*" element={<ComerciosRuta />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NoticiaDetalle />} />
-            <Route path="/actividades" element={<Actividades />} />
             <Route path="/transporte" element={<Transporte />} />
             <Route path="/asistente" element={<Navigate to="/" replace />} />
             <Route path="/ayuda" element={<FAQ />} />

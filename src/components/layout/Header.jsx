@@ -5,11 +5,10 @@ import CentroAvisos from '../avisos/CentroAvisos.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
 // Transporte se oculta del menú de escritorio (sigue accesible desde el menú
-// móvil, la NavBar inferior y su ruta directa /transporte).
+// móvil y su ruta directa /transporte). Actividades se consolidó en Eventos.
 const enlaces = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/eventos', label: 'Eventos' },
-  { to: '/actividades', label: 'Actividades' },
   { to: '/comercios', label: 'Comercios' },
   { to: '/noticias', label: 'Noticias' },
 ]

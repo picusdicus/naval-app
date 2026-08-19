@@ -3,9 +3,10 @@ import eventosCurados from '../data/eventos.json'
 import eventosExternos from '../data/eventos-externos.json'
 import { combinarEventos } from './dedupEventos.js'
 
-// La agenda pública combina dos orígenes: los JSON estáticos (curados y
-// sincronizados desde fuentes externas) y los eventos que las organizaciones
-// publican desde /admin, que viven en Neon. Los borradores no salen de ahí:
+// La agenda pública combina tres orígenes: los JSON estáticos (curados y
+// sincronizados desde fuentes externas), los eventos que las organizaciones
+// publican desde /admin (que viven en Neon), y las actividades con plazo
+// de inscripción (también de Neon). Los borradores no salen de ahí:
 // /api/eventos solo devuelve los que están en estado 'publicado'.
 
 const ESTATICOS = [...eventosCurados, ...eventosExternos]
@@ -17,19 +18,32 @@ const ESTATICOS = [...eventosCurados, ...eventosExternos]
  */
 export function useEventosPublicos() {
   const [deLaBase, setDeLaBase] = useState([])
+  const [actividades, setActividades] = useState([])
   const [ocultos, setOcultos] = useState(() => new Set())
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
     let vigente = true
 
-    fetch('/api/eventos')
-      .then((r) => (r.ok ? r.json() : { eventos: [] }))
-      .then((datos) => {
-        if (vigente) setDeLaBase(datos.eventos ?? [])
+    Promise.all([
+      fetch('/api/eventos')
+        .then((r) => (r.ok ? r.json() : { eventos: [] }))
+        .catch(() => ({ eventos: [] })),
+      fetch('/api/actividades')
+        .then((r) => (r.ok ? r.json() : { actividades: [] }))
+        .catch(() => ({ actividades: [] })),
+    ])
+      .then(([eventosResp, actividadesResp]) => {
+        if (vigente) {
+          setDeLaBase(eventosResp.eventos ?? [])
+          setActividades(actividadesResp.actividades ?? [])
+        }
       })
       .catch(() => {
-        if (vigente) setDeLaBase([])
+        if (vigente) {
+          setDeLaBase([])
+          setActividades([])
+        }
       })
       .finally(() => {
         if (vigente) setCargando(false)
@@ -49,6 +63,24 @@ export function useEventosPublicos() {
     }
   }, [])
 
+  // Convierte actividades a eventos con categoría 'talleres'.
+  const eventosDeActividades = useMemo(() => {
+    return actividades.map((a) => ({
+      id: a.id,
+      titulo: a.titulo,
+      fecha: a.publicado_en,
+      hora: undefined,
+      lugar: a.lugar,
+      categoria: 'talleres',
+      descripcion: a.descripcion || '',
+      imagen: a.imagen_url,
+      url: a.url_fuente,
+      origen: 'actividad',
+      // Campos adicionales del contexto de actividad
+      fechaLimite: a.fecha_limite,
+    }))
+  }, [actividades])
+
   // Identidad estable mientras no lleguen datos nuevos: quien reciba `eventos`
   // puede usarlo como dependencia de un useMemo sin recalcular en cada render.
   // combinarEventos fusiona los duplicados (evento curado + el mismo evento
@@ -56,12 +88,12 @@ export function useEventosPublicos() {
   // se descartan los que el superadmin haya ocultado (por id principal o por
   // cualquiera de los idsSecundarios que la fusión haya acumulado).
   const eventos = useMemo(() => {
-    const combinados = combinarEventos(ESTATICOS, deLaBase)
+    const combinados = combinarEventos(ESTATICOS, [...deLaBase, ...eventosDeActividades])
     if (!ocultos.size) return combinados
     return combinados.filter(
       (e) => !ocultos.has(e.id) && !(e.idsSecundarios || []).some((id) => ocultos.has(id)),
     )
-  }, [deLaBase, ocultos])
+  }, [deLaBase, eventosDeActividades, ocultos])
 
   return { eventos, cargando }
 }

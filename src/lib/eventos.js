@@ -7,6 +7,7 @@ export const CATEGORIAS_EVENTO = {
   mercado: { id: 'mercado', nombre: 'Mercados', color: '#C1633D' },
   deporte: { id: 'deporte', nombre: 'Deporte', color: '#3B7A57' },
   infantil: { id: 'infantil', nombre: 'Infantil', color: '#B5559A' },
+  talleres: { id: 'talleres', nombre: 'Talleres', color: '#9B5A7A' },
 }
 
 export const LISTA_CATEGORIAS_EVENTO = Object.values(CATEGORIAS_EVENTO)

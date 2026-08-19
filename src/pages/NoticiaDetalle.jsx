@@ -10,19 +10,17 @@ function formatearFechaLarga(fechaISO) {
 }
 
 function VolverLink({ arriba = false, actividad = false }) {
+  const destino = actividad ? '/eventos?categorias=talleres' : '/noticias'
+  const label = actividad ? 'Volver a talleres' : 'Volver a noticias'
+  const labelArriba = actividad ? 'Talleres' : 'Noticias'
+
   return (
     <Link
-      to={actividad ? '/actividades' : '/noticias'}
+      to={destino}
       className="inline-flex items-center gap-1 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta transition-colors hover:text-terracota"
     >
       <MIcon name="arrow_back" className="text-[16px]" />
-      {arriba
-        ? actividad
-          ? 'Actividades'
-          : 'Noticias'
-        : actividad
-          ? 'Volver a actividades'
-          : 'Volver a noticias'}
+      {arriba ? labelArriba : label}
     </Link>
   )
 }
