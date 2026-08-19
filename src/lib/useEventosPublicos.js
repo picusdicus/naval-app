@@ -64,21 +64,26 @@ export function useEventosPublicos() {
   }, [])
 
   // Convierte actividades a eventos con categoría 'talleres'.
+  // Nota: usa fecha_limite como fecha principal (cuándo es la actividad/plazo)
+  // no publicado_en (cuándo se publicó en Instagram).
   const eventosDeActividades = useMemo(() => {
-    return actividades.map((a) => ({
-      id: a.id,
-      titulo: a.titulo,
-      fecha: a.publicado_en,
-      hora: undefined,
-      lugar: a.lugar,
-      categoria: 'talleres',
-      descripcion: a.descripcion || '',
-      imagen: a.imagen_url,
-      url: a.url_fuente,
-      origen: 'actividad',
-      // Campos adicionales del contexto de actividad
-      fechaLimite: a.fecha_limite,
-    }))
+    return actividades
+      .filter((a) => a.fecha_limite) // Solo actividades con plazo conocido
+      .map((a) => ({
+        id: a.id,
+        titulo: a.titulo,
+        fecha: a.fecha_limite, // Fecha límite de inscripción = fecha del evento
+        hora: a.horario,
+        lugar: a.lugar,
+        categoria: 'talleres',
+        descripcion: a.descripcion || '',
+        imagen: a.imagen_url,
+        url: a.url_fuente,
+        origen: 'actividad',
+        // Metadatos adicionales
+        fechaLimite: a.fecha_limite,
+        publicadoEn: a.publicado_en,
+      }))
   }, [actividades])
 
   // Identidad estable mientras no lleguen datos nuevos: quien reciba `eventos`
