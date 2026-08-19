@@ -716,7 +716,16 @@ async function procesar(posts, resumen) {
             usados.add(gemela.origen_externo_id.slice(`ig-${item.shortCode}-`.length))
             return gemela.origen_externo_id
           }
-          return `ig-${item.shortCode}-${sufijoDe(h.titulo, usados)}`
+          // Bug B fix: usar imagen_origen_id como identidad estable si está disponible.
+          // Caso galerías (mayoría): foto estable = id estable (no depende de cómo Claude redacta).
+          if (h.imagenOrigenId) {
+            return `ig-${item.shortCode}-img-${h.imagenOrigenId}`
+          }
+          // Fallback (caso minoritario, sin imagen): posición ordinal en el candidato.
+          // La posición la asigna la página/Claude, no cambia entre runs.
+          const sufijo = `posicion-${Array.from(usados).filter((s) => s.startsWith('posicion-')).length}`
+          usados.add(sufijo)
+          return `ig-${item.shortCode}-${sufijo}`
         }
 
         // — Actividades: hijas del documento o del carrusel (borrador) o, en
