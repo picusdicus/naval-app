@@ -4,6 +4,7 @@ import { enviarDigest } from './_push-send.js'
 import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
+import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
@@ -636,8 +637,31 @@ export default async function handler(req, res) {
       resultado.errores.push(`Red de Teatros: ${err.message}`)
     }
 
+    let deportes = []
+    try {
+      const resultadoDeportes = await obtenerActividadesDeportivas()
+      // Transformar actividades deportivas al formato de eventos
+      deportes = resultadoDeportes.actividades.map((a) => ({
+        id: a.origen_externo_id,
+        titulo: a.titulo,
+        fecha: a.fecha_evento || a.fecha_limite, // Usar fecha_evento si existe, sino fecha_limite
+        hora: null,
+        lugar: 'Navalcarnero', // Lugar genérico para actividades deportivas
+        categoria: a.categoria,
+        subcategoria: null,
+        origen: 'deportes',
+        descripcion: '',
+        url: a.url_fuente,
+        imagen: a.imagen,
+        fuente: 'Actividades Deportivas',
+      }))
+      resultado.estadisticas = { ...resultado.estadisticas, deportes: deportes.length }
+    } catch (err) {
+      resultado.errores.push(`Actividades Deportivas: ${err.message}`)
+    }
+
     // Paso 2: Combinar sin duplicados
-    const eventosNuevos = combinarSinDuplicados(tyltyl, cultura, redTeatros)
+    const eventosNuevos = combinarSinDuplicados(tyltyl, cultura, redTeatros, deportes)
     eventosNuevos.sort(
       (a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''),
     )
