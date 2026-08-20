@@ -10,7 +10,7 @@ import programaFiestas from './_datos/programa-fiestas-2026.js'
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
 const REDTEATROS_URL = 'https://www.madrid.org/clas_artes/red/navalcarnero.html'
-const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 // Leer eventos actuales desde GitHub API (evita EROFS en Vercel runtime)
 async function leerEventosDesdeGitHub() {
@@ -658,12 +658,13 @@ export default async function handler(req, res) {
       resultado.errores.push(`Cultura Ayto: ${err.message}`)
     }
 
-    try {
-      redTeatros = await eventosRedTeatros()
-      resultado.estadisticas = { ...resultado.estadisticas, redTeatros: redTeatros.length }
-    } catch (err) {
-      resultado.errores.push(`Red de Teatros: ${err.message}`)
-    }
+    // Deshabilitado: madrid.org bloquea IP de datacenter Vercel (HTTP 403)
+    // try {
+    //   redTeatros = await eventosRedTeatros()
+    //   resultado.estadisticas = { ...resultado.estadisticas, redTeatros: redTeatros.length }
+    // } catch (err) {
+    //   resultado.errores.push(`Red de Teatros: ${err.message}`)
+    // }
 
     let deportes = []
     try {
