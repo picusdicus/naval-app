@@ -699,7 +699,7 @@ export default async function handler(req, res) {
     // Paso 2: Combinar sin duplicados
     const eventosNuevos = combinarSinDuplicados(tyltyl, cultura, redTeatros, deportes, fiestas)
     eventosNuevos.sort(
-      (a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''),
+      (a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora || '').localeCompare(b.hora || ''),
     )
 
     // Paso 3: Leer eventos actuales desde GitHub (comparar con lo recién fetcheado)
