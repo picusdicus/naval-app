@@ -216,7 +216,39 @@ function fechaISO(dia, mes, refDate, textoAnyo) {
 }
 
 // Red de Teatros de la Comunidad de Madrid
-async function eventosRedTeatros() {
+function eventosRedTeatros() {
+  // Importación estática: se actualiza manualmente en junio y diciembre cuando
+  // la Comunidad de Madrid publica el nuevo semestre.
+  // Fuente: https://www.madrid.org/clas_artes/red/navalcarnero.html
+  const redTeatrosData = require('./_datos/red-teatros.json')
+
+  // Transformar al formato estándar de eventos
+  const eventos = redTeatrosData.map((e) => ({
+    id: `redteatros-${e.slug}`,
+    titulo: e.titulo,
+    fecha: e.fecha,
+    hora: e.hora,
+    lugar: e.lugar || 'Teatro Municipal Centro',
+    categoria: 'cultura',
+    subcategoria: e.subcategoria || null,
+    origen: 'cultural',
+    descripcion: e.descripcion,
+    url: e.url || '',
+    imagen: e.imagen || '',
+    fuente: 'Red de Teatros',
+  }))
+
+  // Validación: si el JSON está vacío, es un aviso
+  if (eventos.length === 0) {
+    throw new Error('Red de Teatros JSON vacío — actualizar en junio/diciembre desde https://www.madrid.org/clas_artes/red/navalcarnero.html')
+  }
+
+  return eventos
+}
+
+// Función anterior deshabilitada
+/*
+async function eventosRedTeatros_deprecated() {
   const eventos = []
   const MAX_FICHAS = 30
 
@@ -386,6 +418,7 @@ async function eventosRedTeatros() {
     throw new Error(`Red de Teatros: ${err.message}`)
   }
 }
+*/
 
 // TYL TYL API
 async function traerPaginaTyltyl(page) {
@@ -658,13 +691,12 @@ export default async function handler(req, res) {
       resultado.errores.push(`Cultura Ayto: ${err.message}`)
     }
 
-    // Deshabilitado: madrid.org bloquea IP de datacenter Vercel (HTTP 403)
-    // try {
-    //   redTeatros = await eventosRedTeatros()
-    //   resultado.estadisticas = { ...resultado.estadisticas, redTeatros: redTeatros.length }
-    // } catch (err) {
-    //   resultado.errores.push(`Red de Teatros: ${err.message}`)
-    // }
+    try {
+      redTeatros = eventosRedTeatros()
+      resultado.estadisticas = { ...resultado.estadisticas, redTeatros: redTeatros.length }
+    } catch (err) {
+      resultado.errores.push(`Red de Teatros: ${err.message}`)
+    }
 
     let deportes = []
     try {

@@ -397,3 +397,51 @@ RESEND_API_KEY=... (para envío de emails, en reclamaciones de comercios)
 - **Fallback JSON**: Perfil siempre gana, pero JSON sirve de fallback por campo, permitiendo enriquecimiento gradual.
 - **Rate-limit + reCAPTCHA**: Doble defensa en reclamación anónima (pública).
 - **Share API nativa**: Móvil prefiere nativo; escritorio fallback simple (popover, sin deps pesadas).
+
+### Automatic event sync
+
+- `api/sync-events.js` — Vercel Cron Job endpoint that runs **daily at 07:00 UTC** to fetch and sync events from external sources.
+  - **Execution order** (ensures fresh data, no caching shortcuts):
+    1. Fetch all events from external sources: TYL TYL API + Ayuntamiento RSS + Red de Teatros + Fiestas Patronales 2026
+    2. Combine events without duplicates and sort by date
+    3. Read current `eventos-externos.json` from GitHub API
+    4. Compare fetched events with the current version
+    5. If changes detected, commit to GitHub via GitHub API
+  - Accepts both GET (from Vercel Cron) and POST methods.
+  - **Also regenerates `noticias.json`** (press RSS) in the same run: fetches the press feed via `obtenerNoticiasPrensa()` (`api/_noticias-feed.js`, article content fetched in batches so it doesn't blow the function time), compares against the current file's raw text, and stages it if it changed. Fail-soft in its own try — a noticias failure is logged in `errores` but never breaks the events sync or the push digest.
+  - **Does not write to the local filesystem** — reads from GitHub API instead (avoids EROFS read-only filesystem in Vercel runtime). Both changed files (`eventos-externos.json` and/or `noticias.json`) go in a **single commit** via `commitArchivos()` (Git Data API, multiple blobs in one tree).
+  - If the fetch fails for either source, logs the error but still commits (preserves any partial updates).
+  - Returns a summary: `{ timestamp, agregados, actualizados, eliminados, estadisticas, commitRealizado, errores }` (`estadisticas.noticias` = count fetched).
+  - Vercel detects the commit and redeploys automatically, at which point the new JSON becomes available on disk.
+- Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
+- Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).
+- **Bulk-load protection — principle and threshold**:
+  - **Principle**: the digest announces new events one-by-one only when they are few; faced with any large load, automatic silence.
+  - **Threshold**: if the total of new external events in a run exceeds 30, **all** of them are added to the notification history (`push_avisos` table) so users can discover them browsing the events feed, but they are **excluded from the push digest** to prevent notification avalanches and protect against feed breakages, one-time bulk data loads, or unexpected spikes.
+  - **Mechanics**: Events are still grouped by source in logs and statistics to track provenance (useful for debugging), but the digest/bandeja decision is global — if total > 30, all externals go to bandeja; if total ≤ 30, all go to digest (alongside Neon events). This rule applies to all sources equally (TYL TYL, RSS, Red de Teatros, Fiestas, future sources) and scales naturally with new additions.
+  - **Rationale**: choosing which subset of a large load to announce (e.g., "first 30 only") would be arbitrary and leave the user with an incomplete, confusing digest. Silence is honest: if something goes wrong or a source changes, the user sees nothing pushed but can still explore the full agenda.
+
+### Fiestas Patronales 2026
+
+`eventosFiestas()` (in `api/sync-events.js`) — loads pre-classified events from `api/_datos/programa-fiestas-2026.js` into the merged event stream. A **one-time static import** (not fetched from external API) of 158 hand-curated events for the annual municipality festival.
+
+- **Source**: `api/_datos/programa-fiestas-2026.js` — ES module wrapping 158 events as JSON, each pre-annotated with `categoria` (deporte, cultura, infantil, fiestas, etc.), optional `subcategoria`, `esTaurino` flag, and `organiza` (event organizer name, e.g., "Ateneo de Navalcarnero", or empty for municipal/unattributed events). Module lives in `api/_datos/` to ensure it resolves at runtime in Vercel serverless (unlike `src/data/*.json`).
+- **No heuristics**: fields are read directly from the JSON — no AI classification, keyword matching, or post-processing. The classification is final and user-verified.
+- **ID stability**: events get stable IDs in the format `fiestas-<claveNorm(titulo)>-<fecha>` where `claveNorm()` normalizes the title to lowercase + hyphen-separated words (no accents/punctuation, max 50 chars) so deep links and subsequent cron runs recognize the same event. Example: `fiestas-copa-federacion-v-memorial-angel-carrizo-2026-08-19`.
+- **High-volume protection**: with 158 events, this source **always** triggers the bulk-load rule — all fiestas events go to `push_avisos` but not to the push digest. This prevents a notification flood on day 1 while keeping them browsable in the events feed.
+- **Fail-soft**: if JSON loading fails, the error is logged in `resultado.errores` and the sync continues with the other sources (TYL TYL, RSS, etc.); the cron never breaks. If the load succeeds but returns 0 events (module corruption), that is also logged as an error (silently losing 158 events is worse than a logged failure).
+- **Image fallback**: events carry no `imagen` field — they fall back to `cartelDe()` category gradients (not generic stock photos) in the UI.
+- **Fuente attribution**: events carry the actual organizer name from `e.organiza` (35 events) or empty string (123 events attributed to the municipality).
+
+### Red de Teatros de la Comunidad de Madrid
+
+`eventosRedTeatros()` (in `api/sync-events.js`) — loads pre-classified events from `api/_datos/red-teatros.json` into the merged event stream. A **manual semestral import** of ~4-8 cultural events from the Madrid regional theater network's Navalcarnero venue calendar.
+
+- **Source**: `https://www.madrid.org/clas_artes/red/navalcarnero.html` — public HTML page with listings by season (Teatro, Danza, Música, Público Familiar). Programación refreshes in June (2º semestre) and December (1º semestre).
+- **Why manual, not scraped**: madrid.org datacenter IP-blocks Vercel function requests (HTTP 403), confirmed 2026-08-20. No User-Agent workaround. Automating via Apify proxy costs $30-50/month for 2 updates/year (4 events) — not sustainable. Manual copy matches the fiestas pattern (copy once → lives all semester).
+- **Process**: When madrid.org updates (June/December), open the link above, copy the ~4-8 events' titles, dates, times, rooms, synopses (where available), cast, and image URLs. Paste them into `api/_datos/red-teatros.json` following the existing schema. For incomplete fichas (only listing data, no detail page), leave `descripcion`, `interpretes`, `duracion`, `edadRecomendada` empty. No code changes needed — the cron picks them up automatically.
+- **Schema** (`api/_datos/red-teatros.json`): array of events with `{slug, titulo, compania, categoria (always 'cultura' for theater — see below), subcategoria (teatro|danza|musica), publicoFamiliar (boolean, preserved for future UI use), fecha (YYYY-MM-DD), hora (HH:MM), lugar, url, imagen, imagenes (array), descripcion, interpretes, duracion, edadRecomendada}`. No `id` or `origen` fields — `eventosRedTeatros()` derives them.
+- **Categorization rule**: All Red de Teatros events map to `categoria: 'cultura'`, regardless of audience (infantil/adultos). **Rationale**: "infantil" in this project means *activities you sign up for* (workshops, camps, ludotecas); theater is *performances you attend*, even if for children. If Red de Teatros labels a children's show "infantil" while TYL TYL labels equivalent children's theater "cultura", the same type of work would scatter across different filters depending on source. Solution: unify at `cultura` + use `publicoFamiliar` flag for future UI distinction (badges, separate rows, etc.). This keeps filtering consistent: all theater in one place, sorted by audience at presentation time, not by ingestion source.
+- **Incomplete fichas**: Three events (En el viento, Martina y los Supersingers, La Gran Aventura del Pollo Pepe) have listing-only data; their detail pages are pending. Image URLs are deduced from the pattern and **not verified** — `eventosRedTeatros()` includes a fallback to `cartelDe()` gradient if image fetch fails.
+- **Fail-soft**: if JSON is empty or malformed, the error is logged in `resultado.errores` and the cron continues; events simply don't appear that cycle (better than silently missing them due to scraper breakage).
+- **Future work (deferred)**: When `publicoFamiliar` gets UI treatment (badge, sub-filter, etc.), backfill the TYL TYL catalog with the flag — almost all TYL TYL events are children's theater and should carry it.
