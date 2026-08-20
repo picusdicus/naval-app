@@ -574,8 +574,7 @@ function eventosFiestas() {
       origen: 'fiestas',
       descripcion: limpiarTexto(e.descripcion, 220),
       url: '',
-      imagen: '',
-      fuente: 'Fiestas Patronales 2026',
+      fuente: e.organiza ? limpiarTexto(e.organiza, 100) : '',
     }
   })
 }
