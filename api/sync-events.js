@@ -5,7 +5,6 @@ import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
-import programaFiestas from '../src/data/programa-fiestas-2026.json' assert { type: 'json' }
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
@@ -552,29 +551,53 @@ function combinarSinDuplicados(...listas) {
 // commitArchivos vive ahora en api/_github.js (compartido con el panel
 // superadmin de comercios).
 
-// Eventos de las Fiestas Patronales: importados directamente desde JSON
-// pre-clasificado. Lee los campos como-está sin heurísticas: categoria,
-// subcategoria (opcional), esTaurino (se guarda aunque no se pinte hoy).
+// Eventos de las Fiestas Patronales: leídos desde GitHub en runtime
+// (no importados, para evitar EROFS en Vercel serverless).
+// Lee los campos como-está sin heurísticas: categoria, subcategoria, esTaurino.
 // ID estable: fiestas-<clave-normalizada>-<fecha> para reproducibilidad.
-function eventosFiestas() {
-  return programaFiestas.map((e) => {
-    const clave = claveNorm(e.titulo)
-    return {
-      id: `fiestas-${clave}-${e.fecha}`,
-      titulo: e.titulo,
-      fecha: e.fecha,
-      hora: e.hora ? e.hora.slice(0, 5) : '',
-      lugar: e.lugar || 'Navalcarnero',
-      categoria: e.categoria,
-      subcategoria: e.subcategoria || null,
-      esTaurino: e.esTaurino || false,
-      origen: 'fiestas',
-      descripcion: limpiarTexto(e.descripcion, 220),
-      url: '',
-      imagen: '',
-      fuente: 'Fiestas Patronales 2026',
+async function eventosFiestas() {
+  if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPO) {
+    return []
+  }
+
+  try {
+    const [owner, repo] = process.env.GITHUB_REPO.split('/')
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/src/data/programa-fiestas-2026.json`,
+      {
+        headers: {
+          Authorization: `token ${process.env.GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github.v3.raw',
+        },
+      },
+    )
+    if (!res.ok) {
+      if (res.status === 404) return []
+      throw new Error(`GitHub API respondio ${res.status}`)
     }
-  })
+    const programaFiestas = JSON.parse(await res.text())
+    return programaFiestas.map((e) => {
+      const clave = claveNorm(e.titulo)
+      return {
+        id: `fiestas-${clave}-${e.fecha}`,
+        titulo: e.titulo,
+        fecha: e.fecha,
+        hora: e.hora ? e.hora.slice(0, 5) : '',
+        lugar: e.lugar || 'Navalcarnero',
+        categoria: e.categoria,
+        subcategoria: e.subcategoria || null,
+        esTaurino: e.esTaurino || false,
+        origen: 'fiestas',
+        descripcion: limpiarTexto(e.descripcion, 220),
+        url: '',
+        imagen: '',
+        fuente: 'Fiestas Patronales 2026',
+      }
+    })
+  } catch (err) {
+    console.warn(`No se pudo leer fiestas desde GitHub: ${err.message}`)
+    return []
+  }
 }
 
 // Eventos de organizaciones (Neon) que entran en el digest push. Decisión
@@ -688,7 +711,7 @@ export default async function handler(req, res) {
 
     let fiestas = []
     try {
-      fiestas = eventosFiestas()
+      fiestas = await eventosFiestas()
       resultado.estadisticas = { ...resultado.estadisticas, fiestas: fiestas.length }
     } catch (err) {
       resultado.errores.push(`Fiestas Patronales: ${err.message}`)
