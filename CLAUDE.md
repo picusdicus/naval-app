@@ -191,6 +191,22 @@ Static JSON is still the store for the read-only content below (events, news, di
   - Vercel detects the commit and redeploys automatically, at which point the new JSON becomes available on disk.
 - Cron job is configured in `vercel.json` as `{ path: "/api/sync-events", schedule: "0 7 * * *" }`.
 - Requires environment variables: `GITHUB_TOKEN` (personal access token with repo write access), `GITHUB_REPO` (e.g., "user/naval-app"), and optionally `CRON_SECRET` (for validating cron calls from Vercel).
+- **Bulk-load protection — principle and threshold**:
+  - **Principle**: the digest announces new events one-by-one only when they are few; faced with any large load, automatic silence.
+  - **Threshold**: if the total of new external events in a run exceeds 30, **all** of them are added to the notification history (`push_avisos` table) so users can discover them browsing the events feed, but they are **excluded from the push digest** to prevent notification avalanches and protect against feed breakages, one-time bulk data loads, or unexpected spikes.
+  - **Mechanics**: Events are still grouped by source in logs and statistics to track provenance (useful for debugging), but the digest/bandeja decision is global — if total > 30, all externals go to bandeja; if total ≤ 30, all go to digest (alongside Neon events). This rule applies to all sources equally (TYL TYL, RSS, Red de Teatros, Fiestas, future sources) and scales naturally with new additions.
+  - **Rationale**: choosing which subset of a large load to announce (e.g., "first 30 only") would be arbitrary and leave the user with an incomplete, confusing digest. Silence is honest: if something goes wrong or a source changes, the user sees nothing pushed but can still explore the full agenda.
+
+### Fiestas Patronales 2026
+
+`eventosFiestas()` (in `api/sync-events.js`) — loads pre-classified events from `src/data/programa-fiestas-2026.json` into the merged event stream. A **one-time static import** (not fetched from external API) of 158 hand-curated events for the annual municipality festival.
+
+- **Source**: `src/data/programa-fiestas-2026.json` — hand-classified JSON with 158 events, each pre-annotated with `categoria` (deporte, cultura, infantil, fiestas, etc.), optional `subcategoria` (e.g., religiosa for festival religious acts), and `esTaurino` (true for bullfighting events, stored for future UI features even if not rendered yet).
+- **No heuristics**: fields are read directly from the JSON — no AI classification, keyword matching, or post-processing. The classification is final and user-verified.
+- **ID stability**: events get stable IDs in the format `fiestas-<claveNorm(titulo)>-<fecha>` so deep links and subsequent cron runs recognize the same event. `claveNorm()` normalizes the title to lowercase + removes accents/punctuation for reproducibility.
+- **Subcategories**: events can specify `subcategoria: 'religiosa'` (novenas, misas, procesiones) or leave it null. `SUBCATEGORIAS_FIESTAS` in `src/lib/eventos.js` defines available subcategories for filtering.
+- **High-volume protection**: with 158 events, this source triggers the bulk-load rule — all fiestas events go to `push_avisos` but not to the push digest. This prevents a notification flood on day 1 while keeping them browsable in the events feed.
+- **Fail-soft**: if JSON loading fails, the error is logged in `resultado.errores` and the sync continues with the other sources (TYL TYL, RSS, etc.); the cron never breaks.
 
 ### Red de Teatros de la Comunidad de Madrid
 

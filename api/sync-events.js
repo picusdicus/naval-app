@@ -762,10 +762,12 @@ export default async function handler(req, res) {
         (e) => !idsAnteriores.has(e.id) && e.fecha >= hoyISO,
       )
 
-      // Regla general para cargas masivas: si una fuente aporta >30 eventos nuevos
-      // en una ejecución, esos eventos van a la bandeja (push_avisos) pero NO al
-      // digest (envío push). Protege contra feed breakages y proporciona un
-      // patrón reutilizable para futuras fuentes de alto volumen.
+      // Regla general para cargas masivas: si el total de eventos externos nuevos
+      // en una ejecución supera 30, TODOS ellos van a la bandeja (push_avisos) pero
+      // NO al digest (envío push). Criterio conservador: ante cualquier carga grande,
+      // silencio automático. Protege contra feed breakages, sorpresas de volumen, y
+      // proporciona un patrón reutilizable para futuras fuentes. Se agrupan por
+      // fuente para los logs y estadísticas, pero la decisión digest/bandeja es global.
       const eventosPorFuente = new Map()
       agregadosExternos.forEach((e) => {
         const fuente = e.fuente || 'desconocida'
@@ -775,12 +777,10 @@ export default async function handler(req, res) {
 
       const bulkEventsPendientes = []
       const regularEventsPendientes = []
-      for (const [, eventos] of eventosPorFuente) {
-        if (eventos.length > 30) {
-          bulkEventsPendientes.push(...eventos)
-        } else {
-          regularEventsPendientes.push(...eventos)
-        }
+      if (agregadosExternos.length > 30) {
+        bulkEventsPendientes.push(...agregadosExternos)
+      } else {
+        regularEventsPendientes.push(...agregadosExternos)
       }
 
       let deNeon = []
