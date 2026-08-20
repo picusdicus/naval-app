@@ -133,14 +133,18 @@ function tituloLegible(txt) {
   return s
 }
 
-// Clave normalizada
+// Clave normalizada para IDs: guiones, máx 50 caracteres, sin espacios.
 function claveNorm(txt) {
-  return String(txt || '')
+  let slug = String(txt || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
     .trim()
+  if (slug.length > 50) slug = slug.slice(0, 50).replace(/-+$/, '')
+  return slug
 }
 
 // Meses en español
