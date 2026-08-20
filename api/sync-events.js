@@ -5,6 +5,7 @@ import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
+import programaFiestas from '../src/data/programa-fiestas-2026.json' assert { type: 'json' }
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
@@ -551,6 +552,31 @@ function combinarSinDuplicados(...listas) {
 // commitArchivos vive ahora en api/_github.js (compartido con el panel
 // superadmin de comercios).
 
+// Eventos de las Fiestas Patronales: importados directamente desde JSON
+// pre-clasificado. Lee los campos como-está sin heurísticas: categoria,
+// subcategoria (opcional), esTaurino (se guarda aunque no se pinte hoy).
+// ID estable: fiestas-<clave-normalizada>-<fecha> para reproducibilidad.
+function eventosFiestas() {
+  return programaFiestas.map((e) => {
+    const clave = claveNorm(e.titulo)
+    return {
+      id: `fiestas-${clave}-${e.fecha}`,
+      titulo: e.titulo,
+      fecha: e.fecha,
+      hora: e.hora ? e.hora.slice(0, 5) : '',
+      lugar: e.lugar || 'Navalcarnero',
+      categoria: e.categoria,
+      subcategoria: e.subcategoria || null,
+      esTaurino: e.esTaurino || false,
+      origen: 'fiestas',
+      descripcion: limpiarTexto(e.descripcion, 220),
+      url: '',
+      imagen: '',
+      fuente: 'Fiestas Patronales 2026',
+    }
+  })
+}
+
 // Eventos de organizaciones (Neon) que entran en el digest push. Decisión
 // (NOTIFICACIONES_PUSH.md daba dos opciones): se incluyen en ESTE digest, no
 // se dispara nada al publicar desde api/admin/eventos.js — así el envío queda
@@ -660,8 +686,16 @@ export default async function handler(req, res) {
       resultado.errores.push(`Actividades Deportivas: ${err.message}`)
     }
 
+    let fiestas = []
+    try {
+      fiestas = eventosFiestas()
+      resultado.estadisticas = { ...resultado.estadisticas, fiestas: fiestas.length }
+    } catch (err) {
+      resultado.errores.push(`Fiestas Patronales: ${err.message}`)
+    }
+
     // Paso 2: Combinar sin duplicados
-    const eventosNuevos = combinarSinDuplicados(tyltyl, cultura, redTeatros, deportes)
+    const eventosNuevos = combinarSinDuplicados(tyltyl, cultura, redTeatros, deportes, fiestas)
     eventosNuevos.sort(
       (a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''),
     )
@@ -728,6 +762,27 @@ export default async function handler(req, res) {
         (e) => !idsAnteriores.has(e.id) && e.fecha >= hoyISO,
       )
 
+      // Regla general para cargas masivas: si una fuente aporta >30 eventos nuevos
+      // en una ejecución, esos eventos van a la bandeja (push_avisos) pero NO al
+      // digest (envío push). Protege contra feed breakages y proporciona un
+      // patrón reutilizable para futuras fuentes de alto volumen.
+      const eventosPorFuente = new Map()
+      agregadosExternos.forEach((e) => {
+        const fuente = e.fuente || 'desconocida'
+        if (!eventosPorFuente.has(fuente)) eventosPorFuente.set(fuente, [])
+        eventosPorFuente.get(fuente).push(e)
+      })
+
+      const bulkEventsPendientes = []
+      const regularEventsPendientes = []
+      for (const [, eventos] of eventosPorFuente) {
+        if (eventos.length > 30) {
+          bulkEventsPendientes.push(...eventos)
+        } else {
+          regularEventsPendientes.push(...eventos)
+        }
+      }
+
       let deNeon = []
       try {
         deNeon = await eventosNeonPendientes()
@@ -735,24 +790,23 @@ export default async function handler(req, res) {
         resultado.errores.push(`Push (Neon): ${err.message}`)
       }
 
-      // Etiquetar cada evento con sus temas ('cat:…' + 'org:…') antes de
-      // comparar contra las suscripciones. El mapeo fuente→slug vive en
-      // src/lib/temasPush.js: un evento del TYL TYL matchea org:tyl-tyl tanto
-      // si viene de su API de WordPress como de su panel de Neon.
-      const paraAvisar = [...agregadosExternos, ...deNeon].map((e) => ({
+      // Etiquetar eventos regulares con sus temas para el digest.
+      const paraDigest = [...regularEventsPendientes, ...deNeon].map((e) => ({
         ...e,
         temas: temasDeEvento(e),
       }))
 
-      // Registrar cada evento anunciado en el historial (la "bandeja" que el
-      // vecino ve en la app). Se hace ANTES del envío y en su propio try: la
-      // bandeja debe poblarse aunque las claves VAPID no estén configuradas o
-      // el envío falle. UNIQUE(referencia_id) + ON CONFLICT evita duplicar un
-      // evento si reaparece en otra ejecución del cron.
-      if (paraAvisar.length > 0) {
+      // Registrar TODOS los eventos (regulares + bulk + Neon) en el historial.
+      // Bulk no entra en el digest pero sí va a la bandeja del usuario.
+      const paraAvisos = [
+        ...bulkEventsPendientes.map((e) => ({ ...e, temas: temasDeEvento(e) })),
+        ...paraDigest,
+      ]
+
+      if (paraAvisos.length > 0) {
         try {
           const sql = obtenerSql()
-          for (const e of paraAvisar) {
+          for (const e of paraAvisos) {
             const cuerpo = [e.fecha, e.lugar].filter(Boolean).join(' · ')
             await sql`
               INSERT INTO push_avisos (referencia_id, titulo, cuerpo, url, temas)
@@ -766,7 +820,7 @@ export default async function handler(req, res) {
         }
       }
 
-      const resumenPush = await enviarDigest(paraAvisar)
+      const resumenPush = await enviarDigest(paraDigest)
       resultado.push = resumenPush
 
       if (resumenPush.configurado && deNeon.length > 0) {

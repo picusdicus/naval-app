@@ -28,6 +28,15 @@ export const SUBCATEGORIAS_CULTURA = {
 
 export const LISTA_SUBCATEGORIAS_CULTURA = Object.values(SUBCATEGORIAS_CULTURA)
 
+// Subcategorías dentro de 'fiestas' (actos religiosos y similares que pueden
+// filtrarse independientemente). Opcionales: un evento de fiestas sin subcategoría
+// clara la deja null.
+export const SUBCATEGORIAS_FIESTAS = {
+  religiosa: { id: 'religiosa', nombre: 'Religiosa' },
+}
+
+export const LISTA_SUBCATEGORIAS_FIESTAS = Object.values(SUBCATEGORIAS_FIESTAS)
+
 // Convierte 'YYYY-MM-DD' en Date local (sin desfase de zona horaria).
 function aFecha(iso) {
   return new Date(`${iso}T00:00:00`)
