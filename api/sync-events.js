@@ -5,7 +5,13 @@ import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
-import programaFiestas from './_datos/programa-fiestas-2026.json' assert { type: 'json' }
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const programaFiestas = JSON.parse(readFileSync(join(__dirname, '_datos', 'programa-fiestas-2026.json'), 'utf8'))
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
