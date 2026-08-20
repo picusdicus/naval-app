@@ -316,8 +316,8 @@ const ESQUEMA_DOCUMENTO = {
         properties: {
           titulo: { type: 'string' },
           categoria: { enum: CATEGORIAS_ACTIVIDAD },
-          fechaEvento: { type: 'string' },   // YYYY-MM-DD: cuándo se celebra. "" si no clara
-          fechaLimite: { type: 'string' },   // YYYY-MM-DD: plazo de inscripción. "" si no clara
+          fechaEvento: { type: ['string', 'null'] },   // YYYY-MM-DD: cuándo se celebra. null si no clara
+          fechaLimite: { type: ['string', 'null'] },   // YYYY-MM-DD: plazo de inscripción. null si no clara
           horario: { type: 'string' },
           lugar: { type: 'string' },
         },
@@ -340,11 +340,13 @@ async function extraerDePdf(buffer, shortCode) {
 
 1. "eventos": actos de agenda a los que un vecino ASISTE en un momento concreto como público (una función, un concierto, una proyección, una fiesta, un mercado). Cada uno necesita fecha concreta (YYYY-MM-DD; si dura varios días, el día de inicio), hora (HH:MM en 24 h), lugar (el nombre del sitio, sin ", Navalcarnero"), la categoria más apropiada de la lista permitida, y una descripcion breve (máximo 300 caracteres). Descarta los actos sin fecha u hora concretas y los anteriores a hoy (${hoy}).
 
-2. "actividades": cosas a las que el vecino se APUNTA o en las que PARTICIPA — cursos, talleres, escuelas, campamentos, y pruebas deportivas participativas (torneos, carreras, marchas), aunque la inscripción sea el día de la prueba. fechaLimite = fin del plazo de inscripción (o la fecha de la prueba si es de un día), "" si no consta; horario y lugar si constan, "" si no.
+2. "actividades": cosas a las que el vecino se APUNTA o en las que PARTICIPA — cursos, talleres, escuelas, campamentos, y pruebas deportivas participativas (torneos, carreras, marchas), aunque la inscripción sea el día de la prueba. Cada actividad necesita:
+   - fechaEvento: YYYY-MM-DD de cuándo se celebra/realiza. null si no consta.
+   - fechaLimite: YYYY-MM-DD del fin del plazo de inscripción. null si no consta.
 
 Un mismo elemento va en UNA de las dos listas, no en ambas. Si el año no aparece explícito, dedúcelo del contexto del documento (hoy es ${hoy}). Títulos cortos y legibles, sin mayúsculas gritadas.
 
-IMPORTANTE: extrae ÚNICAMENTE elementos que aparezcan en el documento, con sus fechas y datos literales — no inventes, completes ni deduzcas actos, fechas u horas que no estén escritos. Ante la duda sobre un dato, omite el elemento entero. Omite también las actividades cuya celebración o plazo ya hayan pasado respecto a hoy.`
+IMPORTANTE: Distingue SIEMPRE fechaEvento (cuándo ocurre) de fechaLimite (cuándo cierra el plazo). No inventes, completes ni deduzcas actos, fechas u horas que no estén escritos. Ante la duda, omite el elemento entero. Omite también las actividades cuya celebración o plazo ya hayan pasado respecto a hoy.`
 
   try {
     const respuesta = await client.messages.create({
@@ -404,6 +406,7 @@ IMPORTANTE: extrae ÚNICAMENTE elementos que aparezcan en el documento, con sus 
       .map((a) => ({
         titulo: a.titulo.trim().slice(0, 200),
         categoria: CATEGORIAS_ACTIVIDAD.includes(a.categoria) ? a.categoria : 'general',
+        fechaEvento: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaEvento) ? a.fechaEvento : null,
         fechaLimite: /^\d{4}-\d{2}-\d{2}$/.test(a.fechaLimite) ? a.fechaLimite : null,
         horario: String(a.horario || '').trim().slice(0, 120) || null,
         lugar: String(a.lugar || '').trim().slice(0, 120) || null,
@@ -441,8 +444,8 @@ const ESQUEMA_CARRUSEL = {
           indice: { type: 'integer' },
           titulo: { type: 'string' },
           categoria: { enum: [...CATEGORIAS_ACTIVIDAD, ''] },
-          fechaEvento: { type: 'string' },
-          fechaLimite: { type: 'string' },
+          fechaEvento: { type: ['string', 'null'] }, // YYYY-MM-DD o null si no está clara
+          fechaLimite: { type: ['string', 'null'] }, // YYYY-MM-DD o null si no está clara
           horario: { type: 'string' },
           lugar: { type: 'string' },
           descripcion: { type: 'string' },
@@ -490,12 +493,21 @@ export async function extraerDeCarrusel(carrusel, publicado) {
 
 Devuelve titulo="" para descartar un cartel que no sea una actividad: portadas genéricas ("PROGRAMACIÓN DEPORTIVA EN AGOSTO"), actos a los que solo se asiste como público (conciertos, proyecciones), avisos y carteles sin actividad concreta.
 
+**IMPORTANTE: Distingue siempre entre fechaEvento (cuándo se celebra) y fechaLimite (cuándo cierra el plazo de inscripción).**
+
+EJEMPLO:
+"FIESTAS PATRONALES 2026 TARDEO DEPORTIVO AQUAZUMBA Y BAÑO CON DJ PIWI. VIERNES, 21 DE AGOSTO. Horario: de 19.30h. a 22.30h. Inscripciones: hasta 20 de agosto en la Concejalía de Deportes…"
+→ titulo: "Tardeo deportivo Aquazumba y baño con DJ Piwi"
+→ fechaEvento: "2026-08-21" (cuándo ocurre)
+→ fechaLimite: "2026-08-20" (hasta cuándo inscribirse)
+→ horario: "19:30 a 22:30h"
+
 Para cada cartel devuelve:
 - indice: el N de su línea "Cartel N", copiado tal cual.
 - titulo: el nombre de la actividad, corto y legible (sin mayúsculas gritadas).
 - categoria: la más apropiada de la lista permitida ("deporte" para pruebas deportivas); "" si se descarta.
-- fechaEvento: YYYY-MM-DD de cuándo se celebra la actividad — cuándo ocurre, cuándo es la prueba. Puede estar en el caption ("VIERNES, 21 DE AGOSTO") o en el alt del cartel. El post se publicó el ${ancla} (hoy es ${hoy}): resuelve fechas sin año con ese ancla. "" si no hay fecha clara. Usa SOLO fechas del cartel — no inventes.
-- fechaLimite: YYYY-MM-DD del fin del plazo de inscripción si el cartel lo indica explícitamente ("inscripciones hasta", "plazo", "hasta el X"). Si la prueba es de un día, puede coincidir con fechaEvento. El post se publicó el ${ancla}: resuelve fechas relativas. "" si no hay plazo. Usa SOLO fechas del cartel — no inventes.
+- fechaEvento: YYYY-MM-DD de cuándo se celebra la actividad. El post se publicó el ${ancla} (hoy es ${hoy}): resuelve fechas sin año con ese ancla. null si no hay fecha clara. Usa SOLO fechas del cartel — no inventes.
+- fechaLimite: YYYY-MM-DD del fin del plazo de inscripción si el cartel lo indica explícitamente ("inscripciones hasta", "plazo", "hasta el X"). Si la prueba es de un día, puede coincidir con fechaEvento. null si no hay plazo. Usa SOLO fechas del cartel — no inventes.
 - horario: el horario del cartel (p. ej. "a partir de las 10.00h"); "" si no consta.
 - lugar: la instalación o ubicación del cartel; "" si no consta.
 - descripcion: los datos prácticos restantes del cartel en una o dos frases legibles (categorías/edades, condiciones, precio, cómo inscribirse, teléfono de información), máximo 500 caracteres; "" si no hay más datos.`
