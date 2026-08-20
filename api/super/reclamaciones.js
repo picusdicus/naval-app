@@ -7,8 +7,8 @@ import { obtenerSql } from '../_db.js'
 import { requerirSuperAdminEdge } from '../_auth.js'
 import { json, leerJson, csrfInvalido, rechazoCsrf } from '../_http.js'
 import { generarCodigoInvitacion } from './_codigo.js'
-import comercios from '../../src/data/comercios.json' with { type: 'json' }
-import servicios from '../../src/data/servicios-locales.json' with { type: 'json' }
+import comercios from '../../src/data/comercios.json'
+import servicios from '../../src/data/servicios-locales.json'
 
 export const config = { runtime: 'edge' }
 
