@@ -43,14 +43,8 @@ export const IMAGENES_EVENTO = {
 // a una imagen genérica por categoría; dentro de "cultura" se distingue por el
 // título entre concierto, cine y teatro (imagen genérica cultural: teatro).
 export function imagenEvento(evento) {
-  if (evento.imagen) return { src: evento.imagen, real: true }
-  if (evento.categoria === 'cultura') {
-    const t = (evento.titulo || '').toLowerCase()
-    if (/(concierto|música|musica|jazz|banda|coro)/.test(t)) return IMAGENES_EVENTO.concierto
-    if (/(cine|película|pelicula|proyección|proyeccion|film)/.test(t)) return IMAGENES_EVENTO.cine
-    return IMAGENES_EVENTO.teatro
-  }
-  return IMAGENES_EVENTO[evento.categoria] || null
+  if (evento.imagen && evento.imagen.trim()) return { src: evento.imagen, real: true }
+  return null
 }
 
 // Lista de créditos únicos para mostrar en la página de eventos.
