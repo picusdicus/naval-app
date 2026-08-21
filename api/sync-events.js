@@ -701,7 +701,7 @@ export default async function handler(req, res) {
 
     let deportes = []
     try {
-      const resultadoDeportes = await obtenerActividadesDeportivas()
+      const resultadoDeportes = await obtenerActividadesDeportivas(programaFiestas)
       // Transformar actividades deportivas al formato de eventos
       deportes = resultadoDeportes.actividades.map((a) => ({
         id: a.origen_externo_id,
@@ -717,7 +717,14 @@ export default async function handler(req, res) {
         imagen: a.imagen,
         fuente: 'Actividades Deportivas',
       }))
-      resultado.estadisticas = { ...resultado.estadisticas, deportes: deportes.length }
+      resultado.estadisticas = {
+        ...resultado.estadisticas,
+        deportes: deportes.length,
+        deportesExtraidos: resultadoDeportes.extraidos || 0,
+        deportesDescartadosSinTitulo: resultadoDeportes.descartadosSinTitulo || 0,
+        deportesDescartadosSinOrigen: resultadoDeportes.descartadosSinOrigen || 0,
+        deportesEnriquecidosDelPrograma: resultadoDeportes.enriquecidosDelPrograma || 0
+      }
     } catch (err) {
       resultado.errores.push(`Actividades Deportivas: ${err.message}`)
     }

@@ -107,21 +107,79 @@ function extraerFecha(titulo, pubDateStr) {
 }
 
 // Normaliza el nombre del fichero para usar como origen_externo_id.
+// Soporta múltiples formatos:
 // "22.-NATACIÓN-30-Agosto-150x150.jpg" → "deportes-22-natacion-30-agosto"
+// "natacion-30-agosto-150x150.jpg" → "deportes-natacion-30-agosto"
+// "WATERPOLO.jpg" → "deportes-waterpolo"
 function origenIdDelFichero(src) {
-  const match = src.match(/\/(\d+)\.-([^/]+?)-(?:\d+x\d+)?\.jpg$/i)
-  if (!match) return null
+  // Intenta match 1: número + punto-guión (formato original)
+  let match = src.match(/\/(\d+)\.-([^/]+?)-(?:\d+x\d+)?\.jpg$/i)
+  if (match) {
+    const [, numero, nombre] = match
+    const slug = nombre
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[áéíóú]/g, c => ({ á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u' }[c]))
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+    return `deportes-${numero}-${slug}`
+  }
 
-  const [, numero, nombre] = match
-  const slug = nombre
+  // Fallback: extrae el nombre del fichero sin extensión
+  match = src.match(/\/([^/]+?)(?:-\d+x\d+)?\.jpg$/i)
+  if (match) {
+    const nombre = match[1]
+    const slug = nombre
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[áéíóú]/g, c => ({ á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u' }[c]))
+      .replace(/[_]/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+    return slug ? `deportes-${slug}` : null
+  }
+
+  return null
+}
+
+// Normaliza título para matching: lowercase, sin acentos, solo palabras significativas
+function normalizarParaMatching(txt) {
+  return String(txt || '')
     .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[áéíóú]/g, c => ({ á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u' }[c]))
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .split(/\s+/)
+    .filter(p => p.length > 2) // Solo palabras ≥3 caracteres (excluye "de", "el", "un", etc.)
+}
 
-  return `deportes-${numero}-${slug}`
+// Cuenta coincidencias de palabras clave entre dos títulos
+function contarPalabrasCoincidentes(titulo1, titulo2) {
+  const palabras1 = new Set(normalizarParaMatching(titulo1))
+  const palabras2 = normalizarParaMatching(titulo2)
+  return palabras2.filter(p => palabras1.has(p)).length
+}
+
+// Busca un cartel en el programa por fecha exacta + ≥2 palabras clave coincidentes
+function encontrarEventoEnPrograma(cartel, programa) {
+  if (!cartel.fecha_evento || !programa || programa.length === 0) {
+    return null
+  }
+
+  // Filtrar programa por fecha exacta
+  const eventosMismaFecha = programa.filter(e => e.fecha === cartel.fecha_evento)
+  if (eventosMismaFecha.length === 0) return null
+
+  // Entre los de la misma fecha, buscar por keywords (mínimo 2 palabras coincidentes)
+  for (const evento of eventosMismaFecha) {
+    const coincidencias = contarPalabrasCoincidentes(evento.titulo, cartel.titulo)
+    if (coincidencias >= 2) {
+      return evento
+    }
+  }
+
+  return null
 }
 
 /**
@@ -136,7 +194,7 @@ function origenIdDelFichero(src) {
  *   emparejamientos: 0,          // cuántos se emparejaron con su actividad
  * }
  */
-export async function obtenerActividadesDeportivas() {
+export async function obtenerActividadesDeportivas(programaFiestas = []) {
   const rss = await descargarTexto(DEPORTES_RSS, AbortSignal.timeout(15000))
 
   // Buscar el item con "ACTIVIDADES DEPORTIVAS FIESTAS PATRONALES"
@@ -212,6 +270,9 @@ export async function obtenerActividadesDeportivas() {
 
   const actividades = []
   const finDePlazo = []
+  let descartadosSinTitulo = 0
+  let descartadosSinOrigen = 0
+  let enriquecidosDelPrograma = 0
 
   for (const [, href, title, src, alt] of carteles) {
     const esFinDePlazo = /fin\s*de\s*plazo|fin\s*plazo/i.test(title)
@@ -233,14 +294,45 @@ export async function obtenerActividadesDeportivas() {
     // Permitir carteles sin fecha explícita (usaremos null y el frontend decidirá)
     // pero descartar sin título u origen
     if (titulo && origen) {
-      actividades.push({
+      // Buscar coincidencia en programa de fiestas: fecha + ≥2 palabras clave
+      const cartelParaMatching = {
         titulo,
         fecha_evento: fechaEvento,
-        imagen: imagenCompleta,
-        url_fuente: 'https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/',
-        origen_externo_id: origen,
-        categoria: 'deporte'
-      })
+        imagen: imagenCompleta
+      }
+      const eventoEnPrograma = encontrarEventoEnPrograma(cartelParaMatching, programaFiestas)
+
+      if (eventoEnPrograma) {
+        // El cartel matchea con un evento del programa
+        // Marcar que esta imagen enriquece el evento existente (no crear nuevo)
+        enriquecidosDelPrograma++
+        // La imagen se propaga al cron para adjuntarla al evento del programa
+        // (implementado en sync-events.js al procesar este resultado)
+        actividades.push({
+          titulo,
+          fecha_evento: fechaEvento,
+          imagen: imagenCompleta,
+          url_fuente: 'https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/',
+          origen_externo_id: origen,
+          categoria: 'deporte',
+          enriqueceEvento: eventoEnPrograma.id // Marca: esto enriquece el evento existente
+        })
+      } else {
+        // El cartel no matchea: crear como evento nuevo
+        actividades.push({
+          titulo,
+          fecha_evento: fechaEvento,
+          imagen: imagenCompleta,
+          url_fuente: 'https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/',
+          origen_externo_id: origen,
+          categoria: 'deporte'
+        })
+      }
+    } else {
+      if (!titulo) descartadosSinTitulo++
+      if (!origen) descartadosSinOrigen++
+      // Log silencioso: no queremos romper el flujo, pero es útil para auditoría
+      console.log(`[deportes] Descartado - titulo: "${titulo}" origen: "${origen}" url: ${src}`)
     }
   }
 
@@ -301,6 +393,10 @@ export async function obtenerActividadesDeportivas() {
   return {
     actividades,
     detectadasFinPlazo: finDePlazo.length,
-    emparejamientos: actividades.filter(a => a.reconstruido_desde_plazo).length
+    emparejamientos: actividades.filter(a => a.reconstruido_desde_plazo).length,
+    extraidos: carteles.length,
+    descartadosSinTitulo,
+    descartadosSinOrigen,
+    enriquecidosDelPrograma
   }
 }
