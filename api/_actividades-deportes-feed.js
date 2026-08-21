@@ -144,21 +144,70 @@ function origenIdDelFichero(src) {
   return null
 }
 
+// Palabras que NATURALMENTE terminan en "s" y NO son plurales
+// (nunca se deben transformar a singular)
+const EXCEPCIONES_PLURALES = new Set([
+  'tenis',      // "Tenis de mesa" no es plural de "teni"
+  'mus',        // Juego de naipes
+  'las',        // Artículo definido (debería filtrarse antes, pero por si acaso)
+  'los',        // Artículo definido
+  'cms',        // Abreviatura (centímetros)
+  'fitness',    // Palabra inglesa, no plural
+  'pilates'     // Marca/disciplina, no plural
+])
+
+// Diccionario cerrado de sinónimos deportivos
+const SINONIMOS_DEPORTES = {
+  basket: 'baloncesto',
+  baloncesto: 'baloncesto',
+  acua: 'aqua',
+  aqua: 'aqua'
+}
+
+// Normaliza una palabra aplicando sinónimos si existen
+function normalizarPalabra(palabra) {
+  const p = palabra.toLowerCase().replace(/[.,;:]/g, '') // Eliminar puntuación final
+
+  // Si termina en "s" (plural simple), devolver la forma singular
+  // "pruebas" → "prueba", "competiciones" → "competicion"
+  // EXCEPTO palabras que naturalmente terminan en "s"
+  let base = p
+  if (p.endsWith('s') && p.length > 3 && !EXCEPCIONES_PLURALES.has(p)) {
+    base = p.slice(0, -1) // Singular sin la "s"
+  }
+
+  // Aplicar sinónimos
+  return SINONIMOS_DEPORTES[base] || SINONIMOS_DEPORTES[p] || base
+}
+
 // Normaliza título para matching: lowercase, sin acentos, solo palabras significativas
 function normalizarParaMatching(txt) {
-  return String(txt || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .split(/\s+/)
-    .filter(p => p.length > 2) // Solo palabras ≥3 caracteres (excluye "de", "el", "un", etc.)
+  return new Set(
+    String(txt || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .split(/\s+/)
+      .filter(p => p.length > 2) // Solo palabras ≥3 caracteres (excluye "de", "el", "un", etc.)
+      .map(normalizarPalabra) // Aplicar sinónimos y normalización de plurales
+  )
 }
 
 // Cuenta coincidencias de palabras clave entre dos títulos
 function contarPalabrasCoincidentes(titulo1, titulo2) {
-  const palabras1 = new Set(normalizarParaMatching(titulo1))
+  const palabras1 = normalizarParaMatching(titulo1)
   const palabras2 = normalizarParaMatching(titulo2)
-  return palabras2.filter(p => palabras1.has(p)).length
+  return [...palabras2].filter(p => palabras1.has(p)).length
+}
+
+// Genera la clave normalizada de un título (idéntico a sync-events.js claveNorm)
+function claveNormPrograma(txt) {
+  return String(txt || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 // Busca un cartel en el programa por fecha exacta + ≥2 palabras clave coincidentes
@@ -306,6 +355,10 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
         // El cartel matchea con un evento del programa
         // Marcar que esta imagen enriquece el evento existente (no crear nuevo)
         enriquecidosDelPrograma++
+        // Generar el ID del evento del programa (fiestas-<clave>-<fecha>)
+        // para que sync-events.js sepa cuál evento enriquecer
+        const claveEvento = claveNormPrograma(eventoEnPrograma.titulo)
+        const idEventoPrograma = `fiestas-${claveEvento}-${eventoEnPrograma.fecha}`
         // La imagen se propaga al cron para adjuntarla al evento del programa
         // (implementado en sync-events.js al procesar este resultado)
         actividades.push({
@@ -315,7 +368,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
           url_fuente: 'https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/',
           origen_externo_id: origen,
           categoria: 'deporte',
-          enriqueceEvento: eventoEnPrograma.id // Marca: esto enriquece el evento existente
+          enriqueceEvento: idEventoPrograma // Marca: esto enriquece el evento existente
         })
       } else {
         // El cartel no matchea: crear como evento nuevo
