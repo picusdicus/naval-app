@@ -74,6 +74,8 @@ const ESQUEMA_EXTRACCION = {
           // '' = sin subcategoría (no es cultura, o no está clara).
           subcategoria: { enum: [...SUBCATEGORIAS, ''] },
           descripcion: { type: 'string' },
+          // Índice de la foto del carrusel si los datos vienen de una hija específica marcada [Imagen N]
+          indiceCartel: { type: ['integer', 'null'] },
         },
       },
     },
@@ -100,6 +102,7 @@ Para cada evento devuelve:
 - categoria: la más apropiada de la lista permitida.
 - subcategoria: SOLO si categoria es "cultura", el tipo concreto de acto: "teatro", "cine", "musica" (conciertos, recitales), "danza", "exposicion", u "otros" si es cultural pero no encaja en ninguno. Para cualquier otra categoria, "".
 - descripcion: el caption limpio de hashtags y menciones, máximo 400 caracteres.
+- indiceCartel: null normalmente. SOLO si los datos del evento (fecha, hora, lugar, descripción) provienen explícitamente del alt de un cartel específico marcado como "[Imagen N]" (donde N es 1, 2, 3…), devuelve N-1 (es decir, el índice: 0 para [Imagen 1], 1 para [Imagen 2], etc.). Si provienen del caption general del post o es ambiguo, deja null.
 
 Devuelve solo los posts que son eventos; si ninguno lo es, devuelve la lista vacía.`
 
@@ -186,6 +189,7 @@ function validarExtraccion(eventos, postsPorShortCode) {
       url: post.url,
       imagenOrigen: post.imagen,
       usuario: post.usuario,
+      indiceCartel: typeof ev.indiceCartel === 'number' && ev.indiceCartel >= 0 ? ev.indiceCartel : null,
     })
   }
   return { validos, descartados }
@@ -280,7 +284,7 @@ async function procesar(posts, resumen) {
   try {
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const { eventos: extraidos, errores: erroresTriaje } = await extraerEventos(
-      posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
+      posts.map(({ shortCode, caption, alt, publicado, carrusel }) => ({ shortCode, caption, alt, publicado, carrusel }))
     )
     resumen.errores.push(...erroresTriaje)
     const { validos, descartados } = validarExtraccion(extraidos, postsPorShortCode)
@@ -359,7 +363,16 @@ async function procesar(posts, resumen) {
           imagenUrl = imagenExistente
           resumen.imagenesReutilizadas++
         } else {
-          imagenUrl = await subirImagen('instagram', ev.shortCode, ev.imagenOrigen)
+          // Determinar imagen y sufijo según si el evento vino de una hija del carrusel
+          let imagenOrigen = ev.imagenOrigen  // fallback: imagen de portada
+          let sufijo = ''
+
+          if (ev.indiceCartel !== null && post.carrusel && post.carrusel[ev.indiceCartel]) {
+            imagenOrigen = post.carrusel[ev.indiceCartel].imagen
+            sufijo = `c${ev.indiceCartel}`  // Mismo patrón que actividades: -c0, -c1, etc.
+          }
+
+          imagenUrl = await subirImagen('instagram', ev.shortCode, imagenOrigen, sufijo)
           if (imagenUrl) resumen.imagenesSubidas++
         }
 
