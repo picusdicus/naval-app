@@ -1,0 +1,92 @@
+export default JSON.parse(`
+{
+  "periodo": "2º Semestre 2026",
+  "fuente": "https://www.madrid.org/clas_artes/red/navalcarnero.html",
+  "regenerar": "Junio y diciembre, cuando la Comunidad publica el semestre nuevo",
+  "eventos": [
+    {
+      "id": "redteatros-en-el-viento",
+      "slug": "en-el-viento",
+      "titulo": "En el viento (Libros con alas)",
+      "compania": "Corral de García",
+      "categoria": "cultura",
+      "subcategoria": "teatro",
+      "publicoFamiliar": true,
+      "fecha": "2026-10-03",
+      "hora": "17:30",
+      "lugar": "Otros espacios",
+      "url": "https://www.madrid.org/clas_artes/red/en-el-viento.html",
+      "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/en-el-viento/en-el-viento1.jpg",
+      "imagenes": [],
+      "descripcion": "",
+      "interpretes": "",
+      "duracion": "",
+      "edadRecomendada": "",
+      "fuente": "Red de Teatros"
+    },
+    {
+      "id": "redteatros-dulcinea",
+      "slug": "dulcinea",
+      "titulo": "Dulcinea",
+      "compania": "La Alegría Producciones S.L.",
+      "categoria": "cultura",
+      "subcategoria": "teatro",
+      "publicoFamiliar": false,
+      "fecha": "2026-12-18",
+      "hora": "20:00",
+      "lugar": "Teatro Municipal Centro",
+      "url": "https://www.madrid.org/clas_artes/red/dulcinea.html",
+      "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/dulcinea/dulcinea1.jpg",
+      "imagenes": [
+        "https://www.madrid.org/clas_artes/red/fotos/fichas/dulcinea/dulcinea1.jpg",
+        "https://www.madrid.org/clas_artes/red/fotos/fichas/dulcinea/dulcinea2.jpg"
+      ],
+      "descripcion": "Ser la mujer perfecta, modelo de educación y encanto, es el destino que se le impone a Dulcinea. Una revisión del personaje cervantino desde la mirada de quien nunca tuvo voz propia.",
+      "interpretes": "Paloma San Basilio, Julio Awad.",
+      "duracion": "80 min.",
+      "edadRecomendada": "A partir de 14 años.",
+      "fuente": "Red de Teatros"
+    },
+    {
+      "id": "redteatros-martina-y-los-supersingers",
+      "slug": "martina-y-los-supersingers",
+      "titulo": "Martina y los Supersingers: Es Navidad",
+      "compania": "Producciones Teatrales Algoquín S.L.",
+      "categoria": "cultura",
+      "subcategoria": "teatro",
+      "publicoFamiliar": true,
+      "fecha": "2026-12-27",
+      "hora": "18:00",
+      "lugar": "Teatro Municipal Centro",
+      "url": "https://www.madrid.org/clas_artes/red/martina-y-los-supersingers.html",
+      "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/martina-y-los-supersingers/martina-y-los-supersingers1.jpg",
+      "imagenes": [],
+      "descripcion": "",
+      "interpretes": "",
+      "duracion": "",
+      "edadRecomendada": "",
+      "fuente": "Red de Teatros"
+    },
+    {
+      "id": "redteatros-la-gran-aventura-del-pollo-pepe",
+      "slug": "la-gran-aventura-del-pollo-pepe",
+      "titulo": "La Gran Aventura del Pollo Pepe",
+      "compania": "",
+      "categoria": "cultura",
+      "subcategoria": "teatro",
+      "publicoFamiliar": true,
+      "fecha": "2026-12-28",
+      "hora": "18:00",
+      "lugar": "Teatro Municipal Centro",
+      "url": "https://www.madrid.org/clas_artes/red/la-gran-aventura-del-pollo-pepe.html",
+      "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/la-gran-aventura-del-pollo-pepe/la-gran-aventura-del-pollo-pepe1.jpg",
+      "imagenes": [],
+      "descripcion": "",
+      "interpretes": "",
+      "duracion": "",
+      "edadRecomendada": "",
+      "fuente": "Red de Teatros"
+    }
+  ]
+}
+`)

@@ -6,6 +6,7 @@ import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
 import programaFiestas from './_datos/programa-fiestas-2026.js'
+import redTeatrosData from './_datos/red-teatros.js'
 
 const TYLTYL_API = 'https://www.tyltyl.org/wp-json/tribe/events/v1/events'
 const CULTURA_RSS = 'https://www.navalcarnero.es/navalcarnero/cultura/feed/'
@@ -220,10 +221,10 @@ function eventosRedTeatros() {
   // Importación estática: se actualiza manualmente en junio y diciembre cuando
   // la Comunidad de Madrid publica el nuevo semestre.
   // Fuente: https://www.madrid.org/clas_artes/red/navalcarnero.html
-  const redTeatrosData = require('./_datos/red-teatros.json')
+  const datos = redTeatrosData.eventos || []
 
   // Transformar al formato estándar de eventos
-  const eventos = redTeatrosData.map((e) => ({
+  const eventos = datos.map((e) => ({
     id: `redteatros-${e.slug}`,
     titulo: e.titulo,
     fecha: e.fecha,
