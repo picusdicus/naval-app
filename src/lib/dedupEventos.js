@@ -75,6 +75,71 @@ function fusionar(base, otro) {
 }
 
 /**
+ * Procesa el enriquecimiento de carteles deportivos (y otros activos que
+ * tengan el campo `enriqueceEvento`). Los carteles que enriquecen a eventos
+ * del programa se filtran ANTES de pasar a combinarEventos(), y sus imágenes
+ * + datos se inyectan en los eventos correspondientes por ID directo.
+ *
+ * - Carteles CON enriqueceEvento: se filtran de la lista de retorno
+ *   (nunca mostrar como tarjeta independiente) y su imagen se inyecta en
+ *   el evento del programa que citan.
+ * - Carteles SIN enriqueceEvento: pasan intactos — son eventos nuevos
+ *   creados por el scraper, no refieren a nada del programa.
+ * - Eventos sin matching: se ignoran con un log (el programa existía cuando
+ *   se generó el cartel, ahora no; no debe crashear).
+ */
+export function enriquecerPorCartel(eventos) {
+  const conEnriquecimiento = []
+  const sinEnriquecimiento = []
+
+  // Separar carteles que enriquecen de eventos normales
+  for (const evt of eventos) {
+    if (evt.enriqueceEvento) {
+      conEnriquecimiento.push(evt)
+    } else {
+      sinEnriquecimiento.push(evt)
+    }
+  }
+
+  if (!conEnriquecimiento.length) {
+    return eventos // Nada que enriquecer
+  }
+
+  // Mapeo id → [carteles] para lookup rápido
+  const cartelPorId = new Map()
+  for (const cartel of conEnriquecimiento) {
+    const id = cartel.enriqueceEvento
+    if (!cartelPorId.has(id)) {
+      cartelPorId.set(id, [])
+    }
+    cartelPorId.get(id).push(cartel)
+  }
+
+  // Inyectar imagen + campos del cartel en eventos que coinciden por ID
+  const resultado = sinEnriquecimiento.map((evt) => {
+    const carteles = cartelPorId.get(evt.id)
+    if (!carteles) {
+      return evt // Sin cartel que lo enriquezca
+    }
+
+    // Usar el primer cartel si hay varios (caso raro)
+    const cartel = carteles[0]
+    return {
+      ...evt,
+      // Inyectar imagen y otros campos que el programa no tenga
+      imagen: evt.imagen || cartel.imagen,
+      descripcion: evt.descripcion || cartel.descripcion,
+      hora: evt.hora || cartel.hora,
+      lugar: evt.lugar || cartel.lugar,
+      url: evt.url || cartel.url,
+      // NO sobrescribir: titulo, fecha, categoria, subcategoria, fuente — el programa manda
+    }
+  })
+
+  return resultado
+}
+
+/**
  * Mezcla los eventos estáticos con los de la base de datos eliminando
  * duplicados (misma fecha + títulos equivalentes). Devuelve una lista nueva:
  * estáticos (enriquecidos si tenían duplicado) + los de la base sin pareja,

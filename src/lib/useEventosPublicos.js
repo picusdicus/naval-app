@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../data/eventos.json'
 import eventosExternos from '../data/eventos-externos.json'
-import { combinarEventos } from './dedupEventos.js'
+import { combinarEventos, enriquecerPorCartel } from './dedupEventos.js'
 
 // La agenda pública combina tres orígenes: los JSON estáticos (curados y
 // sincronizados desde fuentes externas), los eventos que las organizaciones
@@ -89,12 +89,15 @@ export function useEventosPublicos() {
 
   // Identidad estable mientras no lleguen datos nuevos: quien reciba `eventos`
   // puede usarlo como dependencia de un useMemo sin recalcular en cada render.
-  // combinarEventos fusiona los duplicados (evento curado + el mismo evento
+  // enriquecerPorCartel filtra los carteles que enriquecen eventos del programa
+  // por ID directo (inyectando imagen) y los quita de la lista de retorno.
+  // combinarEventos después fusiona los duplicados (evento curado + el mismo evento
   // creado en Neon por el scrapper de Instagram) en una sola tarjeta; después
   // se descartan los que el superadmin haya ocultado (por id principal o por
   // cualquiera de los idsSecundarios que la fusión haya acumulado).
   const eventos = useMemo(() => {
-    const combinados = combinarEventos(ESTATICOS, [...deLaBase, ...eventosDeActividades])
+    const estaticosEnriquecidos = enriquecerPorCartel(ESTATICOS)
+    const combinados = combinarEventos(estaticosEnriquecidos, [...deLaBase, ...eventosDeActividades])
     if (!ocultos.size) return combinados
     return combinados.filter(
       (e) => !ocultos.has(e.id) && !(e.idsSecundarios || []).some((id) => ocultos.has(id)),
