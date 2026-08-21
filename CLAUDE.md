@@ -445,3 +445,20 @@ RESEND_API_KEY=... (para envío de emails, en reclamaciones de comercios)
 - **Incomplete fichas**: Three events (En el viento, Martina y los Supersingers, La Gran Aventura del Pollo Pepe) have listing-only data; their detail pages are pending. Image URLs are deduced from the pattern and **not verified** — `eventosRedTeatros()` includes a fallback to `cartelDe()` gradient if image fetch fails.
 - **Fail-soft**: if JSON is empty or malformed, the error is logged in `resultado.errores` and the cron continues; events simply don't appear that cycle (better than silently missing them due to scraper breakage).
 - **Future work (deferred)**: When `publicoFamiliar` gets UI treatment (badge, sub-filter, etc.), backfill the TYL TYL catalog with the flag — almost all TYL TYL events are children's theater and should carry it.
+
+## Known issues and pending verification
+
+### Instagram carousel image selection (commit cf4112c)
+
+**What was fixed**: `api/sync-instagram.js` now asks Claude to return an `indiceCartel` (which carousel cartel the event data came from), and uses that specific cartel's image (with suffix `-c<i>`) instead of always using the parent post's cover image. When the webhook re-processes an existing event, the `ON CONFLICT ... COALESCE` logic auto-corrects outdated images.
+
+**Status**: **Pending end-to-end verification.** Verified that Claude returns the correct index with real alt text and that the validation regex passes; NOT verified that the actual download, Blob upload, and DOM render work, because Instagram CDN returns HTTP 403 to the development network.
+
+**How to verify when the next real Apify webhook runs**: 
+1. Check that the `ig-DcIj1xrj0tG` row in Neon has `imagen_url` with suffix `-c6` (e.g., `instagram/DcIj1xrj0tG-c6.jpg`)
+2. Confirm that blob file exists in Vercel Blob storage at that path
+3. Navigate to the Tardeo Deportivo event card in the app and verify it renders the specific cartel image (the pool party poster), not the parent carousel cover
+
+**When to check**: The post `DcIj1xrj0tG` is from `ayuntamientonavalcarnero`, so it's part of the daily `noticias-instagram` Apify scrape (runs daily). The next scrape should happen within 24 hours of August 21, 2026. Although the task is "noticias-instagram", the post triggers both webhooks (`/api/sync-instagram` for events and `/api/sync-instagram-noticias` for news/activities); the post will hit `sync-instagram.js` and test this fix.
+
+**Related observation for future investigation**: The same carousel post contains 10 cartels (Duatlón, Tenis de Mesa, Tardeo, etc.) but only the Tardeo was extracted as an event. The others were discarded. This needs follow-up to distinguish between legitimate filtering (e.g., events missing date/time/place, or incorrectly classified as registration periods) vs. an extraction bug that misses valid events.
