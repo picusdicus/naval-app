@@ -716,6 +716,7 @@ export default async function handler(req, res) {
         url: a.url_fuente,
         imagen: a.imagen,
         fuente: 'Actividades Deportivas',
+        enriqueceEvento: a.enriqueceEvento || null,
       }))
       resultado.estadisticas = {
         ...resultado.estadisticas,

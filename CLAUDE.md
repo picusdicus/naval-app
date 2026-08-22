@@ -84,6 +84,22 @@ Auditado en `SEGURIDAD.md`, implementado y desplegado (julio 2026). El detalle "
 - `POST /api/admin/imagen` uploads the poster to Vercel Blob and returns its URL, which the form then submits as `imagen` and the API stores in `eventos_usuario.imagen_url`. The image travels base64-encoded inside the JSON body (not multipart) so it reuses the same body parsing as every other endpoint; Vercel caps a function body at 4.5 MB and base64 inflates by a third, hence the 3 MB limit. With no Blob credential the endpoint 503s with a clear message and the rest of the form keeps working — the image is optional. Org sessions upload to `eventos/<slug>/…`; a superadmin session (no org slug) falls back to `destacados/…`. `src/components/admin/SelectorImagen.jsx` is the reusable upload widget (props `etiqueta`/`opcional`).
 - **Blob auth gotcha.** `@vercel/blob` prefers OIDC whenever it finds `VERCEL_OIDC_TOKEN` *and* `BLOB_STORE_ID`, falling back to `BLOB_READ_WRITE_TOKEN` only if neither is set. OIDC is not permitted in the `development` environment, so locally that preference makes every upload fail with `BlobOidcEnvironmentNotAllowedError`. `api/admin/imagen.js` therefore passes `token:` explicitly when `BLOB_READ_WRITE_TOKEN` exists, and lets OIDC take over on Vercel. Anything else calling `put`/`del`/`list` (including the e2e cleanup) must do the same.
 
+#### Field loss in pipelines with explicit field construction
+
+**Pitfall**: When a pipeline constructs objects field-by-field (using `{ campo1: a.campo1, campo2: a.campo2, ... }`) instead of using spread (`{ ...a }`), **any new field added upstream is silently lost downstream**, because it's not enumerated in the constructor.
+
+**Example (Bug #8264)**: `api/_actividades-deportes-feed.js` emits `enriqueceEvento` on activities that match events in the program (used for image enrichment). `api/sync-events.js` maps these activities to event format via `.map(a => ({ id: a.origen_externo_id, titulo: a.titulo, ..., imagen: a.imagen }))` — the list stopped at `imagen`, so `enriqueceEvento` was never copied. Result: 8 enriched events in `eventos-externos.json` lost their enrichment data on the next cron run, and duplicate event cards would have reappeared.
+
+**Why it happened**: The `.map()` was written before `enriqueceEvento` was added to the upstream feed. Nobody catching new fields after that point because there's no compiler error — the field just vanishes.
+
+**Defense**: When adding a new field to an object that flows through a pipeline with explicit field construction, **do NOT rely on checking the committed JSON to verify it worked**. The JSON may contain old data from a previous run. Instead:
+1. Locate every place in the pipeline that reconstructs the object (e.g., `.map()`, transformers, adapters).
+2. Add the new field to all reconstruction sites.
+3. **Test the regeneration locally** by running the upstream source → transformation pipeline and checking the output directly (not the committed JSON). `node scripts/test-enriquece.mjs` is the pattern.
+4. Only commit after the pipeline-regenerated output has the field.
+
+This pattern applies to `api/sync-events.js` and anywhere else objects are assembled field-by-field rather than merged.
+
 ### Destacados (paid featured items)
 
 Featuring an event or a business is a **paid product** (payment agreed outside the app for now; Stripe is a designed-for future phase). One source of truth: the `destacados` table (`tipo` evento|comercio, `referencia_id` as opaque public-format text — `ev-…`/`aytocult-…`/`bd-<uuid>` for events, `gpl_…`/`local/…` for comercios —, `organizacion_id` = who contracted it, `orden`, `imagen_url`, `fecha_inicio`/`fecha_fin`, `estado` pendiente|activo|cancelado). Validity is computed **at read time** (no cron): expired rows just stop appearing. `UNIQUE (tipo, referencia_id)` — one row per item, re-featuring reuses it, so there is deliberately **no campaign history**.
