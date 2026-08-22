@@ -327,7 +327,10 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
     const esFinDePlazo = /fin\s*de\s*plazo|fin\s*plazo/i.test(title)
 
     if (esFinDePlazo) {
-      finDePlazo.push({ title, src })
+      // href viaja para que las huérfanas reconstruidas más abajo tengan también
+      // una url propia (si no, las 6 comparten una y el dedup del cron se queda
+      // con la primera — mismo fallo que en los carteles de actividad).
+      finDePlazo.push({ title, src, href })
       continue
     }
 
@@ -438,7 +441,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
         fecha_evento: null, // No sabemos cuándo se celebra
         fecha_limite: fechaLimite, // Sí sabemos cuándo cierran inscripciones
         imagen: imagenCompleta,
-        url_fuente: 'https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/',
+        url_fuente: plazo.href || '', // Propia, no compartida — ver comentario arriba
         origen_externo_id: origen,
         categoria: 'deporte',
         reconstruido_desde_plazo: true // Marca para auditoría/debugging
