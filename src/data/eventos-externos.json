@@ -623,6 +623,21 @@
     "enriqueceEvento": "fiestas-torneo-de-tenis-fiestas-patronales-2026-08-27"
   },
   {
+    "id": "deportes-plazo-tenis-de-mesa",
+    "titulo": "Tenis de mesa",
+    "fecha": "2026-08-27",
+    "hora": null,
+    "lugar": "Navalcarnero",
+    "categoria": "deporte",
+    "subcategoria": null,
+    "origen": "deportes",
+    "descripcion": "",
+    "url": "https://navalcarnero.es/navalcarnero/deportes/files/13.-fin-plazo-TENIS-DE-MESA-27-de-agosto.jpg",
+    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/13.-fin-plazo-TENIS-DE-MESA-27-de-agosto.jpg",
+    "fuente": "Actividades Deportivas",
+    "enriqueceEvento": null
+  },
+  {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-08-27",
     "titulo": "TORNEO DE TENIS FIESTAS PATRONALES.",
     "fecha": "2026-08-27",
@@ -822,6 +837,21 @@
     "enriqueceEvento": "fiestas-pruebas-de-velocidad-y-milla-atletica-2026-08-29"
   },
   {
+    "id": "deportes-plazo-torneo-de-padel",
+    "titulo": "Torneo de padel",
+    "fecha": "2026-08-29",
+    "hora": null,
+    "lugar": "Navalcarnero",
+    "categoria": "deporte",
+    "subcategoria": null,
+    "origen": "deportes",
+    "descripcion": "",
+    "url": "https://navalcarnero.es/navalcarnero/deportes/files/19.-fin-plazo-TORNEO-DE-PADEL-29-de-agosto.jpg",
+    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/19.-fin-plazo-TORNEO-DE-PADEL-29-de-agosto.jpg",
+    "fuente": "Actividades Deportivas",
+    "enriqueceEvento": null
+  },
+  {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-08-29",
     "titulo": "TORNEO DE TENIS FIESTAS PATRONALES.",
     "fecha": "2026-08-29",
@@ -949,6 +979,21 @@
     "enriqueceEvento": null
   },
   {
+    "id": "deportes-plazo-petanca",
+    "titulo": "Petanca",
+    "fecha": "2026-08-30",
+    "hora": null,
+    "lugar": "Navalcarnero",
+    "categoria": "deporte",
+    "subcategoria": null,
+    "origen": "deportes",
+    "descripcion": "",
+    "url": "https://navalcarnero.es/navalcarnero/deportes/files/21.-fin-plazo-PETANCA-30-Agosto.jpg",
+    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/21.-fin-plazo-PETANCA-30-Agosto.jpg",
+    "fuente": "Actividades Deportivas",
+    "enriqueceEvento": null
+  },
+  {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-08-30",
     "titulo": "TORNEO DE TENIS FIESTAS PATRONALES.",
     "fecha": "2026-08-30",
@@ -1045,6 +1090,21 @@
     "descripcion": "En honor a Nuestra Señora Virgen de la Concepción, Patrona de Navalcarnero. Lugar: Iglesia Parroquial Ntra. Sra. de la Asunción. Con la participación del Coro Parroquial acompañado por la organista Inmaculada Fernández.",
     "url": "",
     "fuente": ""
+  },
+  {
+    "id": "deportes-plazo-duatln",
+    "titulo": "Duatlón",
+    "fecha": "2026-08-31",
+    "hora": null,
+    "lugar": "Navalcarnero",
+    "categoria": "deporte",
+    "subcategoria": null,
+    "origen": "deportes",
+    "descripcion": "",
+    "url": "https://navalcarnero.es/navalcarnero/deportes/files/24.-fin-plazo-DUATLÓN-31-Agosto.jpg",
+    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/24.-fin-plazo-DUATLÓN-31-Agosto.jpg",
+    "fuente": "Actividades Deportivas",
+    "enriqueceEvento": null
   },
   {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-08-31",
@@ -1244,6 +1304,21 @@
     "enriqueceEvento": "fiestas-competicion-amateur-de-calistenia-2026-09-02"
   },
   {
+    "id": "deportes-plazo-aquatln-2-sept",
+    "titulo": "Aquatlón 2 sept",
+    "fecha": "2026-09-02",
+    "hora": null,
+    "lugar": "Navalcarnero",
+    "categoria": "deporte",
+    "subcategoria": null,
+    "origen": "deportes",
+    "descripcion": "",
+    "url": "https://navalcarnero.es/navalcarnero/deportes/files/29.-fin-plazo-AQUATLÓN-2-Sept.jpg",
+    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/29.-fin-plazo-AQUATLÓN-2-Sept.jpg",
+    "fuente": "Actividades Deportivas",
+    "enriqueceEvento": null
+  },
+  {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-09-02",
     "titulo": "TORNEO DE TENIS FIESTAS PATRONALES.",
     "fecha": "2026-09-02",
@@ -1379,7 +1454,7 @@
     "subcategoria": null,
     "origen": "deportes",
     "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/",
+    "url": "https://navalcarnero.es/navalcarnero/deportes/files/32.-fin-plazo-PUERTA-ABIERTAS-RUGBY-3-Sept.jpg",
     "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/32.-fin-plazo-PUERTA-ABIERTAS-RUGBY-3-Sept.jpg",
     "fuente": "Actividades Deportivas",
     "enriqueceEvento": null
