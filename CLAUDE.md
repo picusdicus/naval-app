@@ -84,21 +84,33 @@ Auditado en `SEGURIDAD.md`, implementado y desplegado (julio 2026). El detalle "
 - `POST /api/admin/imagen` uploads the poster to Vercel Blob and returns its URL, which the form then submits as `imagen` and the API stores in `eventos_usuario.imagen_url`. The image travels base64-encoded inside the JSON body (not multipart) so it reuses the same body parsing as every other endpoint; Vercel caps a function body at 4.5 MB and base64 inflates by a third, hence the 3 MB limit. With no Blob credential the endpoint 503s with a clear message and the rest of the form keeps working — the image is optional. Org sessions upload to `eventos/<slug>/…`; a superadmin session (no org slug) falls back to `destacados/…`. `src/components/admin/SelectorImagen.jsx` is the reusable upload widget (props `etiqueta`/`opcional`).
 - **Blob auth gotcha.** `@vercel/blob` prefers OIDC whenever it finds `VERCEL_OIDC_TOKEN` *and* `BLOB_STORE_ID`, falling back to `BLOB_READ_WRITE_TOKEN` only if neither is set. OIDC is not permitted in the `development` environment, so locally that preference makes every upload fail with `BlobOidcEnvironmentNotAllowedError`. `api/admin/imagen.js` therefore passes `token:` explicitly when `BLOB_READ_WRITE_TOKEN` exists, and lets OIDC take over on Vercel. Anything else calling `put`/`del`/`list` (including the e2e cleanup) must do the same.
 
-#### Field loss in pipelines with explicit field construction
+#### Actividades deportivas: cada cartel necesita su propia `url`
 
-**Pitfall**: When a pipeline constructs objects field-by-field (using `{ campo1: a.campo1, campo2: a.campo2, ... }`) instead of using spread (`{ ...a }`), **any new field added upstream is silently lost downstream**, because it's not enumerated in the constructor.
+`combinarSinDuplicados()` (`api/sync-events.js`) deduplica **por `url` antes que por título+fecha**: el primer evento con una url dada la registra y cualquier otro que repita esa url se descarta sin mirar nada más. `api/_actividades-deportes-feed.js` asignaba a los 36 carteles una misma `url_fuente` hardcodeada ⇒ **sobrevivía uno y se perdían 35**, incluidos los 28 que no emparejan con nada. Latente desde que se añadió la fuente (ago 2026); todos los cron reales emitieron exactamente 1 actividad deportiva hasta que se arregló.
 
-**Example (Bug #8264)**: `api/_actividades-deportes-feed.js` emits `enriqueceEvento` on activities that match events in the program (used for image enrichment). `api/sync-events.js` maps these activities to event format via `.map(a => ({ id: a.origen_externo_id, titulo: a.titulo, ..., imagen: a.imagen }))` — the list stopped at `imagen`, so `enriqueceEvento` was never copied. Result: 8 enriched events in `eventos-externos.json` lost their enrichment data on the next cron run, and duplicate event cards would have reappeared.
+La url que se usa ahora es el `href` de la galería de WordPress (página de adjunto del cartel: `…/actividades-deportivas-…/34-torneo-ajedrez-5-sept/`), único por cartel y ya extraído por el parser. **Hay tres sitios que construyen actividades** (cartel emparejado, cartel suelto y huérfana reconstruida desde "fin de plazo"): los tres deben poner url propia — un cuarto sitio que caiga a una url compartida reintroduce el fallo entero. Sin `href` se pone `''`, nunca la página común: la cadena vacía desactiva esa regla para esa fila, la página común *es* la colisión.
 
-**Why it happened**: The `.map()` was written before `enriqueceEvento` was added to the upstream feed. Nobody catching new fields after that point because there's no compiler error — the field just vanishes.
+Efecto en el frontend: `evento.url` solo se pinta en `EventoDetalle` ("Ver en la web del ayuntamiento"); las tarjetas usan `entradas?.url`, que es otro campo.
 
-**Defense**: When adding a new field to an object that flows through a pipeline with explicit field construction, **do NOT rely on checking the committed JSON to verify it worked**. The JSON may contain old data from a previous run. Instead:
-1. Locate every place in the pipeline that reconstructs the object (e.g., `.map()`, transformers, adapters).
-2. Add the new field to all reconstruction sites.
-3. **Test the regeneration locally** by running the upstream source → transformation pipeline and checking the output directly (not the committed JSON). `node scripts/test-enriquece.mjs` is the pattern.
-4. Only commit after the pipeline-regenerated output has the field.
+#### Los carteles emparejados viven en el JSON aunque no se pinten
 
-This pattern applies to `api/sync-events.js` and anywhere else objects are assembled field-by-field rather than merged.
+La fusión cartel→evento del programa es **client-side**: `enriquecerPorCartel()` (`src/lib/dedupEventos.js`, llamada desde `useEventosPublicos`) filtra los carteles con `enriqueceEvento` para que nunca salgan como tarjeta y le inyecta **solo la imagen** al evento que citan — el programa manda en titulo/fecha/hora/lugar/descripcion/url aunque los tenga vacíos (un cartel es un JPG con el título rotulado; sus campos derivados del nombre del fichero son menos fiables). Por eso `eventos-externos.json` **debe contener** esos carteles: no son basura que sobre, son el soporte de la imagen y del marcador. Un `enriqueceEvento` que no resuelva a ningún evento presente hace que el cartel se muestre como evento propio (fail-soft) en vez de desaparecer.
+
+#### Verificar un cambio en el cron: ejecución real, no simulación
+
+Dos veces seguidas se dio por bueno un cambio del cron mirando el fichero committeado o un script local que reproducía "el trozo interesante" del pipeline. Ambas fallaron: el JSON committeado puede venir de una ejecución anterior, y un script que salta la función que rompe (aquí `combinarSinDuplicados`) no verifica nada. Un JSON generado a mano llegó a producción con 158 eventos **sin `id`** porque el script usaba el módulo crudo en vez de `eventosFiestas()`.
+
+La verificación válida es: desplegar, esperar a que Vercel esté `Ready`, `POST https://ennavalcarnero.es/api/sync-events` con `Authorization: Bearer $CRON_SECRET`, y contar sobre el **commit que genera el propio cron**:
+
+```bash
+git show <commit>:src/data/eventos-externos.json | jq '[.[]|select(.origen=="deportes")]|length'          # 36
+git show <commit>:src/data/eventos-externos.json | jq '[.[]|select(.origen=="deportes")|.url]|unique|length' # 36 — si baja, hay urls compartidas
+git show <commit>:src/data/eventos-externos.json | jq '[.[]|select(.enriqueceEvento!=null)]|length'        # 8
+```
+
+Ojo con CRLF: `git show` de este repo devuelve `\r\n`, así que cualquier `comm`/`diff` sobre esa salida necesita `tr -d '\r'` o dará el 100 % de las líneas como distintas.
+
+Y la regla general de la que esto es un caso: cuando un pipeline construye objetos **campo a campo** en vez de con spread, cualquier campo nuevo añadido aguas arriba se pierde en silencio (no hay error de compilación). Al añadir uno, localiza **todos** los sitios que reconstruyen el objeto.
 
 ### Destacados (paid featured items)
 
