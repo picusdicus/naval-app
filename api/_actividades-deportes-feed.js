@@ -365,7 +365,12 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
           titulo,
           fecha_evento: fechaEvento,
           imagen: imagenCompleta,
-          url_fuente: 'https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/',
+          // URL propia del cartel (página de adjunto de la galería). NO una URL
+          // compartida: combinarSinDuplicados() en sync-events.js deduplica por
+          // url antes que por título+fecha, así que una url común a los 36
+          // carteles hace que solo sobreviva el primero. Sin href, mejor vacío
+          // que la página común — vacío desactiva esa regla para esta fila.
+          url_fuente: href || '',
           origen_externo_id: origen,
           categoria: 'deporte',
           enriqueceEvento: idEventoPrograma // Marca: esto enriquece el evento existente
@@ -376,7 +381,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
           titulo,
           fecha_evento: fechaEvento,
           imagen: imagenCompleta,
-          url_fuente: 'https://navalcarnero.es/navalcarnero/prensa/programacion-deportiva-fiestas-patronales-2026/',
+          url_fuente: href || '', // Ver comentario sobre la url en la rama de arriba
           origen_externo_id: origen,
           categoria: 'deporte'
         })

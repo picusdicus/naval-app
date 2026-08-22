@@ -77,16 +77,22 @@ function fusionar(base, otro) {
 /**
  * Procesa el enriquecimiento de carteles deportivos (y otros activos que
  * tengan el campo `enriqueceEvento`). Los carteles que enriquecen a eventos
- * del programa se filtran ANTES de pasar a combinarEventos(), y sus imágenes
- * + datos se inyectan en los eventos correspondientes por ID directo.
+ * del programa se filtran ANTES de pasar a combinarEventos(), y su IMAGEN
+ * (solo la imagen) se inyecta en el evento correspondiente por ID directo.
  *
- * - Carteles CON enriqueceEvento: se filtran de la lista de retorno
- *   (nunca mostrar como tarjeta independiente) y su imagen se inyecta en
- *   el evento del programa que citan.
+ * - Carteles CON enriqueceEvento que resuelven: se filtran de la lista de
+ *   retorno (nunca mostrar como tarjeta independiente) y su imagen se inyecta
+ *   en el evento del programa que citan. El programa manda en todo lo demás.
+ * - Carteles CON enriqueceEvento que NO resuelven: se muestran como evento
+ *   propio (fail-soft, ver abajo) en vez de desaparecer.
  * - Carteles SIN enriqueceEvento: pasan intactos — son eventos nuevos
  *   creados por el scraper, no refieren a nada del programa.
- * - Eventos sin matching: se ignoran con un log (el programa existía cuando
- *   se generó el cartel, ahora no; no debe crashear).
+ *
+ * Nota: para que esto funcione, `eventos-externos.json` tiene que CONTENER los
+ * carteles emparejados aunque nunca se pinten. No son basura que sobre: son el
+ * soporte de la imagen y del marcador. Y cada cartel necesita una `url` propia
+ * o el dedup por url del cron se come todos menos el primero (ver
+ * api/_actividades-deportes-feed.js).
  */
 export function enriquecerPorCartel(eventos) {
   const conEnriquecimiento = []
@@ -115,7 +121,11 @@ export function enriquecerPorCartel(eventos) {
     cartelPorId.get(id).push(cartel)
   }
 
-  // Inyectar imagen + campos del cartel en eventos que coinciden por ID
+  // Inyectar SOLO la imagen del cartel en el evento que lo cita.
+  // El cartel aporta la foto y nada más: el programa es la fuente autorizada
+  // para todo lo demás (titulo, fecha, hora, lugar, descripcion, url). Un cartel
+  // es un JPG con un título rotulado — sus campos derivados del nombre del
+  // fichero son menos fiables que el programa, aunque el programa los tenga vacíos.
   const resultado = sinEnriquecimiento.map((evt) => {
     const carteles = cartelPorId.get(evt.id)
     if (!carteles) {
@@ -126,17 +136,18 @@ export function enriquecerPorCartel(eventos) {
     const cartel = carteles[0]
     return {
       ...evt,
-      // Inyectar imagen y otros campos que el programa no tenga
       imagen: evt.imagen || cartel.imagen,
-      descripcion: evt.descripcion || cartel.descripcion,
-      hora: evt.hora || cartel.hora,
-      lugar: evt.lugar || cartel.lugar,
-      url: evt.url || cartel.url,
-      // NO sobrescribir: titulo, fecha, categoria, subcategoria, fuente — el programa manda
     }
   })
 
-  return resultado
+  // Fail-soft: un cartel cuyo `enriqueceEvento` no corresponde a ningún evento
+  // presente (el programa cambió, el id se generó con otra normalización…) se
+  // muestra como evento propio en vez de desaparecer. Perder una tarjeta en
+  // silencio es peor que enseñar una de más.
+  const idsPresentes = new Set(sinEnriquecimiento.map((e) => e.id))
+  const huerfanos = conEnriquecimiento.filter((c) => !idsPresentes.has(c.enriqueceEvento))
+
+  return huerfanos.length ? [...resultado, ...huerfanos] : resultado
 }
 
 /**
