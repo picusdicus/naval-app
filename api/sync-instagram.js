@@ -14,10 +14,14 @@
 //   los posts de cultura_navalcarnero — la fuente es el nombre del JOIN).
 // - El digest push diario (api/sync-events.js) los anuncia solo: entran como
 //   filas publicadas futuras con notificado_en NULL.
-// - El upsert usa eventos_usuario.origen_externo_id ('ig-<shortCode>', índice
-//   único parcial): re-ejecutar el webhook actualiza en vez de duplicar, y una
-//   edición no re-notifica (notificado_en no se toca en el UPDATE). El estado
-//   tampoco: un evento archivado a mano por el superadmin no resucita.
+// - El upsert usa eventos_usuario.origen_externo_id (índice único parcial):
+//   'ig-<shortCode>' para el caso normal de un evento por post, e
+//   'ig-<shortCode>-<slug>' para cada evento extra de un carrusel multi-evento
+//   (esos nacen 'borrador' y se validan en /admin → Pendientes — ver
+//   asignarIdentidades). Re-ejecutar el webhook actualiza en vez de duplicar,
+//   y una edición no re-notifica (notificado_en no se toca en el UPDATE). El
+//   estado tampoco: un evento archivado a mano por el superadmin no resucita,
+//   y un borrador ya publicado no vuelve a borrador.
 //
 // Serverless (Node) a propósito: el SDK de Anthropic y @vercel/blob (undici)
 // no funcionan en el Edge Runtime.
@@ -155,12 +159,18 @@ async function extraerEventos(posts) {
 function validarExtraccion(eventos, postsPorShortCode) {
   const validos = []
   const descartados = []
+  // Dedup DENTRO de la respuesta del modelo. Antes la clave era el shortCode
+  // a secas (un evento por post): en un carrusel multi-evento (la programación
+  // deportiva de agosto 2026: 10 carteles, 5-6 extracciones) sobrevivía una y
+  // el resto se tiraba como "validación de la extracción". Ahora la clave es
+  // post+fecha+título normalizado, así que solo cae la repetición literal;
+  // cuántas filas emite un post y con qué id/estado se decide después, en
+  // asignarIdentidades().
   const vistos = new Set()
   for (const ev of Array.isArray(eventos) ? eventos : []) {
     const post = postsPorShortCode.get(ev.shortCode)
     const valido =
       post &&
-      !vistos.has(ev.shortCode) &&
       typeof ev.titulo === 'string' &&
       ev.titulo.trim() &&
       /^\d{4}-\d{2}-\d{2}$/.test(ev.fecha) &&
@@ -172,7 +182,12 @@ function validarExtraccion(eventos, postsPorShortCode) {
       descartados.push(ev.shortCode || '(sin shortCode)')
       continue
     }
-    vistos.add(ev.shortCode)
+    const clave = `${ev.shortCode}|${ev.fecha}|${claveTitulo(ev.titulo)}`
+    if (vistos.has(clave)) {
+      descartados.push(ev.shortCode)
+      continue
+    }
+    vistos.add(clave)
     validos.push({
       shortCode: ev.shortCode,
       titulo: ev.titulo.trim().slice(0, 200),
@@ -191,9 +206,99 @@ function validarExtraccion(eventos, postsPorShortCode) {
       imagenOrigen: post.imagen,
       usuario: post.usuario,
       indiceCartel: typeof ev.indiceCartel === 'number' && ev.indiceCartel >= 0 ? ev.indiceCartel : null,
+      // Las fotos del carrusel viajan CON el evento validado: la rama que
+      // elige el cartel concreto (indiceCartel) vive en el bucle de upsert,
+      // donde la variable `post` de este scope no existe — referenciarla allí
+      // era un ReferenceError latente que se llevaba el evento por delante.
+      carrusel: post.carrusel || [],
     })
   }
   return { validos, descartados }
+}
+
+/** Sufijo estable por título para ids de hijas, mismo patrón que el webhook
+ * de noticias: con índices numéricos el orden de extracción cambia entre runs
+ * y el upsert machacaría una fila con el contenido de otra. Colisiones dentro
+ * del mismo post se numeran (-2, -3…). */
+function sufijoDe(titulo, usados) {
+  const base = claveTitulo(titulo).replace(/ /g, '-').slice(0, 48).replace(/-+$/, '') || 'evento'
+  let slug = base
+  for (let n = 2; usados.has(slug); n++) slug = `${base}-${n}`
+  usados.add(slug)
+  return slug
+}
+
+/**
+ * Decide el origen_externo_id y el estado inicial de cada evento validado
+ * (los deja en ev.origenId / ev.estado).
+ *
+ * - Post con UN evento (el caso normal): ig-<shortCode> y 'publicado', el
+ *   comportamiento de siempre.
+ * - Post con VARIOS eventos (carrusel multi-evento): cada uno lleva id propio
+ *   ig-<shortCode>-<slug del título> y nace 'borrador' — una extracción
+ *   masiva de un carrusel es menos fiable que la de un caption, así que pasa
+ *   por la validación humana de /admin → Pendientes, como las hijas de
+ *   documento del webhook de noticias. El digest push no los anuncia hasta
+ *   que el superadmin los publique (publicar deja notificado_en NULL, así que
+ *   entran en el siguiente digest como cualquier otro).
+ * - Si ya existe una fila del MISMO post con título equivalente (la fila
+ *   única histórica ig-<shortCode> o una hija de un run anterior cuyo título
+ *   derivó), se reutiliza su id: el upsert actualiza esa fila respetando su
+ *   estado en vez de crear una casi-duplicada. Emparejar por título comparte
+ *   el riesgo de colisión ya documentado en el webhook de noticias
+ *   (idDeHija); aquí no hay imagen_origen_id que lo mitigue.
+ */
+async function asignarIdentidades(sql, validos) {
+  const porPost = new Map()
+  for (const ev of validos) {
+    if (!porPost.has(ev.shortCode)) porPost.set(ev.shortCode, [])
+    porPost.get(ev.shortCode).push(ev)
+  }
+
+  const multiples = [...porPost.entries()].filter(([, grupo]) => grupo.length > 1)
+
+  // Filas ya existentes de los posts multi-evento (la única histórica y las
+  // hijas), para reutilizar ids. El '_'/'%' del shortCode se escapa (son
+  // comodines de LIKE).
+  const escaparLike = (s) => String(s).replace(/[\\_%]/g, '\\$&')
+  const patrones = multiples.flatMap(([sc]) => [`ig-${escaparLike(sc)}`, `ig-${escaparLike(sc)}-%`])
+  const familiares = patrones.length
+    ? await sql`
+        SELECT origen_externo_id, titulo
+        FROM eventos_usuario
+        WHERE origen_externo_id LIKE ANY(${patrones}::text[])`
+    : []
+
+  for (const [shortCode, grupo] of porPost.entries()) {
+    if (grupo.length === 1) {
+      grupo[0].origenId = `ig-${shortCode}`
+      grupo[0].estado = 'publicado'
+      continue
+    }
+    const prefijo = `ig-${shortCode}`
+    const delPost = familiares.filter(
+      (f) => f.origen_externo_id === prefijo || f.origen_externo_id.startsWith(`${prefijo}-`)
+    )
+    const idsUsados = new Set()
+    const slugsUsados = new Set(
+      delPost
+        .filter((f) => f.origen_externo_id.startsWith(`${prefijo}-`))
+        .map((f) => f.origen_externo_id.slice(prefijo.length + 1))
+    )
+    for (const ev of grupo) {
+      const clave = claveTitulo(ev.titulo)
+      const previa = delPost.find(
+        (f) =>
+          !idsUsados.has(f.origen_externo_id) &&
+          titulosEquivalentes(claveTitulo(f.titulo), clave)
+      )
+      ev.origenId = previa
+        ? previa.origen_externo_id
+        : `${prefijo}-${sufijoDe(ev.titulo, slugsUsados)}`
+      idsUsados.add(ev.origenId)
+      ev.estado = 'borrador'
+    }
+  }
 }
 
 /** Columna e índice del upsert, idempotentes (también están en db/schema.sql). */
@@ -236,6 +341,7 @@ export default async function handler(req, res) {
     descartadosPorAntiguedad: 0,
     eventos: 0,
     creados: 0,
+    creadosEnBorrador: 0,
     actualizados: 0,
     duplicadosOmitidos: 0,
     descartadosPorValidacion: 0,
@@ -311,6 +417,10 @@ async function procesar(posts, resumen, noNormalizables = 0) {
     const sql = obtenerSql()
     await asegurarColumnaOrigen(sql)
 
+    // id + estado inicial de cada evento (multi-evento por carrusel → hijas
+    // en borrador; ver el comentario de asignarIdentidades).
+    await asignarIdentidades(sql, validos)
+
     // Dedup servidor Neon↔Neon: el mismo acto anunciado en dos posts (o por
     // las dos cuentas) no debe crear dos filas — cada fila extra entra en el
     // digest push y ensucia el panel. Se cargan los eventos ya existentes en
@@ -334,7 +444,7 @@ async function procesar(posts, resumen, noNormalizables = 0) {
     // con imagen, se reutiliza su URL sin volver a llamar a subirImagen. Solo
     // se sube si el post es nuevo o si una subida anterior dejó imagen_url a
     // NULL (reintento).
-    const idsEventos = validos.map((v) => `ig-${v.shortCode}`)
+    const idsEventos = validos.map((v) => v.origenId)
     const imagenesPrevias = idsEventos.length
       ? await sql`
           SELECT origen_externo_id, imagen_url
@@ -354,14 +464,25 @@ async function procesar(posts, resumen, noNormalizables = 0) {
 
     for (const ev of validos) {
       try {
-        const origenId = `ig-${ev.shortCode}`
+        const origenId = ev.origenId
         const yaPropio = existentes.some((e) => e.origen_externo_id === origenId)
         if (!yaPropio) {
           const clave = claveTitulo(ev.titulo)
+          const prefijoPost = `ig-${ev.shortCode}`
           const gemelo = existentes.find(
             (e) =>
               e.fecha === ev.fecha &&
               e.origen_externo_id !== origenId &&
+              // Las filas del PROPIO post no cuentan como gemelo: la identidad
+              // dentro del post ya la resolvió asignarIdentidades (reutilizando
+              // ids por título equivalente), y dos hermanos de un carrusel con
+              // títulos "equivalentes" por contención ("Torneo de fútbol" /
+              // "Torneo de fútbol sala") suelen ser actos distintos — mejor
+              // dejarlos pasar como borrador y que la validación humana decida.
+              !(
+                e.origen_externo_id === prefijoPost ||
+                String(e.origen_externo_id || '').startsWith(`${prefijoPost}-`)
+              ) &&
               titulosEquivalentes(claveTitulo(e.titulo), clave)
           )
           if (gemelo) {
@@ -371,22 +492,41 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         }
 
         const organizacionId = await organizacionDe(ev.usuario)
+
+        // Cartel concreto del carrusel del que salió el evento (indiceCartel):
+        // su foto se sube con sufijo -c<i> para no pisar el blob de la portada.
+        const cartel =
+          ev.indiceCartel !== null && ev.carrusel[ev.indiceCartel]?.imagen
+            ? ev.carrusel[ev.indiceCartel]
+            : null
+        const sufijo = cartel ? `c${ev.indiceCartel}` : ''
+
+        // Guard de cuota de Blob (cada put() es un Advanced Request): si la
+        // fila ya tiene imagen se reutiliza sin subir nada. El guard original
+        // reutilizaba CUALQUIER imagen previa, lo que cortocircuitaba el fix
+        // de indiceCartel en cada re-scrape: una fila con la portada antigua
+        // guardada nunca volvía a entrar en la rama del cartel y el
+        // "auto-corrige en el siguiente run" era falso — la rama solo corría
+        // con imagen_url a NULL. Ahora, si esta extracción señala un cartel
+        // pero la imagen guardada es la PORTADA (blob sin sufijo -c<i>), se
+        // corrige con una única subida; una imagen que ya es un cartel
+        // concreto (cualquier -c<i>) se conserva tal cual, porque el índice
+        // que devuelve el modelo varía entre runs y exigir coincidencia
+        // exacta haría flapear la foto (y un put) en cada re-scrape. Sin
+        // cartel se reutiliza lo que haya, como siempre.
         const imagenExistente = imagenPorOrigenId.get(origenId)
+        const imagenCoherente = !cartel || /-c\d+\.\w+$/.test(String(imagenExistente || ''))
         let imagenUrl
-        if (imagenExistente) {
+        if (imagenExistente && imagenCoherente) {
           imagenUrl = imagenExistente
           resumen.imagenesReutilizadas++
         } else {
-          // Determinar imagen y sufijo según si el evento vino de una hija del carrusel
-          let imagenOrigen = ev.imagenOrigen  // fallback: imagen de portada
-          let sufijo = ''
-
-          if (ev.indiceCartel !== null && post.carrusel && post.carrusel[ev.indiceCartel]) {
-            imagenOrigen = post.carrusel[ev.indiceCartel].imagen
-            sufijo = `c${ev.indiceCartel}`  // Mismo patrón que actividades: -c0, -c1, etc.
-          }
-
-          imagenUrl = await subirImagen('instagram', ev.shortCode, imagenOrigen, sufijo)
+          imagenUrl = await subirImagen(
+            'instagram',
+            ev.shortCode,
+            cartel ? cartel.imagen : ev.imagenOrigen,
+            sufijo
+          )
           if (imagenUrl) resumen.imagenesSubidas++
         }
 
@@ -400,7 +540,7 @@ async function procesar(posts, resumen, noNormalizables = 0) {
           VALUES
             (${organizacionId}, ${ev.titulo}, ${ev.descripcion}, ${ev.categoria},
              ${ev.subcategoria}, ${ev.fecha}, ${ev.hora}, ${ev.lugar}, ${ev.url},
-             ${imagenUrl}, 'publicado', ${`ig-${ev.shortCode}`})
+             ${imagenUrl}, ${ev.estado}, ${origenId})
           ON CONFLICT (origen_externo_id) WHERE origen_externo_id IS NOT NULL
           DO UPDATE SET
             organizacion_id = EXCLUDED.organizacion_id,
@@ -416,8 +556,12 @@ async function procesar(posts, resumen, noNormalizables = 0) {
             actualizado_en = now()
           RETURNING (xmax = 0) AS insertado
         `
-        if (filas[0]?.insertado) resumen.creados++
-        else resumen.actualizados++
+        if (filas[0]?.insertado) {
+          resumen.creados++
+          if (ev.estado === 'borrador') resumen.creadosEnBorrador++
+        } else {
+          resumen.actualizados++
+        }
         // Visible para el dedup del resto del run: dos posts del mismo lote
         // que anuncian el mismo acto tampoco deben crear dos filas.
         if (!yaPropio) {
