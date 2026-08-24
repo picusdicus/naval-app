@@ -10,6 +10,8 @@
 // Lo usa api/sync-events.js (el cron diario, que incorpora las actividades completas
 // del feed de deportes a la BD).
 
+import { registrarIngesta } from './_ingesta-log.js'
+
 const DEPORTES_RSS = 'https://navalcarnero.es/navalcarnero/deportes/feed/'
 const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
 
@@ -251,6 +253,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
     /<item>[\s\S]*?<title>[^<]*ACTIVIDADES\s+DEPORTIVAS[\s\S]*?<\/item>/i
   )
   if (!itemMatch) {
+    await registrarIngesta({ fuente: 'deportes', motivos: { 'sin entrada de actividades deportivas en el RSS': 1 } })
     return { actividades: [], detectadasFinPlazo: 0, emparejamientos: 0 }
   }
 
@@ -262,6 +265,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
 
   const linkMatch = itemXml.match(/<link>([^<]+)<\/link>/)
   if (!linkMatch) {
+    await registrarIngesta({ fuente: 'deportes', motivos: { 'entrada del RSS sin link': 1 } })
     return { actividades: [], detectadasFinPlazo: 0, emparejamientos: 0 }
   }
   const urlPagina = linkMatch[1]
@@ -269,6 +273,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
   // Descargar la página (la galería está en el HTML, no en el RSS)
   const html = await descargarTexto(urlPagina, AbortSignal.timeout(15000))
   if (!html) {
+    await registrarIngesta({ fuente: 'deportes', motivos: { 'página de la galería vacía': 1 } })
     return { actividades: [], detectadasFinPlazo: 0, emparejamientos: 0 }
   }
 
@@ -321,6 +326,9 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
   const finDePlazo = []
   let descartadosSinTitulo = 0
   let descartadosSinOrigen = 0
+  let cartelesDescartados = 0
+  let plazosConGemela = 0
+  let plazosSinTitulo = 0
   let enriquecidosDelPrograma = 0
 
   for (const [, href, title, src, alt] of carteles) {
@@ -390,6 +398,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
         })
       }
     } else {
+      cartelesDescartados++
       if (!titulo) descartadosSinTitulo++
       if (!origen) descartadosSinOrigen++
       // Log silencioso: no queremos romper el flujo, pero es útil para auditoría
@@ -448,8 +457,32 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
       })
 
       actividadesTotales.add(titulo.toUpperCase())
+    } else if (tieneGemela) {
+      // El plazo se consume junto a su actividad (el cartel de la actividad ya
+      // entró): no genera fila propia.
+      plazosConGemela++
+    } else {
+      plazosSinTitulo++
     }
   }
+
+  // Log de la ejecución (tabla ingesta_log, solo observabilidad — nunca lanza).
+  // candidatos = carteles de la galería; emparejados = los que enriquecen un
+  // evento del programa de fiestas; nuevos = actividades emitidas al cron.
+  // Identidad: candidatos = nuevos + descartados.
+  await registrarIngesta({
+    fuente: 'deportes',
+    candidatos: carteles.length,
+    emparejados: enriquecidosDelPrograma,
+    nuevos: actividades.length,
+    descartados: cartelesDescartados + plazosConGemela + plazosSinTitulo,
+    motivos: {
+      'cartel sin título': descartadosSinTitulo,
+      'cartel sin origen (fichero no parseable)': descartadosSinOrigen,
+      'fin de plazo con actividad gemela': plazosConGemela,
+      'fin de plazo sin título': plazosSinTitulo,
+    },
+  })
 
   return {
     actividades,

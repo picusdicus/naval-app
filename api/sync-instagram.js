@@ -36,6 +36,7 @@ import {
 } from './_instagram.js'
 import { SUBCATEGORIAS_CULTURA } from '../src/lib/eventos.js'
 import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
+import { registrarIngesta } from './_ingesta-log.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -251,7 +252,16 @@ export default async function handler(req, res) {
     const posts = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
     resumen.descartadosPorAntiguedad = normalizados.length - posts.length
     resumen.analizados = posts.length
+    const noNormalizables = crudos.length - normalizados.length
     if (posts.length === 0) {
+      await registrarIngesta({
+        fuente: 'sync-instagram',
+        candidatos: resumen.recibidos,
+        motivos: {
+          'post no normalizable': noNormalizables,
+          'antigüedad (>30 días) o tope de posts': resumen.descartadosPorAntiguedad,
+        },
+      })
       res.status(200).json(resumen)
       return
     }
@@ -265,7 +275,7 @@ export default async function handler(req, res) {
       recibidos: resumen.recibidos,
       analizados: resumen.analizados,
     })
-    const tarea = procesar(posts, resumen)
+    const tarea = procesar(posts, resumen, noNormalizables)
     try {
       waitUntil(tarea)
     } catch {
@@ -280,13 +290,17 @@ export default async function handler(req, res) {
 }
 
 /** Todo el trabajo pesado, ya sin una respuesta HTTP que mantener abierta. */
-async function procesar(posts, resumen) {
+async function procesar(posts, resumen, noNormalizables = 0) {
+  // Cuántas extracciones devolvió el modelo: lo que falte hasta `analizados`
+  // son posts que el triaje consideró que no anuncian un evento.
+  let extraidosTotal = 0
   try {
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const { eventos: extraidos, errores: erroresTriaje } = await extraerEventos(
       posts.map(({ shortCode, caption, alt, publicado, carrusel }) => ({ shortCode, caption, alt, publicado, carrusel }))
     )
     resumen.errores.push(...erroresTriaje)
+    extraidosTotal = extraidos.length
     const { validos, descartados } = validarExtraccion(extraidos, postsPorShortCode)
     resumen.eventos = validos.length
     resumen.descartadosPorValidacion = descartados.length
@@ -420,4 +434,21 @@ async function procesar(posts, resumen) {
     resumen.errores.push(err.message)
     console.log(JSON.stringify(resumen))
   }
+
+  // Log de la ejecución (tabla ingesta_log, solo observabilidad — nunca
+  // lanza). candidatos son POSTS y nuevos/emparejados son FILAS de
+  // eventos_usuario (creados/actualizados): no tienen por qué cuadrar entre sí.
+  await registrarIngesta({
+    fuente: 'sync-instagram',
+    candidatos: resumen.recibidos,
+    emparejados: resumen.actualizados,
+    nuevos: resumen.creados,
+    motivos: {
+      'post no normalizable': noNormalizables,
+      'antigüedad (>30 días) o tope de posts': resumen.descartadosPorAntiguedad,
+      'no es evento (rechazo del triaje del modelo)': Math.max(0, resumen.analizados - extraidosTotal),
+      'validación de la extracción': resumen.descartadosPorValidacion,
+      'duplicado de evento existente': resumen.duplicadosOmitidos,
+    },
+  })
 }

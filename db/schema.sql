@@ -384,3 +384,23 @@ ALTER TABLE actividades ADD COLUMN IF NOT EXISTS imagen_origen_id text;
 -- clara (cursos de duración variable, plazos sin fecha de realización concreta).
 -- Validación de servidor: si ambas fechas existen, fecha_limite <= fecha_evento.
 ALTER TABLE actividades ADD COLUMN IF NOT EXISTS fecha_evento date;
+
+-- Log de cada ejecución de los pipelines de ingesta (cron sync-events, webhooks
+-- de Instagram, feed de deportes): persiste los contadores que cada run ya
+-- llevaba en memoria — candidatos vistos, emparejados con filas/ids existentes,
+-- nuevos, descartados y el desglose textual del porqué de cada descarte
+-- ({"motivo": cuenta} en descartados_por_motivo). Solo observabilidad: un fallo
+-- al insertar aquí nunca rompe la ingesta (api/_ingesta-log.js atrapa y loguea).
+CREATE TABLE IF NOT EXISTS ingesta_log (
+  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  fuente                 text NOT NULL,
+  ejecutado_en           timestamptz NOT NULL DEFAULT now(),
+  candidatos             integer NOT NULL DEFAULT 0,
+  emparejados            integer NOT NULL DEFAULT 0,
+  nuevos                 integer NOT NULL DEFAULT 0,
+  descartados            integer NOT NULL DEFAULT 0,
+  descartados_por_motivo jsonb NOT NULL DEFAULT '{}',
+  CONSTRAINT ingesta_motivos_es_objeto CHECK (jsonb_typeof(descartados_por_motivo) = 'object')
+);
+
+CREATE INDEX IF NOT EXISTS idx_ingesta_log_fuente_fecha ON ingesta_log (fuente, ejecutado_en DESC);

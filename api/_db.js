@@ -35,4 +35,5 @@ export const TABLAS = [
   'noticias_instagram',
   'actividades',
   'eventos_ocultos',
+  'ingesta_log',
 ]

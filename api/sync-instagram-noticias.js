@@ -42,6 +42,7 @@ import {
 import { extraerDeCarrusel, extraerDeDocumento } from './_actividades-parser.js'
 import { enviarEmailPendientes } from './_email.js'
 import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
+import { registrarIngesta } from './_ingesta-log.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -456,7 +457,16 @@ export default async function handler(req, res) {
     const posts = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
     resumen.descartadosPorAntiguedad = normalizados.length - posts.length
     resumen.analizados = posts.length
+    const noNormalizables = crudos.length - normalizados.length
     if (posts.length === 0) {
+      await registrarIngesta({
+        fuente: 'sync-instagram-noticias',
+        candidatos: resumen.recibidos,
+        motivos: {
+          'post no normalizable': noNormalizables,
+          'antigüedad (>30 días) o tope de posts': resumen.descartadosPorAntiguedad,
+        },
+      })
       res.status(200).json(resumen)
       return
     }
@@ -471,7 +481,7 @@ export default async function handler(req, res) {
       recibidos: resumen.recibidos,
       analizados: resumen.analizados,
     })
-    const tarea = procesar(posts, resumen)
+    const tarea = procesar(posts, resumen, noNormalizables)
     try {
       waitUntil(tarea)
     } catch {
@@ -486,13 +496,20 @@ export default async function handler(req, res) {
 }
 
 /** Todo el trabajo pesado, ya sin una respuesta HTTP que mantener abierta. */
-async function procesar(posts, resumen) {
+async function procesar(posts, resumen, noNormalizables = 0) {
+  // Cuántos items devolvió el triaje: lo que falte hasta `analizados` son
+  // posts que el modelo consideró irrelevantes (eventos de agenda,
+  // felicitaciones, teasers…). Los eventos duplicados de un documento
+  // enlazado se cuentan aparte (el `continue` del gemelo no dejaba rastro).
+  let extraidasTotal = 0
+  let eventosDocDuplicados = 0
   try {
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const { noticias: extraidas, errores: erroresTriaje } = await extraerNoticias(
       posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
     )
     resumen.errores.push(...erroresTriaje)
+    extraidasTotal = extraidas.length
     const { validas, descartadas } = validarExtraccion(extraidas, postsPorShortCode)
     resumen.noticias = validas.filter(v => v.tipo === 'noticia').length
     resumen.actividades = validas.filter(v => v.tipo === 'actividad').length
@@ -863,7 +880,10 @@ async function procesar(posts, resumen) {
                   e.origen_externo_id !== origenId &&
                   titulosEquivalentes(claveTitulo(e.titulo), clave)
               )
-              if (gemelo) continue
+              if (gemelo) {
+                eventosDocDuplicados++
+                continue
+              }
 
               const filas = await sql`
                 INSERT INTO eventos_usuario
@@ -924,4 +944,22 @@ async function procesar(posts, resumen) {
     resumen.errores.push(err.message)
     console.log(JSON.stringify(resumen))
   }
+
+  // Log de la ejecución (tabla ingesta_log, solo observabilidad — nunca
+  // lanza). candidatos son POSTS y nuevos/emparejados son FILAS (noticias,
+  // actividades y eventos de documento sumados): no tienen por qué cuadrar.
+  await registrarIngesta({
+    fuente: 'sync-instagram-noticias',
+    candidatos: resumen.recibidos,
+    emparejados: resumen.actualizadas,
+    nuevos: resumen.creadas,
+    motivos: {
+      'post no normalizable': noNormalizables,
+      'antigüedad (>30 días) o tope de posts': resumen.descartadosPorAntiguedad,
+      'irrelevante (rechazo del triaje del modelo)': Math.max(0, resumen.analizados - extraidasTotal),
+      'validación de la extracción': resumen.descartadasPorValidacion,
+      'ya existía como evento de agenda': resumen.omitidasPorSerEvento || 0,
+      'duplicado de evento existente (documento)': eventosDocDuplicados,
+    },
+  })
 }

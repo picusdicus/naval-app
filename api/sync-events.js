@@ -5,6 +5,7 @@ import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
+import { registrarIngesta } from './_ingesta-log.js'
 import programaFiestas from './_datos/programa-fiestas-2026.js'
 import redTeatrosData from './_datos/red-teatros.js'
 
@@ -572,14 +573,22 @@ async function eventosCulturaAyto() {
   return eventos
 }
 
-// Combinar sin duplicados
-function combinarSinDuplicados(...listas) {
+// Combinar sin duplicados. `motivos` (opcional) recibe el conteo de descartes
+// por regla — misma condición que antes, solo se anota cuál de las dos saltó.
+function combinarSinDuplicados(listas, motivos = null) {
   const vistos = new Set()
   const resultado = []
   for (const ev of listas.flat()) {
     const claveUrl = ev.url ? `url:${ev.url}` : null
     const claveTF = `tf:${claveNorm(ev.titulo)}|${ev.fecha}`
-    if ((claveUrl && vistos.has(claveUrl)) || vistos.has(claveTF)) continue
+    if (claveUrl && vistos.has(claveUrl)) {
+      if (motivos) motivos.porUrl++
+      continue
+    }
+    if (vistos.has(claveTF)) {
+      if (motivos) motivos.porTituloFecha++
+      continue
+    }
     if (claveUrl) vistos.add(claveUrl)
     vistos.add(claveTF)
     resultado.push(ev)
@@ -742,7 +751,11 @@ export default async function handler(req, res) {
     }
 
     // Paso 2: Combinar sin duplicados
-    const eventosNuevos = combinarSinDuplicados(tyltyl, cultura, redTeatros, deportes, fiestas)
+    const motivosDedup = { porUrl: 0, porTituloFecha: 0 }
+    const eventosNuevos = combinarSinDuplicados(
+      [tyltyl, cultura, redTeatros, deportes, fiestas],
+      motivosDedup,
+    )
     eventosNuevos.sort(
       (a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora || '').localeCompare(b.hora || ''),
     )
@@ -881,6 +894,22 @@ export default async function handler(req, res) {
       console.error('Push: fallo en el digest:', err)
       resultado.errores.push(`Push: ${err.message}`)
     }
+
+    // Log de la ejecución (tabla ingesta_log, solo observabilidad — nunca
+    // lanza). candidatos = eventos traídos de las fuentes antes del dedup;
+    // emparejados = ids que ya estaban en el JSON anterior; nuevos =
+    // `agregados`. El feed de deportes registra además su propia fila
+    // ('deportes') con el detalle interno de la galería.
+    await registrarIngesta({
+      fuente: 'sync-events',
+      candidatos: tyltyl.length + cultura.length + redTeatros.length + deportes.length + fiestas.length,
+      emparejados: eventosNuevos.length - resultado.agregados,
+      nuevos: resultado.agregados,
+      motivos: {
+        'duplicado por url': motivosDedup.porUrl,
+        'duplicado por título+fecha': motivosDedup.porTituloFecha,
+      },
+    })
 
     console.log(JSON.stringify(resultado, null, 2))
     res.status(200).json(resultado)
