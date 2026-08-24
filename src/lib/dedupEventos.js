@@ -36,7 +36,7 @@ const VACIAS = new Set([
 ])
 
 /** Tokens significativos de una clave ya normalizada (sin palabras vacías). */
-function significativas(clave) {
+export function palabrasSignificativas(clave) {
   return clave.split(' ').filter((t) => t && !VACIAS.has(t))
 }
 
@@ -48,12 +48,156 @@ export function titulosEquivalentes(a, b) {
   if (!a || !b) return false
   if (a === b) return true
   // Misma secuencia de palabras significativas (ignora artículos/preposiciones).
-  const sa = significativas(a).join(' ')
-  const sb = significativas(b).join(' ')
+  const sa = palabrasSignificativas(a).join(' ')
+  const sb = palabrasSignificativas(b).join(' ')
   if (sa && sa === sb) return true
   const corto = a.length <= b.length ? a : b
   const largo = a.length <= b.length ? b : a
   return corto.length >= MIN_CONTENCION && largo.includes(corto)
+}
+
+// ———————————————————————————————————————————————————————————————————————————
+// Matcher canónico (fase 1a, ago-2026): las piezas de "¿son el mismo evento?"
+// que estaban reimplementadas por separado en tres sitios, consolidadas aquí
+// como primitivas + matchers con nombre. NO son una única función universal a
+// propósito: las tres situaciones son legítimamente distintas y cada una
+// conserva su matcher.
+//
+// ⚠️ Estado de adopción: en esta fase NADIE llama todavía a las funciones
+// nuevas desde producción — cada sitio migra en su propia rama, con su propia
+// verificación. Qué función usa (o debería usar) cada sitio:
+//
+// | Sitio                                    | Matcher                        | Por qué ese |
+// |------------------------------------------|--------------------------------|-------------|
+// | Agenda pública (combinarEventos, aquí) y | titulosEquivalentes            | Fuentes con títulos "limpios" (curados, extracción de Claude): igualdad normalizada sin palabras vacías, o contención ≥12 chars. Ya canónico — los webhooks lo importan de aquí. |
+// | webhooks IG (sync-instagram[-noticias])  |                                | |
+// | Cartel deportivo ↔ programa de fiestas   | emparejarCartelConPrograma     | El título del cartel viene del NOMBRE DE FICHERO (ruidoso, con sinónimos "basket"/"baloncesto" y plurales) contra el programa oficial: exige fecha exacta + ≥2 palabras clave con normalización deportiva. Contención simple fallaría. Hoy vive duplicado en api/_actividades-deportes-feed.js (encontrarEventoEnPrograma); migra en la rama 1d. |
+// | Cron combinando 5 fuentes                | clavesUnicidadEvento           | Fuentes ya estructuradas donde el mismo item solo puede repetirse literal (mismo feed re-leído, misma url): dedup EXACTO por url o por slug de título+fecha, sin equivalencias difusas — una equivalencia laxa aquí fusionaría actos distintos del programa (158 eventos, muchos títulos parecidos). Hoy vive duplicado en api/sync-events.js (combinarSinDuplicados + claveNorm); migra en la rama 1b. |
+//
+// Fuera de alcance a propósito: imagen_origen_id (identidad de FOTO, no de
+// evento), la generación de ids (`fiestas-<clave>-<fecha>`, `noticias-<clave>`
+// — usan slugs propios y cambiarlos rompería ids ya publicados) y la búsqueda
+// del directorio (src/lib/busqueda.js, otra pregunta).
+//
+// ⚠️ Discrepancia latente detectada al consolidar (reportada, NO arreglada
+// aquí): claveNormPrograma en api/_actividades-deportes-feed.js reconstruye
+// los ids `fiestas-…` con una normalización que NO es la de claveNorm de
+// sync-events.js (sin tope de 50, símbolos → '-'): 12 de los 158 títulos del
+// programa 2026 divergen. Hoy ninguno de los 8 emparejamientos reales cae en
+// ellos; decidir la unificación es de las ramas 1b/1d (ver el comentario en
+// el propio feed).
+// ———————————————————————————————————————————————————————————————————————————
+
+// —— Primitiva: slug exacto de título (port VERBATIM del claveNorm de
+// api/sync-events.js, tope de 50 incluido). No confundir con claveTitulo():
+// esta produce un slug con guiones capado a 50 chars (clave de unicidad y de
+// ids `fiestas-…`), claveTitulo() produce palabras separadas por espacio sin
+// tope (entrada de titulosEquivalentes). Unificarlas cambiaría decisiones en
+// títulos >50 chars — decisión para la rama 1b, no de este módulo.
+export function claveNormSlug(txt) {
+  let slug = String(txt || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+  if (slug.length > 50) slug = slug.slice(0, 50).replace(/-+$/, '')
+  return slug
+}
+
+// —— Primitivas deportivas (port verbatim de api/_actividades-deportes-feed.js).
+// Palabras que NATURALMENTE terminan en "s" y no son plurales: nunca se
+// recortan a singular ("tenis" no es plural de "teni").
+const EXCEPCIONES_PLURALES = new Set([
+  'tenis', 'mus', 'las', 'los', 'cms', 'fitness', 'pilates',
+])
+
+// Diccionario cerrado de sinónimos deportivos (el cartel dice "basket", el
+// programa dice "baloncesto"; "acua"/"aqua" varía por cartel).
+const SINONIMOS_DEPORTES = {
+  basket: 'baloncesto',
+  baloncesto: 'baloncesto',
+  acua: 'aqua',
+  aqua: 'aqua',
+}
+
+/** Palabra en su forma canónica deportiva: sin puntuación final, singular
+ * (salvo excepciones) y con sinónimos aplicados. */
+export function normalizarPalabraDeportiva(palabra) {
+  const p = palabra.toLowerCase().replace(/[.,;:]/g, '')
+  let base = p
+  if (p.endsWith('s') && p.length > 3 && !EXCEPCIONES_PLURALES.has(p)) {
+    base = p.slice(0, -1)
+  }
+  return SINONIMOS_DEPORTES[base] || SINONIMOS_DEPORTES[p] || base
+}
+
+/** Set de palabras clave de un título con la normalización deportiva
+ * (minúsculas, sin acentos, solo palabras ≥3 chars, singular+sinónimos). */
+export function palabrasClaveDeportivas(txt) {
+  return new Set(
+    String(txt || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .split(/\s+/)
+      .filter((p) => p.length > 2)
+      .map(normalizarPalabraDeportiva)
+  )
+}
+
+/** Cuántas palabras clave deportivas comparten dos títulos. */
+export function solapamientoDeportivo(titulo1, titulo2) {
+  const palabras1 = palabrasClaveDeportivas(titulo1)
+  const palabras2 = palabrasClaveDeportivas(titulo2)
+  return [...palabras2].filter((p) => palabras1.has(p)).length
+}
+
+// Umbral del matcher deportivo: con 1 palabra compartida ("torneo") medio
+// programa emparejaría; 2 ya exige el deporte concreto.
+const MIN_PALABRAS_DEPORTE = 2
+
+/**
+ * Matcher cartel deportivo ↔ programa oficial (port verbatim de
+ * encontrarEventoEnPrograma en api/_actividades-deportes-feed.js): fecha
+ * EXACTA + ≥2 palabras clave con normalización deportiva. Devuelve el primer
+ * evento del programa que empareja (en el orden del programa — mantener ese
+ * orden es parte del contrato: cambiarlo podría cambiar a qué evento
+ * enriquece un cartel ambiguo), o null.
+ * `cartel`: { titulo, fecha_evento } — sin fecha no hay emparejamiento.
+ */
+export function emparejarCartelConPrograma(cartel, programa) {
+  if (!cartel.fecha_evento || !programa || programa.length === 0) {
+    return null
+  }
+  const eventosMismaFecha = programa.filter((e) => e.fecha === cartel.fecha_evento)
+  if (eventosMismaFecha.length === 0) return null
+  for (const evento of eventosMismaFecha) {
+    if (solapamientoDeportivo(evento.titulo, cartel.titulo) >= MIN_PALABRAS_DEPORTE) {
+      return evento
+    }
+  }
+  return null
+}
+
+/**
+ * Matcher exacto del cron (las claves que usa combinarSinDuplicados en
+ * api/sync-events.js): un evento repite si comparte URL con uno ya visto, o
+ * si comparte slug de título + fecha. Devuelve las claves para que el
+ * llamador gestione su propio Set de vistos (el orden de las listas decide
+ * quién sobrevive, y eso es del llamador):
+ *   { claveUrl: 'url:…' | null, claveTituloFecha: 'tf:<slug>|<fecha>' }
+ * La cadena vacía en `url` desactiva la regla de URL a propósito (ver la
+ * sección de actividades deportivas en CLAUDE.md: una url compartida entre
+ * carteles se comería todos menos el primero).
+ */
+export function clavesUnicidadEvento(ev) {
+  return {
+    claveUrl: ev.url ? `url:${ev.url}` : null,
+    claveTituloFecha: `tf:${claveNormSlug(ev.titulo)}|${ev.fecha}`,
+  }
 }
 
 // Rellena en `base` los campos que tenga vacíos con los de `otro` y acumula el

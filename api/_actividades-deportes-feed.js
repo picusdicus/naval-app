@@ -202,7 +202,17 @@ function contarPalabrasCoincidentes(titulo1, titulo2) {
   return [...palabras2].filter(p => palabras1.has(p)).length
 }
 
-// Genera la clave normalizada de un título (idéntico a sync-events.js claveNorm)
+// Genera la clave normalizada de un título para reconstruir el id
+// `fiestas-<clave>-<fecha>` del programa. ⚠️ NO es idéntica al claveNorm de
+// sync-events.js (que es quien genera esos ids), aunque un comentario antiguo
+// lo afirmaba: esta no capa a 50 chars y convierte símbolos en '-' donde
+// aquella los elimina ("DUATLÓN PADRES/HIJOS." → 'duatlon-padres-hijos' aquí,
+// 'duatlon-padreshijos' en el cron). 12 de los 158 títulos del programa 2026
+// divergen (medido en la rama refactor/matcher-canonico); hoy ninguno de los
+// 8 emparejamientos reales cae en ellos, pero si un cartel emparejara con uno
+// de los 12, su enriqueceEvento apuntaría a un id inexistente y el fail-soft
+// del frontend lo pintaría como tarjeta duplicada. Unificar ambas sobre
+// claveNormSlug (src/lib/dedupEventos.js) es decisión de las ramas 1b/1d.
 function claveNormPrograma(txt) {
   return String(txt || '')
     .toLowerCase()
