@@ -72,7 +72,7 @@ export function titulosEquivalentes(a, b) {
 // | Agenda pública (combinarEventos, aquí) y | titulosEquivalentes            | Fuentes con títulos "limpios" (curados, extracción de Claude): igualdad normalizada sin palabras vacías, o contención ≥12 chars. Ya canónico — los webhooks lo importan de aquí. |
 // | webhooks IG (sync-instagram[-noticias])  |                                | |
 // | Cartel deportivo ↔ programa de fiestas   | emparejarCartelConPrograma     | El título del cartel viene del NOMBRE DE FICHERO (ruidoso, con sinónimos "basket"/"baloncesto" y plurales) contra el programa oficial: exige fecha exacta + ≥2 palabras clave con normalización deportiva. Contención simple fallaría. Hoy vive duplicado en api/_actividades-deportes-feed.js (encontrarEventoEnPrograma); migra en la rama 1d. |
-// | Cron combinando 5 fuentes                | clavesUnicidadEvento           | Fuentes ya estructuradas donde el mismo item solo puede repetirse literal (mismo feed re-leído, misma url): dedup EXACTO por url o por slug de título+fecha, sin equivalencias difusas — una equivalencia laxa aquí fusionaría actos distintos del programa (158 eventos, muchos títulos parecidos). Hoy vive duplicado en api/sync-events.js (combinarSinDuplicados + claveNorm); migra en la rama 1b. |
+// | Cron combinando 5 fuentes                | clavesUnicidadEvento           | Fuentes ya estructuradas donde el mismo item solo puede repetirse literal (mismo feed re-leído, misma url): dedup EXACTO por url o por slug de título+fecha, sin equivalencias difusas — una equivalencia laxa aquí fusionaría actos distintos del programa (158 eventos, muchos títulos parecidos). Migrado (rama 1b, 2026-08-24): combinarSinDuplicados en api/sync-events.js importa clavesUnicidadEvento de aquí, y los ids `fiestas-…` usan claveNormSlug. |
 //
 // Fuera de alcance a propósito: imagen_origen_id (identidad de FOTO, no de
 // evento), la generación de ids (`fiestas-<clave>-<fecha>`, `noticias-<clave>`
@@ -88,12 +88,13 @@ export function titulosEquivalentes(a, b) {
 // el propio feed).
 // ———————————————————————————————————————————————————————————————————————————
 
-// —— Primitiva: slug exacto de título (port VERBATIM del claveNorm de
-// api/sync-events.js, tope de 50 incluido). No confundir con claveTitulo():
-// esta produce un slug con guiones capado a 50 chars (clave de unicidad y de
-// ids `fiestas-…`), claveTitulo() produce palabras separadas por espacio sin
-// tope (entrada de titulosEquivalentes). Unificarlas cambiaría decisiones en
-// títulos >50 chars — decisión para la rama 1b, no de este módulo.
+// —— Primitiva: slug exacto de título (port VERBATIM del claveNorm que vivía
+// en api/sync-events.js, tope de 50 incluido — desde la rama 1b el cron
+// importa esta). No confundir con claveTitulo(): esta produce un slug con
+// guiones capado a 50 chars (clave de unicidad y de ids `fiestas-…`),
+// claveTitulo() produce palabras separadas por espacio sin tope (entrada de
+// titulosEquivalentes). Unificarlas cambiaría decisiones en títulos >50 chars
+// — la rama 1b las mantuvo separadas a propósito.
 export function claveNormSlug(txt) {
   let slug = String(txt || '')
     .toLowerCase()

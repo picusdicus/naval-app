@@ -4,6 +4,7 @@ import { enviarDigest } from './_push-send.js'
 import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
+import { claveNormSlug, clavesUnicidadEvento } from '../src/lib/dedupEventos.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
 import { registrarIngesta } from './_ingesta-log.js'
 import programaFiestas from './_datos/programa-fiestas-2026.js'
@@ -133,20 +134,6 @@ function tituloLegible(txt) {
     PROPIOS.includes(w.toLowerCase()) ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w,
   )
   return s
-}
-
-// Clave normalizada para IDs: guiones, máx 50 caracteres, sin espacios.
-function claveNorm(txt) {
-  let slug = String(txt || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-  if (slug.length > 50) slug = slug.slice(0, 50).replace(/-+$/, '')
-  return slug
 }
 
 // Meses en español
@@ -579,18 +566,17 @@ function combinarSinDuplicados(listas, motivos = null) {
   const vistos = new Set()
   const resultado = []
   for (const ev of listas.flat()) {
-    const claveUrl = ev.url ? `url:${ev.url}` : null
-    const claveTF = `tf:${claveNorm(ev.titulo)}|${ev.fecha}`
+    const { claveUrl, claveTituloFecha } = clavesUnicidadEvento(ev)
     if (claveUrl && vistos.has(claveUrl)) {
       if (motivos) motivos.porUrl++
       continue
     }
-    if (vistos.has(claveTF)) {
+    if (vistos.has(claveTituloFecha)) {
       if (motivos) motivos.porTituloFecha++
       continue
     }
     if (claveUrl) vistos.add(claveUrl)
-    vistos.add(claveTF)
+    vistos.add(claveTituloFecha)
     resultado.push(ev)
   }
   return resultado
@@ -604,7 +590,7 @@ function combinarSinDuplicados(listas, motivos = null) {
 // ID estable: fiestas-<clave-normalizada>-<fecha> para reproducibilidad.
 function eventosFiestas() {
   return programaFiestas.map((e) => {
-    const clave = claveNorm(e.titulo)
+    const clave = claveNormSlug(e.titulo)
     return {
       id: `fiestas-${clave}-${e.fecha}`,
       titulo: e.titulo,
