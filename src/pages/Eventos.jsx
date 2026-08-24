@@ -110,12 +110,6 @@ export default function Eventos() {
     }, 0)
   }
 
-  const handleVerDiaCompleto = (dia) => {
-    const params = new URLSearchParams()
-    if (categoriasActivas.length > 0) params.append('categorias', categoriasActivas.join(','))
-    navigate(`/eventos/${dia}?${params.toString()}`)
-  }
-
   const handleClickEvento = (evento) => {
     navigate(`/eventos/${evento.id}`)
   }
@@ -211,7 +205,6 @@ export default function Eventos() {
           categoriasActivas={categoriasActivas}
           idsDestacados={idsDestacados}
           onClickEvento={handleClickEvento}
-          onVerDiaCompleto={handleVerDiaCompleto}
         />
       </div>
 
