@@ -86,13 +86,27 @@ async function imagenOrigenDe(shortCode) {
 
 async function eventosSinImagen() {
   return sql`
-    SELECT id, origen_externo_id
+    SELECT id, origen_externo_id, url
     FROM eventos_usuario
     WHERE origen_externo_id LIKE 'ig-%'
       AND imagen_url IS NULL
       AND creado_en >= now() - make_interval(days => ${DIAS})
     ORDER BY creado_en DESC
   `
+}
+
+/** shortCode real de la fila. El id de una hija de carrusel multi-evento es
+ * 'ig-<shortCode>-<slug del título>' y el shortCode NO puede recortarse del
+ * id (los shortcodes de Instagram también contienen '-'): se saca de la URL
+ * pública del post guardada en la fila, y solo si no hay URL se cae al
+ * recorte clásico (filas 'ig-<shortCode>' a secas, y las noticias, que no
+ * tienen hijas en su tabla). Para una hija, la og:image del post es la
+ * portada, no su cartel concreto: vale como provisional — el siguiente run
+ * del webhook la sustituye por el cartel (el guard de coherencia de
+ * api/sync-instagram.js re-sube cuando la imagen guardada no es un -c<i>). */
+function shortCodeDeFila(fila) {
+  const m = String(fila.url || '').match(/\/(?:p|reel|tv)\/([^/?#]+)/)
+  return m ? m[1] : fila.origen_externo_id.slice('ig-'.length)
 }
 
 async function noticiasSinImagen() {
@@ -145,7 +159,7 @@ async function rellenar() {
   const resumen = { intentadas: aProcesar.length, subidas: 0, fallidas: 0 }
 
   for (const c of aProcesar) {
-    const shortCode = c.origen_externo_id.slice('ig-'.length)
+    const shortCode = shortCodeDeFila(c)
     if (DRY_RUN) {
       console.log(`[dry-run] ${c.tabla} ${c.origen_externo_id} (${shortCode}) — se intentaría rellenar`)
       continue

@@ -289,6 +289,11 @@ function validarExtraccion(noticias, postsPorShortCode) {
   const vistos = new Set()
   for (const n of Array.isArray(noticias) ? noticias : []) {
     const post = postsPorShortCode.get(n.shortCode)
+    // Un triaje por post ES la semántica correcta aquí (a diferencia del
+    // dedup por shortCode que hubo en sync-instagram.js): este `vistos`
+    // deduplica la CLASIFICACIÓN del post (noticia o actividad), y el
+    // contenido múltiple de un carrusel sale después, en la extracción de
+    // documento/carrusel, con id propio por hija.
     const valida =
       post && !vistos.has(n.shortCode) && typeof n.titulo === 'string' && n.titulo.trim()
     if (!valida) {
