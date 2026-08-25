@@ -78,9 +78,15 @@ export default function PerfilComercio({ id: idProp }) {
   const proximasFunciones = useMemo(() => {
     if (!organizacion) return []
     const hoy = hoyISO()
+    // El filtro compara e.fecha >= hoy como STRING (no pasa por Date): con
+    // fecha null/undefined la comparación relacional coerciona ambos lados a
+    // número (null→0, undefined→NaN, string de fecha→NaN) y cualquier
+    // comparación con NaN da false, así que los eventos sin fecha ya quedan
+    // fuera — pero es una exclusión implícita por semántica de coerción, no
+    // una garantía. La guarda del sort evita el crash si eso cambiara.
     return eventos
       .filter((e) => e.organizacionId === organizacion.id && e.fecha >= hoy)
-      .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''))
+      .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora || '').localeCompare(b.hora || ''))
   }, [eventos, organizacion])
 
   if (cargando) {

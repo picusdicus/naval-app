@@ -399,7 +399,7 @@ async function main() {
 
   const eventos = combinarSinDuplicados(tyltyl, cultura)
   eventos.sort(
-    (a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''),
+    (a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora || '').localeCompare(b.hora || ''),
   )
 
   mkdirSync(dirname(SALIDA), { recursive: true })

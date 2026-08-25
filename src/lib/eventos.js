@@ -81,7 +81,7 @@ export function proximosEventos(eventos, limite) {
   hoy.setHours(0, 0, 0, 0)
   const futuros = eventos
     .filter((e) => aFecha(e.fecha) >= hoy)
-    .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || ''))
+    .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora || '').localeCompare(b.hora || ''))
   return typeof limite === 'number' ? futuros.slice(0, limite) : futuros
 }
 
@@ -92,7 +92,7 @@ export function eventosPasados(eventos, limite) {
   hoy.setHours(0, 0, 0, 0)
   const pasados = eventos
     .filter((e) => aFecha(e.fecha) < hoy)
-    .sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora || '').localeCompare(a.hora || ''))
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.hora || '').localeCompare(a.hora || ''))
   return typeof limite === 'number' ? pasados.slice(0, limite) : pasados
 }
 
@@ -103,7 +103,7 @@ export function agruparEventosPorDia(eventos) {
 
   // Ordenar todos los eventos por fecha y hora primero
   const ordenados = [...eventos].sort((a, b) => {
-    const cmp = a.fecha.localeCompare(b.fecha)
+    const cmp = (a.fecha || '').localeCompare(b.fecha || '')
     if (cmp !== 0) return cmp
     return (a.hora || '').localeCompare(b.hora || '')
   })

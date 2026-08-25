@@ -212,6 +212,11 @@ export async function obtenerNoticiasPrensa() {
     })
   }
 
+  // Sin guarda de fecha null a propósito: toda noticia viene de `bases`, y el
+  // paso 1 descarta cualquier item sin fecha parseable (`if (!titulo || !fecha)
+  // continue` — fechaISO() devuelve '' si el pubDate falta o no parsea). Esta
+  // función solo procesa el RSS de prensa; las noticias de Instagram viven en
+  // Neon y se ordenan aparte en useNoticiasPublicas (ese sort sí lleva guarda).
   noticias.sort((a, b) => b.fecha.localeCompare(a.fecha))
   return noticias
 }
