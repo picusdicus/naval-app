@@ -63,7 +63,8 @@ export function useEventosPublicos() {
     }
   }, [])
 
-  // Convierte actividades a eventos con categoría 'talleres'.
+  // Convierte actividades a eventos con su categoría real de Neon (el CHECK de
+  // la tabla coincide con CATEGORIAS_EVENTO, ver src/lib/eventos.js).
   // Usa fecha_evento (cuándo se celebra) como fecha principal, no fecha_limite (plazo).
   const eventosDeActividades = useMemo(() => {
     return actividades
@@ -75,7 +76,7 @@ export function useEventosPublicos() {
         fecha: a.fecha_evento || a.fecha_limite,
         hora: a.horario,
         lugar: a.lugar,
-        categoria: 'talleres',
+        categoria: a.categoria,
         descripcion: a.descripcion || '',
         imagen: a.imagen_url,
         url: a.url_fuente,

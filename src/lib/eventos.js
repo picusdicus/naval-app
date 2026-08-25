@@ -8,6 +8,14 @@ export const CATEGORIAS_EVENTO = {
   deporte: { id: 'deporte', nombre: 'Deporte', color: '#3B7A57' },
   infantil: { id: 'infantil', nombre: 'Infantil', color: '#B5559A' },
   talleres: { id: 'talleres', nombre: 'Talleres', color: '#9B5A7A' },
+  // Categorías que solo llegan desde la tabla `actividades` de Neon (el CHECK
+  // admite deporte|talleres|infantil|mayores|educacion|ayudas|empleo|general;
+  // las tres primeras ya existían arriba como categorías de evento).
+  mayores: { id: 'mayores', nombre: 'Mayores', color: '#6E5B8C' },
+  educacion: { id: 'educacion', nombre: 'Educación', color: '#3E5F8A' },
+  ayudas: { id: 'ayudas', nombre: 'Ayudas', color: '#2F6F6B' },
+  empleo: { id: 'empleo', nombre: 'Empleo', color: '#5C6B4A' },
+  general: { id: 'general', nombre: 'General', color: '#6E6459' },
 }
 
 export const LISTA_CATEGORIAS_EVENTO = Object.values(CATEGORIAS_EVENTO)

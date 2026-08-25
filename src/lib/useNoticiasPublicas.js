@@ -24,7 +24,8 @@ export const ETIQUETAS_ALERTA = {
 }
 
 // Categorías de actividad (misma whitelist que api/sync-instagram-noticias.js
-// y el CHECK de la tabla). El orden decide el de los chips de /eventos?categorias=talleres.
+// y el CHECK de la tabla). Solo etiquetas de presentación (badge del detalle y
+// panel de pendientes); los chips de la agenda salen de CATEGORIAS_EVENTO.
 export const ETIQUETAS_ACTIVIDAD = {
   deporte: 'Deporte',
   talleres: 'Talleres y cursos',

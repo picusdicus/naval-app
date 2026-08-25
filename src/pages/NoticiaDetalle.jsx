@@ -9,10 +9,14 @@ function formatearFechaLarga(fechaISO) {
   return fecha.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function VolverLink({ arriba = false, actividad = false }) {
-  const destino = actividad ? '/eventos?categorias=talleres' : '/noticias'
-  const label = actividad ? 'Volver a talleres' : 'Volver a noticias'
-  const labelArriba = actividad ? 'Talleres' : 'Noticias'
+function VolverLink({ arriba = false, actividad = false, categoria = null }) {
+  // Las actividades vuelven a la agenda filtrada por SU categoría real (ya no
+  // son todas 'talleres'); sin categoría conocida, a la agenda sin filtro.
+  const destino = actividad
+    ? `/eventos${categoria ? `?categorias=${categoria}` : ''}`
+    : '/noticias'
+  const label = actividad ? 'Volver a la agenda' : 'Volver a noticias'
+  const labelArriba = actividad ? 'Agenda' : 'Noticias'
 
   return (
     <Link
@@ -28,8 +32,9 @@ function VolverLink({ arriba = false, actividad = false }) {
 export default function NoticiaDetalle() {
   const { id } = useParams()
   const { noticias, actividades, cargando } = useNoticiasPublicas()
-  // Las actividades no están en `noticias` (ahora son eventos con categoría 'talleres'),
-  // pero sus deep links ig-… se resuelven igual desde esta página de detalle.
+  // Las actividades no están en `noticias` (ahora son eventos en la agenda con
+  // su categoría real), pero sus deep links ig-… se resuelven igual desde esta
+  // página de detalle.
   const noticia = noticias.find((n) => n.id === id) || actividades.find((n) => n.id === id)
 
   if (!noticia) {
@@ -52,7 +57,7 @@ export default function NoticiaDetalle() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <VolverLink arriba actividad={esActividad} />
+      <VolverLink arriba actividad={esActividad} categoria={noticia.categoria} />
 
       <div className="mt-4">
         {noticia.urgente ? (
@@ -148,7 +153,7 @@ export default function NoticiaDetalle() {
       )}
 
       <div className="mt-8 border-t border-filete pt-5">
-        <VolverLink actividad={esActividad} />
+        <VolverLink actividad={esActividad} categoria={noticia.categoria} />
       </div>
     </div>
   )
