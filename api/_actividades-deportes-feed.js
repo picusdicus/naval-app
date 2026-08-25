@@ -12,6 +12,7 @@
 
 import { registrarIngesta } from './_ingesta-log.js'
 import { claveNormSlug, emparejarCartelConPrograma } from '../src/lib/dedupEventos.js'
+import { separarDeportesParaRevision } from './_deportes-revision.js'
 
 const DEPORTES_RSS = 'https://navalcarnero.es/navalcarnero/deportes/feed/'
 const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
@@ -176,7 +177,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
   )
   if (!itemMatch) {
     await registrarIngesta({ fuente: 'deportes', motivos: { 'sin entrada de actividades deportivas en el RSS': 1 } })
-    return { actividades: [], detectadasFinPlazo: 0, emparejamientos: 0 }
+    return { actividades: [], paraRevision: [], detectadasFinPlazo: 0, emparejamientos: 0 }
   }
 
   const itemXml = itemMatch[0]
@@ -188,7 +189,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
   const linkMatch = itemXml.match(/<link>([^<]+)<\/link>/)
   if (!linkMatch) {
     await registrarIngesta({ fuente: 'deportes', motivos: { 'entrada del RSS sin link': 1 } })
-    return { actividades: [], detectadasFinPlazo: 0, emparejamientos: 0 }
+    return { actividades: [], paraRevision: [], detectadasFinPlazo: 0, emparejamientos: 0 }
   }
   const urlPagina = linkMatch[1]
 
@@ -196,7 +197,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
   const html = await descargarTexto(urlPagina, AbortSignal.timeout(15000))
   if (!html) {
     await registrarIngesta({ fuente: 'deportes', motivos: { 'página de la galería vacía': 1 } })
-    return { actividades: [], detectadasFinPlazo: 0, emparejamientos: 0 }
+    return { actividades: [], paraRevision: [], detectadasFinPlazo: 0, emparejamientos: 0 }
   }
 
   // Extraer contenido principal
@@ -388,10 +389,20 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
     }
   }
 
+  // Clasificación de tubería (feat/deportes-nuevos-a-revision): los carteles
+  // sin emparejar cuyo id NO está en la lista de exclusión (los 36 del JSON en
+  // la fecha de corte) van a revisión humana en vez de publicarse directos.
+  // El feed solo CLASIFICA — el insert en Neon lo hace el cron con
+  // upsertDeportesEnRevision(); ver el porqué en api/_deportes-revision.js.
+  const { paraJson, paraRevision } = separarDeportesParaRevision(actividades)
+  const grandfatheredSinEmparejar = paraJson.filter(a => !a.enriqueceEvento).length
+
   // Log de la ejecución (tabla ingesta_log, solo observabilidad — nunca lanza).
   // candidatos = carteles de la galería; emparejados = los que enriquecen un
-  // evento del programa de fiestas; nuevos = actividades emitidas al cron.
-  // Identidad: candidatos = nuevos + descartados.
+  // evento del programa de fiestas; nuevos = actividades emitidas (JSON +
+  // revisión). Identidad: candidatos = nuevos + descartados. Los dos motivos de
+  // tubería son contadores informativos, NO descartes (por eso `descartados`
+  // se pasa explícito y no como suma de motivos).
   await registrarIngesta({
     fuente: 'deportes',
     candidatos: carteles.length,
@@ -403,11 +414,14 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
       'cartel sin origen (fichero no parseable)': descartadosSinOrigen,
       'fin de plazo con actividad gemela': plazosConGemela,
       'fin de plazo sin título': plazosSinTitulo,
+      'nuevo sin emparejar → revisión': paraRevision.length,
+      'grandfathered (publicado directo)': grandfatheredSinEmparejar,
     },
   })
 
   return {
-    actividades,
+    actividades: paraJson,
+    paraRevision,
     detectadasFinPlazo: finDePlazo.length,
     emparejamientos: actividades.filter(a => a.reconstruido_desde_plazo).length,
     extraidos: carteles.length,

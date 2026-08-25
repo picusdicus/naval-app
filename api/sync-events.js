@@ -6,6 +6,7 @@ import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 import { claveNormSlug, clavesUnicidadEvento } from '../src/lib/dedupEventos.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
+import { upsertDeportesEnRevision } from './_deportes-revision.js'
 import { registrarIngesta } from './_ingesta-log.js'
 import programaFiestas from './_datos/programa-fiestas-2026.js'
 import redTeatrosData from './_datos/red-teatros.js'
@@ -697,8 +698,10 @@ export default async function handler(req, res) {
     }
 
     let deportes = []
+    let deportesParaRevision = []
     try {
       const resultadoDeportes = await obtenerActividadesDeportivas(programaFiestas)
+      deportesParaRevision = resultadoDeportes.paraRevision || []
       // Transformar actividades deportivas al formato de eventos
       deportes = resultadoDeportes.actividades.map((a) => ({
         id: a.origen_externo_id,
@@ -725,6 +728,28 @@ export default async function handler(req, res) {
       }
     } catch (err) {
       resultado.errores.push(`Actividades Deportivas: ${err.message}`)
+    }
+
+    // Carteles deportivos NUEVOS sin emparejar (no grandfathered): a revisión
+    // humana en la tabla `actividades` (nacen 'borrador' → bandeja Pendientes
+    // de /admin), NO al JSON. En try propio: un fallo de Neon no rompe la
+    // sincronización del JSON, y el cartel se re-verá en el siguiente run (el
+    // feed lo re-emite mientras siga en la galería). El upsert no toca `estado`
+    // — un archivado no resucita, un publicado no vuelve a borrador.
+    if (deportesParaRevision.length > 0) {
+      try {
+        const sql = obtenerSql()
+        const revision = await upsertDeportesEnRevision(sql, deportesParaRevision)
+        resultado.estadisticas = {
+          ...resultado.estadisticas,
+          deportesARevision: deportesParaRevision.length,
+          deportesRevisionCreadas: revision.creadas,
+          deportesRevisionActualizadas: revision.actualizadas,
+        }
+        revision.errores.forEach((e) => resultado.errores.push(e))
+      } catch (err) {
+        resultado.errores.push(`Deportes a revisión: ${err.message}`)
+      }
     }
 
     let fiestas = []
