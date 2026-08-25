@@ -52,13 +52,18 @@ function cargaUtil(eventos) {
  * evento de `eventos` (cada evento debe traer `temas: []` ya resueltos, además
  * de id/titulo/fecha/lugar/imagen). Lotes concurrentes de TAMANO_LOTE.
  *
- * Devuelve { enviadas, fallidas, caducadasBorradas, suscripciones } y nunca
- * lanza por fallos de envío individuales — el cron no debe romperse por esto.
+ * Devuelve { enviadas, fallidas, caducadasBorradas, suscripciones,
+ * idsEntregados } y nunca lanza por fallos de envío individuales — el cron no
+ * debe romperse por esto. `idsEntregados` son los ids de evento que viajaron
+ * en AL MENOS un envío entregado (fulfilled): es lo que el llamador debe usar
+ * para marcar "ya avisado" evento a evento — los contadores agregados no dicen
+ * qué eventos iban dentro de cada envío, y con 0 suscripciones (o temas que no
+ * intersecan con un evento concreto) ese evento no llegó a nadie.
  */
 export async function enviarDigest(eventos) {
   // `configurado: false` avisa al llamador de que no hubo intento de envío
-  // (sin claves VAPID): así el cron no marca los eventos como notificados.
-  const resumen = { configurado: false, enviadas: 0, fallidas: 0, caducadasBorradas: 0, suscripciones: 0 }
+  // (sin claves VAPID). `idsEntregados` vacío ⇒ nada que marcar.
+  const resumen = { configurado: false, enviadas: 0, fallidas: 0, caducadasBorradas: 0, suscripciones: 0, idsEntregados: [] }
   if (!vapidConfigurado()) {
     console.warn('Push: faltan VITE_VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY, no se envía nada.')
     return resumen
@@ -73,13 +78,18 @@ export async function enviarDigest(eventos) {
   resumen.suscripciones = suscripciones.length
   if (!suscripciones.length) return resumen
 
-  // Emparejar cada suscripción con los eventos que le interesan.
+  // Emparejar cada suscripción con los eventos que le interesan. `ids` guarda
+  // qué eventos viajan en este envío: si el envío se entrega, esos eventos
+  // cuentan como avisados de verdad.
   const envios = []
   for (const sus of suscripciones) {
     const suyos = eventos.filter((ev) => interseca(sus.temas, ev.temas))
-    if (suyos.length) envios.push({ sus, payload: JSON.stringify(cargaUtil(suyos)) })
+    if (suyos.length) {
+      envios.push({ sus, ids: suyos.map((ev) => ev.id), payload: JSON.stringify(cargaUtil(suyos)) })
+    }
   }
 
+  const entregados = new Set()
   const caducadas = []
   for (let i = 0; i < envios.length; i += TAMANO_LOTE) {
     const lote = envios.slice(i, i + TAMANO_LOTE)
@@ -94,6 +104,7 @@ export async function enviarDigest(eventos) {
     resultados.forEach((r, j) => {
       if (r.status === 'fulfilled') {
         resumen.enviadas++
+        lote[j].ids.forEach((id) => entregados.add(id))
         return
       }
       const status = r.reason?.statusCode
@@ -111,5 +122,6 @@ export async function enviarDigest(eventos) {
     resumen.caducadasBorradas = caducadas.length
   }
 
+  resumen.idsEntregados = [...entregados]
   return resumen
 }

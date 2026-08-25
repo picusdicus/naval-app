@@ -613,8 +613,10 @@ function eventosFiestas() {
 // se dispara nada al publicar desde api/admin/eventos.js — así el envío queda
 // agrupado, en un solo punto y solo en runtime Node. El estado "ya avisado" es
 // la columna eventos_usuario.notificado_en: se avisan los publicados futuros
-// con notificado_en NULL y el cron la rellena tras el envío, con lo que un
-// borrador publicado tarde también entra y las ediciones no re-notifican.
+// con notificado_en NULL y el cron la rellena SOLO para los eventos que
+// llegaron de verdad a algún suscriptor (idsEntregados de enviarDigest) — así
+// un borrador publicado tarde también entra, las ediciones no re-notifican, y
+// un evento sin destinatario real hoy sigue pendiente para digests futuros.
 async function eventosNeonPendientes() {
   const sql = obtenerSql()
   const filas = await sql`
@@ -869,11 +871,19 @@ export default async function handler(req, res) {
       const resumenPush = await enviarDigest(paraDigest)
       resultado.push = resumenPush
 
-      if (resumenPush.configurado && deNeon.length > 0) {
+      // Marcar notificado_en SOLO en los eventos de Neon que viajaron en al
+      // menos un envío entregado (idsEntregados, ver enviarDigest).
+      // `configurado` no basta: solo dice que había claves VAPID — con 0
+      // suscripciones, o con temas que no intersecan con un evento concreto,
+      // ese evento no llegó a nadie y debe quedarse en NULL para que un digest
+      // futuro con suscriptores interesados pueda anunciarlo.
+      const entregados = new Set(resumenPush.idsEntregados || [])
+      const idsNotificados = deNeon.filter((e) => entregados.has(e.id)).map((e) => e.idBd)
+      if (idsNotificados.length > 0) {
         const sql = obtenerSql()
         await sql`
           UPDATE eventos_usuario SET notificado_en = now()
-          WHERE id = ANY(${deNeon.map((e) => e.idBd)})
+          WHERE id = ANY(${idsNotificados})
         `
       }
     } catch (err) {
