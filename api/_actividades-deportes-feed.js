@@ -11,6 +11,7 @@
 // del feed de deportes a la BD).
 
 import { registrarIngesta } from './_ingesta-log.js'
+import { claveNormSlug, emparejarCartelConPrograma } from '../src/lib/dedupEventos.js'
 
 const DEPORTES_RSS = 'https://navalcarnero.es/navalcarnero/deportes/feed/'
 const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
@@ -146,102 +147,13 @@ function origenIdDelFichero(src) {
   return null
 }
 
-// Palabras que NATURALMENTE terminan en "s" y NO son plurales
-// (nunca se deben transformar a singular)
-const EXCEPCIONES_PLURALES = new Set([
-  'tenis',      // "Tenis de mesa" no es plural de "teni"
-  'mus',        // Juego de naipes
-  'las',        // Artículo definido (debería filtrarse antes, pero por si acaso)
-  'los',        // Artículo definido
-  'cms',        // Abreviatura (centímetros)
-  'fitness',    // Palabra inglesa, no plural
-  'pilates'     // Marca/disciplina, no plural
-])
-
-// Diccionario cerrado de sinónimos deportivos
-const SINONIMOS_DEPORTES = {
-  basket: 'baloncesto',
-  baloncesto: 'baloncesto',
-  acua: 'aqua',
-  aqua: 'aqua'
-}
-
-// Normaliza una palabra aplicando sinónimos si existen
-function normalizarPalabra(palabra) {
-  const p = palabra.toLowerCase().replace(/[.,;:]/g, '') // Eliminar puntuación final
-
-  // Si termina en "s" (plural simple), devolver la forma singular
-  // "pruebas" → "prueba", "competiciones" → "competicion"
-  // EXCEPTO palabras que naturalmente terminan en "s"
-  let base = p
-  if (p.endsWith('s') && p.length > 3 && !EXCEPCIONES_PLURALES.has(p)) {
-    base = p.slice(0, -1) // Singular sin la "s"
-  }
-
-  // Aplicar sinónimos
-  return SINONIMOS_DEPORTES[base] || SINONIMOS_DEPORTES[p] || base
-}
-
-// Normaliza título para matching: lowercase, sin acentos, solo palabras significativas
-function normalizarParaMatching(txt) {
-  return new Set(
-    String(txt || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .split(/\s+/)
-      .filter(p => p.length > 2) // Solo palabras ≥3 caracteres (excluye "de", "el", "un", etc.)
-      .map(normalizarPalabra) // Aplicar sinónimos y normalización de plurales
-  )
-}
-
-// Cuenta coincidencias de palabras clave entre dos títulos
-function contarPalabrasCoincidentes(titulo1, titulo2) {
-  const palabras1 = normalizarParaMatching(titulo1)
-  const palabras2 = normalizarParaMatching(titulo2)
-  return [...palabras2].filter(p => palabras1.has(p)).length
-}
-
-// Genera la clave normalizada de un título para reconstruir el id
-// `fiestas-<clave>-<fecha>` del programa. ⚠️ NO es idéntica al claveNorm de
-// sync-events.js (que es quien genera esos ids), aunque un comentario antiguo
-// lo afirmaba: esta no capa a 50 chars y convierte símbolos en '-' donde
-// aquella los elimina ("DUATLÓN PADRES/HIJOS." → 'duatlon-padres-hijos' aquí,
-// 'duatlon-padreshijos' en el cron). 12 de los 158 títulos del programa 2026
-// divergen (medido en la rama refactor/matcher-canonico); hoy ninguno de los
-// 8 emparejamientos reales cae en ellos, pero si un cartel emparejara con uno
-// de los 12, su enriqueceEvento apuntaría a un id inexistente y el fail-soft
-// del frontend lo pintaría como tarjeta duplicada. Unificar ambas sobre
-// claveNormSlug (src/lib/dedupEventos.js) es decisión de las ramas 1b/1d.
-function claveNormPrograma(txt) {
-  return String(txt || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-}
-
-// Busca un cartel en el programa por fecha exacta + ≥2 palabras clave coincidentes
-function encontrarEventoEnPrograma(cartel, programa) {
-  if (!cartel.fecha_evento || !programa || programa.length === 0) {
-    return null
-  }
-
-  // Filtrar programa por fecha exacta
-  const eventosMismaFecha = programa.filter(e => e.fecha === cartel.fecha_evento)
-  if (eventosMismaFecha.length === 0) return null
-
-  // Entre los de la misma fecha, buscar por keywords (mínimo 2 palabras coincidentes)
-  for (const evento of eventosMismaFecha) {
-    const coincidencias = contarPalabrasCoincidentes(evento.titulo, cartel.titulo)
-    if (coincidencias >= 2) {
-      return evento
-    }
-  }
-
-  return null
-}
+// El matching cartel↔programa y la clave de los ids `fiestas-…` vienen del
+// matcher canónico (src/lib/dedupEventos.js, rama 1d): emparejarCartelConPrograma
+// (fecha exacta + ≥2 palabras clave con sinónimos deportivos y plurales, primer
+// match en el orden del programa) y claveNormSlug — la MISMA función con la que
+// eventosFiestas() en sync-events.js genera esos ids, así el id reconstruido
+// aquí coincide siempre con el que existe en la agenda (antes había una
+// claveNormPrograma local que divergía en 12 de 158 títulos del programa).
 
 /**
  * Extrae actividades deportivas del RSS de Deportes.
@@ -370,7 +282,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
         fecha_evento: fechaEvento,
         imagen: imagenCompleta
       }
-      const eventoEnPrograma = encontrarEventoEnPrograma(cartelParaMatching, programaFiestas)
+      const eventoEnPrograma = emparejarCartelConPrograma(cartelParaMatching, programaFiestas)
 
       if (eventoEnPrograma) {
         // El cartel matchea con un evento del programa
@@ -378,7 +290,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
         enriquecidosDelPrograma++
         // Generar el ID del evento del programa (fiestas-<clave>-<fecha>)
         // para que sync-events.js sepa cuál evento enriquecer
-        const claveEvento = claveNormPrograma(eventoEnPrograma.titulo)
+        const claveEvento = claveNormSlug(eventoEnPrograma.titulo)
         const idEventoPrograma = `fiestas-${claveEvento}-${eventoEnPrograma.fecha}`
         // La imagen se propaga al cron para adjuntarla al evento del programa
         // (implementado en sync-events.js al procesar este resultado)

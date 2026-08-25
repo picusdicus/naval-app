@@ -63,15 +63,16 @@ export function titulosEquivalentes(a, b) {
 // propósito: las tres situaciones son legítimamente distintas y cada una
 // conserva su matcher.
 //
-// ⚠️ Estado de adopción: en esta fase NADIE llama todavía a las funciones
-// nuevas desde producción — cada sitio migra en su propia rama, con su propia
-// verificación. Qué función usa (o debería usar) cada sitio:
+// Estado de adopción: las tres migraciones están hechas (1b cron 2026-08-24,
+// 1c webhooks IG auditada sin cambio de código 2026-08-24, 1d feed de
+// deportes 2026-08-24) — todos los sitios de producción importan de aquí.
+// Qué función usa cada sitio:
 //
 // | Sitio                                    | Matcher                        | Por qué ese |
 // |------------------------------------------|--------------------------------|-------------|
 // | Agenda pública (combinarEventos, aquí) y | titulosEquivalentes            | Fuentes con títulos "limpios" (curados, extracción de Claude): igualdad normalizada sin palabras vacías, o contención ≥12 chars. Ya canónico — los webhooks lo importan de aquí. |
 // | webhooks IG (sync-instagram[-noticias])  |                                | |
-// | Cartel deportivo ↔ programa de fiestas   | emparejarCartelConPrograma     | El título del cartel viene del NOMBRE DE FICHERO (ruidoso, con sinónimos "basket"/"baloncesto" y plurales) contra el programa oficial: exige fecha exacta + ≥2 palabras clave con normalización deportiva. Contención simple fallaría. Hoy vive duplicado en api/_actividades-deportes-feed.js (encontrarEventoEnPrograma); migra en la rama 1d. |
+// | Cartel deportivo ↔ programa de fiestas   | emparejarCartelConPrograma     | El título del cartel viene del NOMBRE DE FICHERO (ruidoso, con sinónimos "basket"/"baloncesto" y plurales) contra el programa oficial: exige fecha exacta + ≥2 palabras clave con normalización deportiva. Contención simple fallaría. Migrado (rama 1d, 2026-08-24): api/_actividades-deportes-feed.js importa este matcher (y claveNormSlug para reconstruir los ids `fiestas-…`). |
 // | Cron combinando 5 fuentes                | clavesUnicidadEvento           | Fuentes ya estructuradas donde el mismo item solo puede repetirse literal (mismo feed re-leído, misma url): dedup EXACTO por url o por slug de título+fecha, sin equivalencias difusas — una equivalencia laxa aquí fusionaría actos distintos del programa (158 eventos, muchos títulos parecidos). Migrado (rama 1b, 2026-08-24): combinarSinDuplicados en api/sync-events.js importa clavesUnicidadEvento de aquí, y los ids `fiestas-…` usan claveNormSlug. |
 //
 // Fuera de alcance a propósito: imagen_origen_id (identidad de FOTO, no de
@@ -79,13 +80,12 @@ export function titulosEquivalentes(a, b) {
 // — usan slugs propios y cambiarlos rompería ids ya publicados) y la búsqueda
 // del directorio (src/lib/busqueda.js, otra pregunta).
 //
-// ⚠️ Discrepancia latente detectada al consolidar (reportada, NO arreglada
-// aquí): claveNormPrograma en api/_actividades-deportes-feed.js reconstruye
-// los ids `fiestas-…` con una normalización que NO es la de claveNorm de
-// sync-events.js (sin tope de 50, símbolos → '-'): 12 de los 158 títulos del
-// programa 2026 divergen. Hoy ninguno de los 8 emparejamientos reales cae en
-// ellos; decidir la unificación es de las ramas 1b/1d (ver el comentario en
-// el propio feed).
+// La discrepancia de ids detectada al consolidar (la claveNormPrograma local
+// del feed de deportes divergía de claveNorm del cron en 12 de 158 títulos
+// del programa 2026) quedó RESUELTA en la rama 1d: el feed reconstruye los
+// ids `fiestas-…` con la misma claveNormSlug de aquí que usa eventosFiestas()
+// en sync-events.js, verificado título a título sobre los 158 (y sin ninguna
+// referencia a los 12 ids viejos ni en el repo ni en Neon).
 // ———————————————————————————————————————————————————————————————————————————
 
 // —— Primitiva: slug exacto de título (port VERBATIM del claveNorm que vivía
@@ -161,8 +161,8 @@ export function solapamientoDeportivo(titulo1, titulo2) {
 const MIN_PALABRAS_DEPORTE = 2
 
 /**
- * Matcher cartel deportivo ↔ programa oficial (port verbatim de
- * encontrarEventoEnPrograma en api/_actividades-deportes-feed.js): fecha
+ * Matcher cartel deportivo ↔ programa oficial (lo usa
+ * api/_actividades-deportes-feed.js desde la rama 1d): fecha
  * EXACTA + ≥2 palabras clave con normalización deportiva. Devuelve el primer
  * evento del programa que empareja (en el orden del programa — mantener ese
  * orden es parte del contrato: cambiarlo podría cambiar a qué evento
