@@ -44,10 +44,12 @@ export function separarDeportesParaRevision(actividades) {
  * `estado` (un archivado desde Pendientes no resucita al re-ejecutar el cron,
  * un publicado no vuelve a borrador) ni `publicado_en`. Los fallos por fila no
  * lanzan: se acumulan en `errores` y el llamador decide qué hacer con ellos.
- * Devuelve { creadas, actualizadas, errores }.
+ * Devuelve { creadas, actualizadas, errores, filasCreadas } — filasCreadas son
+ * las realmente insertadas (no actualizadas), con la forma { titulo, fecha }
+ * que espera enviarEmailPendientes() para avisar al superadmin.
  */
 export async function upsertDeportesEnRevision(sql, filas) {
-  const resumen = { creadas: 0, actualizadas: 0, errores: [] }
+  const resumen = { creadas: 0, actualizadas: 0, errores: [], filasCreadas: [] }
   for (const a of filas) {
     try {
       const resultado = await sql`
@@ -69,8 +71,12 @@ export async function upsertDeportesEnRevision(sql, filas) {
           actualizado_en = now()
         RETURNING (xmax = 0) AS insertada
       `
-      if (resultado[0]?.insertada) resumen.creadas++
-      else resumen.actualizadas++
+      if (resultado[0]?.insertada) {
+        resumen.creadas++
+        resumen.filasCreadas.push({ titulo: a.titulo, fecha: a.fecha_evento || a.fecha_limite || null })
+      } else {
+        resumen.actualizadas++
+      }
     } catch (err) {
       resumen.errores.push(`deportes a revisión (${a.origen_externo_id}): ${err.message}`)
     }

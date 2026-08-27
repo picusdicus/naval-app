@@ -937,6 +937,8 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         await enviarEmailPendientes({
           eventos: pendientesEventos,
           actividades: pendientesActividades,
+          origen:
+            'La sincronización de Instagram ha extraído contenido de una programación enlazada y lo ha dejado en borrador:',
         })
       } catch (err) {
         resumen.errores.push(`Email de pendientes: ${err.message}`)

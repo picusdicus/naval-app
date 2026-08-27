@@ -7,6 +7,7 @@ import { temasDeEvento } from '../src/lib/temasPush.js'
 import { claveNormSlug, clavesUnicidadEvento } from '../src/lib/dedupEventos.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
 import { upsertDeportesEnRevision } from './_deportes-revision.js'
+import { enviarEmailPendientes } from './_email.js'
 import { registrarIngesta } from './_ingesta-log.js'
 import programaFiestas from './_datos/programa-fiestas-2026.js'
 import redTeatrosData from './_datos/red-teatros.js'
@@ -747,6 +748,21 @@ export default async function handler(req, res) {
           deportesRevisionActualizadas: revision.actualizadas,
         }
         revision.errores.forEach((e) => resultado.errores.push(e))
+
+        // Aviso por email al superadmin si el run dejó borradores nuevos por
+        // validar (solo los insertados, no los re-vistos). Fail-soft: un fallo
+        // del email no rompe la sincronización.
+        if (revision.filasCreadas.length) {
+          try {
+            await enviarEmailPendientes({
+              actividades: revision.filasCreadas,
+              origen:
+                'El feed de actividades deportivas ha traído carteles nuevos que no emparejan con el programa y los ha dejado en borrador:',
+            })
+          } catch (err) {
+            resultado.errores.push(`Email de pendientes (deportes): ${err.message}`)
+          }
+        }
       } catch (err) {
         resultado.errores.push(`Deportes a revisión: ${err.message}`)
       }

@@ -6,8 +6,14 @@ const APP_URL = process.env.APP_URL || 'https://naval-app-one.vercel.app'
  * Aviso al superadmin de que un run de sincronización dejó eventos/actividades
  * en borrador pendientes de validar en /admin → Pendientes. Fail-soft, como
  * el email de reclamaciones: sin RESEND_API_KEY o con error, solo se loguea.
+ * `origen` es la frase que explica de qué vía vienen los borradores (cada
+ * llamador pasa la suya); los items solo necesitan `titulo` y opcional `fecha`.
  */
-export async function enviarEmailPendientes({ eventos = [], actividades = [] }) {
+export async function enviarEmailPendientes({
+  eventos = [],
+  actividades = [],
+  origen = 'Una sincronización automática ha dejado contenido en borrador:',
+}) {
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY no configurado, email de pendientes no enviado')
     return { ok: true, skipped: true }
@@ -22,7 +28,7 @@ export async function enviarEmailPendientes({ eventos = [], actividades = [] }) 
   try {
     const contenido = `
       <h2>Hay ${total} ${total === 1 ? 'elemento pendiente' : 'elementos pendientes'} de validar</h2>
-      <p>La sincronización de Instagram ha extraído contenido de una programación enlazada y lo ha dejado en borrador:</p>
+      <p>${origen}</p>
       ${eventos.length ? `<h3>Eventos (${eventos.length})</h3><ul>${lista(eventos)}</ul>` : ''}
       ${actividades.length ? `<h3>Actividades (${actividades.length})</h3><ul>${lista(actividades)}</ul>` : ''}
       <p><a href="${APP_URL}/admin" style="background: #b0472f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Revisar en el panel</a></p>

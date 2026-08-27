@@ -41,6 +41,7 @@ import {
 import { SUBCATEGORIAS_CULTURA } from '../src/lib/eventos.js'
 import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 import { registrarIngesta } from './_ingesta-log.js'
+import { enviarEmailPendientes } from './_email.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
 
@@ -400,6 +401,9 @@ async function procesar(posts, resumen, noNormalizables = 0) {
   // Cuántas extracciones devolvió el modelo: lo que falte hasta `analizados`
   // son posts que el triaje consideró que no anuncian un evento.
   let extraidosTotal = 0
+  // Borradores REALMENTE insertados este run (no actualizados): son los que
+  // avisan por email al superadmin, mismo patrón que el webhook de noticias.
+  const pendientesEventos = []
   try {
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const { eventos: extraidos, errores: erroresTriaje } = await extraerEventos(
@@ -558,7 +562,10 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         `
         if (filas[0]?.insertado) {
           resumen.creados++
-          if (ev.estado === 'borrador') resumen.creadosEnBorrador++
+          if (ev.estado === 'borrador') {
+            resumen.creadosEnBorrador++
+            pendientesEventos.push({ titulo: ev.titulo, fecha: ev.fecha })
+          }
         } else {
           resumen.actualizados++
         }
@@ -569,6 +576,21 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         }
       } catch (err) {
         resumen.errores.push(`Evento ${ev.shortCode}: ${err.message}`)
+      }
+    }
+
+    // Aviso por email al superadmin si el run dejó borradores por validar
+    // (hijas de un carrusel multi-evento). Fail-soft: un fallo del email no
+    // rompe la sincronización.
+    if (pendientesEventos.length) {
+      try {
+        await enviarEmailPendientes({
+          eventos: pendientesEventos,
+          origen:
+            'La sincronización de eventos de Instagram ha dejado en borrador los eventos de un carrusel multi-evento:',
+        })
+      } catch (err) {
+        resumen.errores.push(`Email de pendientes: ${err.message}`)
       }
     }
 
