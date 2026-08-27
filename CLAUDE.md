@@ -136,6 +136,26 @@ El mismo acto llega a la agenda con títulos redactados distinto en el programa 
 - **Efecto verificado con datos reales (2026-08-27)**: además de los 3 borradores pendientes del carrusel `ig-DcYAiVHjNL5` (voleibol, trofeo futsi, homenaje futsi), la puerta caza 3 duplicados **ya publicados** que salían dobles en producción: Presentación Feria Taurina (09-02), Master Class Entrenamiento Positivo (09-03) e IV Trofeo Navalcarnero ↔ "IV TROFEO FS NAVALCARNEO." (09-06, mismo acto — typo del programa incluido). Todo lo demás byte a byte igual (regresión viejo vs nuevo sobre los 305 estáticos + 37 publicados + 6 actividades, y control con la misma fila atribuida a otra org: no fusiona).
 - **Fuera de alcance (deliberado, pendiente para otra rama)**: "Que disparate" y "El secreto de los trasgos" NO fusionan con "PROGRAMACIÓN INFANTIL." del programa — el nombre real del espectáculo vive en la `descripcion` del evento del programa, no en su `titulo`, y ningún matcher de títulos por solapamiento de palabras puede resolverlo. Es un problema distinto (comparar contra `descripcion`).
 
+#### Fuente de ingesta visible en el panel (tab Eventos de `/admin`)
+
+El tab Eventos del superadmin (`TablesEventos.jsx`) muestra junto a la categoría una etiqueta discreta con la **vía por la que cada evento entró en la agenda** — solo ahí, la agenda pública no la pinta en ningún sitio. La lógica vive en `fuenteDeIngesta()` (`src/lib/dedupEventos.js`), que traduce el prefijo del "id de ingesta": para un evento estático su propio id del JSON, para uno de Neon (`bd-…`) su `origen_externo_id`.
+
+| Prefijo | Etiqueta |
+| --- | --- |
+| `fiestas-*` | Programa oficial |
+| `deportes-*` | Galería de Deportes |
+| `redteatros-*` | Red de Teatros |
+| `tyltyl-*` | Teatro TYL TYL |
+| `aytocult-*` | Web municipal (cultura) |
+| `ig-*` (origen_externo_id) | Instagram (genérico: la fila no guarda la cuenta de origen y el shortCode no la revela) |
+| `NULL` (origen_externo_id) | Organización (creado a mano desde `/panel`) |
+
+- **Soporte de datos**: `GET /api/eventos` expone `origenExternoId` (campo interno para el panel — ningún componente público lo usa ni itera campos desconocidos del evento; verificado). Un prefijo desconocido devuelve `null` (sin etiqueta) en vez de una etiqueta equivocada.
+- **Decisión consciente — el campo viaja en el endpoint público**: `origenExternoId` es inspeccionable en la respuesta JSON de `/api/eventos` aunque la UI pública no lo pinte. Se deja así a propósito: es un slug interno sin datos sensibles (no PII, no credenciales), y el coste de un segundo endpoint (o de filtrarlo por sesión) no se justifica frente al riesgo. No separar endpoint por esto.
+- **Curados sin etiqueta a propósito**: los `ev-*`/`vive25-*` de `eventos.json` no vienen de ninguna tubería de ingesta y no llevan etiqueta.
+- **Fusión aproximada = las DOS fuentes**: un evento marcado `fusionadoPorTituloAproximado` muestra "Programa oficial + Instagram". El paso 1b de `combinarEventos()` guarda `origenExternoIdFusionado` (el origen de la fila de Neon que aportó la fusión; `fusionar()` solo conservaba su id en `idsSecundarios`). Las fusiones **canónicas** (`titulosEquivalentes`, paso 1) muestran solo la fuente del estático base — decisión de alcance, no un olvido.
+- Verificado con Playwright sobre datos reales (2026-08-27): 151 Programa oficial, 36 Galería de Deportes, 19 Instagram, 10 Web municipal, 4 Red de Teatros, 2 Organización, 6 "Programa oficial + Instagram", 98 curados sin etiqueta; agenda pública (`/eventos` y una ficha de detalle fusionada) sin ningún cambio visible. `tyltyl-*` quedó sin ejemplo real (0 en el JSON esta temporada) — el mapeo existe pero está sin ejercitar con datos.
+
 #### Verificar un cambio en el cron: ejecución real, no simulación
 
 Dos veces seguidas se dio por bueno un cambio del cron mirando el fichero committeado o un script local que reproducía "el trozo interesante" del pipeline. Ambas fallaron: el JSON committeado puede venir de una ejecución anterior, y un script que salta la función que rompe (aquí `combinarSinDuplicados`) no verifica nada. Un JSON generado a mano llegó a producción con 158 eventos **sin `id`** porque el script usaba el módulo crudo en vez de `eventosFiestas()`.
