@@ -45,6 +45,35 @@ export const SUBCATEGORIAS_FIESTAS = {
 
 export const LISTA_SUBCATEGORIAS_FIESTAS = Object.values(SUBCATEGORIAS_FIESTAS)
 
+// Icono de la tarjeta sin imagen: slug de Tabler Icons ('ti-*') por
+// categoría/subcategoría. Devuelve el nombre, no el componente — este módulo
+// lo importan también handlers de API y debe seguir "limpio" (sin JSX); el
+// mapeo slug → componente vive en src/components/eventos/iconosEvento.jsx.
+// si algún día hace falta más finura (ajedrez, natación, teatro específico...),
+// aquí es donde se añade una tercera capa mirando el título del evento — no
+// antes: hoy los datos no lo justifican.
+const ICONO_POR_CATEGORIA = {
+  fiestas: 'ti-confetti',
+  cultura: 'ti-books',
+  gastronomia: 'ti-glass-champagne',
+  mercado: 'ti-shopping-bag',
+  deporte: 'ti-run',
+  infantil: 'ti-mood-kid',
+  talleres: 'ti-tool',
+  mayores: 'ti-armchair',
+  ayudas: 'ti-heart-handshake',
+  empleo: 'ti-briefcase',
+  educacion: 'ti-school',
+  general: 'ti-calendar',
+}
+
+export function iconoDeCategoria(categoria, subcategoria) {
+  // Tabler no tiene 'church' a secas: su icono de iglesia es 'building-church'.
+  if (categoria === 'fiestas' && subcategoria === 'religiosa') return 'ti-building-church'
+  if (categoria === 'cultura' && subcategoria === 'teatro') return 'ti-masks-theater'
+  return ICONO_POR_CATEGORIA[categoria] || 'ti-calendar'
+}
+
 // Convierte 'YYYY-MM-DD' en Date local (sin desfase de zona horaria).
 function aFecha(iso) {
   return new Date(`${iso}T00:00:00`)
