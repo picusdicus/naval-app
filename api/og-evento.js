@@ -23,9 +23,15 @@ import { formatearFechaLarga } from '../src/lib/eventos.js'
 
 const MAX_DESCRIPCION = 200
 
-// Un crawler que espera cuelga la burbuja de la vista previa: antes de eso,
-// preferimos servir el index.html genérico. Cubre Neon lento o caído.
-const TIMEOUT_MS = 3000
+// Un crawler que espera cuelga la burbuja de la vista previa, así que hay
+// tope; pero corto de más degrada en silencio. Con 3000 ms, la PRIMERA
+// petición a un deploy nuevo (arranque en frío de esta función + de
+// /api/eventos + conexión de Neon) se pasaba de largo y servía el logo
+// genérico — y la primera petición de WhatsApp a un enlace recién compartido
+// es exactamente esa. Verificado en preview: en frío salía el logo, en
+// caliente el cartel. 8 s cabe de sobra en la paciencia de un crawler
+// (WhatsApp espera del orden de 10-20 s) y cubre el frío.
+const TIMEOUT_MS = 8000
 
 // El mismo literal que lleva el index.html: si el evento no da ni descripción
 // ni lugar ni fecha, la vista previa dice lo que diría cualquier otra página.
