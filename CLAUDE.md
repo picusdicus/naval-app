@@ -226,6 +226,12 @@ La tarjeta del muro de la cartelera (`TarjetaEvento.jsx`, el único componente d
 
 Verificado con Playwright sobre datos reales (2026-08-27): capturas de 6 categorías sin imagen (deporte, cultura, fiestas religiosa con la iglesia, mercados, infantil, gastronomía); 9 tarjetas con imagen —incluidas las fusionadas (voleibol, master class)— **idénticas byte a byte (SHA-256) antes/después** del cambio; y aserción programática sobre las 175 tarjetas de la agenda: el bloque de fecha editorial aparece en las 129 sin imagen y en ninguna de las 46 con imagen. Ojo al leer capturas a ojo: varios carteles reales llevan su fecha rotulada dentro del propio JPG ("VIERNES, 28 DE AGOSTO" en el del baloncesto 3x3) — no confundirla con la capa editorial; ante la duda, comprobar el DOM.
 
+⚠️ **Trabajo aparcado sin commitear (2026-08-27): la tarjeta no debería repintar su título sobre un cartel que ya lo lleva rotulado.** Es el problema que menciona el párrafo anterior, y **ya hay un fix escrito y completo, pero sin commitear**, en el worktree `.claude/worktrees/tarjeta-cartel` (rama `fix/tarjeta-oculta-titulo-si-imagen-tiene-texto`, que **no está en el remoto** y cuyo ref no tiene commits propios: todo vive como cambios del working tree de ese worktree). **No borrar esa rama ni ese worktree sin recuperar antes el trabajo** — desaparecería la única copia completa.
+
+Qué hay escrito: `imagenConTextoRotulado(evento)` en `dedupEventos.js` (los carteles de Instagram del Ayuntamiento y los de la galería de Deportes siguen todos esa plantilla), más la marca `imagenRotulada` que dejan `fusionar()` y `enriquecerPorCartel()` en el momento en que aún se sabe **quién aportó la imagen** — tras una fusión la procedencia del campo `imagen` ya no es deducible del evento. En `TarjetaEvento.jsx`, con la marca activa el bloque de texto pasa a `sr-only` (sigue en el DOM para lectores de pantalla) y se quita el velo oscuro, que sin texto encima solo ensucia el cartel. Pendiente: verificarlo con capturas reales antes de commitear.
+
+Existe además un **`stash@{0}` local con una copia parcial** de eso (solo `TarjetaEvento.jsx`, sin el helper, byte a byte igual a la versión del worktree). Es redundante y se puede descartar en cuanto el worktree se commitee; se conserva porque un stash suelto es fácil de perder de vista. **Ambas copias son locales de esta máquina**: nada de esto está en GitHub.
+
 #### Compartir contenido: BotonCompartir parametrizado
 
 `src/components/BotonCompartir.jsx` es un componente reutilizable para compartir contenido en móvil (Share API nativa) y escritorio (popover con opciones). Acepte props opcionales para customizar el contenido compartido:
@@ -579,7 +585,17 @@ Cada ejecución de un pipeline de ingesta de eventos/actividades deja una fila e
 
 En producción no aplica, porque el dominio propio queda fuera de la protección. ⚠️ **Si algún día se activara la protección también sobre el dominio de producción, el Open Graph dejaría de funcionar en silencio**: nadie vería un error, simplemente las burbujas volverían a salir genéricas hasta que alguien comparta un enlace y lo note.
 
-Para probar una preview hace falta el secreto de *Protection Bypass for Automation* (Project Settings → Deployment Protection; también se genera por API con `PATCH /v1/projects/<id>/protection-bypass` y `{"generate":{}}`). Se guarda en `.env.local` como `VERCEL_AUTOMATION_BYPASS_SECRET` (gitignored, nunca en el repo) y se manda como cabecera `x-vercel-protection-bypass`. Matiz que costó un ciclo de deploy: **la función se hace peticiones a sí misma** (`/api/eventos`, `/api/actividades`, `/api/eventos-ocultos`, `/index.html`) y esas también chocan con el SSO, así que `api/og-evento.js` **reenvía la cabecera de bypass entrante** a sus llamadas internas. Sin eso, en una preview el fail-soft las daba por caídas y componía los meta sobre la página de login de Vercel.
+**Hay un secreto de bypass ya creado y activo** (agosto 2026, generado al verificar la rama del Open Graph): vive en **`.env.local` como `VERCEL_AUTOMATION_BYPASS_SECRET`** — fichero gitignored, el secreto **no está en el repo ni debe escribirse en ningún fichero versionado**. Se manda como cabecera (o query param) `x-vercel-protection-bypass` y sirve para **cualquier** preview del proyecto, así que no hace falta regenerarlo por rama; tenerlo a mano es lo que permite verificar una preview con `curl` o Playwright en vez de a ojo en el navegador.
+
+- **Dónde se gestiona**: Project Settings → Deployment Protection → *Protection Bypass for Automation*. Ahí se **revoca o regenera** cuando convenga (por ejemplo si se filtrara, o al rotar credenciales); no caduca solo. Por API: `PATCH /v1/projects/<projectId>/protection-bypass` con `{"generate":{}}` crea uno nuevo y el proyecto lo devuelve luego en el campo `protectionBypass` de `GET /v9/projects/<id>`.
+- **Al regenerarlo o borrarlo**, Vercel invalida el valor que llevaban horneado los deploys anteriores (lo inyecta como env var de sistema en cada build), así que hay que **volver a desplegar** para que la app vea el nuevo. Para el uso que le damos —curl contra una preview— basta con actualizar `.env.local`.
+- **Ejemplo de uso** (leyendo el secreto de `.env.local`, nunca pegándolo en el comando):
+  ```bash
+  curl -A "WhatsApp/2.24.0" -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
+       https://<preview>.vercel.app/eventos/<id>
+  ```
+
+Matiz que costó un ciclo de deploy: **la función se hace peticiones a sí misma** (`/api/eventos`, `/api/actividades`, `/api/eventos-ocultos`, `/index.html`) y esas también chocan con el SSO, así que `api/og-evento.js` **reenvía la cabecera de bypass entrante** a sus llamadas internas. Sin eso, en una preview el fail-soft las daba por caídas y componía los meta sobre la página de login de Vercel.
 
 ### Los `og:*` estáticos del `index.html` apuntan al dominio equivocado
 
