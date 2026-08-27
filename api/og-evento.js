@@ -80,12 +80,22 @@ function imagenAbsoluta(evento, origen) {
   return { url: `${origen}${bruta.startsWith('/') ? '' : '/'}${bruta}`, propia: true }
 }
 
+// En un deploy con Deployment Protection (las previews de este proyecto lo
+// tienen; el dominio público no), las peticiones que la función se hace a sí
+// misma chocan con el SSO y devuelven la página de login de Vercel. Reenviar
+// la cabecera de bypass que trae la petición entrante las deja pasar. En
+// producción no viene ninguna y esto es un no-op.
+function cabecerasInternas(req) {
+  const bypass = req.headers.get('x-vercel-protection-bypass')
+  return bypass ? { 'x-vercel-protection-bypass': bypass } : undefined
+}
+
 // Fail-soft con timeout: si Neon tarda o se cae, este origen aporta una lista
 // vacía y el merge sigue con los demás. En el peor caso no se encuentra el
 // evento y se acaba sirviendo el index.html genérico, nunca un error.
-async function json(url, clave, porDefecto) {
+async function json(url, clave, porDefecto, headers) {
   try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const r = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) })
     if (!r.ok) return porDefecto
     return (await r.json())[clave] ?? porDefecto
   } catch {
@@ -95,11 +105,11 @@ async function json(url, clave, porDefecto) {
 
 // Mismo pipeline que src/lib/useEventosPublicos.js: si divergen, la vista
 // previa enseñaría algo distinto de lo que ve quien pincha el enlace.
-async function eventoPorId(id, origen) {
+async function eventoPorId(id, origen, headers) {
   const [deLaBase, actividades, ocultos] = await Promise.all([
-    json(`${origen}/api/eventos`, 'eventos', []),
-    json(`${origen}/api/actividades`, 'actividades', []),
-    json(`${origen}/api/eventos-ocultos`, 'ocultos', []),
+    json(`${origen}/api/eventos`, 'eventos', [], headers),
+    json(`${origen}/api/actividades`, 'actividades', [], headers),
+    json(`${origen}/api/eventos-ocultos`, 'ocultos', [], headers),
   ])
 
   const deActividades = actividades
@@ -151,8 +161,9 @@ export default async function handler(req) {
   const url = new URL(req.url)
   const origen = url.origin
 
+  const internas = cabecerasInternas(req)
   const traerIndex = () =>
-    fetch(`${origen}/index.html`, { signal: AbortSignal.timeout(TIMEOUT_MS) }).then((r) => r.text())
+    fetch(`${origen}/index.html`, { headers: internas, signal: AbortSignal.timeout(TIMEOUT_MS) }).then((r) => r.text())
 
   const indexHtml = async () =>
     new Response(await traerIndex(), {
@@ -164,7 +175,7 @@ export default async function handler(req) {
     const id = url.searchParams.get('id')
     if (!id) return await indexHtml()
 
-    const evento = await eventoPorId(id, origen)
+    const evento = await eventoPorId(id, origen, internas)
     // Evento inexistente, no publicado u oculto: el SPA sin tocar. Nunca un
     // 404 — el enlace puede estar pegado en un chat y debe seguir abriendo.
     if (!evento) return await indexHtml()
