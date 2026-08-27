@@ -80,6 +80,20 @@ function devApiPlugin(env) {
         if (env[clave]) process.env[clave] = env[clave]
       }
 
+      // Espejo del primer rewrite de vercel.json: una petición a /eventos/:id
+      // con User-Agent de crawler se enruta a /api/og-evento. En producción eso
+      // lo hace la capa de routing de Vercel, que aquí no existe — sin este
+      // espejo, el Open Graph dinámico solo se podría probar desplegando.
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url) return next()
+        const m = /^\/eventos\/([^/?]+)\/?$/.exec(req.url.split('?')[0])
+        if (!m) return next()
+        const { esCrawler } = await server.ssrLoadModule('/api/_crawlers.js')
+        if (!esCrawler(req.headers['user-agent'])) return next()
+        req.url = `/api/og-evento?id=${encodeURIComponent(decodeURIComponent(m[1]))}`
+        return next()
+      })
+
       server.middlewares.use(async (req, res, next) => {
         if (!req.url) return next()
 
