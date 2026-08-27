@@ -29,7 +29,8 @@ export default async function handler(req) {
              to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
              e.hora, e.hora_fin, e.imagen_url,
              e.entradas_texto, e.entradas_url, e.precio,
-             e.organizacion_id, o.nombre AS organizacion, o.slug AS organizacion_slug
+             e.organizacion_id, e.origen_externo_id,
+             o.nombre AS organizacion, o.slug AS organizacion_slug
       FROM eventos_usuario e
       JOIN organizaciones o ON o.id = e.organizacion_id
       WHERE e.estado = 'publicado' AND o.activa = true
@@ -56,6 +57,10 @@ export default async function handler(req) {
       // SLUG_AYUNTAMIENTO en src/lib/dedupEventos.js). El slug es estable;
       // el nombre de la org puede cambiar.
       organizacionSlug: e.organizacion_slug,
+      // Campo interno para el tab Eventos de /admin (fuenteDeIngesta en
+      // src/lib/dedupEventos.js): NULL = creado a mano desde /panel. Ningún
+      // componente público debe pintarlo.
+      origenExternoId: e.origen_externo_id || null,
       entradas: e.entradas_url
         ? { texto: e.entradas_texto, url: e.entradas_url, precio: e.precio }
         : null,

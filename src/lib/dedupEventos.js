@@ -267,6 +267,57 @@ export function clavesUnicidadEvento(ev) {
   }
 }
 
+// ———————————————————————————————————————————————————————————————————————————
+// Fuente de ingesta — SOLO para el tab Eventos del panel superadmin. La agenda
+// pública no pinta esta etiqueta en ningún sitio.
+//
+// La identidad de la vía de entrada es el prefijo del "id de ingesta": para un
+// evento estático, su propio id del JSON (los genera sync-events.js /
+// _actividades-deportes-feed.js); para uno de Neon (id `bd-…`), su
+// origen_externo_id (`ig-…` de los webhooks de Instagram; NULL = creado a mano
+// desde /panel). Los curados de eventos.json (`ev-…`, `vive25-…`) no llevan
+// etiqueta a propósito: no vienen de ninguna tubería de ingesta.
+// ———————————————————————————————————————————————————————————————————————————
+
+const ETIQUETAS_FUENTE = [
+  ['fiestas-', 'Programa oficial'],
+  ['deportes-', 'Galería de Deportes'],
+  ['redteatros-', 'Red de Teatros'],
+  ['tyltyl-', 'Teatro TYL TYL'],
+  ['aytocult-', 'Web municipal (cultura)'],
+  ['ig-', 'Instagram'],
+]
+
+function etiquetaDePrefijo(id) {
+  if (!id) return null
+  const entrada = ETIQUETAS_FUENTE.find(([prefijo]) => String(id).startsWith(prefijo))
+  return entrada ? entrada[1] : null
+}
+
+// Etiqueta de una fila de Neon por su origen_externo_id. Un prefijo
+// desconocido devuelve null (mejor sin etiqueta que una equivocada).
+function etiquetaDeNeon(origenExternoId) {
+  if (!origenExternoId) return 'Organización'
+  return etiquetaDePrefijo(origenExternoId)
+}
+
+/**
+ * Etiqueta legible de la vía por la que un evento entró en la agenda, o null
+ * si no tiene (curados a mano, prefijos desconocidos). Para un evento
+ * fusionado por título aproximado devuelve las dos fuentes ("Programa
+ * oficial + Instagram"): la del estático base y la de la fila de Neon que
+ * aportó la fusión (origenExternoIdFusionado, ver combinarEventos).
+ */
+export function fuenteDeIngesta(evento) {
+  const principal = String(evento.id || '').startsWith('bd-')
+    ? etiquetaDeNeon(evento.origenExternoId)
+    : etiquetaDePrefijo(evento.id)
+  if (!evento.fusionadoPorTituloAproximado) return principal
+  const secundaria = etiquetaDeNeon(evento.origenExternoIdFusionado)
+  if (!secundaria || secundaria === principal) return principal
+  return principal ? `${principal} + ${secundaria}` : secundaria
+}
+
 // Rellena en `base` los campos que tenga vacíos con los de `otro` y acumula el
 // id de `otro` en idsSecundarios (para que deep links y destacados que apunten
 // al duplicado sigan resolviendo). `base` no se pisa: gana la versión curada o
@@ -405,6 +456,10 @@ export function combinarEventos(estaticos, deLaBase) {
         resultado[aproximada.indice] = {
           ...fusionar(resultado[aproximada.indice], evento),
           fusionadoPorTituloAproximado: true,
+          // Origen de la fila de Neon que aportó la fusión (fusionar() solo
+          // conserva su id en idsSecundarios): fuenteDeIngesta lo necesita
+          // para etiquetar las DOS fuentes en el tab Eventos de /admin.
+          origenExternoIdFusionado: evento.origenExternoId ?? null,
         }
         continue
       }
