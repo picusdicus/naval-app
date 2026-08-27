@@ -1,7 +1,8 @@
-import { CATEGORIAS_EVENTO } from '../../lib/eventos'
+import { CATEGORIAS_EVENTO, mesDe } from '../../lib/eventos'
 import { cartelDe } from '../../lib/gaceta'
 import { imagenEvento } from '../../lib/imagenesEvento'
 import MIcon from '../MIcon'
+import { IconoCategoriaTabler } from './iconosEvento'
 
 /**
  * Tarjeta de evento para el muro de la cartelera (protagonismo del cartel).
@@ -53,6 +54,21 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
         </div>
       )}
 
+      {/* Fecha editorial (arriba-derecha), solo en la tarjeta sin imagen.
+          Con sello Destacado se baja para no pisarlo. */}
+      {!posterUrl && evento.fecha && (
+        <div
+          className={`absolute right-3 flex flex-col items-center ${destacado ? 'top-11' : 'top-3'}`}
+        >
+          <span className="font-serif-dm text-3xl leading-none text-papel">
+            {parseInt(evento.fecha.split('-')[2], 10)}
+          </span>
+          <span className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-papel/60">
+            {mesDe(evento.fecha).slice(0, 3)}
+          </span>
+        </div>
+      )}
+
       {/* Sello Destacado (arriba-derecha) */}
       {destacado && (
         <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-oro px-2 py-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta">
@@ -63,6 +79,20 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
 
       {/* Contenido inferior */}
       <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-4">
+        {/* Remate de categoría: icono pequeño pegado a la etiqueta, como firma
+            editorial — no un watermark de fondo (primer hijo del bloque = queda
+            debajo del texto que viene después). El porqué está en CLAUDE.md. */}
+        {!posterUrl && (
+          <IconoCategoriaTabler
+            categoria={evento.categoria}
+            subcategoria={evento.subcategoria}
+            size={60}
+            stroke={1.5}
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 text-papel opacity-10"
+            style={{ top: '-7px', transform: 'rotate(8deg)' }}
+          />
+        )}
         <div className="inline-flex w-fit items-center gap-2">
           <span
             className="h-2 w-2 flex-shrink-0 rounded-full"
@@ -81,6 +111,13 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
           <MIcon name="location_on" className="mt-0.5 flex-shrink-0 text-[13px]" />
           <span className="line-clamp-1">{evento.lugar}</span>
         </div>
+
+        {/* Organizador, solo en la tarjeta sin imagen y si el evento trae el dato */}
+        {!posterUrl && evento.fuente && (
+          <div className="line-clamp-1 font-mono-ibm text-[10px] text-papel/60">
+            Organiza · {evento.fuente}
+          </div>
+        )}
       </div>
     </button>
   )
