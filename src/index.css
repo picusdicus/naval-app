@@ -125,6 +125,9 @@ body {
   .gz-boton-tinta {
     @apply bg-tinta text-papel font-mono-ibm text-xs uppercase tracking-etiqueta px-4 py-3 text-center cursor-pointer;
   }
+  .gz-boton-minimo {
+    @apply text-tinta font-mono-ibm text-xs uppercase tracking-etiqueta px-3 py-2 cursor-pointer transition-colors hover:text-terracota;
+  }
   .gz-boton-borde {
     @apply border border-tinta text-tinta font-mono-ibm text-xs uppercase tracking-etiqueta px-4 py-3 text-center cursor-pointer;
   }

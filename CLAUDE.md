@@ -226,6 +226,34 @@ La tarjeta del muro de la cartelera (`TarjetaEvento.jsx`, el único componente d
 
 Verificado con Playwright sobre datos reales (2026-08-27): capturas de 6 categorías sin imagen (deporte, cultura, fiestas religiosa con la iglesia, mercados, infantil, gastronomía); 9 tarjetas con imagen —incluidas las fusionadas (voleibol, master class)— **idénticas byte a byte (SHA-256) antes/después** del cambio; y aserción programática sobre las 175 tarjetas de la agenda: el bloque de fecha editorial aparece en las 129 sin imagen y en ninguna de las 46 con imagen. Ojo al leer capturas a ojo: varios carteles reales llevan su fecha rotulada dentro del propio JPG ("VIERNES, 28 DE AGOSTO" en el del baloncesto 3x3) — no confundirla con la capa editorial; ante la duda, comprobar el DOM.
 
+#### Compartir contenido: BotonCompartir parametrizado
+
+`src/components/BotonCompartir.jsx` es un componente reutilizable para compartir contenido en móvil (Share API nativa) y escritorio (popover con opciones). Acepte props opcionales para customizar el contenido compartido:
+
+```jsx
+<BotonCompartir
+  titulo="En Navalcarnero"         // Título del share nativo (default: 'En Navalcarnero')
+  url={window.location.origin}     // URL a copiar/compartir (default: origin)
+  textoCompartir={null}            // Texto enriquecido para share/email (default: "Descubre la app...")
+  conEmail={false}                 // Si true, añade opción "Enviar por correo" en escritorio
+/>
+```
+
+**Comportamiento:**
+- **Móvil**: `navigator.share()` nativo con el payload customizado.
+- **Escritorio**: popover con botones (Copiar enlace, WhatsApp Web, y opcionalmente Email).
+- **Guardas defensivas**: todos los textos se codifican con `encodeURIComponent` para manejar acentos, símbolos y saltos de línea sin romper URLs ni enlaces mailto.
+
+**Decisión de UX para `conEmail`**: en modo "compartir app" (Inicio) no tiene sentido ofrecer email (es solo un enlace); en modo "compartir evento" (EventoDetalle) es natural. El flag permite reutilizar el componente sin exponer la opción donde no tiene valor.
+
+**Uso en EventoDetalle:** El texto compartido es enriquecido con fecha y lugar del evento, formateado en múltiples líneas:
+```
+Título del evento
+Sábado, 1 de septiembre · Lugar del evento
+https://…
+```
+Guarda contra `evento.fecha === null` (carteles deportivos sin fecha): omite la línea de fecha pero mantiene lugar si existe, o solo título + URL si faltan ambos.
+
 ### Database (Neon Postgres)
 
 The Neon project `navalcarnero-db` is provisioned through the Vercel Marketplace integration, so all `DATABASE_URL`/`POSTGRES_*` variables are injected into the Vercel environment automatically. For local work, run `npx vercel env pull .env.local` — `vite.config.js` forwards `DATABASE_URL` to the dev API handlers, and `scripts/db-setup.mjs` reads `.env.local` (falling back to `.env`).

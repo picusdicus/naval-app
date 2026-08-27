@@ -8,6 +8,7 @@ import { imagenEvento } from '../lib/imagenesEvento.js'
 import { cartelDe } from '../lib/gaceta.js'
 import { coordsDeLugar } from '../lib/lugares.js'
 import MapaLugar from '../components/MapaLugar.jsx'
+import BotonCompartir from '../components/BotonCompartir.jsx'
 import MIcon from '../components/MIcon.jsx'
 
 const ORIGEN = {
@@ -30,25 +31,44 @@ function horaTexto(e) {
   return e.horaFin ? `${e.hora} – ${e.horaFin}` : e.hora
 }
 
-// Barra de contexto superior: volver a la cartelera + compartir (si el
-// navegador soporta la Web Share API; si no, no se muestra).
+// Construye el texto enriquecido para compartir: título + fecha+lugar (si existen) + URL.
+// Guarda contra fecha null para no romper el texto con "Invalid Date".
+function construirTextoCompartir(evento) {
+  const lineas = [evento.titulo]
+
+  if (evento.fecha) {
+    const fechaLarga = formatearFechaLarga(evento.fecha)
+    if (evento.lugar) {
+      lineas.push(`${fechaLarga} · ${evento.lugar}`)
+    } else {
+      lineas.push(fechaLarga)
+    }
+  } else if (evento.lugar) {
+    lineas.push(evento.lugar)
+  }
+
+  lineas.push(window.location.href)
+  return lineas.join('\n')
+}
+
+// Barra de contexto superior: volver a la cartelera + compartir.
+// En móvil: navigator.share nativo con texto enriquecido.
+// En escritorio: BotonCompartir con popover (Copiar, WhatsApp, Email).
 function BarraContexto({ evento }) {
-  const compartir =
-    typeof navigator !== 'undefined' && navigator.share
-      ? () => navigator.share({ title: evento.titulo, url: window.location.href }).catch(() => {})
-      : null
+  const textoEnriquecido = construirTextoCompartir(evento)
+
   return (
     <div className="flex items-center justify-between font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta">
       <Link to="/eventos" className="inline-flex items-center gap-1 transition-colors hover:text-terracota">
         <MIcon name="arrow_back" className="text-[16px]" />
         Cartelera
       </Link>
-      {compartir && (
-        <button type="button" onClick={compartir} className="inline-flex items-center gap-1 text-mudo transition-colors hover:text-terracota">
-          Compartir
-          <MIcon name="ios_share" className="text-[15px]" />
-        </button>
-      )}
+      <BotonCompartir
+        titulo={evento.titulo}
+        url={window.location.href}
+        textoCompartir={textoEnriquecido}
+        conEmail={true}
+      />
     </div>
   )
 }
