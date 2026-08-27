@@ -10,8 +10,14 @@
 // serverless no siempre resuelven (ver el caso de api/_datos/ en CLAUDE.md).
 export const config = { runtime: 'edge' }
 
-import eventosCurados from '../src/data/eventos.json' with { type: 'json' }
-import eventosExternos from '../src/data/eventos-externos.json' with { type: 'json' }
+// Sin `with { type: 'json' }`: el bundler de Edge (esbuild) NO acepta esa
+// sintaxis y el deploy falla con `Expected ";" but found "with"` — aunque
+// `vite build` y el dev server la traguen sin rechistar, así que esto no se ve
+// hasta desplegar. esbuild trae loader de .json de serie, este import basta.
+// (api/_knowledge.js sí usa la forma con atributo, pero solo lo importa
+// api/chat.js, que es Node y además está desactivado desde julio de 2026.)
+import eventosCurados from '../src/data/eventos.json'
+import eventosExternos from '../src/data/eventos-externos.json'
 import { combinarEventos, enriquecerPorCartel } from '../src/lib/dedupEventos.js'
 import { formatearFechaLarga } from '../src/lib/eventos.js'
 
