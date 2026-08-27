@@ -29,7 +29,7 @@ export default async function handler(req) {
              to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
              e.hora, e.hora_fin, e.imagen_url,
              e.entradas_texto, e.entradas_url, e.precio,
-             e.organizacion_id, o.nombre AS organizacion
+             e.organizacion_id, o.nombre AS organizacion, o.slug AS organizacion_slug
       FROM eventos_usuario e
       JOIN organizaciones o ON o.id = e.organizacion_id
       WHERE e.estado = 'publicado' AND o.activa = true
@@ -52,6 +52,10 @@ export default async function handler(req) {
       fuente: e.organizacion,
       // Para que la página de detalle pueda atribuir la visita a su dueña.
       organizacionId: e.organizacion_id,
+      // Para el matcher aproximado de la agenda (solo Ayuntamiento, ver
+      // SLUG_AYUNTAMIENTO en src/lib/dedupEventos.js). El slug es estable;
+      // el nombre de la org puede cambiar.
+      organizacionSlug: e.organizacion_slug,
       entradas: e.entradas_url
         ? { texto: e.entradas_texto, url: e.entradas_url, precio: e.precio }
         : null,

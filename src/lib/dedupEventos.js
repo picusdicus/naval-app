@@ -56,6 +56,72 @@ export function titulosEquivalentes(a, b) {
   return corto.length >= MIN_CONTENCION && largo.includes(corto)
 }
 
+// Segundo intento SOLO para eventos del Ayuntamiento: el mismo acto llega con
+// títulos redactados distinto en el programa de fiestas y en Instagram
+// ("TROFEO FIESTAS PATRONALES CD FUTSI NAVALCARNERO." vs "Trofeo fiestas
+// patronales futbol sala") y titulosEquivalentes no los reconoce. Este matcher
+// es más permisivo y por eso solo se aplica tras fallar el canónico y solo si
+// el evento de Neon pertenece a la organización con este slug — para cualquier
+// otra org o club el comportamiento de la agenda no cambia.
+export const SLUG_AYUNTAMIENTO = 'ayuntamiento'
+
+// Siglas/palabras de entidad de club que no identifican el acto: "CD FUTSI
+// NAVALCARNERO" y "Futsi Atlético Navalcarnero" son el mismo club con y sin
+// la sigla. Solo se ignoran en el matcher aproximado, nunca en el canónico.
+const ENTIDAD_CLUB = new Set(['cd', 'club'])
+
+// Umbral absoluto: con 1 sola palabra compartida ("torneo", "novena") medio
+// programa emparejaría; 2 ya exige algo propio del acto.
+const MIN_PALABRAS_APROX = 2
+
+// "tenis DE MESA" no es "tenis": una palabra compartida seguida de una de
+// estas preposiciones y una palabra NO compartida forma un compuesto que
+// nombra otra disciplina/acto, y veta la fusión aunque el solapamiento sea
+// alto. "voleibol villa" (yuxtaposición, sin preposición) no dispara el veto.
+const PREPOSICIONES_COMPUESTO = new Set(['de', 'del', 'sobre'])
+
+function palabrasAprox(clave) {
+  return palabrasSignificativas(clave).filter((p) => !ENTIDAD_CLUB.has(p))
+}
+
+// ¿Alguna palabra compartida va seguida (salvo palabras vacías) de una
+// preposición de compuesto + una palabra que el otro título NO tiene?
+function compuestoDivergente(clave, compartidas) {
+  const tokens = clave.split(' ')
+  for (let i = 0; i < tokens.length - 1; i++) {
+    if (!compartidas.has(tokens[i])) continue
+    if (!PREPOSICIONES_COMPUESTO.has(tokens[i + 1])) continue
+    let j = i + 2
+    while (j < tokens.length && VACIAS.has(tokens[j])) j++
+    if (j < tokens.length && !ENTIDAD_CLUB.has(tokens[j]) && !compartidas.has(tokens[j])) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Matcher aproximado (solo Ayuntamiento, ver SLUG_AYUNTAMIENTO): recibe dos
+ * claves de claveTitulo() y devuelve true si la MAYORÍA ESTRICTA de las
+ * palabras significativas del título más corto (ignorando siglas de club)
+ * aparece en el más largo, con al menos MIN_PALABRAS_APROX compartidas y sin
+ * compuestos divergentes en ninguno de los dos. El umbral proporcional es
+ * deliberado (no un nº fijo como en el matcher deportivo): un título corto
+ * exige compartir casi todo, uno largo tolera más relleno.
+ */
+export function titulosAproximados(a, b) {
+  if (!a || !b) return false
+  const pa = new Set(palabrasAprox(a))
+  const pb = new Set(palabrasAprox(b))
+  if (!pa.size || !pb.size) return false
+  const compartidas = new Set([...pa].filter((p) => pb.has(p)))
+  if (compartidas.size < MIN_PALABRAS_APROX) return false
+  const corto = Math.min(pa.size, pb.size)
+  if (compartidas.size * 2 <= corto) return false
+  if (compuestoDivergente(a, compartidas) || compuestoDivergente(b, compartidas)) return false
+  return true
+}
+
 // ———————————————————————————————————————————————————————————————————————————
 // Matcher canónico (fase 1a, ago-2026): las piezas de "¿son el mismo evento?"
 // que estaban reimplementadas por separado en tres sitios, consolidadas aquí
@@ -323,6 +389,25 @@ export function combinarEventos(estaticos, deLaBase) {
     if (pareja) {
       resultado[pareja.indice] = fusionar(resultado[pareja.indice], evento)
       continue
+    }
+    // 1b) Segundo intento, SOLO para eventos de la organización Ayuntamiento
+    //     de Navalcarnero (organizacionSlug del JOIN de /api/eventos): el
+    //     programa de fiestas y el post de Instagram redactan el mismo acto
+    //     con títulos distintos. Primer candidato en el orden de la lista
+    //     estática, misma convención que emparejarCartelConPrograma. La
+    //     fusión queda marcada para que el superadmin pueda revisarla en el
+    //     tab Eventos (la agenda pública no muestra la marca).
+    if (evento.organizacionSlug === SLUG_AYUNTAMIENTO) {
+      const aproximada = (porFecha.get(evento.fecha) || []).find((c) =>
+        titulosAproximados(c.clave, clave)
+      )
+      if (aproximada) {
+        resultado[aproximada.indice] = {
+          ...fusionar(resultado[aproximada.indice], evento),
+          fusionadoPorTituloAproximado: true,
+        }
+        continue
+      }
     }
     // 2) Si no, ¿ya hay otro de la BD equivalente (misma fecha + título)?
     //    Fusiónalos en vez de crear dos tarjetas.

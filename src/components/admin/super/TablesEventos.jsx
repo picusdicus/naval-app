@@ -267,6 +267,14 @@ export default function TablesEventos() {
                     ? ` · ${CATEGORIAS_EVENTO[evento.categoria].nombre}`
                     : ''}
                   {pasado && <span className="ml-2 text-mudo">· pasado</span>}
+                  {evento.fusionadoPorTituloAproximado && (
+                    <span
+                      className="ml-2 text-ocre-profundo"
+                      title="Fusionado con un evento del Ayuntamiento por título aproximado (los títulos no eran equivalentes). Revisa que sea el mismo acto; si no lo es, ocúltalo."
+                    >
+                      · fusión aproximada
+                    </span>
+                  )}
                 </p>
               </div>
 
