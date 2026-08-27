@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
-import { combinarEventos } from '../../../lib/dedupEventos.js'
+import { combinarEventos, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
 import { CATEGORIAS_EVENTO, formatearFechaCorta } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import MIcon from '../../MIcon.jsx'
@@ -248,6 +248,7 @@ export default function TablesEventos() {
           const oculto = estaOculto(evento)
           const ocupado = ocupadoId === evento.id
           const pasado = diasHasta(evento.fecha) < 0
+          const fuenteIngesta = fuenteDeIngesta(evento)
           return (
             <div
               key={evento.id}
@@ -266,6 +267,14 @@ export default function TablesEventos() {
                   {CATEGORIAS_EVENTO[evento.categoria]?.nombre
                     ? ` · ${CATEGORIAS_EVENTO[evento.categoria].nombre}`
                     : ''}
+                  {fuenteIngesta && (
+                    <span
+                      className="ml-2 text-mudo"
+                      title="Vía por la que este evento entró en la agenda (solo visible en este panel)"
+                    >
+                      · {fuenteIngesta}
+                    </span>
+                  )}
                   {pasado && <span className="ml-2 text-mudo">· pasado</span>}
                   {evento.fusionadoPorTituloAproximado && (
                     <span
