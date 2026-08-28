@@ -32,6 +32,8 @@ import { obtenerSql } from './_db.js'
 import {
   MAX_POSTS,
   asegurarOrganizacion,
+  carruselDe,
+  esAltGenerico,
   esPostReciente,
   normalizarPost,
   obtenerPosts,
@@ -110,6 +112,8 @@ Para cada evento devuelve:
 - descripcion: el caption limpio de hashtags y menciones, máximo 400 caracteres.
 - indiceCartel: null normalmente. SOLO si los datos del evento (fecha, hora, lugar, descripción) provienen explícitamente del alt de un cartel específico marcado como "[Imagen N]" (donde N es 1, 2, 3…), devuelve N-1 (es decir, el índice: 0 para [Imagen 1], 1 para [Imagen 2], etc.). Si provienen del caption general del post o es ambiguo, deja null.
 
+Si el post incluye imágenes numeradas [Imagen 1], [Imagen 2], etc., cada una es una foto del carrusel con su propio cartel. Usa el contenido de las imágenes (no solo el alt, que puede ser genérico) para extraer datos cuando sea necesario. Los carteles suelen llevar el título, fecha, hora y lugar rotulados en la foto.
+
 Devuelve solo los posts que son eventos; si ninguno lo es, devuelve la lista vacía.`
 
 // En lotes por el mismo motivo que el triaje de noticias: la respuesta de un
@@ -127,12 +131,86 @@ async function extraerEventos(posts) {
   const resultados = await Promise.all(
     lotes.map(async (lote, idx) => {
       try {
+        // Construir payload de contenido: texto + imágenes si alt es genérico
+        const contenido = []
+
+        // 1. Bloque de texto con datos de los posts en JSON
+        contenido.push({
+          type: 'text',
+          text: JSON.stringify(lote),
+        })
+
+        // 2. Imágenes solo si el alt del post (o algún childPost) es genérico
+        // Descargar y convertir a base64 para evitar bloques de robots.txt
+        for (const post of lote) {
+          const altPostGenérico = esAltGenerico(post.alt)
+          const altsCarruselGenéricos =
+            post.carrusel?.filter((c) => esAltGenerico(c.alt)) || []
+
+          // Si hay alt genérico en el post o en el carrusel, incluir imágenes
+          if (altPostGenérico || altsCarruselGenéricos.length > 0) {
+            // Portada del post (si existe)
+            if (post.imagen) {
+              try {
+                const resImg = await fetch(post.imagen)
+                if (resImg.ok) {
+                  const buffer = await resImg.arrayBuffer()
+                  const base64 = Buffer.from(buffer).toString('base64')
+                  const tipoContenido = resImg.headers.get('content-type') || 'image/jpeg'
+                  contenido.push({
+                    type: 'image',
+                    source: {
+                      type: 'base64',
+                      media_type: tipoContenido,
+                      data: base64,
+                    },
+                  })
+                }
+              } catch (err) {
+                console.warn(`No se pudo descargar imagen portada de ${post.shortCode}: ${err.message}`)
+              }
+            }
+
+            // Fotos del carrusel marcadas con [Imagen N]
+            if (Array.isArray(post.carrusel)) {
+              for (const c of post.carrusel) {
+                if (c.imagen && esAltGenerico(c.alt)) {
+                  try {
+                    const resImg = await fetch(c.imagen)
+                    if (resImg.ok) {
+                      const buffer = await resImg.arrayBuffer()
+                      const base64 = Buffer.from(buffer).toString('base64')
+                      const tipoContenido = resImg.headers.get('content-type') || 'image/jpeg'
+                      contenido.push({
+                        type: 'image',
+                        source: {
+                          type: 'base64',
+                          media_type: tipoContenido,
+                          data: base64,
+                        },
+                      })
+                    }
+                  } catch (err) {
+                    console.warn(`No se pudo descargar imagen de carrusel de ${post.shortCode}: ${err.message}`)
+                  }
+                }
+              }
+            }
+          }
+        }
+
         const respuesta = await client.messages.create({
           model: MODEL,
           max_tokens: 8192,
-          system: INSTRUCCIONES,
+          system: [
+            {
+              type: 'text',
+              text: INSTRUCCIONES,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
           output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
-          messages: [{ role: 'user', content: JSON.stringify(lote) }],
+          messages: [{ role: 'user', content: contenido }],
         })
         if (respuesta.stop_reason === 'refusal') {
           throw new Error('el modelo rechazó la petición de extracción')
@@ -405,6 +483,26 @@ async function procesar(posts, resumen, noNormalizables = 0) {
   // avisan por email al superadmin, mismo patrón que el webhook de noticias.
   const pendientesEventos = []
   try {
+    // Contar motivosVisión: diferencia entre extracciones sin visión (alt útil)
+    // y con visión (alt genérico) — observabilidad de la ingesta.
+    const motivosVisión = {
+      'extraccion sin visión (alt útil)': 0,
+      'extraccion con visión (alt genérico)': 0,
+      'extraccion con visión parcial (algunos alt genéricos en carrusel)': 0,
+    }
+    for (const post of posts) {
+      const altPostGenérico = esAltGenerico(post.alt)
+      const altsCarruselGenéricos = post.carrusel?.filter((c) => esAltGenerico(c.alt)) || []
+
+      if (altPostGenérico && altsCarruselGenéricos.length > 0) {
+        motivosVisión['extraccion con visión parcial (algunos alt genéricos en carrusel)']++
+      } else if (altPostGenérico || altsCarruselGenéricos.length > 0) {
+        motivosVisión['extraccion con visión (alt genérico)']++
+      } else {
+        motivosVisión['extraccion sin visión (alt útil)']++
+      }
+    }
+
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
     const { eventos: extraidos, errores: erroresTriaje } = await extraerEventos(
       posts.map(({ shortCode, caption, alt, publicado, carrusel }) => ({ shortCode, caption, alt, publicado, carrusel }))
@@ -615,6 +713,7 @@ async function procesar(posts, resumen, noNormalizables = 0) {
       'no es evento (rechazo del triaje del modelo)': Math.max(0, resumen.analizados - extraidosTotal),
       'validación de la extracción': resumen.descartadosPorValidacion,
       'duplicado de evento existente': resumen.duplicadosOmitidos,
+      ...motivosVisión,
     },
   })
 }
