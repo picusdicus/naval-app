@@ -65,7 +65,10 @@
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);j.forEach\\(dep=>console.log\\(dep.id, dep.environment, dep.created_at\\)\\)}\\)\")",
       "Bash(curl -sS \"https://naval-app-git-fix-auth-edge-runtime-danielmolino-6348s-projects.vercel.app/api/health\")",
       "Bash(curl -sS -D - -o /dev/null \"https://naval-app-git-fix-auth-edge-runtime-danielmolino-6348s-projects.vercel.app/api/health\")",
-      "Bash(ls -la public/poster.jpg)"
+      "Bash(ls -la public/poster.jpg)",
+      "Read(//mnt/user-data/uploads/**)",
+      "Bash(node scripts/test-real-preview.mjs)",
+      "Bash(bash scripts/test-completo.sh)"
     ]
   }
 }

@@ -492,14 +492,18 @@ async function procesar(posts, resumen, noNormalizables = 0) {
     }
     for (const post of posts) {
       const altPostGenérico = esAltGenerico(post.alt)
-      const altsCarruselGenéricos = post.carrusel?.filter((c) => esAltGenerico(c.alt)) || []
+      const hijas = post.carrusel || []
+      const carruselTieneGenerico = hijas.some((c) => esAltGenerico(c.alt))
+      const carruselTieneUtil = hijas.some((c) => !esAltGenerico(c.alt))
+      const hayGenerico = altPostGenérico || carruselTieneGenerico
+      const hayUtil = !altPostGenérico || carruselTieneUtil
 
-      if (altPostGenérico && altsCarruselGenéricos.length > 0) {
-        motivosVisión['extraccion con visión parcial (algunos alt genéricos en carrusel)']++
-      } else if (altPostGenérico || altsCarruselGenéricos.length > 0) {
-        motivosVisión['extraccion con visión (alt genérico)']++
-      } else {
+      if (!hayGenerico) {
         motivosVisión['extraccion sin visión (alt útil)']++
+      } else if (hayUtil) {
+        motivosVisión['extraccion con visión parcial (algunos alt genéricos en carrusel)']++
+      } else {
+        motivosVisión['extraccion con visión (alt genérico)']++
       }
     }
 

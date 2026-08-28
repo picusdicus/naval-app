@@ -340,9 +340,9 @@ Cuando Instagram devuelve alt genérico (patrón "Photo by <cuenta> on <fecha>" 
 2. **Convierte a base64** e incluye como content blocks `type: 'image'` junto al JSON en el payload a Anthropic
 3. **Cachea el system prompt** con `cache_control: { type: 'ephemeral' }` — el bloque de INSTRUCCIONES (reglas globales) se reutiliza entre posts de un lote
 4. **Registra la estrategia** en `ingesta_log` con motivos diferenciados:
-   - `"extraccion sin visión (alt útil)"` — alt contiene datos, se usa solo texto
-   - `"extraccion con visión (alt genérico)"` — todo el post tiene alt genérico, se incluyen imágenes
-   - `"extraccion con visión parcial (algunos alt genéricos en carrusel)"` — mezcla: alt del post útil pero algunos childPosts tienen alt genérico
+   - `"extraccion sin visión (alt útil)"` — hay alt útil en el post o en todo el carrusel, se usa solo texto
+   - `"extraccion con visión (alt genérico)"` — no hay alt útil en ningún sitio (padre + carrusel todo genérico), se incluyen imágenes
+   - `"extraccion con visión parcial (algunos alt genéricos en carrusel)"` — mezcla: hay alt útil y hay alt genérico distribuidos entre padre y/o carrusel
 
 El prompt actualizado instruye al modelo: *"Si el post incluye imágenes numeradas [Imagen 1], [Imagen 2], etc., cada una es una foto del carrusel con su propio cartel. Usa el contenido de las imágenes (no solo el alt, que puede ser genérico) para extraer datos cuando sea necesario. Los carteles suelen llevar el título, fecha, hora y lugar rotulados en la foto."*
 
