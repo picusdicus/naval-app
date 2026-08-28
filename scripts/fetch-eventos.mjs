@@ -222,7 +222,9 @@ async function eventosTyltyl() {
         // funciones entran en el sub-filtro "Teatro" de la agenda.
         subcategoria: 'teatro',
         origen: 'cultural',
-        descripcion: limpiarTexto(ev.excerpt || ev.description, 220),
+        // 800 = MAX_DESCRIPCION_INGESTA de api/sync-events.js (la ficha pinta la
+        // descripción entera; el tope solo filtra descripciones patológicas).
+        descripcion: limpiarTexto(ev.excerpt || ev.description, 800),
         url: ev.url || '',
         imagen: ev.image && ev.image.url ? ev.image.url : '',
         fuente: 'TYL TYL',
