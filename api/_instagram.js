@@ -308,3 +308,30 @@ export async function subirImagen(prefijo, shortCode, urlOrigen, sufijo = '') {
     return null
   }
 }
+
+/**
+ * Detecta si un alt de Instagram es genérico (sin datos útiles).
+ * El alt genérico de Instagram sigue el patrón "Photo by <cuenta> on <fecha>"
+ * sin ningún otro contenido — es la fórmula automática que genera Instagram
+ * cuando el creador no proporciona una descripción alternativa.
+ *
+ * Ejemplos reales de alt genérico:
+ * - "Photo by Cultura_navalcarnero on August 27, 2026."
+ * - "Photo by ayuntamientonavalcarnero on August 20, 2026."
+ * - "" (string vacío)
+ *
+ * Ejemplo de alt útil (NO genérico):
+ * - "TARDEO DEPORTIVO AQUAZUMBA CON DJ PIWI 21 DE AGOSTO PISCINA COVADONGA 19:30"
+ *   (contiene fecha/hora/lugar reales del evento)
+ */
+export function esAltGenerico(alt) {
+  if (typeof alt !== 'string') return true
+  const trimmed = alt.trim()
+  if (!trimmed) return true
+  // Patrón "Photo by ... on <fecha>": Instagram formula automática sin datos útiles
+  // Casos como "Photo by Cultura_navalcarnero on August 27, 2026."
+  if (/^Photo by \w+(?:_\w+)* on \w+ \d{1,2}, \d{4}\.$/.test(trimmed)) {
+    return true
+  }
+  return false
+}
