@@ -107,6 +107,14 @@ function decodificarEntidades(txt) {
     .replace(/&gt;/g, '>')
 }
 
+// Tope de la descripción en la ingesta. 800 y no "sin tope": la ficha de
+// detalle pinta la descripción entera, así que el tope solo debe dejar fuera
+// descripciones patológicas (HTML residual, texto legal completo) que pudieran
+// colarse en una fuente — cualquier programa razonable (el caso real más largo
+// ronda los 400 chars) cabe holgado. Los recortes de presentación viven aparte:
+// og-evento.js (~195 chars para el meta) y las tarjetas (line-clamp CSS).
+const MAX_DESCRIPCION_INGESTA = 800
+
 // Limpiar texto
 function limpiarTexto(html, max = 220) {
   if (!html) return ''
@@ -441,7 +449,7 @@ async function eventosTyltyl() {
         // funciones entran en el sub-filtro "Teatro" de la agenda.
         subcategoria: 'teatro',
         origen: 'cultural',
-        descripcion: limpiarTexto(ev.excerpt || ev.description, 220),
+        descripcion: limpiarTexto(ev.excerpt || ev.description, MAX_DESCRIPCION_INGESTA),
         url: ev.url || '',
         imagen: ev.image && ev.image.url ? ev.image.url : '',
         fuente: 'TYL TYL',
@@ -603,7 +611,7 @@ function eventosFiestas() {
       subcategoria: e.subcategoria || null,
       esTaurino: e.esTaurino || false,
       origen: 'fiestas',
-      descripcion: limpiarTexto(e.descripcion, 220),
+      descripcion: limpiarTexto(e.descripcion, MAX_DESCRIPCION_INGESTA),
       url: '',
       fuente: e.organiza ? limpiarTexto(e.organiza, 100) : '',
     }
