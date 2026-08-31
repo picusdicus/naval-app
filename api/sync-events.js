@@ -572,25 +572,43 @@ async function eventosCulturaAyto() {
 
 // Combinar sin duplicados. `motivos` (opcional) recibe el conteo de descartes
 // por regla — misma condición que antes, solo se anota cuál de las dos saltó.
+//
+// Excepción (fix/dedup-no-competir-con-programa-enriquecido): un cartel con
+// `enriqueceEvento` RESUELTO (apunta a un id presente en estas mismas listas)
+// no registra NI compite por la clave título+fecha — su rol es solo aportar
+// imagen al evento que enriquece, nunca ocupar su hueco. Sin esto, un cartel
+// cuyo título normalizado coincide con el del programa (tardeo deportivo,
+// waterpolo y aquazumba — cron del 2026-08-31) registraba la clave primero
+// (deportes va antes que fiestas en el orden de fuentes) y el evento del
+// programa caía por "duplicado", perdiéndose su hora/descripción y dejando
+// el enriqueceEvento colgando. Un enriqueceEvento que NO resuelve sigue
+// compitiendo como siempre (fail-soft documentado: tarjeta propia). La regla
+// de URL no cambia.
 function combinarSinDuplicados(listas, motivos = null) {
+  const idsPresentes = new Set(listas.flat().map((e) => e.id).filter(Boolean))
   const vistos = new Set()
   const resultado = []
   for (const ev of listas.flat()) {
     const { claveUrl, claveTituloFecha } = clavesUnicidadEvento(ev)
+    const enriqueceResuelto = Boolean(ev.enriqueceEvento && idsPresentes.has(ev.enriqueceEvento))
     if (claveUrl && vistos.has(claveUrl)) {
       if (motivos) motivos.porUrl++
       continue
     }
-    if (vistos.has(claveTituloFecha)) {
+    if (!enriqueceResuelto && vistos.has(claveTituloFecha)) {
       if (motivos) motivos.porTituloFecha++
       continue
     }
     if (claveUrl) vistos.add(claveUrl)
-    vistos.add(claveTituloFecha)
+    if (!enriqueceResuelto) vistos.add(claveTituloFecha)
     resultado.push(ev)
   }
   return resultado
 }
+
+// Export SOLO para verificación/diagnóstico (scripts de la carpeta scripts/);
+// producción la usa vía el handler.
+export { combinarSinDuplicados }
 
 // commitArchivos vive ahora en api/_github.js (compartido con el panel
 // superadmin de comercios).
