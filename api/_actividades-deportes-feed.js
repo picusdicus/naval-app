@@ -169,7 +169,14 @@ function origenIdDelFichero(src) {
  *   emparejamientos: 0,          // cuántos se emparejaron con su actividad
  * }
  */
-export async function obtenerActividadesDeportivas(programaFiestas = []) {
+// `extraerFechas` es inyectable SOLO para tests/diagnóstico (permite ejercitar
+// las ramas de confianza sin gastar llamadas de visión — ver
+// scripts/probar-vision-baja-descartada.mjs); producción no pasa el segundo
+// argumento y usa el extractor real.
+export async function obtenerActividadesDeportivas(
+  programaFiestas = [],
+  { extraerFechas = extraerFechasDeCarteles } = {}
+) {
   const rss = await descargarTexto(DEPORTES_RSS, AbortSignal.timeout(15000))
 
   // Buscar el item con "ACTIVIDADES DEPORTIVAS FIESTAS PATRONALES"
@@ -308,7 +315,7 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
     const fechaPublicacion = Number.isNaN(fechaPub.getTime())
       ? undefined
       : fechaPub.toISOString().slice(0, 10)
-    const resultadosVision = await extraerFechasDeCarteles(
+    const resultadosVision = await extraerFechas(
       pendientesVision.map((c) => c.imagenCompleta),
       { añoBase, fechaPublicacion }
     )
