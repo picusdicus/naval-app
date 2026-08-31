@@ -6,7 +6,7 @@ import { CATEGORIAS } from '../lib/categorias.js'
 import { etiquetaCocina } from '../lib/cocinas.js'
 import MapaComercios from '../components/directorio/MapaComercios.jsx'
 import FiltrosCategoria from '../components/directorio/FiltrosCategoria.jsx'
-import ComercioCard from '../components/directorio/ComercioCard.jsx'
+import TarjetaComercio from '../components/directorio/TarjetaComercio.jsx'
 import ComercioDetalle from '../components/directorio/ComercioDetalle.jsx'
 import SugerirComercio from '../components/directorio/SugerirComercio.jsx'
 import LandingComercios from '../components/directorio/LandingComercios.jsx'
@@ -39,13 +39,14 @@ function useMediaQuery(query) {
 
 export default function Mapa() {
   const [cocinaFiltro, setCocinaFiltro] = useState(null)
+  // Selección compartida por rejilla y mapa: despliega la ficha rápida a ancho
+  // completo bajo la fila de la tarjeta (acordeón) y resalta/centra el marcador.
   const [seleccionado, setSeleccionado] = useState(null)
   const [sugiriendo, setSugiriendo] = useState(false)
   const detalleRef = useRef(null)
-  const columnRef = useRef(null)
 
-  // Cargar estado de reclamaciones de comercios
-  const { reclamaciones, esReclamacionPendiente, esReclamacionAprobada } = useReclamacionesComercios()
+  // Cargar estado de reclamaciones de comercios (para la ficha rápida)
+  const { esReclamacionPendiente, esReclamacionAprobada } = useReclamacionesComercios()
 
   // Perfiles enriquecidos (foto, descripción): marcan qué fichas están reclamadas
   const todos = useMemo(() => [...comerciosData, ...serviciosLocales], [])
@@ -214,14 +215,10 @@ export default function Mapa() {
     [comercios, obtenerPerfil],
   )
 
-  // Al seleccionar un comercio, scroll la ficha a la vista dentro del contenedor de la
-  // columna izquierda. En desktop el scroll es dentro del contenedor (lg:overflow-y-auto),
-  // en móvil se usa scrollIntoView normal.
+  // Al abrirse la ficha rápida, traerla a la vista si quedó fuera de pantalla
+  // (`nearest`: sin salto cuando ya se ve entera).
   useEffect(() => {
     if (!seleccionado || !detalleRef.current) return
-    // `nearest`: la ficha se abre pegada a su fila, así que solo se desplaza la
-    // página si se ha quedado fuera de pantalla — sin dar un salto cuando ya
-    // se veía entera.
     detalleRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [seleccionado])
 
@@ -347,11 +344,8 @@ export default function Mapa() {
 
       {/* Contenedor principal: listado + mapa sidebar */}
       <div className="flex flex-col lg:flex-row lg:gap-6 lg:px-0 px-4 pt-6">
-        {/* Columna izquierda: buscador + lista de comercios */}
-        <div
-          ref={columnRef}
-          className="hide-scrollbar flex flex-col gap-6 flex-1 lg:min-w-0"
-        >
+        {/* Columna izquierda: buscador + rejilla de comercios */}
+        <div className="hide-scrollbar flex flex-col gap-6 flex-1 lg:min-w-0">
   
           {/* Cabecera del listado: título de la lista + recuento.
               Móvil: una línea mono. Escritorio: titular serif y recuento. */}
@@ -387,22 +381,26 @@ export default function Mapa() {
             </p>
           )}
 
-          {/* Listado: la misma fila en móvil y escritorio, y la ficha en línea
-              justo bajo el comercio seleccionado (acordeón) en ambos — al final
-              de la lista quedaba lejos de la fila que la abría. */}
+          {/* Rejilla de tarjetas-cartel (misma familia visual que la landing y
+              los destacados). Pulsar una tarjeta despliega la ficha rápida a
+              ancho completo (col-span-full) bajo su fila — el acordeón convive
+              con la rejilla sin romper las columnas. En lg el mapa lateral
+              resta ancho, así que ahí se queda en 2 columnas. */}
           {comercios.length > 0 && (
             <>
-              <div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 xl:grid-cols-3">
                 {comerciosVisibles.map((c) => (
-                  <div key={c.id}>
-                    <ComercioCard
+                  <div key={c.id} className="contents">
+                    <TarjetaComercio
                       comercio={c}
+                      perfil={obtenerPerfil(c.id)}
                       activo={seleccionado?.id === c.id}
-                      onClick={() => setSeleccionado(c)}
-                      fotoPerfil={obtenerPerfil(c.id)}
+                      onClick={() =>
+                        setSeleccionado((prev) => (prev?.id === c.id ? null : c))
+                      }
                     />
                     {seleccionado?.id === c.id && (
-                      <div ref={detalleRef} className="py-3">
+                      <div ref={detalleRef} className="col-span-full">
                         <ComercioDetalle
                           comercio={c}
                           onCerrar={() => setSeleccionado(null)}

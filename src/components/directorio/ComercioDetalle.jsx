@@ -230,7 +230,9 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
       </dl>
 
       {/* Acciones: pastillas como en el resto de la ficha pública. La primera
-          (tinta) es la principal según el estado de reclamación del comercio. */}
+          (tinta) es la principal según el estado de reclamación del comercio.
+          La página completa (/comercios/<id>) debe ser alcanzable siempre: si
+          la principal no es ya "Ver ficha", se ofrece como secundaria. */}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         {perfil || (tieneAprobada && !esAdmin) ? (
           esAdmin ? (
@@ -266,6 +268,13 @@ export default function ComercioDetalle({ comercio, onCerrar, esReclamacionPendi
             <MIcon name="verified_user" className="text-[16px]" />
             Reclamar comercio
           </button>
+        )}
+
+        {!((perfil || (tieneAprobada && !esAdmin)) && !esAdmin) && (
+          <Link to={`/comercios/${comercio.id}`} className={`${SECUNDARIO} flex-1`}>
+            <MIcon name="info" className="text-[16px]" />
+            Ficha completa
+          </Link>
         )}
 
         {tieneCoords && (
