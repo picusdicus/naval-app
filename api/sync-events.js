@@ -221,7 +221,9 @@ function eventosRedTeatros() {
   // Fuente: https://www.madrid.org/clas_artes/red/navalcarnero.html
   const datos = redTeatrosData.eventos || []
 
-  // Transformar al formato estándar de eventos
+  // Transformar al formato estándar de eventos. La ficha de madrid.org trae
+  // además intérpretes, edad, duración, ficha técnica y vídeo — campos que
+  // solo pinta EventoDetalle y solo si vienen con contenido (fail-soft).
   const eventos = datos.map((e) => ({
     id: `redteatros-${e.slug}`,
     titulo: e.titulo,
@@ -234,6 +236,11 @@ function eventosRedTeatros() {
     descripcion: e.descripcion,
     url: e.url || '',
     imagen: e.imagen || '',
+    interpretes: e.interpretes || '',
+    duracion: e.duracion || '',
+    edadRecomendada: e.edadRecomendada || '',
+    video: e.video || '',
+    fichaTecnica: Array.isArray(e.fichaTecnica) ? e.fichaTecnica : [],
     fuente: 'Red de Teatros',
   }))
 

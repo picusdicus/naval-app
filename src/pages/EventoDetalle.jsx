@@ -214,6 +214,25 @@ export default function EventoDetalle() {
         </div>
       )}
 
+      {/* Vídeo del espectáculo (hoy solo lo traen los eventos de Red de
+          Teatros). El iframe va con loading="lazy" para no descargar el
+          reproductor si el visitante no llega a hacer scroll hasta él. */}
+      {evento.video && (
+        <div className="mt-6">
+          <div className="gz-label text-mudo">Vídeo</div>
+          <div className="mt-2.5 aspect-video w-full overflow-hidden border border-tinta">
+            <iframe
+              src={evento.video}
+              title={`Vídeo de ${evento.titulo}`}
+              loading="lazy"
+              className="h-full w-full"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
+
       {/* Detalles (con los datos que el evento realmente trae) */}
       <div className="mt-6">
         <div className="gz-label text-mudo">Detalles</div>
@@ -228,6 +247,26 @@ export default function EventoDetalle() {
             <dt className="text-pardo">Organiza</dt>
             <dd className="text-tinta">{procedencia}</dd>
           </div>
+          {/* La lista de intérpretes puede ser larga: gap + text-right para
+              que envuelva sin pegarse a la etiqueta. */}
+          {evento.interpretes && (
+            <div className="flex justify-between gap-6 border-b border-dashed border-filete-claro py-2.5">
+              <dt className="shrink-0 text-pardo">Intérpretes</dt>
+              <dd className="text-right text-tinta">{evento.interpretes}</dd>
+            </div>
+          )}
+          {evento.duracion && (
+            <div className="flex justify-between border-b border-dashed border-filete-claro py-2.5">
+              <dt className="text-pardo">Duración</dt>
+              <dd className="text-tinta">{evento.duracion}</dd>
+            </div>
+          )}
+          {evento.edadRecomendada && (
+            <div className="flex justify-between border-b border-dashed border-filete-claro py-2.5">
+              <dt className="text-pardo">Edad recomendada</dt>
+              <dd className="text-tinta">{evento.edadRecomendada}</dd>
+            </div>
+          )}
           {evento.lugar && (
             <div className="flex justify-between py-2.5">
               <dt className="text-pardo">Lugar</dt>
@@ -236,6 +275,27 @@ export default function EventoDetalle() {
           )}
         </dl>
       </div>
+
+      {/* Ficha artística y técnica (Red de Teatros): roles variables por obra,
+          mismo patrón visual que Detalles. Sin filas, la sección no se pinta. */}
+      {evento.fichaTecnica?.length > 0 && (
+        <div className="mt-6">
+          <div className="gz-label text-mudo">Ficha artística y técnica</div>
+          <dl className="mt-2.5 font-serif-spectral text-sm">
+            {evento.fichaTecnica.map((fila, i) => (
+              <div
+                key={fila.rol}
+                className={`flex justify-between gap-6 py-2.5 ${
+                  i < evento.fichaTecnica.length - 1 ? 'border-b border-dashed border-filete-claro' : ''
+                }`}
+              >
+                <dt className="shrink-0 text-pardo">{fila.rol}</dt>
+                <dd className="text-right text-tinta">{fila.valor}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
 
       {/* Mapa del lugar: real (Leaflet) si el sitio está en el directorio con
           coordenadas; si no (plazas, calles), placeholder con enlace a Google

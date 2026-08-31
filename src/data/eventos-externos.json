@@ -3123,9 +3123,39 @@
     "categoria": "cultura",
     "subcategoria": "teatro",
     "origen": "cultural",
-    "descripcion": "",
-    "url": "https://www.madrid.org/clas_artes/red/en-el-viento.html",
-    "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/en-el-viento/en-el-viento1.jpg",
+    "descripcion": "Unos cómicos llegan al teatro. Vienen de muy lejos con su cargamento de libros en un carro. Cada libro es una historia, una aventura, y todos tienen sorpresas dentro: personajes que moran en su interior, que asoman y salen a vivir su historia; otros se transforman ante nuestros ojos.\n\n¡Los libros de esta compañía son mágicos! Cada historia busca la complicidad del público, que deberá ayudar a los cómicos en sus aventuras, adivinar con ellos, cantar, moverse… y soñar cada historia.\n\nUn viaje mágico donde los libros se hacen teatro y la imaginación es la protagonista.",
+    "url": "https://www.madrid.org/clas_artes/red/enelvientolibrosconalas.html",
+    "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/enelvientolibrosconalas/enelvientolibrosconalas1.jpg",
+    "interpretes": "Javier García y Laura de la Fuente.",
+    "duracion": "48 min.",
+    "edadRecomendada": "A partir de 3 años.",
+    "video": "https://www.youtube-nocookie.com/embed/9NDlj3QY9-o",
+    "fichaTecnica": [
+      {
+        "rol": "Producción",
+        "valor": "Corral de García."
+      },
+      {
+        "rol": "Dirección y autoría",
+        "valor": "Jesús Arbués."
+      },
+      {
+        "rol": "Técnico de iluminación y sonido",
+        "valor": "Óscar Úbeda."
+      },
+      {
+        "rol": "Fotos y vídeo",
+        "valor": "La López."
+      },
+      {
+        "rol": "Vestuario",
+        "valor": "Miriam Aparicio."
+      },
+      {
+        "rol": "Música",
+        "valor": "Popular - Kike Lera."
+      }
+    ],
     "fuente": "Red de Teatros"
   },
   {
@@ -3150,9 +3180,31 @@
     "categoria": "cultura",
     "subcategoria": "teatro",
     "origen": "cultural",
-    "descripcion": "Ser la mujer perfecta, modelo de educación y encanto, es el destino que se le impone a Dulcinea. Una revisión del personaje cervantino desde la mirada de quien nunca tuvo voz propia.",
+    "descripcion": "Ser la mujer perfecta, modelo de educación y encanto, dama y señora del más famoso caballero andante de la historia, es un peso que Dulcinea ya no quiere seguir soportando.\n\nEn un mundo donde los ideales tienen cada vez menos cabida, donde la ética ha dado paso a la estética y la moral a la corrupción, no tiene sentido seguir defendiendo sueños imposibles. ¿O quizá sí? ¿Necesitamos hoy en día, más que nunca, a Dulcinea?\n\nQuizá ella, con humor, con dolor, con ironía y con una absoluta sinceridad, sea la única capaz de darnos esa respuesta.",
     "url": "https://www.madrid.org/clas_artes/red/dulcinea.html",
     "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/dulcinea/dulcinea1.jpg",
+    "interpretes": "Paloma San Basilio, Julio Awad.",
+    "duracion": "80 min.",
+    "edadRecomendada": "A partir de 14 años.",
+    "video": "",
+    "fichaTecnica": [
+      {
+        "rol": "Autoría y dirección",
+        "valor": "Juan Carlos Rubio."
+      },
+      {
+        "rol": "Diseño de escenografía",
+        "valor": "Curt Allen Willmer, Leticia Gañán."
+      },
+      {
+        "rol": "Diseño de vestuario",
+        "valor": "Gabriela Salaverri."
+      },
+      {
+        "rol": "Diseño de iluminación",
+        "valor": "Nicolas Fischtel."
+      }
+    ],
     "fuente": "Red de Teatros"
   },
   {
@@ -3164,9 +3216,39 @@
     "categoria": "cultura",
     "subcategoria": "teatro",
     "origen": "cultural",
-    "descripcion": "",
-    "url": "https://www.madrid.org/clas_artes/red/martina-y-los-supersingers.html",
-    "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/martina-y-los-supersingers/martina-y-los-supersingers1.jpg",
+    "descripcion": "Martina es una niña con “superpoderes”. Pronto descubrirás que Martina no puede estar en la lista de Marvel; sus poderes no se parecen a otros de la famosa factoría de superhéroes.\n\nY es que Martina, junto a sus compañeros de orfanato, han creado esta original banda porque les hizo descubrir poderes que desconocían, que les convertían en indestructibles: autoestima, positivismo, empatía, compromiso, humildad, unidad, generosidad, asertividad y respeto.\n\nLes hizo ver que la magia estaba dentro de cada uno de ellos.",
+    "url": "https://www.madrid.org/clas_artes/red/martinaylossupersingersesnavidad.html",
+    "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/martinaylossupersingersesnavidad/martinaylossupersingersesnavidad1.jpg",
+    "interpretes": "Víctor Gallego, Camila Almeda, Clara Serrano, Juan Antonio Carrera, Sara Menea, Cristina González y Rodrigo Herrero.",
+    "duracion": "70 min.",
+    "edadRecomendada": "Familiar.",
+    "video": "https://www.youtube-nocookie.com/embed/nojbbsMp7NU",
+    "fichaTecnica": [
+      {
+        "rol": "Autoría",
+        "valor": "Miguel Ángel García Bernáldez."
+      },
+      {
+        "rol": "Dirección",
+        "valor": "Juan Antonio Carrera."
+      },
+      {
+        "rol": "Diseño de escenografía",
+        "valor": "Juan Antonio Carrera."
+      },
+      {
+        "rol": "Diseño de vestuario",
+        "valor": "Renny."
+      },
+      {
+        "rol": "Diseño de iluminación",
+        "valor": "David Torres."
+      },
+      {
+        "rol": "Coreografía",
+        "valor": "Juan Antonio Carrera."
+      }
+    ],
     "fuente": "Red de Teatros"
   },
   {
@@ -3178,9 +3260,39 @@
     "categoria": "cultura",
     "subcategoria": "teatro",
     "origen": "cultural",
-    "descripcion": "",
-    "url": "https://www.madrid.org/clas_artes/red/la-gran-aventura-del-pollo-pepe.html",
-    "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/la-gran-aventura-del-pollo-pepe/la-gran-aventura-del-pollo-pepe1.jpg",
+    "descripcion": "Este querido personaje, protagonista de uno de los libros infantiles más populares a nivel nacional e internacional, ha conquistado a los niños con sus aventuras, convirtiéndose en su compañero de juegos y confidencias.\n\nAhora aterriza en España con un espectacular musical en el que, junto a sus amigos, emprenderá una emocionante búsqueda para encontrar a su madre desaparecida. Las aventuras cobran vida en un montaje que combina personajes en formato puppet de tamaño real, una escenografía deslumbrante y una narrativa inmersiva.",
+    "url": "https://www.madrid.org/clas_artes/red/granaventurapollopepe.html",
+    "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/granaventurapollopepe/granaventurapollopepe1.jpg",
+    "interpretes": "Sonia Nández, Lucía Fontanilla, Esther Cortés, Cristina Irala, Roberto Carretón, Manu Riego.",
+    "duracion": "60 min.",
+    "edadRecomendada": "De 2 a 7 años.",
+    "video": "https://www.youtube-nocookie.com/embed/zoCdA9hKyBs",
+    "fichaTecnica": [
+      {
+        "rol": "Autoría",
+        "valor": "Nick Denchfield, Ant Parker, Juan Pedro Peces y Fernando Huete."
+      },
+      {
+        "rol": "Dirección",
+        "valor": "Luis Huete."
+      },
+      {
+        "rol": "Diseño de escenografía",
+        "valor": "Diana Sánchez y Andrés Pérez."
+      },
+      {
+        "rol": "Diseño de vestuario",
+        "valor": "Daniel Torres."
+      },
+      {
+        "rol": "Diseño de iluminación",
+        "valor": "Andrés Pérez."
+      },
+      {
+        "rol": "Coreografía",
+        "valor": "Eva Jiménez."
+      }
+    ],
     "fuente": "Red de Teatros"
   }
 ]
