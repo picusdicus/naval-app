@@ -8,6 +8,7 @@ import react from '@vitejs/plugin-react'
 const VARIABLES_API = [
   'ANTHROPIC_API_KEY',
   'ANTHROPIC_MODEL',
+  'ANTHROPIC_MODEL_DEPORTES_VISION',
   'DATABASE_URL',
   'ADMIN_EMAIL',
   'ADMIN_PASSWORD',
