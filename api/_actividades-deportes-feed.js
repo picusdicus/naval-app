@@ -13,6 +13,7 @@
 import { registrarIngesta } from './_ingesta-log.js'
 import { claveNormSlug, emparejarCartelConPrograma } from '../src/lib/dedupEventos.js'
 import { separarDeportesParaRevision } from './_deportes-revision.js'
+import { extraerFechasDeCarteles } from './_deportes-fecha-vision.js'
 
 const DEPORTES_RSS = 'https://navalcarnero.es/navalcarnero/deportes/feed/'
 const USER_AGENT = 'NavalcarneroApp/0.1 (proyecto vecinal)'
@@ -254,25 +255,88 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
   let plazosSinTitulo = 0
   let enriquecidosDelPrograma = 0
 
-  for (const [, href, title, src, alt] of carteles) {
+  // Pasada 1: parsear todos los carteles (título, fecha por regex, origen).
+  // Separada del bucle de emparejamiento para poder rellenar por visión las
+  // fechas que la regex no sacó ANTES de llamar al matcher, sin alterar el
+  // orden en que los carteles se emparejan con el programa.
+  const parsados = []
+  for (const [, href, title, src] of carteles) {
     const esFinDePlazo = /fin\s*de\s*plazo|fin\s*plazo/i.test(title)
 
     if (esFinDePlazo) {
       // href viaja para que las huérfanas reconstruidas más abajo tengan también
       // una url propia (si no, las 6 comparten una y el dedup del cron se queda
       // con la primera — mismo fallo que en los carteles de actividad).
-      finDePlazo.push({ title, src, href })
+      parsados.push({ esFinDePlazo: true, title, src, href })
       continue
     }
 
     // Quitar número de orden del título: "22. NATACIÓN 30 Agosto" → "NATACIÓN 30 Agosto"
     const tituloLimpio = title.replace(/^\d+\.\s*/, '').trim()
-    const titulo = tituloLegible(tituloLimpio)
-    const fechaEvento = extraerFecha(title, pubDate)
-    const origen = origenIdDelFichero(src)
+    parsados.push({
+      esFinDePlazo: false,
+      href,
+      title,
+      src,
+      titulo: tituloLegible(tituloLimpio),
+      fechaEvento: extraerFecha(title, pubDate),
+      fechaPorVision: null,
+      origen: origenIdDelFichero(src),
+      // URL a imagen tamaño completo (quitar -150x150 del src)
+      imagenCompleta: src.replace(/-150x150\.jpg$/, '.jpg'),
+    })
+  }
 
-    // URL a imagen tamaño completo (quitar -150x150 del src)
-    const imagenCompleta = src.replace(/-150x150\.jpg$/, '.jpg')
+  // Pasada 1b — fecha por visión: los carteles cuyo título no trae fecha la
+  // llevan rotulada en la propia imagen ("DOMINGO, 6 DE SEPTIEMBRE"), así que
+  // se le pregunta a Claude mirando el cartel. SOLO cuando la regex falló —
+  // nunca sobreescribe una fecha ya obtenida por texto, y nunca se llama para
+  // carteles que van a descartarse (sin título u origen). Fail-soft total: sin
+  // ANTHROPIC_API_KEY o con cualquier error, la fecha se queda a null y el
+  // cartel sigue el flujo de siempre (los scripts de diagnóstico no cargan
+  // .env, así que no pagan llamadas).
+  const pendientesVision = parsados.filter(
+    (c) => !c.esFinDePlazo && c.titulo && c.origen && !c.fechaEvento
+  )
+  let fechasVisionAlta = 0
+  let fechasVisionBajaUsada = 0
+  let fechasVisionBajaDescartada = 0
+  let sinFechaTrasVision = 0
+  if (pendientesVision.length > 0) {
+    const fechaPub = new Date(pubDate)
+    const añoBase = fechaPub.getFullYear()
+    const fechaPublicacion = Number.isNaN(fechaPub.getTime())
+      ? undefined
+      : fechaPub.toISOString().slice(0, 10)
+    const resultadosVision = await extraerFechasDeCarteles(
+      pendientesVision.map((c) => c.imagenCompleta),
+      { añoBase, fechaPublicacion }
+    )
+    pendientesVision.forEach((c, i) => {
+      const r = resultadosVision[i]
+      if (r && r.fecha) {
+        c.fechaEvento = r.fecha
+        c.fechaPorVision = r.confianza
+        // 'alta' se usa siempre y se cuenta aquí; 'baja' se decide en la
+        // pasada 2 (solo se usa si el programa la valida) y se cuenta allí.
+        if (r.confianza === 'alta') fechasVisionAlta++
+      } else {
+        sinFechaTrasVision++
+      }
+    })
+  }
+
+  // Pasada 2: emparejamiento con el programa y emisión, en el orden original
+  // de la galería (el mismo de siempre — la visión solo rellenó fechas).
+  for (const cartel of parsados) {
+    if (cartel.esFinDePlazo) {
+      finDePlazo.push({ title: cartel.title, src: cartel.src, href: cartel.href })
+      continue
+    }
+
+    const { href, titulo, origen, imagenCompleta } = cartel
+    let fechaEvento = cartel.fechaEvento
+    const src = cartel.src
 
     // Permitir carteles sin fecha explícita (usaremos null y el frontend decidirá)
     // pero descartar sin título u origen
@@ -283,7 +347,22 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
         fecha_evento: fechaEvento,
         imagen: imagenCompleta
       }
-      const eventoEnPrograma = emparejarCartelConPrograma(cartelParaMatching, programaFiestas)
+      let eventoEnPrograma = emparejarCartelConPrograma(cartelParaMatching, programaFiestas)
+
+      // Una fecha por visión con confianza 'baja' solo se usa si el programa
+      // oficial la valida (empareja). Huérfana con fecha dudosa ⇒ se descarta
+      // la fecha y el cartel queda EXACTAMENTE como antes de esta feature:
+      // fecha null, invisible en la agenda — mejor invisible que publicado en
+      // el día equivocado. Con 'alta' la fecha se usa siempre, empareje o no.
+      if (cartel.fechaPorVision === 'baja') {
+        if (eventoEnPrograma) {
+          fechasVisionBajaUsada++
+        } else {
+          fechasVisionBajaDescartada++
+          fechaEvento = null
+          eventoEnPrograma = null
+        }
+      }
 
       if (eventoEnPrograma) {
         // El cartel matchea con un evento del programa
@@ -416,6 +495,13 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
       'fin de plazo sin título': plazosSinTitulo,
       'nuevo sin emparejar → revisión': paraRevision.length,
       'grandfathered (publicado directo)': grandfatheredSinEmparejar,
+      // Contadores informativos de la extracción por visión (NO descartes):
+      // cuántas fechas rellenó el modelo mirando el cartel, y cuántos carteles
+      // siguen sin fecha después de intentarlo.
+      'fecha extraída por visión (alta confianza)': fechasVisionAlta,
+      'fecha extraída por visión (baja confianza, validada por el programa)': fechasVisionBajaUsada,
+      'fecha por visión baja descartada (huérfana sin programa)': fechasVisionBajaDescartada,
+      'sin fecha tras visión (modelo no la reconoció)': sinFechaTrasVision,
     },
   })
 
@@ -427,6 +513,10 @@ export async function obtenerActividadesDeportivas(programaFiestas = []) {
     extraidos: carteles.length,
     descartadosSinTitulo,
     descartadosSinOrigen,
-    enriquecidosDelPrograma
+    enriquecidosDelPrograma,
+    fechasVisionAlta,
+    fechasVisionBajaUsada,
+    fechasVisionBajaDescartada,
+    sinFechaTrasVision
   }
 }

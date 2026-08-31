@@ -733,7 +733,11 @@ export default async function handler(req, res) {
         deportesExtraidos: resultadoDeportes.extraidos || 0,
         deportesDescartadosSinTitulo: resultadoDeportes.descartadosSinTitulo || 0,
         deportesDescartadosSinOrigen: resultadoDeportes.descartadosSinOrigen || 0,
-        deportesEnriquecidosDelPrograma: resultadoDeportes.enriquecidosDelPrograma || 0
+        deportesEnriquecidosDelPrograma: resultadoDeportes.enriquecidosDelPrograma || 0,
+        deportesFechasVisionAlta: resultadoDeportes.fechasVisionAlta || 0,
+        deportesFechasVisionBajaUsada: resultadoDeportes.fechasVisionBajaUsada || 0,
+        deportesFechasVisionBajaDescartada: resultadoDeportes.fechasVisionBajaDescartada || 0,
+        deportesSinFechaTrasVision: resultadoDeportes.sinFechaTrasVision || 0
       }
     } catch (err) {
       resultado.errores.push(`Actividades Deportivas: ${err.message}`)
