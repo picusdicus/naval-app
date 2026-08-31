@@ -393,6 +393,20 @@
     "enriqueceEvento": "fiestas-tardeo-deportivo-2026-08-21"
   },
   {
+    "id": "fiestas-tardeo-deportivo-2026-08-21",
+    "titulo": "TARDEO DEPORTIVO.",
+    "fecha": "2026-08-21",
+    "hora": "19:30",
+    "lugar": "piscina de verano (Polid. Covadonga).",
+    "categoria": "deporte",
+    "subcategoria": null,
+    "esTaurino": false,
+    "origen": "fiestas",
+    "descripcion": "AQUAZUMBA Y BAÑO con discoteca, con Dj Piwi. Inscripciones*: hasta el 20 de agosto en la Concejalía de Deportes o pinchado aquí. Edades: nacidos entre el 2010 y 2015. Lugar: piscina de verano (Polid. Covadonga). Aforo limitado. Reservado el derecho de admisión.",
+    "url": "",
+    "fuente": ""
+  },
+  {
     "id": "deportes-3-marcha-cicloturisma",
     "titulo": "marcha cicloturisma",
     "fecha": "2026-08-23",
@@ -968,6 +982,20 @@
     "descripcion": "Inscripciones: hasta las 12.00h. del 27 de agosto, en la Concejalía de Deportes o en el teléfono: 647 67 29 32. Categorías: masculino y femenino (16 parejas/categoría). Precio: 30€/pareja. Premios: campeones y subcampeones. Trofeos y material deportivo. Lugar: polideportivos Covadonga y El Pijorro. Organiza: Club Navalpádel Deportes Halcón. 11.00h. waterpolo y 12.00h. aquazumba.",
     "url": "",
     "fuente": "Club Navalpádel Deportes Halcón."
+  },
+  {
+    "id": "fiestas-waterpolo-y-aquazumba-2026-08-29",
+    "titulo": "WATERPOLO Y AQUAZUMBA.",
+    "fecha": "2026-08-29",
+    "hora": "",
+    "lugar": "piscina de verano (Polid. Covadonga).",
+    "categoria": "deporte",
+    "subcategoria": null,
+    "esTaurino": false,
+    "origen": "fiestas",
+    "descripcion": "Inscripciones: el día de la prueba, media hora antes. Categorías: todas las edades. Lugar: piscina de verano (Polid. Covadonga).",
+    "url": "",
+    "fuente": ""
   },
   {
     "id": "fiestas-animacion-musical-2026-08-29",
