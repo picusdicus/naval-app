@@ -1,7 +1,7 @@
 {
   "periodo": "2º Semestre 2026",
   "fuente": "https://www.madrid.org/clas_artes/red/navalcarnero.html",
-  "regenerar": "Junio y diciembre, cuando la Comunidad publica el semestre nuevo. OJO: el slug de madrid.org NO lleva guiones y a veces omite articulos (la-gran-aventura-del-pollo-pepe -> granaventurapollopepe), asi que url/imagen NO se pueden deducir del campo slug de aqui: copialos del href real del listado. El slug local solo genera el id (redteatros-<slug>) y no debe cambiarse. La ficha de cada obra trae ademas interpretes, edad recomendada, duracion, sinopsis, ficha artistica y tecnica y (casi siempre) un video de YouTube: copiar el src del iframe cambiando www.youtube.com por www.youtube-nocookie.com. Si una obra no trae video (paso con Dulcinea), dejar video vacio y la ficha lo omite.",
+  "regenerar": "Junio y diciembre, cuando la Comunidad publica el semestre nuevo. OJO: el slug de madrid.org NO lleva guiones y a veces omite articulos (la-gran-aventura-del-pollo-pepe -> granaventurapollopepe), asi que url/imagen NO se pueden deducir del campo slug de aqui: copialos del href real del listado. El slug local solo genera el id (redteatros-<slug>) y no debe cambiarse. La ficha de cada obra trae ademas interpretes, edad recomendada, duracion, sinopsis, ficha artistica y tecnica y (casi siempre) un video de YouTube: copiar el src del iframe cambiando www.youtube.com por www.youtube-nocookie.com. Si una obra no trae video (paso con Dulcinea), dejar video vacio y la ficha lo omite. OJO CON lugar: el listado del semestre agrupa por sala y solo rotula el nombre generico (OTROS ESPACIOS); la ubicacion concreta esta en la ficha individual, en Informacion practica, en la linea que sigue a Navalcarnero (OTROS ESPACIOS / PLAZA SEGOVIA). Copiar SIEMPRE de ahi: coger el titulo de la sala del listado trunca el dato y ademas rompe el mapa (coordsDeLugar necesita el nombre de la plaza para engancharla en LUGARES_FIJOS de src/lib/lugares.js).",
   "eventos": [
     {
       "id": "redteatros-en-el-viento",
@@ -13,7 +13,7 @@
       "publicoFamiliar": true,
       "fecha": "2026-10-03",
       "hora": "17:30",
-      "lugar": "Otros espacios",
+      "lugar": "Otros espacios / Plaza Segovia",
       "url": "https://www.madrid.org/clas_artes/red/enelvientolibrosconalas.html",
       "imagen": "https://www.madrid.org/clas_artes/red/fotos/fichas/enelvientolibrosconalas/enelvientolibrosconalas1.jpg",
       "imagenes": [],
