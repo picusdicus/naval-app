@@ -4,7 +4,7 @@ import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { reportarVisitaEvento } from '../lib/useAnalytics.js'
 import { CATEGORIAS_EVENTO, formatearFechaLarga } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
-import { imagenEvento } from '../lib/imagenesEvento.js'
+import { useImagenEvento } from '../lib/useImagenEvento.js'
 import { cartelDe } from '../lib/gaceta.js'
 import { coordsDeLugar } from '../lib/lugares.js'
 import MapaLugar from '../components/MapaLugar.jsx'
@@ -94,6 +94,11 @@ export default function EventoDetalle() {
     reportarVisitaEvento(evento.id.slice(3), evento.organizacionId)
   }, [evento])
 
+  // Antes del return temprano: es un hook y no puede quedar tras un
+  // condicional. `posterUrl` pasa a null si la url del cartel falla al cargar,
+  // y entonces se pinta el degradado con el título superpuesto.
+  const { posterUrl, pos, onError } = useImagenEvento(evento)
+
   if (!evento) {
     // Los eventos publicados desde /admin llegan por fetch: mientras no estén,
     // no podemos afirmar que el evento no existe.
@@ -110,7 +115,6 @@ export default function EventoDetalle() {
     )
   }
 
-  const img = imagenEvento(evento)
   const cartel = cartelDe(evento.categoria)
   const cat = CATEGORIAS_EVENTO[evento.categoria]?.nombre || 'Evento'
   // Quien organiza dice más que el origen genérico ("Cultura · Cultura").
@@ -127,12 +131,13 @@ export default function EventoDetalle() {
           título superpuesto (el título va debajo cuando hay imagen, para no
           duplicarlo sobre un cartel que ya lo lleva impreso). */}
       <div className="relative mt-4 aspect-[3/4] w-full overflow-hidden border border-tinta">
-        {img ? (
+        {posterUrl ? (
           <img
-            src={img.src}
+            src={posterUrl}
             alt={evento.titulo}
+            onError={onError}
             className="h-full w-full object-cover"
-            style={{ objectPosition: img.pos || '50% 50%' }}
+            style={{ objectPosition: pos }}
           />
         ) : (
           <div className={`absolute inset-0 ${cartel.trama}`} style={{ background: cartel.fondo }}>
@@ -153,7 +158,10 @@ export default function EventoDetalle() {
         <div className="gz-eyebrow">
           {cat} · {procedencia}
         </div>
-        {img && <h1 className="mt-2 font-serif-dm text-4xl leading-none text-tinta">{evento.titulo}</h1>}
+        {/* El título va aquí abajo solo cuando hay cartel; si la imagen falla,
+            `posterUrl` es null y el título lo pinta el degradado superpuesto,
+            de modo que nunca sale dos veces ni desaparece. */}
+        {posterUrl && <h1 className="mt-2 font-serif-dm text-4xl leading-none text-tinta">{evento.titulo}</h1>}
       </div>
 
       {/* Datos en columnas */}

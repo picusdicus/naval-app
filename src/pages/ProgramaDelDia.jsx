@@ -11,7 +11,7 @@ import {
 } from '../lib/eventos'
 import { sumarDias } from '../lib/fechas'
 import { cartelDe } from '../lib/gaceta'
-import { imagenEvento } from '../lib/imagenesEvento'
+import { useImagenEvento } from '../lib/useImagenEvento'
 
 const TRAMOS = ['mañana', 'tarde', 'noche', 'madrugada']
 const ETIQUETA_TRAMO = {
@@ -24,15 +24,17 @@ const ETIQUETA_TRAMO = {
 // Cartel 3:4 reutilizable dentro del programa: cartel real o foto temática por
 // categoría; el degradado solo como último recurso.
 function CartelMini({ evento, className = '' }) {
-  const img = imagenEvento(evento)
-  const posterUrl = img?.src ?? null
+  // posterUrl pasa a null si la url del cartel falla al cargar (onError), y
+  // entonces se pinta el degradado de categoría en vez del alt roto.
+  const { posterUrl, pos, onError } = useImagenEvento(evento)
   const { fondo, trama } = cartelDe(evento.categoria)
   return posterUrl ? (
     <img
       src={posterUrl}
       alt={evento.titulo}
       loading="lazy"
-      style={{ objectPosition: img?.pos || '50% 50%' }}
+      onError={onError}
+      style={{ objectPosition: pos }}
       className={`aspect-[3/4] w-full object-cover ${className}`}
     />
   ) : (

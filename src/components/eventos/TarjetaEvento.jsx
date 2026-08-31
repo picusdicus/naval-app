@@ -1,6 +1,6 @@
 import { CATEGORIAS_EVENTO, mesDe } from '../../lib/eventos'
 import { cartelDe } from '../../lib/gaceta'
-import { imagenEvento } from '../../lib/imagenesEvento'
+import { useImagenEvento } from '../../lib/useImagenEvento'
 import MIcon from '../MIcon'
 import { IconoCategoriaTabler } from './iconosEvento'
 
@@ -17,8 +17,10 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
   // Cartel real (imagen del evento) o, en su defecto, la foto temática por
   // categoría; solo si no hay ninguna, el degradado. (Antes solo se usaba el
   // cartel real y por eso desaparecían las fotos genéricas de los curados.)
-  const img = imagenEvento(evento)
-  const posterUrl = img?.src ?? null
+  // Si la url del cartel falla al cargar, `posterUrl` pasa a null y toda la
+  // plantilla editorial de abajo (fecha, remate de categoría, organizador)
+  // vuelve a pintarse — nunca el alt crudo sobre el velo.
+  const { posterUrl, pos, onError } = useImagenEvento(evento)
   const { fondo, trama } = cartelDe(evento.categoria)
   const cat = CATEGORIAS_EVENTO[evento.categoria]
 
@@ -37,7 +39,8 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
           src={posterUrl}
           alt={evento.titulo}
           loading="lazy"
-          style={{ objectPosition: img?.pos || '50% 50%' }}
+          onError={onError}
+          style={{ objectPosition: pos }}
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       ) : (
