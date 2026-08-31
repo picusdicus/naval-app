@@ -6,23 +6,11 @@ import { obtenerSql } from '../_db.js'
 import { requerirSesionEdge } from '../_auth.js'
 import { organizacionDeSesion } from '../_organizacion.js'
 import { json, leerJson, csrfInvalido, rechazoCsrf } from '../_http.js'
+// El criterio de validez de los horarios (franjas por día, cierre > apertura,
+// sin solapes) es el MISMO en cliente y servidor: una sola definición.
+import { horarioValido, normalizarHorarios } from '../../src/lib/horarios.js'
 
 export const config = { runtime: 'edge' }
-
-const DIAS_SEMANA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-
-function validarHorarios(horarios) {
-  if (!Array.isArray(horarios)) return false
-  return horarios.every((h) => {
-    if (typeof h !== 'object' || h === null) return false
-    if (!DIAS_SEMANA.includes(h.dia)) return false
-    if (typeof h.abierto !== 'boolean') return false
-    if (h.abierto) {
-      if (!/^\d{2}:\d{2}$/.test(h.apertura) || !/^\d{2}:\d{2}$/.test(h.cierre)) return false
-    }
-    return true
-  })
-}
 
 async function obtener(sql, org) {
   if (!org.comercio_id) {
@@ -78,7 +66,7 @@ async function actualizar(sql, org, cuerpo) {
   }
 
   // Validar horarios si se proporcionan
-  if (horarios && !validarHorarios(horarios)) {
+  if (horarios && !horarioValido(horarios)) {
     return json({ error: 'Formato de horarios no válido.' }, 400)
   }
 
@@ -86,6 +74,10 @@ async function actualizar(sql, org, cuerpo) {
   if ((lat ?? lng) && (typeof lat !== 'number' || typeof lng !== 'number')) {
     return json({ error: 'Coordenadas deben ser números.' }, 400)
   }
+
+  // Se guardan siempre normalizados: `franjas` explícitas + el espejo
+  // apertura/cierre de la primera franja (ver src/lib/horarios.js).
+  const horariosGuardar = horarios ? normalizarHorarios(horarios) : null
 
   // Filtrar fotos vacías (null o strings vacías)
   const fotosLimpias = fotos ? fotos.filter(f => f && String(f).trim()) : []
@@ -114,7 +106,7 @@ async function actualizar(sql, org, cuerpo) {
         ${org.comercio_id},
         ${org.id},
         ${descripcion ? String(descripcion).trim() : null},
-        ${horarios ? JSON.stringify(horarios) : null},
+        ${horariosGuardar ? JSON.stringify(horariosGuardar) : null},
         ${String(fotoPrincipal).trim()},
         ${fotosLimpias.length > 0 ? JSON.stringify(fotosLimpias) : null},
         ${web ? String(web).trim() : null},

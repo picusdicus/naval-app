@@ -3,7 +3,15 @@ import MIcon from '../../components/MIcon.jsx'
 import SelectorImagen from '../../components/admin/SelectorImagen.jsx'
 import SelectorImagenesMultiples from '../../components/admin/SelectorImagenesMultiples.jsx'
 import DialogoConfirmacion from '../../components/admin/DialogoConfirmacion.jsx'
-import { diasSemana, diasDisplay, horariosVacios, horarioValido } from '../../lib/horarios.js'
+import {
+  diasSemana,
+  diasDisplay,
+  horariosVacios,
+  horarioValido,
+  normalizarHorarios,
+  normalizarDia,
+  MAX_FRANJAS,
+} from '../../lib/horarios.js'
 import { optimizarImagen, validarImagen } from '../../lib/imageOptimizer.js'
 import { buscarComercioEnJson } from '../../lib/comerciosHelper.js'
 import comercios from '../../data/comercios.json'
@@ -63,7 +71,7 @@ export default function AdminComercioForm() {
         // Perfil ya existe: cargar datos del perfil (tiene prioridad)
         setPerfil(datos.perfil)
         setDescripcion(datos.perfil.descripcion || '')
-        setHorarios(datos.perfil.horarios || horariosVacios())
+        setHorarios(normalizarHorarios(datos.perfil.horarios || horariosVacios()))
         setFotoPrincipal(datos.perfil.foto_principal || null)
         setFotos(datos.perfil.fotos || [])
         setWeb(datos.perfil.web || '')
@@ -80,7 +88,7 @@ export default function AdminComercioForm() {
         // Primer perfil: pre-llenar con datos del JSON
         setPerfil(null)
         setDescripcion(comercioJson.descripcion || '')
-        setHorarios(comercioJson.horarios || horariosVacios())
+        setHorarios(normalizarHorarios(comercioJson.horarios || horariosVacios()))
         setFotoPrincipal(comercioJson.foto || comercioJson.fotoPrincipal || null)
         setFotos(comercioJson.fotos || [])
         setWeb(comercioJson.web || '')
@@ -239,6 +247,36 @@ export default function AdminComercioForm() {
     )
   }
 
+  // Cambia una hora de una franja concreta. normalizarDia() mantiene al día el
+  // espejo apertura/cierre de la primera franja (ver src/lib/horarios.js).
+  const cambiarFranja = (dia, indice, campo, valor) => {
+    setHorarios((prev) =>
+      prev.map((h) => {
+        if (h.dia !== dia) return h
+        const franjas = h.franjas.map((f, i) => (i === indice ? { ...f, [campo]: valor } : f))
+        return normalizarDia({ ...h, franjas })
+      })
+    )
+  }
+
+  const anadirFranja = (dia) => {
+    setHorarios((prev) =>
+      prev.map((h) => {
+        if (h.dia !== dia || h.franjas.length >= MAX_FRANJAS) return h
+        return normalizarDia({ ...h, franjas: [...h.franjas, { apertura: '17:00', cierre: '20:00' }] })
+      })
+    )
+  }
+
+  const quitarFranja = (dia, indice) => {
+    setHorarios((prev) =>
+      prev.map((h) => {
+        if (h.dia !== dia || h.franjas.length <= 1) return h
+        return normalizarDia({ ...h, franjas: h.franjas.filter((_, i) => i !== indice) })
+      })
+    )
+  }
+
   if (cargando) {
     return <p className="font-serif-spectral text-sm text-pardo">Cargando perfil…</p>
   }
@@ -271,9 +309,16 @@ export default function AdminComercioForm() {
           <SelectorImagen
             valor={fotoPrincipal}
             onChange={setFotoPrincipal}
-            etiqueta="Foto principal (4:3, hasta 3 MB)"
+            etiqueta="Foto principal (16:9 · 1920 × 1080 px recomendado, hasta 3 MB)"
             opcional={false}
           />
+          {/* El hero del perfil público es una banda a sangre (320 px de alto en
+              móvil, 384 px desde tablet) con object-cover: de una foto solo se
+              ve su franja central. Ver src/pages/PerfilComercio.jsx. */}
+          <p className="mt-2 font-serif-spectral text-xs text-pardo">
+            Se muestra como banda ancha en la cabecera de tu ficha: deja el motivo
+            centrado, porque los bordes superior e inferior se recortan.
+          </p>
           {fotoPrincipal && (
             <p className="mt-2 text-xs text-verde">
               ✓ Foto principal cargada
@@ -327,20 +372,45 @@ export default function AdminComercioForm() {
                 </div>
 
                 {h.abierto && (
-                  <div className="flex gap-1">
-                    <input
-                      type="time"
-                      value={h.apertura}
-                      onChange={(e) => cambiarHorario(h.dia, 'apertura', e.target.value)}
-                      className="gz-input w-20"
-                    />
-                    <span className="self-center text-xs text-pardo">–</span>
-                    <input
-                      type="time"
-                      value={h.cierre}
-                      onChange={(e) => cambiarHorario(h.dia, 'cierre', e.target.value)}
-                      className="gz-input w-20"
-                    />
+                  <div className="flex flex-col gap-1">
+                    {h.franjas.map((f, i) => (
+                      <div key={i} className="flex items-center gap-1">
+                        <input
+                          type="time"
+                          aria-label={`${DIAS_DISPLAY[h.dia]}: apertura franja ${i + 1}`}
+                          value={f.apertura}
+                          onChange={(e) => cambiarFranja(h.dia, i, 'apertura', e.target.value)}
+                          className="gz-input w-20"
+                        />
+                        <span className="self-center text-xs text-pardo">–</span>
+                        <input
+                          type="time"
+                          aria-label={`${DIAS_DISPLAY[h.dia]}: cierre franja ${i + 1}`}
+                          value={f.cierre}
+                          onChange={(e) => cambiarFranja(h.dia, i, 'cierre', e.target.value)}
+                          className="gz-input w-20"
+                        />
+                        {h.franjas.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => quitarFranja(h.dia, i)}
+                            aria-label={`Quitar franja ${i + 1} de ${DIAS_DISPLAY[h.dia]}`}
+                            className="text-pardo hover:text-terracota"
+                          >
+                            <MIcon name="close" className="text-[16px]" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {h.franjas.length < MAX_FRANJAS && (
+                      <button
+                        type="button"
+                        onClick={() => anadirFranja(h.dia)}
+                        className="self-start font-mono-ibm text-[10px] uppercase text-terracota hover:underline"
+                      >
+                        + Añadir franja
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

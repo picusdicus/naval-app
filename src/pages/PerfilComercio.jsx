@@ -10,6 +10,10 @@ import servicios from '../data/servicios-locales.json'
 import { datoComercio } from '../lib/comerciosHelper.js'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { hoyISO } from '../lib/fechas.js'
+import { normalizarHorarios, tieneHorarioPublicado, formatearFranjas, diasDisplay } from '../lib/horarios.js'
+
+
+const DIAS_DISPLAY = diasDisplay()
 
 const MESES_CORTOS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
 
@@ -114,7 +118,8 @@ export default function PerfilComercio({ id: idProp }) {
   const fotoPrincipal = perfil?.foto_principal || perfil?.fotoPrincipal || datoComercio(perfil, comercio, 'foto')
   const fotos = (perfil?.fotos && Array.isArray(perfil.fotos) && perfil.fotos.filter(Boolean)) || datoComercio(perfil, comercio, 'fotos') || []
   const descripcion = perfil?.descripcion || datoComercio(perfil, comercio, 'descripcion')
-  const horarios = perfil?.horarios || datoComercio(perfil, comercio, 'horarios')
+  const horarios = normalizarHorarios(perfil?.horarios || datoComercio(perfil, comercio, 'horarios'))
+  const horarioPublicado = tieneHorarioPublicado(horarios)
   const web = perfil?.web || datoComercio(perfil, comercio, 'web')
   const telefono = perfil?.telefono || datoComercio(perfil, comercio, 'telefono')
   const direccion = perfil?.direccion || datoComercio(perfil, comercio, 'direccion')
@@ -417,13 +422,32 @@ export default function PerfilComercio({ id: idProp }) {
               <div className="bg-white border border-tinta rounded-2xl p-5 shadow-sm">
                 <div className="flex justify-between items-baseline mb-3">
                   <h3 className="font-serif-dm text-lg text-tinta">Horario</h3>
-                  <span className="font-mono-ibm text-[8px] tracking-wider uppercase bg-papel-calido text-ocre px-2 py-1 rounded-full">
-                    Sin publicar
-                  </span>
+                  {!horarioPublicado && (
+                    <span className="font-mono-ibm text-[8px] tracking-wider uppercase bg-papel-calido text-ocre px-2 py-1 rounded-full">
+                      Sin publicar
+                    </span>
+                  )}
                 </div>
-                <p className="font-serif-spectral text-sm text-pardo mb-3">
-                  No atiende en local fijo: trabaja por contratación y funciones programadas.
-                </p>
+                {horarioPublicado ? (
+                  /* Los horarios que el dueño guarda en /panel → "Mi comercio".
+                     Cada día puede tener varias franjas (cierre a mediodía). */
+                  <dl className="mb-3 space-y-1">
+                    {horarios.map((h) => (
+                      <div key={h.dia} className="flex justify-between gap-3 text-sm">
+                        <dt className="font-mono-ibm text-[10px] uppercase tracking-wider text-mudo self-center">
+                          {DIAS_DISPLAY[h.dia] || h.dia}
+                        </dt>
+                        <dd className="font-serif-spectral text-tinta text-right">
+                          {h.abierto ? formatearFranjas(h) : <span className="text-mudo">Cerrado</span>}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="font-serif-spectral text-sm text-pardo mb-3">
+                    No atiende en local fijo: trabaja por contratación y funciones programadas.
+                  </p>
+                )}
                 {telefono && (
                   <div className="bg-papel-calido rounded-lg p-3 flex gap-2.5">
                     <span className="text-terracota flex-shrink-0">☎</span>
