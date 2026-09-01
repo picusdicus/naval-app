@@ -43,8 +43,9 @@ function fuenteDe(evento) {
 // (lazy, y si la URL falla el hook la anula) o el mismo fallback que las
 // tarjetas públicas — degradado de categoría + trama + icono Tabler.
 // Componente propio porque useImagenEvento es un hook y no puede llamarse
-// dentro del map de filas.
-function MiniaturaEvento({ evento, clase = 'h-12 w-12', tamIcono = 20 }) {
+// dentro del map de filas. Exportado: el tab Pendientes lo reutiliza para
+// pintar la misma miniatura (cartel real o fallback de categoría).
+export function MiniaturaEvento({ evento, clase = 'h-12 w-12', tamIcono = 20 }) {
   const { posterUrl, pos, onError } = useImagenEvento(evento)
   const { fondo, trama } = cartelDe(evento.categoria)
   return posterUrl ? (
