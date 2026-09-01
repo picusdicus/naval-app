@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
-import { aplicarFusionesManuales, combinarEventos, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
+import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
 import { CATEGORIAS_EVENTO, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
@@ -29,7 +29,13 @@ import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
 // La lista se arma en el cliente (JSON estáticos + /api/eventos) para no
 // duplicar la lógica de merge/dedup que ya existe.
 
-const ESTATICOS = [...eventosCurados, ...eventosExternos]
+// enriquecerPorCartel ANTES de combinar, como la agenda pública: sin él, los
+// carteles emparejados (enriqueceEvento resuelto) salían aquí como filas
+// propias que NO existen como tarjeta pública, y fusionar sobre una de ellas
+// guardaba un id que la agenda nunca puede unir (fusión inerte) — pasó de
+// verdad con «Puertas abiertas patinaje» (2026-09-01). El panel debe listar
+// exactamente las tarjetas que la vista pública pinta.
+const ESTATICOS = enriquecerPorCartel([...eventosCurados, ...eventosExternos])
 const MAX_FILAS = 60
 const DIAS_DESTACADO = 30 // duración por defecto al destacar con un clic
 
