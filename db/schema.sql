@@ -404,3 +404,20 @@ CREATE TABLE IF NOT EXISTS ingesta_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ingesta_log_fuente_fecha ON ingesta_log (fuente, ejecutado_en DESC);
+
+-- Fusiones manuales de eventos (issue #27): el superadmin decide que dos
+-- entradas de la agenda son el mismo acto cuando el matcher automático no las
+-- une ("Duatlón" del programa vs "Duatlón Padres/Hijos."). Guarda el par de
+-- ids públicos (mismo formato opaco que eventos_ocultos/destacados) y la
+-- fusión se RE-APLICA client-side en cada lectura (aplicarFusionesManuales en
+-- src/lib/dedupEventos.js) — persistente entre crons porque la decisión vive
+-- aquí y no en el JSON regenerable. La secundaria solo puede absorberse una
+-- vez (PK); las cadenas A←B←C se vetan en api/super/fusiones.js. Deshacer una
+-- fusión = borrar su fila. Si una fuente deja de traer una de las dos partes,
+-- la fila queda inerte (no-op) y se reactiva sola si la parte vuelve.
+CREATE TABLE IF NOT EXISTS fusiones_eventos (
+  referencia_secundaria text PRIMARY KEY,
+  referencia_principal  text NOT NULL,
+  creado_en             timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT fusion_no_reflexiva CHECK (referencia_secundaria <> referencia_principal)
+);

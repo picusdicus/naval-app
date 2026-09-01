@@ -18,7 +18,7 @@ export const config = { runtime: 'edge' }
 // api/chat.js, que es Node y además está desactivado desde julio de 2026.)
 import eventosCurados from '../src/data/eventos.json'
 import eventosExternos from '../src/data/eventos-externos.json'
-import { combinarEventos, enriquecerPorCartel } from '../src/lib/dedupEventos.js'
+import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel } from '../src/lib/dedupEventos.js'
 import { formatearFechaLarga } from '../src/lib/eventos.js'
 
 const MAX_DESCRIPCION = 200
@@ -112,10 +112,11 @@ async function json(url, clave, porDefecto, headers) {
 // Mismo pipeline que src/lib/useEventosPublicos.js: si divergen, la vista
 // previa enseñaría algo distinto de lo que ve quien pincha el enlace.
 async function eventoPorId(id, origen, headers) {
-  const [deLaBase, actividades, ocultos] = await Promise.all([
+  const [deLaBase, actividades, ocultos, fusiones] = await Promise.all([
     json(`${origen}/api/eventos`, 'eventos', [], headers),
     json(`${origen}/api/actividades`, 'actividades', [], headers),
     json(`${origen}/api/eventos-ocultos`, 'ocultos', [], headers),
+    json(`${origen}/api/fusiones-eventos`, 'fusiones', [], headers),
   ])
 
   const deActividades = actividades
@@ -133,9 +134,15 @@ async function eventoPorId(id, origen, headers) {
       origen: 'actividad',
     }))
 
-  const combinados = combinarEventos(
-    enriquecerPorCartel([...eventosCurados, ...eventosExternos]),
-    [...deLaBase, ...deActividades],
+  // Las fusiones manuales van al final, igual que en useEventosPublicos: si
+  // este merge y el de la agenda divergieran, la vista previa enseñaría algo
+  // distinto de lo que ve quien pincha el enlace.
+  const combinados = aplicarFusionesManuales(
+    combinarEventos(
+      enriquecerPorCartel([...eventosCurados, ...eventosExternos]),
+      [...deLaBase, ...deActividades],
+    ),
+    fusiones,
   )
 
   const evento = combinados.find((e) => e.id === id || (e.idsSecundarios || []).includes(id))

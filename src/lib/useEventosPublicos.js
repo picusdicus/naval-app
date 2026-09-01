@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../data/eventos.json'
 import eventosExternos from '../data/eventos-externos.json'
-import { combinarEventos, enriquecerPorCartel } from './dedupEventos.js'
+import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel } from './dedupEventos.js'
 
 // La agenda pública combina tres orígenes: los JSON estáticos (curados y
 // sincronizados desde fuentes externas), los eventos que las organizaciones
@@ -20,6 +20,7 @@ export function useEventosPublicos() {
   const [deLaBase, setDeLaBase] = useState([])
   const [actividades, setActividades] = useState([])
   const [ocultos, setOcultos] = useState(() => new Set())
+  const [fusiones, setFusiones] = useState([])
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -55,6 +56,15 @@ export function useEventosPublicos() {
       .then((r) => (r.ok ? r.json() : { ocultos: [] }))
       .then((datos) => {
         if (vigente) setOcultos(new Set(datos.ocultos ?? []))
+      })
+      .catch(() => {})
+
+    // Fusiones manuales del superadmin (issue #27). Falla suave: si no
+    // responde, no se aplica ninguna y la agenda muestra las tarjetas sueltas.
+    fetch('/api/fusiones-eventos')
+      .then((r) => (r.ok ? r.json() : { fusiones: [] }))
+      .then((datos) => {
+        if (vigente) setFusiones(datos.fusiones ?? [])
       })
       .catch(() => {})
 
@@ -96,14 +106,22 @@ export function useEventosPublicos() {
   // creado en Neon por el scrapper de Instagram) en una sola tarjeta; después
   // se descartan los que el superadmin haya ocultado (por id principal o por
   // cualquiera de los idsSecundarios que la fusión haya acumulado).
+  // Las fusiones manuales del superadmin se aplican como ÚLTIMO paso del
+  // merge, después del matcher automático (así no perturban sus decisiones y
+  // una fila que el matcher ya resuelve solo queda en no-op); el filtro de
+  // ocultos va detrás para que ocultar por cualquiera de los ids fusionados
+  // siga funcionando.
   const eventos = useMemo(() => {
     const estaticosEnriquecidos = enriquecerPorCartel(ESTATICOS)
-    const combinados = combinarEventos(estaticosEnriquecidos, [...deLaBase, ...eventosDeActividades])
+    const combinados = aplicarFusionesManuales(
+      combinarEventos(estaticosEnriquecidos, [...deLaBase, ...eventosDeActividades]),
+      fusiones,
+    )
     if (!ocultos.size) return combinados
     return combinados.filter(
       (e) => !ocultos.has(e.id) && !(e.idsSecundarios || []).some((id) => ocultos.has(id)),
     )
-  }, [deLaBase, eventosDeActividades, ocultos])
+  }, [deLaBase, eventosDeActividades, ocultos, fusiones])
 
   return { eventos, cargando }
 }

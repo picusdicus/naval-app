@@ -413,6 +413,90 @@ export function enriquecerPorCartel(eventos) {
 }
 
 /**
+ * Aplica las fusiones manuales del superadmin (tabla `fusiones_eventos`,
+ * issue #27) como ÚLTIMO paso del merge, después de combinarEventos(): son
+ * pares que el matcher automático no une ("Duatlón" vs "Duatlón
+ * Padres/Hijos.") y que una persona decidió que son el mismo acto. Aplicarlas
+ * al final no perturba ninguna decisión del matcher, y si algún día el
+ * matcher aprende a unir el par solo, la fila se vuelve un no-op inofensivo.
+ *
+ * `fusiones`: [{principal, secundaria}] con ids públicos (los mismos que usan
+ * eventos_ocultos y destacados). El principal sobrevive como base y la
+ * secundaria solo rellena sus campos vacíos (misma semántica fusionar() que
+ * las fusiones automáticas); su id — y los idsSecundarios que ella hubiera
+ * acumulado — pasan a idsSecundarios del principal, así deep links,
+ * destacados, ocultos y avisos que apunten a la secundaria siguen
+ * resolviendo. Ambas partes se buscan por id principal O por idsSecundarios
+ * (una de ellas puede haber sido ya absorbida en otra tarjeta por el matcher).
+ *
+ * Fusión inerte: si falta cualquiera de las dos partes (la fuente dejó de
+ * traerla, o su id cambió al retitularse), la fila es un no-op silencioso — y
+ * se reactiva sola si la parte vuelve. `estado` (opcional, para el panel
+ * superadmin) recibe en `estado.inertes` esas filas con su `motivo`.
+ */
+export function aplicarFusionesManuales(eventos, fusiones, estado = null) {
+  if (!fusiones || !fusiones.length) return eventos
+  if (estado && !estado.inertes) estado.inertes = []
+
+  const indicePorRef = new Map()
+  eventos.forEach((evento, i) => {
+    if (!indicePorRef.has(evento.id)) indicePorRef.set(evento.id, i)
+    for (const sec of evento.idsSecundarios || []) {
+      if (!indicePorRef.has(sec)) indicePorRef.set(sec, i)
+    }
+  })
+
+  const absorbidos = new Set()
+  const copia = [...eventos]
+  for (const fusion of fusiones) {
+    const iPrincipal = indicePorRef.get(fusion.principal)
+    const iSecundaria = indicePorRef.get(fusion.secundaria)
+    if (iPrincipal == null || iSecundaria == null) {
+      if (estado) {
+        estado.inertes.push({
+          ...fusion,
+          motivo:
+            iPrincipal == null && iSecundaria == null
+              ? 'no se encuentra ninguna de las dos partes'
+              : iPrincipal == null
+                ? `no se encuentra el principal (${fusion.principal})`
+                : `no se encuentra el secundario (${fusion.secundaria})`,
+        })
+      }
+      continue
+    }
+    // Ya son la misma tarjeta (el matcher los unió, o una fusión anterior de
+    // esta misma lista), o una de las partes ya fue absorbida: nada que hacer.
+    if (iPrincipal === iSecundaria || absorbidos.has(iSecundaria) || absorbidos.has(iPrincipal)) {
+      continue
+    }
+    const principal = copia[iPrincipal]
+    const secundaria = copia[iSecundaria]
+    const fusionado = fusionar(principal, secundaria)
+    copia[iPrincipal] = {
+      ...fusionado,
+      // fusionar() solo acumula el id directo de `otro`; los secundarios que
+      // la tarjeta absorbida hubiera acumulado también deben seguir resolviendo.
+      idsSecundarios: [
+        ...new Set([...(fusionado.idsSecundarios || []), ...(secundaria.idsSecundarios || [])]),
+      ],
+      fusionadoManualmente: true,
+      // Para el panel: qué filas de fusiones_eventos sostienen esta tarjeta
+      // (el botón "Deshacer" borra una fila concreta). La agenda pública
+      // ignora el campo.
+      fusionesManualesAplicadas: [
+        ...(principal.fusionesManualesAplicadas || []),
+        { principal: fusion.principal, secundaria: fusion.secundaria },
+      ],
+    }
+    absorbidos.add(iSecundaria)
+  }
+
+  if (!absorbidos.size) return eventos
+  return copia.filter((_, i) => !absorbidos.has(i))
+}
+
+/**
  * Mezcla los eventos estáticos con los de la base de datos eliminando
  * duplicados (misma fecha + títulos equivalentes). Devuelve una lista nueva:
  * estáticos (enriquecidos si tenían duplicado) + los de la base sin pareja,

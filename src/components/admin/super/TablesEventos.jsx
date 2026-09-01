@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
-import { combinarEventos, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
+import { aplicarFusionesManuales, combinarEventos, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
 import { CATEGORIAS_EVENTO, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
@@ -18,6 +18,13 @@ import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
 //     en el tab Destacados.
 //   · Ocultar / mostrar — guarda el id público en `eventos_ocultos` vía
 //     /api/super/eventos; la agenda pública lo filtra client-side. Reversible.
+//   · Fusionar (issue #27) — dos clics: "Fusionar" en la fila que sobrevive
+//     (el principal) y "Fusionar aquí" en el duplicado. Guarda el par en
+//     `fusiones_eventos` vía /api/super/fusiones y la fusión se re-aplica
+//     client-side en cada lectura (persistente entre crons). Deshacer desde
+//     el detalle desplegable. El panel lee /api/super/fusiones (auth, sin
+//     cache de CDN) y actualiza el estado local tras cada POST/DELETE, así el
+//     superadmin ve el efecto al instante sin esperar los 60 s del GET público.
 //
 // La lista se arma en el cliente (JSON estáticos + /api/eventos) para no
 // duplicar la lógica de merge/dedup que ya existe.
@@ -68,7 +75,7 @@ function MiniaturaEvento({ evento, clase = 'h-12 w-12', tamIcono = 20 }) {
 
 // Detalle desplegado bajo la fila (acordeón): imagen grande + los campos del
 // evento que la fila comprime. Solo lectura — las acciones siguen en la fila.
-function DetalleEvento({ evento, fuenteIngesta }) {
+function DetalleEvento({ evento, fuenteIngesta, fusiones = [], inertes = [], onDeshacer, ocupado }) {
   const datos = [
     ['Fecha', evento.fecha ? formatearFechaLarga(evento.fecha) : 'Sin fecha'],
     ['Hora', evento.hora || null],
@@ -107,6 +114,49 @@ function DetalleEvento({ evento, fuenteIngesta }) {
             </div>
           ))}
         </dl>
+        {(fusiones.length > 0 || inertes.length > 0) && (
+          <div className="space-y-1.5 border-t border-filete pt-3">
+            <p className="font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-mudo">
+              Fusiones manuales
+            </p>
+            {fusiones.map((f) => (
+              <div key={f.secundaria} className="flex flex-wrap items-center gap-2">
+                <span className="break-all font-serif-spectral text-sm text-tinta">
+                  Absorbe «{f.secundaria}»
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDeshacer(f)}
+                  disabled={ocupado}
+                  className="inline-flex items-center gap-1 border border-filete px-2 py-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota disabled:opacity-40"
+                  title="Deshacer esta fusión: las dos tarjetas volverán a mostrarse por separado"
+                >
+                  <MIcon name="call_split" className="text-[13px]" />
+                  Deshacer
+                </button>
+              </div>
+            ))}
+            {inertes.map((f) => (
+              <div key={`${f.principal}|${f.secundaria}`} className="space-y-1">
+                <p className="break-all font-serif-spectral text-sm text-terracota">
+                  Fusión sin efecto — {f.motivo}. La fila «{f.principal}» ← «{f.secundaria}» se
+                  mantiene y volverá a aplicarse sola si la fuente trae de nuevo las dos partes;
+                  deshazla solo si el evento ya no va a volver.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onDeshacer(f)}
+                  disabled={ocupado}
+                  className="inline-flex items-center gap-1 border border-filete px-2 py-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota disabled:opacity-40"
+                  title="Borrar esta fila de fusión inerte"
+                >
+                  <MIcon name="call_split" className="text-[13px]" />
+                  Deshacer
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <a
           href={`/eventos/${encodeURIComponent(evento.id)}`}
           target="_blank"
@@ -131,6 +181,8 @@ export default function TablesEventos() {
   const [ocupadoId, setOcupadoId] = useState(null) // id del evento con acción en curso
   const [abiertoId, setAbiertoId] = useState(null) // id del evento con el detalle desplegado
   const [mensaje, setMensaje] = useState(null) // { tipo: 'error', texto }
+  const [fusiones, setFusiones] = useState([]) // fusiones manuales [{principal, secundaria}]
+  const [origenFusionId, setOrigenFusionId] = useState(null) // id del principal elegido en el modo fusión
 
   useEffect(() => {
     let vigente = true
@@ -138,12 +190,14 @@ export default function TablesEventos() {
       fetch('/api/eventos').then((r) => (r.ok ? r.json() : { eventos: [] })).catch(() => ({ eventos: [] })),
       fetch('/api/super/destacados').then((r) => (r.ok ? r.json() : { destacados: [] })).catch(() => ({ destacados: [] })),
       fetch('/api/super/eventos').then((r) => (r.ok ? r.json() : { ocultos: [] })).catch(() => ({ ocultos: [] })),
+      fetch('/api/super/fusiones').then((r) => (r.ok ? r.json() : { fusiones: [] })).catch(() => ({ fusiones: [] })),
     ])
-      .then(([ev, de, oc]) => {
+      .then(([ev, de, oc, fu]) => {
         if (!vigente) return
         setDeLaBase(ev.eventos ?? [])
         setDestacados((de.destacados ?? []).filter((d) => d.tipo === 'evento'))
         setOcultos(new Set(oc.ocultos ?? []))
+        setFusiones(fu.fusiones ?? [])
       })
       .finally(() => {
         if (vigente) setCargando(false)
@@ -153,7 +207,38 @@ export default function TablesEventos() {
     }
   }, [])
 
-  const eventos = useMemo(() => combinarEventos(ESTATICOS, deLaBase), [deLaBase])
+  // Mismo pipeline que la agenda pública, con las fusiones manuales como
+  // último paso. `estado.inertes` recoge las filas de fusiones_eventos que no
+  // encuentran alguna de sus dos partes, para avisar en el detalle desplegable.
+  const { eventos, inertesPorRef } = useMemo(() => {
+    const estado = { inertes: [] }
+    const lista = aplicarFusionesManuales(combinarEventos(ESTATICOS, deLaBase), fusiones, estado)
+    const mapa = new Map()
+    for (const f of estado.inertes) {
+      for (const ref of [f.principal, f.secundaria]) {
+        if (!mapa.has(ref)) mapa.set(ref, [])
+        mapa.get(ref).push(f)
+      }
+    }
+    return { eventos: lista, inertesPorRef: mapa }
+  }, [deLaBase, fusiones])
+
+  // Fusiones inertes que atañen a un evento: por su id o cualquiera de sus
+  // idsSecundarios (dedupe por par, la misma fila puede matchear dos refs).
+  function fusionesInertesDe(evento) {
+    const vistos = new Set()
+    const resultado = []
+    for (const ref of [evento.id, ...(evento.idsSecundarios || [])]) {
+      for (const f of inertesPorRef.get(ref) || []) {
+        const clave = `${f.principal}|${f.secundaria}`
+        if (!vistos.has(clave)) {
+          vistos.add(clave)
+          resultado.push(f)
+        }
+      }
+    }
+    return resultado
+  }
 
   const destacadoPorRef = useMemo(() => {
     const mapa = new Map()
@@ -284,6 +369,57 @@ export default function TablesEventos() {
     }
   }
 
+  // Segundo clic del modo fusión: `secundaria` se fusiona DENTRO de la fila
+  // elegida como principal. El estado local se actualiza con la respuesta (el
+  // panel no usa el GET público cacheado), así el efecto es inmediato.
+  async function crearFusion(principalId, secundariaId) {
+    setOcupadoId(principalId)
+    setMensaje(null)
+    try {
+      const respuesta = await fetch('/api/super/fusiones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referenciaPrincipal: principalId,
+          referenciaSecundaria: secundariaId,
+        }),
+      })
+      const datos = await respuesta.json().catch(() => ({}))
+      if (!respuesta.ok) throw new Error(datos.error || 'No se pudo fusionar el evento.')
+      setFusiones((previas) => [
+        ...previas.filter((f) => f.secundaria !== secundariaId),
+        datos.fusion,
+      ])
+      setOrigenFusionId(null)
+    } catch (err) {
+      setMensaje({ tipo: 'error', texto: err.message })
+    } finally {
+      setOcupadoId(null)
+    }
+  }
+
+  async function deshacerFusion(fusion) {
+    setOcupadoId(fusion.principal)
+    setMensaje(null)
+    try {
+      const respuesta = await fetch(
+        `/api/super/fusiones?ref=${encodeURIComponent(fusion.secundaria)}`,
+        { method: 'DELETE' },
+      )
+      if (!respuesta.ok) {
+        const datos = await respuesta.json().catch(() => ({}))
+        throw new Error(datos.error || 'No se pudo deshacer la fusión.')
+      }
+      setFusiones((previas) => previas.filter((f) => f.secundaria !== fusion.secundaria))
+    } catch (err) {
+      setMensaje({ tipo: 'error', texto: err.message })
+    } finally {
+      setOcupadoId(null)
+    }
+  }
+
+  const origenFusion = origenFusionId ? eventos.find((e) => e.id === origenFusionId) : null
+
   return (
     <div className="space-y-4">
       <div>
@@ -292,7 +428,9 @@ export default function TablesEventos() {
           Todos los eventos de la agenda (curados, sincronizados y de las organizaciones).
           Destaca cualquiera con un clic (dura {DIAS_DESTACADO} días; afina su orden y vigencia
           en el tab Destacados) u ocúltalo de la agenda pública. Ocultar es reversible y no
-          borra el evento.
+          borra el evento. Si dos entradas son el mismo acto y el matcher automático no las
+          une, fusiónalas: «Fusionar» en la que debe sobrevivir y «Fusionar aquí» en la
+          duplicada — la fusión persiste entre sincronizaciones y se deshace desde el detalle.
         </p>
       </div>
 
@@ -301,6 +439,25 @@ export default function TablesEventos() {
           <MIcon name="error" className="mt-0.5 text-[18px]" />
           <span>{mensaje.texto}</span>
         </p>
+      )}
+
+      {origenFusionId && (
+        <div className="flex flex-col gap-2 border border-ocre-profundo bg-papel-calido px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+          <p className="font-serif-spectral text-sm text-tinta">
+            <MIcon name="call_merge" className="mr-1 align-middle text-[16px] text-ocre-profundo" />
+            Fusionando: elige el evento duplicado que se fusionará dentro de «
+            {origenFusion?.titulo || origenFusionId}». La tarjeta elegida desaparecerá de la
+            agenda y solo rellenará los campos vacíos del principal. La fusión persiste entre
+            sincronizaciones y puede deshacerse.
+          </p>
+          <button
+            type="button"
+            onClick={() => setOrigenFusionId(null)}
+            className="shrink-0 self-start border border-filete px-2.5 py-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota"
+          >
+            Cancelar
+          </button>
+        </div>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -343,6 +500,8 @@ export default function TablesEventos() {
           const pasado = diasHasta(evento.fecha) < 0
           const fuenteIngesta = fuenteDeIngesta(evento)
           const abierto = abiertoId === evento.id
+          const fusionesDelEvento = evento.fusionesManualesAplicadas || []
+          const inertesDelEvento = fusionesInertesDe(evento)
           return (
             <div key={evento.id} className={`py-3 ${oculto ? 'opacity-60' : ''}`}>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -382,6 +541,22 @@ export default function TablesEventos() {
                         title="Fusionado con un evento del Ayuntamiento por título aproximado (los títulos no eran equivalentes). Revisa que sea el mismo acto; si no lo es, ocúltalo."
                       >
                         · fusión aproximada
+                      </span>
+                    )}
+                    {evento.fusionadoManualmente && (
+                      <span
+                        className="ml-2 text-ocre-profundo"
+                        title="Fusionado manualmente por el superadmin. Despliega el detalle para ver qué absorbe o deshacer la fusión."
+                      >
+                        · fusión manual
+                      </span>
+                    )}
+                    {inertesDelEvento.length > 0 && (
+                      <span
+                        className="ml-2 text-terracota"
+                        title="Este evento tiene una fusión manual sin efecto (falta una de las dos partes). Despliega el detalle para verla."
+                      >
+                        · fusión sin efecto
                       </span>
                     )}
                   </p>
@@ -431,10 +606,53 @@ export default function TablesEventos() {
                   <MIcon name={oculto ? 'visibility' : 'visibility_off'} className="text-[14px]" />
                   {oculto ? 'Oculto' : 'Ocultar'}
                 </button>
+
+                {origenFusionId === null ? (
+                  <button
+                    type="button"
+                    onClick={() => setOrigenFusionId(evento.id)}
+                    disabled={ocupado}
+                    className="inline-flex items-center gap-1 border border-filete px-2.5 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-ocre-profundo hover:text-ocre-profundo disabled:opacity-40"
+                    title="Fusionar otro evento duplicado dentro de este (este sobrevive como principal)"
+                  >
+                    <MIcon name="call_merge" className="text-[14px]" />
+                    Fusionar
+                  </button>
+                ) : origenFusionId === evento.id ? (
+                  <button
+                    type="button"
+                    onClick={() => setOrigenFusionId(null)}
+                    className="inline-flex items-center gap-1 border border-ocre-profundo bg-papel-calido px-2.5 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-ocre-profundo"
+                    title="Cancelar la fusión"
+                  >
+                    <MIcon name="close" className="text-[14px]" />
+                    Cancelar
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => crearFusion(origenFusionId, evento.id)}
+                    disabled={ocupadoId !== null}
+                    className="inline-flex items-center gap-1 border border-ocre-profundo px-2.5 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-ocre-profundo transition-colors hover:bg-ocre-profundo hover:text-papel disabled:opacity-40"
+                    title={`Fusionar este evento (desaparecerá como tarjeta) dentro de «${origenFusion?.titulo || origenFusionId}»`}
+                  >
+                    <MIcon name="call_merge" className="text-[14px]" />
+                    Fusionar aquí
+                  </button>
+                )}
               </div>
               </div>
 
-              {abierto && <DetalleEvento evento={evento} fuenteIngesta={fuenteIngesta} />}
+              {abierto && (
+                <DetalleEvento
+                  evento={evento}
+                  fuenteIngesta={fuenteIngesta}
+                  fusiones={fusionesDelEvento}
+                  inertes={inertesDelEvento}
+                  onDeshacer={deshacerFusion}
+                  ocupado={ocupado}
+                />
+              )}
             </div>
           )
         })}
