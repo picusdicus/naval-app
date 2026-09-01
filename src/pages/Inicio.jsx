@@ -341,7 +341,8 @@ export default function Inicio() {
           </div>
         </section>
 
-        {/* Participación */}
+        {/* Participación — oculta a propósito (2026-09-01); volver a `true` para reactivarla */}
+        {false && (
         <section className="border border-tinta bg-papel-calido p-12">
           <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
             <div className="flex-1">
@@ -369,6 +370,7 @@ export default function Inicio() {
             </div>
           </div>
         </section>
+        )}
       </div>
     </>
   )
