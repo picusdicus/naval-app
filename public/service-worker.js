@@ -1,7 +1,7 @@
 // Subir esta versión en cada despliegue que cambie assets: el handler de
 // `activate` borra las cachés cuyo nombre no coincida, así que es lo único que
 // purga los ficheros viejos servidos por la estrategia cache-first.
-const CACHE_NAME = 'vecinal-v5'
+const CACHE_NAME = 'vecinal-v6'
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -10,6 +10,10 @@ const STATIC_ASSETS = [
   '/src/index.css',
   '/logo.png',
   '/favicon.svg',
+  '/icono-app-192.png',
+  '/icono-app-512.png',
+  '/icono-app-maskable-192.png',
+  '/icono-app-maskable-512.png',
 ]
 
 // Instalar service worker y cachear assets estáticos
