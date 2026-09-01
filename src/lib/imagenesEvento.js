@@ -25,12 +25,16 @@ export const IMAGENES_EVENTO = {
     { src: '/img/eventos/concierto/2.jpg', credito: 'Carlos Teixidor Cadenas, CC BY-SA 4.0' },
   ],
   cine: [{ src: '/img/eventos/cine/1.jpg', credito: 'Bdx, CC0' }],
+  // `soloRegistroFestivo` excluye la variante para los actos religiosos del
+  // programa (novenas, misas, procesiones): fuegos artificiales (1 y 3) y
+  // encierro (5) desentonan con una misa; quedan la Plaza de Segovia al
+  // atardecer y los gigantes y cabezudos, de tono neutro.
   fiestas: [
-    { src: '/img/eventos/fiestas/1.jpg', pos: '50% 25%', credito: 'Henry Sattink Rath, CC BY-SA 3.0' },
+    { src: '/img/eventos/fiestas/1.jpg', pos: '50% 25%', credito: 'Henry Sattink Rath, CC BY-SA 3.0', soloRegistroFestivo: true },
     { src: '/img/eventos/fiestas/2.jpg', credito: 'Lolalatorre, CC BY-SA 3.0' },
-    { src: '/img/eventos/fiestas/3.jpg', credito: 'Javier Pérez Montes, CC BY-SA 4.0' },
+    { src: '/img/eventos/fiestas/3.jpg', credito: 'Javier Pérez Montes, CC BY-SA 4.0', soloRegistroFestivo: true },
     { src: '/img/eventos/fiestas/4.jpg', credito: 'Diario de Madrid, CC BY 4.0' },
-    { src: '/img/eventos/fiestas/5.jpg', credito: 'Dirección General de Turismo, Comunidad de Madrid, CC BY 3.0' },
+    { src: '/img/eventos/fiestas/5.jpg', credito: 'Dirección General de Turismo, Comunidad de Madrid, CC BY 3.0', soloRegistroFestivo: true },
   ],
   infantil: [
     { src: '/img/eventos/infantil/1.jpg', credito: 'Jorge Royan, CC BY-SA 3.0' },
@@ -69,9 +73,28 @@ function hashDe(texto) {
   return h
 }
 
+// ¿Acto de registro religioso dentro de fiestas? Subcategoría del programa
+// primero (los 14 actos religiosos del programa 2026 la llevan) y palabras
+// clave del título como respaldo (fuentes que no la traen, p. ej. Instagram).
+// Palabras sacadas de los títulos reales del programa: NOVENA, MISA DE LAS
+// PEÑAS, MISA SOLEMNE, PROCESIÓN, GRAN OFRENDA DE FLORES A LA PATRONA,
+// TRADICIONAL SALVE. `\bpatrona\b` con frontera para NO cazar "patronales"
+// (Torneo de tenis Fiestas Patronales no es una misa).
+function esReligioso(evento) {
+  if (evento.subcategoria === 'religiosa') return true
+  const t = (evento.titulo || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+  return /(novena|\bmisa\b|procesion|ofrenda|rosario|eucaristia|\bsalve\b|\bpatrona\b|visperas|romeria)/.test(t)
+}
+
 // Pool de variantes para un evento. Dentro de "cultura" se afina por
 // subcategoría (la de Neon: musica/cine) o, en su defecto, por palabra clave
 // del título — un concierto debe enseñar un concierto, no una fachada.
+// Dentro de "fiestas", los actos religiosos excluyen las variantes marcadas
+// `soloRegistroFestivo` (fuegos, encierro): una novena con foto taurina es un
+// desajuste de tono, no un caso raro — el programa trae 14 actos religiosos.
 function poolDe(evento) {
   if (evento.categoria === 'cultura') {
     if (evento.subcategoria === 'musica') return IMAGENES_EVENTO.concierto
@@ -80,6 +103,12 @@ function poolDe(evento) {
     if (/(concierto|música|musica|jazz|banda|coro)/.test(t)) return IMAGENES_EVENTO.concierto
     if (/(cine|película|pelicula|proyección|proyeccion|film)/.test(t)) return IMAGENES_EVENTO.cine
     return IMAGENES_EVENTO.cultura
+  }
+  if (evento.categoria === 'fiestas' && esReligioso(evento)) {
+    const neutras = IMAGENES_EVENTO.fiestas.filter((v) => !v.soloRegistroFestivo)
+    // Guarda defensiva: si algún día todo el pool quedara marcado, mejor la
+    // más neutra (la Plaza de Segovia al atardecer) que forzar una excluida.
+    return neutras.length > 0 ? neutras : [IMAGENES_EVENTO.fiestas[1]]
   }
   return IMAGENES_EVENTO[evento.categoria] || IMAGENES_EVENTO.general
 }
