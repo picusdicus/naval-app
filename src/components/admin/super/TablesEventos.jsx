@@ -52,7 +52,7 @@ function MiniaturaEvento({ evento }) {
   ) : (
     <div
       aria-hidden="true"
-      className={`flex h-12 w-12 shrink-0 items-center justify-center border border-filete ${trama}`}
+      className={`relative flex h-12 w-12 shrink-0 items-center justify-center border border-filete ${trama}`}
       style={{ background: fondo }}
     >
       <IconoCategoriaTabler
