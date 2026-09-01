@@ -1,7 +1,11 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
 import Logo from '../Logo.jsx'
+import DialogoInstalarApp from '../DialogoInstalarApp.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
+import { esIOS, esPWAInstalada } from '../../lib/push.js'
+import { hayPromptDeInstalacion, pedirInstalacionNativa } from '../../lib/instalacion.js'
 
 const rutas = [
   { to: '/', label: 'Inicio', end: true },
@@ -17,6 +21,19 @@ const rutas = [
 // cierre los controla Layout; la animación es CSS pura sobre `abierto`.
 export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
   const { usuario, cargando } = useAdminAuth()
+  const [instalarAbierto, setInstalarAbierto] = useState(false)
+
+  // "Instalar app": con prompt nativo capturado (Chrome/Edge/Android) se lanza
+  // directamente; sin él (iOS siempre — beforeinstallprompt no existe ahí —,
+  // o navegadores que no lo emiten) se abren las instrucciones manuales.
+  const manejarInstalar = async () => {
+    if (!esIOS() && hayPromptDeInstalacion()) {
+      await pedirInstalacionNativa()
+      return
+    }
+    setInstalarAbierto(true)
+  }
+
   return (
     <div
       className={`fixed inset-0 z-50 flex transition-opacity duration-300 ${
@@ -75,6 +92,18 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
             Ayuntamiento
           </a>
 
+          {/* Corriendo ya en standalone el botón sobra. */}
+          {!esPWAInstalada() && (
+            <button
+              type="button"
+              onClick={manejarInstalar}
+              className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-tinta transition-colors hover:bg-papel-calido"
+            >
+              <MIcon name="install_mobile" className="text-[20px] text-terracota" />
+              Instalar app
+            </button>
+          )}
+
           {!cargando && (
             <>
               <div className="border-t border-filete my-2" />
@@ -113,6 +142,8 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
           </button>
         </div>
       </aside>
+
+      <DialogoInstalarApp abierto={instalarAbierto} onCerrar={() => setInstalarAbierto(false)} />
     </div>
   )
 }

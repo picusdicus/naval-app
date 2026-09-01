@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import MIcon from './MIcon'
+import { suscribirPromptInstalacion, pedirInstalacionNativa } from '../lib/instalacion.js'
 
 export default function InstallPrompt() {
   const [show, setShow] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
 
   useEffect(() => {
     // Si ya fue descartado en esta sesión, no mostrar
@@ -11,35 +11,22 @@ export default function InstallPrompt() {
       return
     }
 
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-      setShow(true)
-    }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    }
+    // La captura del evento vive en lib/instalacion.js (compartida con el
+    // botón "Instalar app" del menú lateral); aquí solo se reacciona a ella.
+    return suscribirPromptInstalacion(() => setShow(true))
   }, [])
 
   const handleInstall = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') {
-        setShow(false)
-        sessionStorage.setItem('install-dismissed', 'true')
-      }
-      setDeferredPrompt(null)
+    const outcome = await pedirInstalacionNativa()
+    if (outcome === 'accepted') {
+      setShow(false)
+      sessionStorage.setItem('install-dismissed', 'true')
     }
   }
 
   const handleDismiss = () => {
     setShow(false)
     sessionStorage.setItem('install-dismissed', 'true')
-    setDeferredPrompt(null)
   }
 
   if (!show) return null
