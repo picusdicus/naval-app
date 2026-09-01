@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import MIcon from '../MIcon.jsx'
 import { useRecaptcha } from '../../lib/useRecaptcha.js'
 
@@ -83,7 +84,11 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
 
   if (!abierto) return null
 
-  return (
+  // Portal a <body>: la tarjeta de ComercioDetalle que monta este diálogo lleva
+  // `animate-rise` (transform con fill "both"), y un transform en un ancestro
+  // convierte a ese ancestro en containing block del position:fixed — el overlay
+  // quedaba atrapado y recortado dentro de la tarjeta (overflow-hidden).
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md overflow-hidden border border-tinta bg-papel shadow-cartel">
         <div className="h-2 bg-tinta-intensa" />
@@ -218,6 +223,7 @@ export default function DialogoReclamarComercio({ abierto, comercioId, comercioN
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
