@@ -1232,8 +1232,8 @@ export default JSON.parse(`
  },
  {
   "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
-  "hora": "",
-  "horaTexto": "",
+  "hora": "23:30",
+  "horaTexto": "23.30h.",
   "lugar": "plaza de Segovia.",
   "inscripciones": "",
   "organiza": "",
@@ -1622,8 +1622,8 @@ export default JSON.parse(`
  },
  {
   "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
-  "hora": "",
-  "horaTexto": "",
+  "hora": "01:00",
+  "horaTexto": "01.00h.",
   "lugar": "plaza de Segovia.",
   "inscripciones": "",
   "organiza": "",
@@ -1742,8 +1742,8 @@ export default JSON.parse(`
  },
  {
   "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
-  "hora": "",
-  "horaTexto": "",
+  "hora": "01:00",
+  "horaTexto": "01.00h.",
   "lugar": "plaza de Segovia.",
   "inscripciones": "",
   "organiza": "",
