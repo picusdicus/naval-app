@@ -5,6 +5,8 @@ import { obtenerNoticiasPrensa } from './_noticias-feed.js'
 import { commitArchivos } from './_github.js'
 import { temasDeEvento } from '../src/lib/temasPush.js'
 import { claveNormSlug, clavesUnicidadEvento } from '../src/lib/dedupEventos.js'
+import { fechasDelCiclo, MAX_DIAS_CICLO } from '../src/lib/eventoForm.js'
+import { duracionDe } from '../src/lib/fechas.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
 import { upsertDeportesEnRevision } from './_deportes-revision.js'
 import { enviarEmailPendientes } from './_email.js'
@@ -163,10 +165,17 @@ function normalizarMes(nombre) {
 // Extraer día/mes del texto
 function extraerDiaMes(texto) {
   const t = texto.toLowerCase()
-  let m = t.match(/del\s+(\d{1,2})(?:\s+de\s+(\p{L}+))?\s+al\s+\d{1,2}\s+de\s+(\p{L}+)/u)
+  // "del 27 de mayo al 9 de junio" o "del 16 al 26 de junio". El día de fin
+  // también se captura: una exposición "del 4 al 20" dura todos esos días
+  // (issue #22) y procesarItem la expande en una copia por día.
+  let m = t.match(/del\s+(\d{1,2})(?:\s+de\s+(\p{L}+))?\s+al\s+(\d{1,2})\s+de\s+(\p{L}+)/u)
   if (m) {
-    const mes = normalizarMes(m[2] || m[3])
-    if (mes) return { dia: parseInt(m[1], 10), mes }
+    const mes = normalizarMes(m[2] || m[4])
+    const mesFin = normalizarMes(m[4])
+    if (mes) {
+      const base = { dia: parseInt(m[1], 10), mes }
+      return mesFin ? { ...base, diaFin: parseInt(m[3], 10), mesFin } : base
+    }
   }
   m = t.match(/(\d{1,2})\s+de\s+(\p{L}+)/u)
   if (m) {
@@ -520,9 +529,22 @@ async function procesarItem(item, indice) {
     return null
   }
 
+  // Rango "del X al Y": fecha de fin con las mismas reglas de año. Guardas
+  // explícitas — si el fin no queda después del inicio o el tramo excede
+  // MAX_DIAS_CICLO (un typo en la fuente), se degrada al comportamiento de
+  // siempre (un solo día); el item nunca se descarta por esto.
+  let fechaFin = null
+  if (dm && dm.diaFin && dm.mesFin) {
+    const candidata = fechaISO(dm.diaFin, dm.mesFin, refDate, textoParaFecha)
+    if (candidata > fecha && duracionDe(fecha, candidata) <= MAX_DIAS_CICLO) {
+      fechaFin = candidata
+    }
+  }
+
   const { imagen, descripcion } = await enriquecerDesdeUrl(url, cuerpo)
 
   return {
+    fechaFin,
     id: `aytocult-${(url.match(/cultura\/([^/]+)\/?$/) || [])[1] || indice}`,
     titulo: tituloLegible(tituloCrudo),
     fecha,
@@ -562,10 +584,32 @@ async function eventosCulturaAyto() {
     let nuevosEnPagina = 0
     let futurosEnPagina = 0
     for (const item of items) {
-      const ev = await procesarItem(item, eventos.length)
-      if (!ev || urlsVistas.has(ev.url)) continue
+      const { fechaFin, ...ev } = (await procesarItem(item, eventos.length)) || {}
+      if (!ev.id || urlsVistas.has(ev.url)) continue
       urlsVistas.add(ev.url)
-      eventos.push(ev)
+      // Un rango "del X al Y" se materializa como una copia independiente por
+      // día (misma fechasDelCiclo que el ciclo del panel; issue #22). El
+      // primer día conserva id y url históricos — deep links y filas de
+      // push_avisos/destacados ya publicadas siguen resolviendo. Las copias
+      // sufijan el id con su fecha y la url con un fragmento: la url debe ser
+      // única (una url compartida en combinarSinDuplicados se comería todas
+      // las copias menos la primera — ver actividades deportivas) pero el
+      // enlace real al ayuntamiento debe seguir funcionando, y un fragmento
+      // cumple ambas. `esCopiaDeCiclo` las excluye del digest push (paso 5).
+      // SOLO se expanden rangos aún vigentes (fechaFin >= hoy): el RSS
+      // arrastra exposiciones de meses atrás (12 rangos, ~147 copias el día
+      // que se midió) que engordarían el JSON embebido en el bundle e
+      // inundarían la vista de pasados; un rango terminado queda en una
+      // entrada, como siempre (y al terminar, sus copias desaparecen del
+      // JSON en el siguiente cron — sus días ya no se muestran en agenda).
+      const rangoVigente = fechaFin && new Date(`${fechaFin}T00:00:00`) >= HOY
+      for (const fecha of fechasDelCiclo(ev.fecha, rangoVigente ? fechaFin : null)) {
+        eventos.push(
+          fecha === ev.fecha
+            ? ev
+            : { ...ev, fecha, id: `${ev.id}-${fecha}`, url: `${ev.url}#dia-${fecha}`, esCopiaDeCiclo: true },
+        )
+      }
       nuevosEnPagina++
       if (new Date(`${ev.fecha}T00:00:00`) >= HOY) futurosEnPagina++
     }
@@ -614,8 +658,8 @@ function combinarSinDuplicados(listas, motivos = null) {
 }
 
 // Export SOLO para verificación/diagnóstico (scripts de la carpeta scripts/);
-// producción la usa vía el handler.
-export { combinarSinDuplicados }
+// producción los usa vía el handler.
+export { combinarSinDuplicados, eventosCulturaAyto, extraerDiaMes }
 
 // commitArchivos vive ahora en api/_github.js (compartido con el panel
 // superadmin de comercios).
@@ -901,12 +945,19 @@ export default async function handler(req, res) {
         eventosPorFuente.get(fuente).push(e)
       })
 
+      // Las copias de un rango expandido ("del 4 al 20", issue #22) nunca van
+      // al digest — serían N avisos casi idénticos del mismo cartel — pero sí
+      // a la bandeja. El umbral de carga masiva se evalúa sobre el resto.
+      const copiasCiclo = agregadosExternos.filter((e) => e.esCopiaDeCiclo)
+      const restoExternos = agregadosExternos.filter((e) => !e.esCopiaDeCiclo)
+
       const bulkEventsPendientes = []
       const regularEventsPendientes = []
-      if (agregadosExternos.length > 30) {
+      if (restoExternos.length > 30) {
         bulkEventsPendientes.push(...agregadosExternos)
       } else {
-        regularEventsPendientes.push(...agregadosExternos)
+        bulkEventsPendientes.push(...copiasCiclo)
+        regularEventsPendientes.push(...restoExternos)
       }
 
       let deNeon = []

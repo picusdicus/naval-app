@@ -14,6 +14,8 @@
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { fechasDelCiclo, MAX_DIAS_CICLO } from '../src/lib/eventoForm.js'
+import { duracionDe } from '../src/lib/fechas.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SALIDA = resolve(__dirname, '../src/data/eventos-externos.json')
@@ -134,11 +136,17 @@ function normalizarMes(nombre) {
 // Busca un (dia, mes) en un texto en espanol. Prioriza rangos "del X al Y de MES".
 function extraerDiaMes(texto) {
   const t = texto.toLowerCase()
-  // "del 27 de mayo al 9 de junio" o "del 16 al 26 de junio"
-  let m = t.match(/del\s+(\d{1,2})(?:\s+de\s+(\p{L}+))?\s+al\s+\d{1,2}\s+de\s+(\p{L}+)/u)
+  // "del 27 de mayo al 9 de junio" o "del 16 al 26 de junio". El dia de fin
+  // tambien se captura (issue #22): procesarItem expande el rango en una
+  // copia por dia — copia local del mismo cambio en api/sync-events.js.
+  let m = t.match(/del\s+(\d{1,2})(?:\s+de\s+(\p{L}+))?\s+al\s+(\d{1,2})\s+de\s+(\p{L}+)/u)
   if (m) {
-    const mes = normalizarMes(m[2] || m[3])
-    if (mes) return { dia: parseInt(m[1], 10), mes }
+    const mes = normalizarMes(m[2] || m[4])
+    const mesFin = normalizarMes(m[4])
+    if (mes) {
+      const base = { dia: parseInt(m[1], 10), mes }
+      return mesFin ? { ...base, diaFin: parseInt(m[3], 10), mesFin } : base
+    }
   }
   // "12 de mayo", "martes 16 de junio"
   m = t.match(/(\d{1,2})\s+de\s+(\p{L}+)/u)
@@ -296,10 +304,22 @@ async function procesarItem(item, indice) {
     return null
   }
 
+  // Rango "del X al Y": fecha de fin con las mismas reglas de año. Guardas —
+  // fin posterior al inicio y tramo acotado; si no validan, se degrada a un
+  // solo dia (comportamiento de siempre), nunca se descarta el item.
+  let fechaFin = null
+  if (dm && dm.diaFin && dm.mesFin) {
+    const candidata = fechaISO(dm.diaFin, dm.mesFin, refDate, textoParaFecha)
+    if (candidata > fecha && duracionDe(fecha, candidata) <= MAX_DIAS_CICLO) {
+      fechaFin = candidata
+    }
+  }
+
   console.log(`  - ${tituloCrudo.slice(0, 60)}`)
   const { imagen, descripcion } = await enriquecerDesdeUrl(url, cuerpo)
 
   return {
+    fechaFin,
     id: `aytocult-${(url.match(/cultura\/([^/]+)\/?$/) || [])[1] || indice}`,
     titulo: tituloLegible(tituloCrudo),
     fecha,
@@ -342,10 +362,22 @@ async function eventosCulturaAyto() {
     let nuevosEnPagina = 0
     let futurosEnPagina = 0
     for (const item of items) {
-      const ev = await procesarItem(item, eventos.length)
-      if (!ev || urlsVistas.has(ev.url)) continue
+      const { fechaFin, ...ev } = (await procesarItem(item, eventos.length)) || {}
+      if (!ev.id || urlsVistas.has(ev.url)) continue
       urlsVistas.add(ev.url)
-      eventos.push(ev)
+      // Rango expandido en copias por dia (issue #22, mismo criterio que
+      // api/sync-events.js): primer dia con id/url historicos, copias con
+      // id sufijado por fecha y url con fragmento (url unica para el dedup
+      // sin perder el enlace real). Solo rangos vigentes: los ya terminados
+      // quedan en una entrada, como siempre.
+      const rangoVigente = fechaFin && new Date(`${fechaFin}T00:00:00`) >= HOY
+      for (const fecha of fechasDelCiclo(ev.fecha, rangoVigente ? fechaFin : null)) {
+        eventos.push(
+          fecha === ev.fecha
+            ? ev
+            : { ...ev, fecha, id: `${ev.id}-${fecha}`, url: `${ev.url}#dia-${fecha}`, esCopiaDeCiclo: true },
+        )
+      }
       nuevosEnPagina++
       if (new Date(`${ev.fecha}T00:00:00`) >= HOY) futurosEnPagina++
     }
