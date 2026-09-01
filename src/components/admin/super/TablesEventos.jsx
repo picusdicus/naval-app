@@ -4,7 +4,10 @@ import eventosExternos from '../../../data/eventos-externos.json'
 import { combinarEventos, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
 import { CATEGORIAS_EVENTO, formatearFechaCorta } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
+import { cartelDe } from '../../../lib/gaceta.js'
+import { useImagenEvento } from '../../../lib/useImagenEvento.js'
 import MIcon from '../../MIcon.jsx'
+import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
 
 // Tab "Eventos" del panel superadmin: lista todos los eventos publicados de la
 // agenda (los tres orígenes ya fusionados con combinarEventos, como la vista
@@ -27,6 +30,40 @@ const ETIQUETA_ORIGEN = { municipal: 'Ayuntamiento', vecinal: 'Vecinal', cultura
 
 function fuenteDe(evento) {
   return evento.fuente || ETIQUETA_ORIGEN[evento.origen] || 'Evento'
+}
+
+// Miniatura del evento para la fila del listado: cartel real si lo hay
+// (lazy, y si la URL falla el hook la anula) o el mismo fallback que las
+// tarjetas públicas — degradado de categoría + trama + icono Tabler.
+// Componente propio porque useImagenEvento es un hook y no puede llamarse
+// dentro del map de filas.
+function MiniaturaEvento({ evento }) {
+  const { posterUrl, pos, onError } = useImagenEvento(evento)
+  const { fondo, trama } = cartelDe(evento.categoria)
+  return posterUrl ? (
+    <img
+      src={posterUrl}
+      alt=""
+      loading="lazy"
+      onError={onError}
+      className="h-12 w-12 shrink-0 border border-filete object-cover"
+      style={{ objectPosition: pos }}
+    />
+  ) : (
+    <div
+      aria-hidden="true"
+      className={`flex h-12 w-12 shrink-0 items-center justify-center border border-filete ${trama}`}
+      style={{ background: fondo }}
+    >
+      <IconoCategoriaTabler
+        categoria={evento.categoria}
+        subcategoria={evento.subcategoria}
+        size={20}
+        stroke={1.5}
+        className="text-papel/80"
+      />
+    </div>
+  )
 }
 
 export default function TablesEventos() {
@@ -254,37 +291,40 @@ export default function TablesEventos() {
               key={evento.id}
               className={`flex flex-col gap-3 py-3 lg:flex-row lg:items-center ${oculto ? 'opacity-60' : ''}`}
             >
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-serif-dm text-base leading-tight text-tinta">
-                  {evento.titulo}
-                  {destacado && (
-                    <MIcon name="star" className="ml-2 align-middle text-[15px] text-ocre-profundo" />
-                  )}
-                </p>
-                <p className="mt-0.5 truncate font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
-                  {formatearFechaCorta(evento.fecha)}
-                  {evento.hora ? `, ${evento.hora}` : ''} · {fuenteDe(evento)}
-                  {CATEGORIAS_EVENTO[evento.categoria]?.nombre
-                    ? ` · ${CATEGORIAS_EVENTO[evento.categoria].nombre}`
-                    : ''}
-                  {fuenteIngesta && (
-                    <span
-                      className="ml-2 text-mudo"
-                      title="Vía por la que este evento entró en la agenda (solo visible en este panel)"
-                    >
-                      · {fuenteIngesta}
-                    </span>
-                  )}
-                  {pasado && <span className="ml-2 text-mudo">· pasado</span>}
-                  {evento.fusionadoPorTituloAproximado && (
-                    <span
-                      className="ml-2 text-ocre-profundo"
-                      title="Fusionado con un evento del Ayuntamiento por título aproximado (los títulos no eran equivalentes). Revisa que sea el mismo acto; si no lo es, ocúltalo."
-                    >
-                      · fusión aproximada
-                    </span>
-                  )}
-                </p>
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <MiniaturaEvento evento={evento} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-serif-dm text-base leading-tight text-tinta">
+                    {evento.titulo}
+                    {destacado && (
+                      <MIcon name="star" className="ml-2 align-middle text-[15px] text-ocre-profundo" />
+                    )}
+                  </p>
+                  <p className="mt-0.5 truncate font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                    {formatearFechaCorta(evento.fecha)}
+                    {evento.hora ? `, ${evento.hora}` : ''} · {fuenteDe(evento)}
+                    {CATEGORIAS_EVENTO[evento.categoria]?.nombre
+                      ? ` · ${CATEGORIAS_EVENTO[evento.categoria].nombre}`
+                      : ''}
+                    {fuenteIngesta && (
+                      <span
+                        className="ml-2 text-mudo"
+                        title="Vía por la que este evento entró en la agenda (solo visible en este panel)"
+                      >
+                        · {fuenteIngesta}
+                      </span>
+                    )}
+                    {pasado && <span className="ml-2 text-mudo">· pasado</span>}
+                    {evento.fusionadoPorTituloAproximado && (
+                      <span
+                        className="ml-2 text-ocre-profundo"
+                        title="Fusionado con un evento del Ayuntamiento por título aproximado (los títulos no eran equivalentes). Revisa que sea el mismo acto; si no lo es, ocúltalo."
+                      >
+                        · fusión aproximada
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
