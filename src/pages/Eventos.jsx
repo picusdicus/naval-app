@@ -238,7 +238,7 @@ export default function Eventos() {
       </section>
 
       <p className="mb-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
-        Imágenes ilustrativas vía Wikimedia Commons: {CREDITOS_FOTOS.join(' · ')}
+        Imágenes ilustrativas de bancos de imágenes de uso libre: {CREDITOS_FOTOS.join(' · ')}
       </p>
     </div>
   )
