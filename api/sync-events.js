@@ -148,6 +148,25 @@ function tituloLegible(txt) {
   return s
 }
 
+// Título sin el prefijo de fecha con el que el RSS de cultura redacta sus
+// titulares ("Del 4 al 20 de septiembre: …", "6 de junio: …"). La fecha ya
+// viaja en `fecha`/`fechaFin` (extraerDiaMes lee el texto crudo completo),
+// así que repetirla en el título solo ensucia la tarjeta. Si tras quitar el
+// prefijo el resto empieza entrecomillado («"el lenguaje del arte",
+// exposición de antonio lucas»), el título es la cita — la coletilla sigue
+// legible en la descripción y en la ficha del ayuntamiento. Si no había
+// prefijo de fecha, el título queda como estaba.
+function tituloSinPrefijoDeFecha(txt) {
+  const base = txt.replace(/\s+/g, ' ').trim()
+  const sinFecha = base.replace(
+    /^(?:del\s+\d{1,2}(?:\s+de\s+\p{L}+)?\s+al\s+\d{1,2}\s+de\s+\p{L}+|\d{1,2}\s+de\s+\p{L}+)(?:\s+de\s+\d{4})?\s*[:,.–—-]\s*/iu,
+    '',
+  )
+  if (sinFecha === base || !sinFecha) return base
+  const cita = sinFecha.match(/^["“«]\s*([^"”»]{4,120})\s*["”»]/u)
+  return cita ? cita[1].trim() : sinFecha
+}
+
 // Meses en español
 const MESES = {
   enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6, julio: 7,
@@ -546,7 +565,7 @@ async function procesarItem(item, indice) {
   return {
     fechaFin,
     id: `aytocult-${(url.match(/cultura\/([^/]+)\/?$/) || [])[1] || indice}`,
-    titulo: tituloLegible(tituloCrudo),
+    titulo: tituloLegible(tituloSinPrefijoDeFecha(tituloCrudo)),
     fecha,
     hora: extraerHora(textoParaFecha),
     lugar: extraerLugar(limpiarTexto(cuerpo, 0)),

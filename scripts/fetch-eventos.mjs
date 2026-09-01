@@ -106,6 +106,21 @@ function tituloLegible(txt) {
   return s
 }
 
+// Título sin el prefijo de fecha del RSS de cultura (misma regla que la copia
+// canónica en api/sync-events.js — mantener en sinc): "Del 4 al 20 de
+// septiembre: …" no debe repetirse en el título, y si lo que queda empieza
+// entrecomillado, el título es la cita.
+function tituloSinPrefijoDeFecha(txt) {
+  const base = txt.replace(/\s+/g, ' ').trim()
+  const sinFecha = base.replace(
+    /^(?:del\s+\d{1,2}(?:\s+de\s+\p{L}+)?\s+al\s+\d{1,2}\s+de\s+\p{L}+|\d{1,2}\s+de\s+\p{L}+)(?:\s+de\s+\d{4})?\s*[:,.–—-]\s*/iu,
+    '',
+  )
+  if (sinFecha === base || !sinFecha) return base
+  const cita = sinFecha.match(/^["“«]\s*([^"”»]{4,120})\s*["”»]/u)
+  return cita ? cita[1].trim() : sinFecha
+}
+
 // Clave normalizada (sin acentos, minusculas, sin puntuacion) para deduplicar.
 function claveNorm(txt) {
   return String(txt || '')
@@ -321,7 +336,7 @@ async function procesarItem(item, indice) {
   return {
     fechaFin,
     id: `aytocult-${(url.match(/cultura\/([^/]+)\/?$/) || [])[1] || indice}`,
-    titulo: tituloLegible(tituloCrudo),
+    titulo: tituloLegible(tituloSinPrefijoDeFecha(tituloCrudo)),
     fecha,
     hora: extraerHora(textoParaFecha),
     lugar: extraerLugar(limpiarTexto(cuerpo, 0)),
