@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
 import { combinarEventos, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
-import { CATEGORIAS_EVENTO, formatearFechaCorta } from '../../../lib/eventos.js'
+import { CATEGORIAS_EVENTO, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
 import { useImagenEvento } from '../../../lib/useImagenEvento.js'
@@ -37,7 +37,7 @@ function fuenteDe(evento) {
 // tarjetas públicas — degradado de categoría + trama + icono Tabler.
 // Componente propio porque useImagenEvento es un hook y no puede llamarse
 // dentro del map de filas.
-function MiniaturaEvento({ evento }) {
+function MiniaturaEvento({ evento, clase = 'h-12 w-12', tamIcono = 20 }) {
   const { posterUrl, pos, onError } = useImagenEvento(evento)
   const { fondo, trama } = cartelDe(evento.categoria)
   return posterUrl ? (
@@ -46,22 +46,77 @@ function MiniaturaEvento({ evento }) {
       alt=""
       loading="lazy"
       onError={onError}
-      className="h-12 w-12 shrink-0 border border-filete object-cover"
+      className={`${clase} shrink-0 border border-filete object-cover`}
       style={{ objectPosition: pos }}
     />
   ) : (
     <div
       aria-hidden="true"
-      className={`relative flex h-12 w-12 shrink-0 items-center justify-center border border-filete ${trama}`}
+      className={`relative flex ${clase} shrink-0 items-center justify-center border border-filete ${trama}`}
       style={{ background: fondo }}
     >
       <IconoCategoriaTabler
         categoria={evento.categoria}
         subcategoria={evento.subcategoria}
-        size={20}
+        size={tamIcono}
         stroke={1.5}
         className="text-papel/80"
       />
+    </div>
+  )
+}
+
+// Detalle desplegado bajo la fila (acordeón): imagen grande + los campos del
+// evento que la fila comprime. Solo lectura — las acciones siguen en la fila.
+function DetalleEvento({ evento, fuenteIngesta }) {
+  const datos = [
+    ['Fecha', evento.fecha ? formatearFechaLarga(evento.fecha) : 'Sin fecha'],
+    ['Hora', evento.hora || null],
+    ['Lugar', evento.lugar || null],
+    ['Organiza', fuenteDe(evento)],
+    [
+      'Categoría',
+      `${CATEGORIAS_EVENTO[evento.categoria]?.nombre || evento.categoria || '—'}${
+        evento.subcategoria ? ` · ${evento.subcategoria}` : ''
+      }`,
+    ],
+    ['Vía de ingesta', fuenteIngesta],
+    ['Id', evento.id],
+    [
+      'Ids secundarios',
+      evento.idsSecundarios?.length ? evento.idsSecundarios.join(', ') : null,
+    ],
+  ].filter(([, valor]) => valor)
+
+  return (
+    <div className="mt-3 flex flex-col gap-4 border border-filete bg-papel-calido p-4 sm:flex-row">
+      <MiniaturaEvento evento={evento} clase="h-52 w-40" tamIcono={44} />
+      <div className="min-w-0 flex-1 space-y-3">
+        {evento.descripcion && (
+          <p className="whitespace-pre-line font-serif-spectral text-sm leading-relaxed text-tinta">
+            {evento.descripcion}
+          </p>
+        )}
+        <dl className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          {datos.map(([etiqueta, valor]) => (
+            <div key={etiqueta} className="min-w-0">
+              <dt className="font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-mudo">
+                {etiqueta}
+              </dt>
+              <dd className="break-words font-serif-spectral text-sm text-tinta">{valor}</dd>
+            </div>
+          ))}
+        </dl>
+        <a
+          href={`/eventos/${encodeURIComponent(evento.id)}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota hover:underline"
+        >
+          <MIcon name="open_in_new" className="text-[13px]" />
+          Ver ficha pública
+        </a>
+      </div>
     </div>
   )
 }
@@ -74,6 +129,7 @@ export default function TablesEventos() {
   const [busqueda, setBusqueda] = useState('')
   const [incluirPasados, setIncluirPasados] = useState(false)
   const [ocupadoId, setOcupadoId] = useState(null) // id del evento con acción en curso
+  const [abiertoId, setAbiertoId] = useState(null) // id del evento con el detalle desplegado
   const [mensaje, setMensaje] = useState(null) // { tipo: 'error', texto }
 
   useEffect(() => {
@@ -286,12 +342,17 @@ export default function TablesEventos() {
           const ocupado = ocupadoId === evento.id
           const pasado = diasHasta(evento.fecha) < 0
           const fuenteIngesta = fuenteDeIngesta(evento)
+          const abierto = abiertoId === evento.id
           return (
-            <div
-              key={evento.id}
-              className={`flex flex-col gap-3 py-3 lg:flex-row lg:items-center ${oculto ? 'opacity-60' : ''}`}
-            >
-              <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div key={evento.id} className={`py-3 ${oculto ? 'opacity-60' : ''}`}>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <button
+                type="button"
+                onClick={() => setAbiertoId((previo) => (previo === evento.id ? null : evento.id))}
+                aria-expanded={abierto}
+                title={abierto ? 'Replegar el detalle' : 'Ver el detalle del evento'}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
                 <MiniaturaEvento evento={evento} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-serif-dm text-base leading-tight text-tinta">
@@ -325,7 +386,11 @@ export default function TablesEventos() {
                     )}
                   </p>
                 </div>
-              </div>
+                <MIcon
+                  name={abierto ? 'expand_less' : 'expand_more'}
+                  className="shrink-0 text-[18px] text-mudo"
+                />
+              </button>
 
               <div className="flex flex-wrap items-center gap-2">
                 {destacado ? (
@@ -367,6 +432,9 @@ export default function TablesEventos() {
                   {oculto ? 'Oculto' : 'Ocultar'}
                 </button>
               </div>
+              </div>
+
+              {abierto && <DetalleEvento evento={evento} fuenteIngesta={fuenteIngesta} />}
             </div>
           )
         })}
