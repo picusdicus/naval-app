@@ -19,12 +19,18 @@ import { imagenEvento } from './imagenesEvento.js'
  *   - posterUrl: la url, o null si no hay imagen o si su carga falló
  *   - pos: object-position para el <img>
  *   - onError: handler que hay que enchufar al <img>
+ *   - real: true si posterUrl es la foto propia del evento; false si es una
+ *     ilustrativa de la galería por categoría (o no hay imagen)
+ *   - credito: atribución de la ilustrativa (undefined con foto propia)
+ *
+ * `opciones` se pasa tal cual a imagenEvento() (p. ej. {paraHeroe: true} en
+ * la ficha de detalle, que excluye las variantes de resolución justa).
  */
-export function useImagenEvento(evento) {
+export function useImagenEvento(evento, opciones) {
   // Tolera `evento` nulo para que quien tenga returns tempranos (EventoDetalle
   // mientras carga) pueda llamar al hook siempre, como exigen las reglas de
   // los hooks, sin romperse al leer `evento.imagen`.
-  const img = evento ? imagenEvento(evento) : null
+  const img = evento ? imagenEvento(evento, opciones) : null
   const src = img?.src ?? null
   const [rota, setRota] = useState(false)
 
@@ -41,5 +47,7 @@ export function useImagenEvento(evento) {
     posterUrl: rota ? null : src,
     pos: img?.pos || '50% 50%',
     onError,
+    real: Boolean(img?.real) && !rota,
+    credito: img?.real ? undefined : img?.credito,
   }
 }

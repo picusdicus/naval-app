@@ -97,7 +97,9 @@ export default function EventoDetalle() {
   // Antes del return temprano: es un hook y no puede quedar tras un
   // condicional. `posterUrl` pasa a null si la url del cartel falla al cargar,
   // y entonces se pinta el degradado con el título superpuesto.
-  const { posterUrl, pos, onError } = useImagenEvento(evento)
+  // `paraHeroe` excluye las ilustrativas de resolución justa (soloTarjeta):
+  // a tamaño de héroe pixelarían — mejor el degradado de siempre.
+  const { posterUrl, pos, onError, real, credito } = useImagenEvento(evento, { paraHeroe: true })
 
   if (!evento) {
     // Los eventos publicados desde /admin llegan por fetch: mientras no estén,
@@ -127,9 +129,11 @@ export default function EventoDetalle() {
     <div className="mx-auto max-w-2xl">
       <BarraContexto evento={evento} />
 
-      {/* Cartel: el póster real si lo tiene; si no, degradado + trama con el
-          título superpuesto (el título va debajo cuando hay imagen, para no
-          duplicarlo sobre un cartel que ya lo lleva impreso). */}
+      {/* Cartel: el póster real si lo tiene; sin él, una ilustrativa de la
+          galería por categoría (con su crédito CC debajo); si tampoco hay,
+          degradado + trama con el título superpuesto (el título va debajo
+          cuando hay imagen, para no duplicarlo sobre un cartel que ya lo
+          lleva impreso). */}
       <div className="relative mt-4 aspect-[3/4] w-full overflow-hidden border border-tinta">
         {posterUrl ? (
           <img
@@ -152,6 +156,13 @@ export default function EventoDetalle() {
           </div>
         )}
       </div>
+
+      {/* Atribución de la ilustrativa (las licencias CC BY / BY-SA la exigen) */}
+      {posterUrl && !real && credito && (
+        <p className="mt-1 text-right font-mono-ibm text-[9px] text-mudo">
+          Imagen ilustrativa · {credito} · Wikimedia Commons
+        </p>
+      )}
 
       {/* Cabecera (título debajo cuando hay póster real) */}
       <div className="mt-5">

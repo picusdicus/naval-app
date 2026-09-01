@@ -318,14 +318,35 @@ export function fuenteDeIngesta(evento) {
   return principal ? `${principal} + ${secundaria}` : secundaria
 }
 
+/**
+ * ¿La imagen de este evento es un cartel con el texto rotulado (título, fecha
+ * y lugar dibujados como parte del diseño del JPG)? Verificado sobre los
+ * carteles reales publicados (ago-2026): TODAS las imágenes de los posts de
+ * Instagram del Ayuntamiento y de la galería de Deportes de WordPress siguen
+ * esa plantilla. La tarjeta usa esta marca para no volver a pintar su título
+ * encima (lo oculta solo visualmente; sigue en el DOM para lectores de
+ * pantalla). En las fusiones la procedencia del campo `imagen` deja de ser
+ * deducible del propio evento, así que fusionar() y enriquecerPorCartel()
+ * dejan la marca `imagenRotulada` en el momento en que aún se conoce.
+ */
+export function imagenConTextoRotulado(evento) {
+  if (!evento?.imagen) return false
+  if (evento.imagenRotulada) return true
+  return evento.organizacionSlug === SLUG_AYUNTAMIENTO || evento.origen === 'deportes'
+}
+
 // Rellena en `base` los campos que tenga vacíos con los de `otro` y acumula el
 // id de `otro` en idsSecundarios (para que deep links y destacados que apunten
 // al duplicado sigan resolviendo). `base` no se pisa: gana la versión curada o
 // el primer duplicado encontrado. Devuelve un objeto nuevo (no muta).
 function fusionar(base, otro) {
+  // Quién aporta la imagen decide si lleva texto rotulado: el resultado hereda
+  // la identidad del estático base y perdería la procedencia de la foto.
+  const aportaImagen = base.imagen ? base : otro.imagen ? otro : null
   return {
     ...base,
     imagen: base.imagen || otro.imagen,
+    imagenRotulada: aportaImagen ? imagenConTextoRotulado(aportaImagen) : false,
     descripcion: base.descripcion || otro.descripcion,
     hora: base.hora || otro.hora,
     lugar: base.lugar || otro.lugar,
@@ -399,6 +420,9 @@ export function enriquecerPorCartel(eventos) {
     return {
       ...evt,
       imagen: evt.imagen || cartel.imagen,
+      // La foto inyectada ES el cartel rotulado de la galería de Deportes; el
+      // evento del programa que la recibe no lo sabría por sí mismo.
+      imagenRotulada: evt.imagen ? imagenConTextoRotulado(evt) : Boolean(cartel.imagen),
     }
   })
 

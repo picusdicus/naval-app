@@ -21,8 +21,9 @@ const ETIQUETA_TRAMO = {
   madrugada: 'Madrugada',
 }
 
-// Cartel 3:4 reutilizable dentro del programa: cartel real o foto temática por
-// categoría; el degradado solo como último recurso.
+// Cartel 3:4 reutilizable dentro del programa: cartel real o, sin él, una
+// ilustrativa de la galería por categoría (estable por id del evento, ver
+// imagenEvento()); el degradado solo como último recurso.
 function CartelMini({ evento, className = '' }) {
   // posterUrl pasa a null si la url del cartel falla al cargar (onError), y
   // entonces se pinta el degradado de categoría en vez del alt roto.

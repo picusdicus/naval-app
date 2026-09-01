@@ -1,4 +1,5 @@
 import { CATEGORIAS_EVENTO, mesDe } from '../../lib/eventos'
+import { imagenConTextoRotulado } from '../../lib/dedupEventos'
 import { cartelDe } from '../../lib/gaceta'
 import { useImagenEvento } from '../../lib/useImagenEvento'
 import MIcon from '../MIcon'
@@ -6,23 +7,40 @@ import { IconoCategoriaTabler } from './iconosEvento'
 
 /**
  * Tarjeta de evento para el muro de la cartelera (protagonismo del cartel).
- * El cartel real (si existe) va a sangre; sin él, degradado de categoría +
- * trama + título en serif grande — nunca un hueco vacío.
+ * Cuatro estados según la imagen disponible:
+ *  - Cartel real ROTULADO (título/fecha/lugar impresos en el propio JPG, como
+ *    los de Instagram del Ayuntamiento o la galería de Deportes): foto limpia
+ *    sin velo y texto solo para lectores de pantalla — repetirlo encima lo
+ *    hacía ilegible.
+ *  - Cartel real SIN rotular: foto + velo + texto, como siempre.
+ *  - Ilustrativa de galería (el evento no trae foto; `imagenEvento()` elige
+ *    una por categoría, estable por id): foto + velo + texto + plantilla
+ *    editorial completa (fecha, organizador) pero SIN el remate de icono, que
+ *    se calibró sobre degradado plano y sobre foto es ruido.
+ *  - Sin imagen ninguna (pool vacío o url rota): degradado de categoría +
+ *    trama + plantilla editorial completa con remate.
  * Props:
  *   - evento
  *   - destacado: ocupa 2 columnas (panorámico) y lleva sello "Destacado"
  *   - onClick
  */
 export default function TarjetaEvento({ evento, destacado = false, onClick = () => {} }) {
-  // Cartel real (imagen del evento) o, en su defecto, la foto temática por
-  // categoría; solo si no hay ninguna, el degradado. (Antes solo se usaba el
-  // cartel real y por eso desaparecían las fotos genéricas de los curados.)
-  // Si la url del cartel falla al cargar, `posterUrl` pasa a null y toda la
+  // Si la url de la imagen falla al cargar, `posterUrl` pasa a null y toda la
   // plantilla editorial de abajo (fecha, remate de categoría, organizador)
   // vuelve a pintarse — nunca el alt crudo sobre el velo.
-  const { posterUrl, pos, onError } = useImagenEvento(evento)
+  const { posterUrl, pos, onError, real } = useImagenEvento(evento)
   const { fondo, trama } = cartelDe(evento.categoria)
   const cat = CATEGORIAS_EVENTO[evento.categoria]
+
+  // Solo un cartel PROPIO puede llevar el texto rotulado: la condición exige
+  // `real` explícitamente para que una ilustrativa de galería jamás dispare
+  // este estado aunque el evento venga de una fuente "rotulada" (deportes,
+  // Instagram del Ayuntamiento) sin foto propia.
+  const textoEnLaImagen = Boolean(posterUrl) && real && imagenConTextoRotulado(evento)
+  // Ilustrativa de galería: hay foto pero no es del evento — el texto debe
+  // contarlo todo, así que recupera la plantilla editorial (sin el remate).
+  const esGenerica = Boolean(posterUrl) && !real
+  const conPlantillaEditorial = !posterUrl || esGenerica
 
   return (
     <button
@@ -33,7 +51,7 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
       }`}
       style={{ aspectRatio: destacado ? '16 / 9' : '3 / 4' }}
     >
-      {/* Fondo: cartel real o degradado de categoría con trama */}
+      {/* Fondo: cartel real, ilustrativa de galería o degradado de categoría */}
       {posterUrl ? (
         <img
           src={posterUrl}
@@ -47,19 +65,22 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
         <div className={`absolute inset-0 ${trama}`} style={{ background: fondo }} />
       )}
 
-      {/* Velo inferior para legibilidad */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
+      {/* Velo inferior para legibilidad (sin texto superpuesto solo oscurecería el cartel) */}
+      {!textoEnLaImagen && (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
+      )}
 
-      {/* Sello de hora (arriba-izquierda) */}
+      {/* Sello de hora (arriba-izquierda) — visible en todos los estados */}
       {evento.hora && (
         <div className="absolute left-3 top-3 rounded-full bg-black/70 px-2 py-1 font-mono-ibm text-[11px] tracking-wider text-papel">
           {evento.hora}
         </div>
       )}
 
-      {/* Fecha editorial (arriba-derecha), solo en la tarjeta sin imagen.
+      {/* Fecha editorial (arriba-derecha): sin imagen o con ilustrativa — un
+          cartel real ya lleva su fecha rotulada o es quien manda visualmente.
           Con sello Destacado se baja para no pisarlo. */}
-      {!posterUrl && evento.fecha && (
+      {conPlantillaEditorial && evento.fecha && (
         <div
           className={`absolute right-3 flex flex-col items-center ${destacado ? 'top-11' : 'top-3'}`}
         >
@@ -80,11 +101,18 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
         </div>
       )}
 
-      {/* Contenido inferior */}
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-4">
+      {/* Contenido inferior. Con cartel rotulado se oculta solo visualmente
+          (sr-only): sigue en el DOM para lectores de pantalla. */}
+      <div
+        className={
+          textoEnLaImagen ? 'sr-only' : 'absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-4'
+        }
+      >
         {/* Remate de categoría: icono pequeño pegado a la etiqueta, como firma
             editorial — no un watermark de fondo (primer hijo del bloque = queda
-            debajo del texto que viene después). El porqué está en CLAUDE.md. */}
+            debajo del texto que viene después). El porqué está en CLAUDE.md.
+            SOLO sin imagen: sobre una foto (incluida la ilustrativa) la
+            opacidad 0.10 calibrada para el degradado se pierde o ensucia. */}
         {!posterUrl && (
           <IconoCategoriaTabler
             categoria={evento.categoria}
@@ -115,8 +143,8 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
           <span className="line-clamp-1">{evento.lugar}</span>
         </div>
 
-        {/* Organizador, solo en la tarjeta sin imagen y si el evento trae el dato */}
-        {!posterUrl && evento.fuente && (
+        {/* Organizador: sin imagen o con ilustrativa, y si el evento trae el dato */}
+        {conPlantillaEditorial && evento.fuente && (
           <div className="line-clamp-1 font-mono-ibm text-[10px] text-papel/60">
             Organiza · {evento.fuente}
           </div>
