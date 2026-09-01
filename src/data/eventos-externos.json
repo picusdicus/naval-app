@@ -1,18 +1,5 @@
 [
   {
-    "id": "aytocult-festival-de-teatro-de-humor-de-navalcarnero",
-    "titulo": "Festival de teatro de humor de Navalcarnero",
-    "fecha": "2025-01-20",
-    "hora": "09:00",
-    "lugar": "Navalcarnero",
-    "categoria": "cultura",
-    "origen": "cultural",
-    "descripcion": "¡Vuelve el FESTIVAL DE TEATRO DE HUMOR DE NAVALCARNERO! Los sábados 1, 8, 15 y 22 del mes de febrero el Teatro Centro acoge una nueva edición del Festival de Humor, organizado por el grupo de teatro aficionado El Telón Negro y patrocinado por el Ayuntamiento de Navalcarnero. Las cuatro divertidas obras de esta edición son: Día 1, \"Amigas desgraciadas\", de la compañía La Otra Parte Teatro Día 8, \"El trastero\", de la A.C. Amigos del Teatro de Castellón Día 15, \"Residencia ST\", de la compañía GAT Día 22, \"Waitress. El musical más dulce\", de la compañía Telón Aparte Las entradas estarán a la venta desde las 09.00 horas del día 20 de enero, y se podrán adquirir en https://teatrocentro.sacatuentrada.es/ , en la Concejalía de Cultura (Cl Libertad, 29), de lunes a viernes, en horario de 09.00 a 14.00 horas, y en la taquilla del Teatro una hora antes de cada función. El precio de la entrada es de 5,00 € y es único. Desde el día 20 de enero, se pondrán a la venta 50 abonos, para asistir a las cuatro obras, al precio de 15,00 €. Estos abonos SÓLO SE PUEDEN ADQUIRIR EN LA CONCEJALÍA DE CULTURA , en el horario antes indicado.",
-    "url": "https://navalcarnero.es/navalcarnero/cultura/festival-de-teatro-de-humor-de-navalcarnero/",
-    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/1.-Festival-de-humor-2.png",
-    "fuente": "Ayuntamiento"
-  },
-  {
     "id": "aytocult-carnaval-2025-1-de-marzo-a-las-18-00-plaza-de-segovia",
     "titulo": "¡Carnaval 2025!: 1 de marzo a las 18.00, plaza de segovia",
     "fecha": "2025-03-01",
@@ -2147,6 +2134,20 @@
     "fuente": ""
   },
   {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-05",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-05",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-05",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
     "id": "fiestas-homenaje-a-los-mayores-2026-2026-09-05",
     "titulo": "HOMENAJE A LOS MAYORES 2026.",
     "fecha": "2026-09-05",
@@ -2317,6 +2318,20 @@
     "fuente": ""
   },
   {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-06",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-06",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-06",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
     "id": "fiestas-gran-ofrenda-de-flores-a-la-patrona-2026-09-06",
     "titulo": "GRAN OFRENDA DE FLORES A LA PATRONA.",
     "fecha": "2026-09-06",
@@ -2471,6 +2486,20 @@
     "fuente": ""
   },
   {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-07",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-07",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-07",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
     "id": "fiestas-pasacalles-a-cargo-de-las-charangas-sublime-y-la-p-2026-09-07",
     "titulo": "PASACALLES. A cargo de las charangas Sublime y La Pícara.",
     "fecha": "2026-09-07",
@@ -2567,6 +2596,20 @@
     "descripcion": "Lugar: recinto ferial Los Charcones.",
     "url": "",
     "fuente": ""
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-08",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-08",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-08",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
   },
   {
     "id": "fiestas-procesion-2026-09-08",
@@ -2681,6 +2724,20 @@
     "fuente": ""
   },
   {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-09",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-09",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-09",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
     "id": "fiestas-orquesta-vulkano-2026-09-09",
     "titulo": "ORQUESTA VULKANO.",
     "fecha": "2026-09-09",
@@ -2763,6 +2820,20 @@
     "descripcion": "Con dos toros donados por la Asociación Taurina Encierros de Navalcarnero (soltados de uno en uno) y posterior suelta en la plaza de toros. Colabora: Asociación Taurina Encierros de Navalcarnero.",
     "url": "",
     "fuente": ""
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-10",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-10",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-10",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
   },
   {
     "id": "fiestas-tributos-delcanto-pereza-2026-09-10",
@@ -2891,6 +2962,20 @@
     "fuente": ""
   },
   {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-11",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-11",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-11",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
     "id": "fiestas-melendiers-2026-09-11",
     "titulo": "MELENDIERS.",
     "fecha": "2026-09-11",
@@ -3017,6 +3102,20 @@
     "fuente": ""
   },
   {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-12",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-12",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-12",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
     "id": "fiestas-despistaos-en-concierto-2026-09-12",
     "titulo": "DESPISTAOS EN CONCIERTO.",
     "fecha": "2026-09-12",
@@ -3101,6 +3200,20 @@
     "fuente": ""
   },
   {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-13",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-13",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-13",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
     "id": "fiestas-lio-gordo-en-concierto-2026-09-13",
     "titulo": "LÍO GORDO EN CONCIERTO.",
     "fecha": "2026-09-13",
@@ -3113,6 +3226,173 @@
     "descripcion": "Lugar: plaza de Segovia.",
     "url": "",
     "fuente": ""
+  },
+  {
+    "id": "aytocult-talleres-de-cultura-2026-2027",
+    "titulo": "Talleres de cultura 2026-2027",
+    "fecha": "2026-09-14",
+    "hora": "14:00",
+    "lugar": "Navalcarnero",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
+    "fuente": "Ayuntamiento"
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-14",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-14",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-14",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-talleres-de-cultura-2026-2027-2026-09-15",
+    "titulo": "Talleres de cultura 2026-2027",
+    "fecha": "2026-09-15",
+    "hora": "14:00",
+    "lugar": "Navalcarnero",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-15",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-15",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-15",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-15",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-talleres-de-cultura-2026-2027-2026-09-16",
+    "titulo": "Talleres de cultura 2026-2027",
+    "fecha": "2026-09-16",
+    "hora": "14:00",
+    "lugar": "Navalcarnero",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-16",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-16",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-16",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-16",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-talleres-de-cultura-2026-2027-2026-09-17",
+    "titulo": "Talleres de cultura 2026-2027",
+    "fecha": "2026-09-17",
+    "hora": "14:00",
+    "lugar": "Navalcarnero",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-17",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-17",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-17",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-17",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-talleres-de-cultura-2026-2027-2026-09-18",
+    "titulo": "Talleres de cultura 2026-2027",
+    "fecha": "2026-09-18",
+    "hora": "14:00",
+    "lugar": "Navalcarnero",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-18",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-18",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-18",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-18",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-19",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-19",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-19",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
+  },
+  {
+    "id": "aytocult-del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas-2026-09-20",
+    "titulo": "Del 4 al 20 de septiembre: \"el lenguaje del arte\", exposición de antonio lucas",
+    "fecha": "2026-09-20",
+    "hora": "21:00",
+    "lugar": "Casa de la Cultura",
+    "categoria": "cultura",
+    "origen": "cultural",
+    "descripcion": "El 4 de septiembre a las 21.00 horas y en la Sala de exposiciones de la Casa de la Cultura, se inaugura la exposición \"El lenguaje del Arte\", del pintor local Antonio Lucas, una muestra que reúne una selección de obras del Taller de arte \"Davinci-Madrid\", en la que se podrá descubrir una gran variedad de estilos, técnicas y temáticas. La exposición permanecerá abierta al público hasta el 20 de septiembre y podrá visitar de lunes a domingos de 18.00 a 21.00 horas y los sábados y domingos de 11.00 a 14.00 horas.",
+    "url": "https://navalcarnero.es/navalcarnero/cultura/del-4-al-20-de-septiembre-el-lenguaje-del-arte-exposicion-de-antonio-lucas/#dia-2026-09-20",
+    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/CARTEL19.png",
+    "fuente": "Ayuntamiento",
+    "esCopiaDeCiclo": true
   },
   {
     "id": "redteatros-en-el-viento",
