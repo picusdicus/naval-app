@@ -21,6 +21,19 @@ const LUGARES_FIJOS = [
   { nombre: 'Plaza de Segovia', lat: 40.2876685, lng: -4.0142827 },
   { nombre: 'Plaza de la Veracruz', lat: 40.2881244, lng: -4.0147148 },
   { nombre: 'Parque de San Sebastián', lat: 40.2874484, lng: -4.0204771 },
+  // OSM no la tiene como POI; coordenadas del geocoding de Places del portal
+  // "Pl. de Covadonga, 5" (parada de taxi del directorio).
+  { nombre: 'Plaza de Covadonga', lat: 40.2836594, lng: -4.0195483 },
+  // Ancla: "Kiosko Los Charcones" del directorio (POI de Places en el recinto).
+  { nombre: 'Recinto Ferial Los Charcones', lat: 40.2902239, lng: -4.0032714 },
+  // "Iglesia de la Asunción" a secas para que sus tokens sean subconjunto de
+  // las redacciones del programa ("Iglesia Parroquial Ntra. Sra. de la
+  // Asunción"). Coordenadas del artículo de Wikipedia del monumento.
+  { nombre: 'Iglesia de la Asunción', lat: 40.288362, lng: -4.014426 },
+  // Parada de bus "Camino Casarrubios - Plaza de Toros" (OSM), pegada al coso.
+  { nombre: 'Plaza de toros Félix Colomo', lat: 40.2895113, lng: -4.0074271 },
+  // Vía residencial en OSM; pin en su punto medio.
+  { nombre: 'Paseo del Alparrache', lat: 40.2902374, lng: -4.0061309 },
 ]
 
 // Palabras de relleno que no aportan a la identificación del lugar.
