@@ -68,7 +68,18 @@
       "Bash(ls -la public/poster.jpg)",
       "Read(//mnt/user-data/uploads/**)",
       "Bash(node scripts/test-real-preview.mjs)",
-      "Bash(bash scripts/test-completo.sh)"
+      "Bash(bash scripts/test-completo.sh)",
+      "Bash(gh secret *)",
+      "Bash(gh run *)",
+      "Bash(gh workflow *)",
+      "Bash(grep -iA 3 \"curl\\\\|timestamp\\\\|error\\\\|agregados\\\\|unauthorized\")",
+      "Bash(curl -s https://ennavalcarnero.es/api/eventos)",
+      "Bash(curl -s https://ennavalcarnero.es/api/fusiones-eventos)",
+      "Bash(curl -s \"https://nominatim.openstreetmap.org/search?q=Plaza+de+Covadonga+Navalcarnero&format=json&limit=3\" -H \"User-Agent: naval-app-dev\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{JSON.parse\\(d\\).forEach\\(r=>console.log\\(r.lat, r.lon, '|', r.display_name.slice\\(0,90\\)\\)\\)}\\)\")",
+      "Bash(curl -s \"https://nominatim.openstreetmap.org/search?street=Plaza+de+Covadonga&city=Navalcarnero&format=json&limit=3\" -H \"User-Agent: naval-app-dev\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\); if\\(!j.length\\) console.log\\('sin resultados'\\); j.forEach\\(r=>console.log\\(r.lat, r.lon, '|', r.type, '|', r.display_name.slice\\(0,90\\)\\)\\)}\\)\")",
+      "Bash(node --input-type=module -e ' *)"
     ]
   }
 }
