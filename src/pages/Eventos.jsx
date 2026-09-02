@@ -223,24 +223,8 @@ export default function Eventos() {
         onCerrar={() => setMostrarCalendario(false)}
       />
 
-      {/* CTA */}
-      <section className="mt-10 mb-6 flex flex-col items-center border border-tinta bg-papel-calido p-8 text-center">
-        <MIcon name="campaign" className="mb-2 text-[40px] text-terracota" />
-        <h3 className="font-serif-dm text-xl text-tinta">¿Organizas un evento?</h3>
-        <p className="mb-6 mt-2 max-w-md font-serif-spectral text-sm text-tinta-apagada">
-          Si tu asociación o negocio organiza una actividad en Navalcarnero, cuéntanoslo y la
-          publicaremos en la agenda vecinal.
-        </p>
-        <a
-          href="mailto:directorio@navalcarnero.example?subject=Propuesta%20de%20evento"
-          className="gz-boton-tinta"
-        >
-          Proponer un evento
-        </a>
-      </section>
-
       {creditosDe(genericas).length > 0 && (
-        <p className="mb-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
+        <p className="mb-6 mt-10 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
           Imágenes ilustrativas de bancos de imágenes de uso libre: {creditosDe(genericas).join(' · ')}
         </p>
       )}
