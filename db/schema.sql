@@ -421,3 +421,41 @@ CREATE TABLE IF NOT EXISTS fusiones_eventos (
   creado_en             timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT fusion_no_reflexiva CHECK (referencia_secundaria <> referencia_principal)
 );
+
+-- Imágenes genéricas de eventos gestionadas por superadmin (pool de ilustrativas
+-- por categoría/disciplina, fuera del JSON hardcodeado). Viven en Blob bajo
+-- eventos-genericas/<categoria>/<disciplina>/ (o solo <categoria>/ si no hay disciplina).
+-- Son variantes complementarias al pool IMAGENES_EVENTO de src/lib/imagenesEvento.js:
+-- imagenEvento() fusiona ambos al construir el hash (MOSTRAR_IMAGENES_GENERICAS=true
+-- activa el uso).
+CREATE TABLE IF NOT EXISTS imagenes_evento_genericas (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  categoria     text NOT NULL,
+  disciplina    text,
+  url           text NOT NULL,
+  autor         text,
+  fuente        text,
+  licencia      text,
+  descripcion   text,
+  activo        boolean NOT NULL DEFAULT true,
+  creado_en     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_imagenes_genericas_categoria ON imagenes_evento_genericas (categoria);
+
+CREATE INDEX IF NOT EXISTS idx_imagenes_genericas_activo ON imagenes_evento_genericas (activo, categoria);
+
+-- Imagen ilustrativa elegida A MANO por el superadmin para un evento concreto,
+-- cuando la inferencia por título/subcategoría/descripción no acierta (un
+-- "IV TROFEO FS NAVALCARNERO" que es fútbol sala, o un acto cultural cuyo
+-- título no dice de qué va). La clave es el id PÚBLICO del evento, el mismo
+-- que usan eventos_ocultos / destacados / fusiones_eventos: estable entre
+-- regeneraciones del cron. Fail-soft por diseño: si la imagen se borra, la
+-- fila cae con ella (ON DELETE CASCADE) y el evento vuelve a la automática.
+CREATE TABLE IF NOT EXISTS imagenes_evento_asignaciones (
+  referencia_id text PRIMARY KEY,
+  imagen_id     uuid NOT NULL REFERENCES imagenes_evento_genericas(id) ON DELETE CASCADE,
+  creado_en     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_imagenes_asignaciones_imagen ON imagenes_evento_asignaciones (imagen_id);

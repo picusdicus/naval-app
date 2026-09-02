@@ -47,3 +47,6 @@ blob-report/
 
 # Configuración local de Claude Code (permisos por máquina, no compartir)
 .claude/settings.json
+
+# Imágenes de prueba locales (no van al repo)
+public/img/test/

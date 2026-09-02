@@ -1,9 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useContext } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
+import { genericasParaEvento } from '../lib/imagenesEvento.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
-import { imagenEvento } from '../lib/imagenesEvento.js'
+import { useImagenEvento } from '../lib/useImagenEvento.js'
+import { GenericasEventoContext } from '../lib/GenericasEventoContext.jsx'
 import { cartelDe } from '../lib/gaceta.js'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { useDestacados } from '../lib/useDestacados.js'
@@ -29,8 +31,83 @@ function fechaMasthead() {
   return `${cap(dia)} · ${num} ${cap(mes)}`
 }
 
+// Tarjetas de "esta semana". Componentes propios porque useImagenEvento es un
+// hook (no puede llamarse dentro de un .map): resuelve la ilustrativa filtrada
+// por categoría/disciplina y tolera que el cartel propio falle al cargar
+// (cae a la ilustrativa, y si no hay, al degradado de categoría).
+function TarjetaSemanaMovil({ e }) {
+  const { posterUrl, pos, onError } = useImagenEvento(e)
+  const cartel = cartelDe(e.categoria)
+  return (
+    <Link to={`/eventos/${e.id}`} className="border-t-2 border-tinta pt-2">
+      <div
+        className={`relative aspect-square overflow-hidden ${posterUrl ? '' : cartel.trama}`}
+        style={posterUrl ? undefined : { background: cartel.fondo }}
+      >
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt=""
+            onError={onError}
+            className="h-full w-full object-cover"
+            style={{ objectPosition: pos }}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center opacity-25">
+            <IconoEvento categoria={e.categoria} className="text-[40px] text-white" />
+          </div>
+        )}
+      </div>
+      <h3 className="mt-1.5 font-serif-dm text-lg leading-none text-tinta">{e.titulo}</h3>
+      <div className="mt-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo">
+        {formatearFechaCorta(e.fecha)}
+        {e.hora ? ` · ${e.hora}` : ''}
+      </div>
+    </Link>
+  )
+}
+
+function TarjetaSemanaEscritorio({ e }) {
+  const { posterUrl, pos, onError } = useImagenEvento(e)
+  const cartel = cartelDe(e.categoria)
+  return (
+    <Link to={`/eventos/${e.id}`} className="group">
+      <div
+        className={`relative aspect-[3/4] overflow-hidden rounded-lg shadow-cartel ${posterUrl ? '' : cartel.trama}`}
+        style={posterUrl ? undefined : { background: cartel.fondo }}
+      >
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt=""
+            onError={onError}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            style={{ objectPosition: pos }}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center opacity-25">
+            <IconoEvento categoria={e.categoria} className="text-[64px] text-white" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <span className="gz-badge-oro absolute left-3 top-3">
+          {CATEGORIAS_EVENTO[e.categoria]?.nombre || 'Evento'}
+        </span>
+        <h3 className="absolute bottom-0 left-0 w-full p-4 font-serif-dm text-2xl italic leading-none text-papel">
+          {e.titulo}
+        </h3>
+      </div>
+      <div className="mt-2.5 font-serif-spectral text-sm text-pardo">
+        {formatearFechaCorta(e.fecha)}
+        {e.hora ? ` · ${e.hora}` : ''} · {e.lugar}
+      </div>
+    </Link>
+  )
+}
+
 export default function Inicio() {
   const weather = useWeather()
+  const { genericas, asignaciones } = useContext(GenericasEventoContext)
 
   // Alertas urgentes vigentes del Ayuntamiento (Instagram → Neon), filtradas
   // client-side en el hook: sin ninguna activa, la sección móvil se oculta y
@@ -55,9 +132,9 @@ export default function Inicio() {
     const faltantes = eventosProximos
       .filter((e) => !ids.has(e.id))
       .slice(0, minimos - destacadosOriginales.length)
-      .map((e) => eventoATarjeta(e))
+      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas, asignaciones) }))
     return [...destacadosOriginales, ...faltantes]
-  }, [destacadosOriginales, eventos])
+  }, [destacadosOriginales, eventos, genericas, asignaciones])
 
   const semana = proximos.slice(0, 4)
   // Tres comercios bien poblados y distintos para la banda de escritorio (mockup
@@ -116,36 +193,9 @@ export default function Inicio() {
             <div className="mb-3 h-px bg-tinta" />
             <span className="gz-label text-mudo">También esta semana</span>
             <div className="mt-3 grid grid-cols-2 gap-4">
-              {semana.map((e) => {
-                const img = imagenEvento(e)
-                const cartel = cartelDe(e.categoria)
-                return (
-                  <Link key={e.id} to={`/eventos/${e.id}`} className="border-t-2 border-tinta pt-2">
-                    <div
-                      className={`relative aspect-square overflow-hidden ${img ? '' : cartel.trama}`}
-                      style={img ? undefined : { background: cartel.fondo }}
-                    >
-                      {img ? (
-                        <img
-                          src={img.src}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          style={{ objectPosition: img.pos || '50% 50%' }}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-25">
-                          <IconoEvento categoria={e.categoria} className="text-[40px] text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="mt-1.5 font-serif-dm text-lg leading-none text-tinta">{e.titulo}</h3>
-                    <div className="mt-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo">
-                      {formatearFechaCorta(e.fecha)}
-                      {e.hora ? ` · ${e.hora}` : ''}
-                    </div>
-                  </Link>
-                )
-              })}
+              {semana.map((e) => (
+                <TarjetaSemanaMovil key={e.id} e={e} />
+              ))}
             </div>
             <Link
               to="/eventos"
@@ -203,42 +253,9 @@ export default function Inicio() {
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-              {semana.map((e) => {
-                const img = imagenEvento(e)
-                const cartel = cartelDe(e.categoria)
-                return (
-                  <Link key={e.id} to={`/eventos/${e.id}`} className="group">
-                    <div
-                      className={`relative aspect-[3/4] overflow-hidden rounded-lg shadow-cartel ${img ? '' : cartel.trama}`}
-                      style={img ? undefined : { background: cartel.fondo }}
-                    >
-                      {img ? (
-                        <img
-                          src={img.src}
-                          alt=""
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          style={{ objectPosition: img.pos || '50% 50%' }}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-25">
-                          <IconoEvento categoria={e.categoria} className="text-[64px] text-white" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                      <span className="gz-badge-oro absolute left-3 top-3">
-                        {CATEGORIAS_EVENTO[e.categoria]?.nombre || 'Evento'}
-                      </span>
-                      <h3 className="absolute bottom-0 left-0 w-full p-4 font-serif-dm text-2xl italic leading-none text-papel">
-                        {e.titulo}
-                      </h3>
-                    </div>
-                    <div className="mt-2.5 font-serif-spectral text-sm text-pardo">
-                      {formatearFechaCorta(e.fecha)}
-                      {e.hora ? ` · ${e.hora}` : ''} · {e.lugar}
-                    </div>
-                  </Link>
-                )
-              })}
+              {semana.map((e) => (
+                <TarjetaSemanaEscritorio key={e.id} e={e} />
+              ))}
             </div>
           </section>
         )}

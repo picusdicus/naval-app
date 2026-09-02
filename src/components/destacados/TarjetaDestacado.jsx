@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
 import { reportarClicDestacado } from '../../lib/useAnalytics.js'
+import { useImagenDestacado } from './useImagenDestacado.js'
 
 // Tarjeta de destacado (La Gaceta): cartel a sangre con degradado oscuro
 // inferior, badge oro arriba-izquierda, título en DM Serif itálica y líneas de
@@ -20,14 +21,19 @@ export default function TarjetaDestacado({ destacado, tamano = 'normal', onClick
   const grande = tamano === 'grande'
   const registrarClic = seccion ? () => reportarClicDestacado(destacado, seccion) : undefined
 
+  // Imagen con fallback si falla al cargar (cartel externo que ya no existe →
+  // ilustrativa de reserva → bloque de color de categoría).
+  const { imagen, imagenPos, onError } = useImagenDestacado(destacado)
+
   const contenido = (
     <>
-      {destacado.imagen ? (
+      {imagen ? (
         <img
-          src={destacado.imagen}
+          src={imagen}
           alt=""
+          onError={onError}
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          style={{ objectPosition: destacado.imagenPos || '50% 50%' }}
+          style={{ objectPosition: imagenPos || '50% 50%' }}
         />
       ) : (
         <div
