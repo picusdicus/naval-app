@@ -1,0 +1,22 @@
+#!/bin/sh
+rama_actual=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ "$rama_actual" = "main" ]; then
+  if [ -n "$ALLOW_MAIN_PUSH" ]; then
+    exit 0
+  fi
+  if [ -t 1 ]; then
+    read -p "Vas a hacer push directo a main. ¿Seguro? (escribe 'si' para continuar): " confirmacion < /dev/tty
+    if [ "$confirmacion" = "si" ]; then
+      exit 0
+    else
+      echo "Push a main cancelado."
+      exit 1
+    fi
+  else
+    echo "Push a main bloqueado: no hay terminal interactiva para confirmar."
+    echo "Si es intencional, usa: ALLOW_MAIN_PUSH=1 git push"
+    exit 1
+  fi
+fi
+exit 0

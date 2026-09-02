@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath hooks",
     "dev": "vite",
     "db:setup": "node scripts/db-setup.mjs",
     "fetch:comercios": "node scripts/fetch-comercios.mjs",
