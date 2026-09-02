@@ -63,7 +63,7 @@ export default function Inicio() {
           if (g.categoria !== e.categoria) return false
           return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
         })
-        return eventoATarjeta(e, genericasFiltradas)
+        return eventoATarjeta(e, { genericas: genericasFiltradas })
       })
     return [...destacadosOriginales, ...faltantes]
   }, [destacadosOriginales, eventos, genericas])

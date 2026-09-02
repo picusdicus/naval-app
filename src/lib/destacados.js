@@ -52,7 +52,14 @@ export function campanaFinalizada(destacado) {
   )
 }
 
-export function eventoATarjeta(evento, genericas = []) {
+/**
+ * Tarjeta de carrusel para un evento.
+ *  - `imagenOverride`: la imagen contratada del destacado (destacados.imagen_url),
+ *    que gana sobre cualquier otra.
+ *  - `genericas`: imágenes genéricas de Neon YA filtradas por categoría y
+ *    disciplina del evento (ver useImagenEvento); se pasan a imagenEvento().
+ */
+export function eventoATarjeta(evento, { imagenOverride, genericas = [] } = {}) {
   const propia = imagenEvento(evento, { genericas })
   return {
     id: `evento-${evento.id}`,
@@ -60,8 +67,8 @@ export function eventoATarjeta(evento, genericas = []) {
     to: `/eventos/${evento.id}`,
     titulo: evento.titulo,
     badge: CATEGORIAS_EVENTO[evento.categoria]?.nombre || 'Evento',
-    imagen: propia?.src || '',
-    imagenPos: propia?.pos,
+    imagen: imagenOverride || propia?.src || '',
+    imagenPos: imagenOverride ? undefined : propia?.pos,
     colorCategoria: CATEGORIAS_EVENTO[evento.categoria]?.color,
     simbolo: SIMBOLO_EVENTO[evento.categoria] || 'event',
     lineas: [

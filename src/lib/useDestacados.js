@@ -53,7 +53,7 @@ export function useDestacados({ eventos = [], tipo = null } = {}) {
         }
         const evento = eventosPorId.get(d.referenciaId)
         if (!evento || new Date(`${evento.fecha}T00:00:00`) < hoy) return null
-        return eventoATarjeta(evento, d.imagen)
+        return eventoATarjeta(evento, { imagenOverride: d.imagen })
       })
       .filter(Boolean)
   }, [crudos, eventos, tipo])
