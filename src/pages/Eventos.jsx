@@ -12,7 +12,7 @@ import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDeskto
 import { useDestacados } from '../lib/useDestacados.js'
 import { eventoATarjeta } from '../lib/destacados.js'
 import { GenericasEventoContext } from '../lib/GenericasEventoContext.jsx'
-import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
+import { creditosDe } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { prefsLocales } from '../lib/push.js'
 import { hoyISO } from '../lib/fechas.js'
@@ -246,9 +246,11 @@ export default function Eventos() {
         </a>
       </section>
 
-      <p className="mb-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
-        Imágenes ilustrativas de bancos de imágenes de uso libre: {CREDITOS_FOTOS.join(' · ')}
-      </p>
+      {creditosDe(genericas).length > 0 && (
+        <p className="mb-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
+          Imágenes ilustrativas de bancos de imágenes de uso libre: {creditosDe(genericas).join(' · ')}
+        </p>
+      )}
     </div>
   )
 }

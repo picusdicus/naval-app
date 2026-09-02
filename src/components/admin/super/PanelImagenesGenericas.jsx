@@ -139,7 +139,11 @@ export default function PanelImagenesGenericas() {
     <div className="space-y-6">
       <div className="text-sm text-pardo">
         <p>Gestiona imágenes genéricas por categoría y disciplina.</p>
-        <p className="mt-2">Nota: estas imágenes solo se muestran si MOSTRAR_IMAGENES_GENERICAS=true.</p>
+        <p className="mt-2">
+          Un evento sin cartel propio muestra una de estas (elegida de forma estable por evento):
+          las de su disciplina si el título la deja reconocer, o las generales de su categoría si
+          no. Una categoría sin imágenes activas se pinta con el degradado de siempre.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

@@ -97,8 +97,6 @@ export default function EventoDetalle() {
   // Antes del return temprano: es un hook y no puede quedar tras un
   // condicional. `posterUrl` pasa a null si la url del cartel falla al cargar,
   // y entonces se pinta el degradado con el título superpuesto.
-  // `paraHeroe` excluye las ilustrativas de resolución justa (soloTarjeta):
-  // a tamaño de héroe pixelarían — mejor el degradado de siempre.
   const { posterUrl, pos, onError, real, credito } = useImagenEvento(evento, { paraHeroe: true })
 
   if (!evento) {
