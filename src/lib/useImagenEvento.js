@@ -6,25 +6,21 @@ import { imagenEvento } from './imagenesEvento.js'
 import { GenericasEventoContext } from './GenericasEventoContext.jsx'
 import { disciplinaDeEvento } from './eventos.js'
 
-const MOSTRAR_IMAGENES_GENERICAS = false
-
 /**
  * Hook que resuelve la imagen de un evento.
  * @param {object} evento — evento del que obtener imagen
  * @param {object} options — {paraHeroe: boolean}
  * @returns {object|null} {src, pos?, credito, real}
  *
- * Lee las genéricas del Context (una sola petición compartida en App).
+ * Lee las genéricas del Context (una sola petición compartida en App). El
+ * interruptor MOSTRAR_IMAGENES_GENERICAS vive SOLO en imagenesEvento.js: aquí
+ * se filtran y se pasan siempre, y imagenEvento() decide si las usa.
  */
 export function useImagenEvento(evento, options = {}) {
   const genericas = useContext(GenericasEventoContext)
 
   return useMemo(() => {
     if (!evento) return null
-
-    if (!MOSTRAR_IMAGENES_GENERICAS) {
-      return imagenEvento(evento, options)
-    }
 
     // Filtrar genéricas por categoría y disciplina del evento.
     // Cuando disciplina es null (evento no reconocido), solo recibe genéricas
