@@ -506,12 +506,12 @@ export default function TablesEventos() {
           const ocupado = ocupadoId === evento.id
           const pasado = diasHasta(evento.fecha) < 0
           const fuenteIngesta = fuenteDeIngesta(evento)
-          // Qué imagen ilustrativa le tocaría (panel de "Imágenes genéricas"):
-          // su cartel propio si lo trae; si no, el subtipo/disciplina que
-          // infiere disciplinaDeEvento(), o las generales de su categoría.
-          const subtipoImagen = evento.imagen && evento.imagen.trim()
-            ? null
-            : (disciplinaDeEvento(evento) ?? `${evento.categoria} (general)`)
+          // Qué imagen ilustrativa le toca (panel de "Imágenes genéricas"): el
+          // subtipo/disciplina que infiere disciplinaDeEvento(), o las generales
+          // de su categoría. Con cartel propio se muestra como reserva (la
+          // agenda cae a ella si el cartel externo deja de existir).
+          const subtipoImagen = disciplinaDeEvento(evento) ?? `${evento.categoria} (general)`
+          const conCartelPropio = Boolean(evento.imagen && evento.imagen.trim())
           const abierto = abiertoId === evento.id
           const fusionesDelEvento = evento.fusionesManualesAplicadas || []
           const inertesDelEvento = fusionesInertesDe(evento)
@@ -550,12 +550,12 @@ export default function TablesEventos() {
                     <span
                       className="ml-2 text-mudo"
                       title={
-                        subtipoImagen
-                          ? 'Sin cartel propio: usará las imágenes genéricas subidas a esta categoría/disciplina (pestaña "Imágenes genéricas")'
-                          : 'Trae cartel propio: no usa imágenes genéricas'
+                        conCartelPropio
+                          ? 'Trae cartel propio. Si su URL dejara de cargar, usaría las imágenes genéricas de esta categoría/disciplina (pestaña "Imágenes genéricas")'
+                          : 'Sin cartel propio: usa las imágenes genéricas subidas a esta categoría/disciplina (pestaña "Imágenes genéricas")'
                       }
                     >
-                      · {subtipoImagen ? `ilustración: ${subtipoImagen}` : 'cartel propio'}
+                      · {conCartelPropio ? `cartel propio (reserva: ${subtipoImagen})` : `ilustración: ${subtipoImagen}`}
                     </span>
                     {pasado && <span className="ml-2 text-mudo">· pasado</span>}
                     {evento.fusionadoPorTituloAproximado && (
