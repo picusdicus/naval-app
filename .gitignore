@@ -44,3 +44,6 @@ servicios-absorbidos.json
 test-results/
 playwright-report/
 blob-report/
+
+# Configuración local de Claude Code (permisos por máquina, no compartir)
+.claude/settings.json
