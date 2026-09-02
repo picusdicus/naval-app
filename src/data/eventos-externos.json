@@ -27,7 +27,7 @@
   },
   {
     "id": "aytocult-del-19-al-31-de-marzo-exposicion-de-pintura-de-paco-abellan",
-    "titulo": "Del 19 al 31 de marzo: Exposición de pintura de paco abellán",
+    "titulo": "Exposición de pintura de paco abellán",
     "fecha": "2025-03-19",
     "hora": "18:00",
     "lugar": "Casa de la Cultura",
@@ -40,7 +40,7 @@
   },
   {
     "id": "aytocult-del-3-al-15-de-abril-pintar-exposicion-de-fernando-jimenez-garcia",
-    "titulo": "Del 3 al 15 de abril: \"pintar\", exposición de fernando jiménez garcía",
+    "titulo": "Pintar",
     "fecha": "2025-04-03",
     "hora": "11:00",
     "lugar": "Casa de la Cultura",
@@ -53,7 +53,7 @@
   },
   {
     "id": "aytocult-del-23-de-abril-al-13-de-mayo-1975-cambio-de-tercio-exposicion-de-la-red-itiner",
-    "titulo": "Del 23 de abril al 13 de mayo: \"1975. Cambio de tercio\", exposición de la red itiner",
+    "titulo": "1975. Cambio de tercio",
     "fecha": "2025-04-23",
     "hora": "",
     "lugar": "Casa de la Cultura",
@@ -66,7 +66,7 @@
   },
   {
     "id": "aytocult-26-de-abril-feria-de-abril-en-la-plaza-de-segovia",
-    "titulo": "26 de abril: Feria de abril en la plaza de segovia",
+    "titulo": "Feria de abril en la plaza de segovia",
     "fecha": "2025-04-26",
     "hora": "03:30",
     "lugar": "Plaza de Segovia",
@@ -131,7 +131,7 @@
   },
   {
     "id": "aytocult-del-19-al-28-de-junio-exposicion-de-pintura-de-los-alumnos-de-los-talleres-de-la-concejalia-de-cultura",
-    "titulo": "Del 19 al 28 de junio: Exposición de pintura de los alumnos de los talleres de la concejalía de cultura",
+    "titulo": "Exposición de pintura de los alumnos de los talleres de la concejalía de cultura",
     "fecha": "2025-06-19",
     "hora": "19:00",
     "lugar": "Casa de la Cultura",
@@ -157,7 +157,7 @@
   },
   {
     "id": "aytocult-del-4-al-21-de-septiembre-arte-sin-limites-exposicion-de-davinci-madrid-antonio-lucas",
-    "titulo": "Del 4 al 21 de septiembre: \"arte sín límites\", exposición de davinci madrid (antonio lucas)",
+    "titulo": "Arte sín límites",
     "fecha": "2025-09-04",
     "hora": "21:00",
     "lugar": "Casa de la Cultura",
@@ -170,7 +170,7 @@
   },
   {
     "id": "aytocult-del-17-al-29-de-octubre-exposicion-permanencia-del-instante-pasado",
-    "titulo": "Del 17 al 29 de octubre: Exposición \"permanencia del instante pasado\"",
+    "titulo": "Exposición \"permanencia del instante pasado\"",
     "fecha": "2025-10-17",
     "hora": "18:00",
     "lugar": "Casa de la Cultura",
@@ -183,7 +183,7 @@
   },
   {
     "id": "aytocult-del-19-de-noviembre-al-1-de-diciembre-nuestro-lugar-exposicion-en-la-casa-de-la-cultura",
-    "titulo": "Del 19 de noviembre al 1 de diciembre: \"nuestro lugar\", exposición en la casa de la cultura",
+    "titulo": "Nuestro lugar",
     "fecha": "2025-11-19",
     "hora": "19:00",
     "lugar": "Casa de la Cultura",
@@ -274,7 +274,7 @@
   },
   {
     "id": "aytocult-12-de-mayo-exposicion-de-pintura-de-manuel-fernandez-vergara",
-    "titulo": "12 de mayo: Exposición de pintura de manuel fernández vergara",
+    "titulo": "Exposición de pintura de manuel fernández vergara",
     "fecha": "2026-05-12",
     "hora": "18:00",
     "lugar": "Casa de la Cultura",
@@ -313,7 +313,7 @@
   },
   {
     "id": "aytocult-del-27-de-mayo-al-9-de-junio-habitats-exposicion-del-taller-de-pintura-artistica-del-sol",
-    "titulo": "Del 27 de mayo al 9 de junio: \"hábitats\", exposición del taller de pintura artística del sol",
+    "titulo": "Hábitats",
     "fecha": "2026-05-27",
     "hora": "19:00",
     "lugar": "Casa de la Cultura",
@@ -326,7 +326,7 @@
   },
   {
     "id": "aytocult-del-16-al-26-de-junio-exposicion-de-los-alumnos-del-taller-de-pintura-de-la-concejaia-de-cultura",
-    "titulo": "Del 16 al 26 de junio: Exposición de los alumnos del taller de pintura de la concejaía de cultura",
+    "titulo": "Exposición de los alumnos del taller de pintura de la concejaía de cultura",
     "fecha": "2026-06-16",
     "hora": "19:00",
     "lugar": "Casa de la Cultura",
@@ -1824,20 +1824,6 @@
     "fuente": ""
   },
   {
-    "id": "fiestas-animacion-musical-a-cargo-de-dj-piwi-2026-09-04",
-    "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
-    "fecha": "2026-09-04",
-    "hora": "23:30",
-    "lugar": "plaza de Segovia.",
-    "categoria": "cultura",
-    "subcategoria": null,
-    "esTaurino": false,
-    "origen": "fiestas",
-    "descripcion": "Lugar: plaza de Segovia.",
-    "url": "",
-    "fuente": ""
-  },
-  {
     "id": "fiestas-vii-fiesta-de-la-espuma-2026-09-04",
     "titulo": "VII FIESTA DE LA ESPUMA.",
     "fecha": "2026-09-04",
@@ -1917,6 +1903,20 @@
     "esTaurino": false,
     "origen": "fiestas",
     "descripcion": "Ofrecimiento de los títulos obtenidos en la temporada 2025 – 2026 desde el balcón del antiguo Consistorio.",
+    "url": "",
+    "fuente": ""
+  },
+  {
+    "id": "fiestas-animacion-musical-a-cargo-de-dj-piwi-2026-09-04",
+    "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
+    "fecha": "2026-09-04",
+    "hora": "23:30",
+    "lugar": "plaza de Segovia.",
+    "categoria": "cultura",
+    "subcategoria": null,
+    "esTaurino": false,
+    "origen": "fiestas",
+    "descripcion": "Lugar: plaza de Segovia.",
     "url": "",
     "fuente": ""
   },
@@ -2206,10 +2206,10 @@
     "fuente": ""
   },
   {
-    "id": "fiestas-animacion-musical-a-cargo-de-dj-piwi-2026-09-06",
-    "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
+    "id": "fiestas-orquesta-diamante-baile-publico-2026-09-06",
+    "titulo": "ORQUESTA DIAMANTE. Baile público.",
     "fecha": "2026-09-06",
-    "hora": "01:00",
+    "hora": "00:00",
     "lugar": "plaza de Segovia.",
     "categoria": "cultura",
     "subcategoria": null,
@@ -2220,10 +2220,10 @@
     "fuente": ""
   },
   {
-    "id": "fiestas-orquesta-diamante-baile-publico-2026-09-06",
-    "titulo": "ORQUESTA DIAMANTE. Baile público.",
+    "id": "fiestas-animacion-musical-a-cargo-de-dj-piwi-2026-09-06",
+    "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
     "fecha": "2026-09-06",
-    "hora": "00:00",
+    "hora": "01:00",
     "lugar": "plaza de Segovia.",
     "categoria": "cultura",
     "subcategoria": null,
@@ -2346,20 +2346,6 @@
     "fuente": "Asociación Amigos de Navalcarnero."
   },
   {
-    "id": "fiestas-animacion-musical-a-cargo-de-dj-piwi-2026-09-07",
-    "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
-    "fecha": "2026-09-07",
-    "hora": "01:00",
-    "lugar": "plaza de Segovia.",
-    "categoria": "cultura",
-    "subcategoria": null,
-    "esTaurino": false,
-    "origen": "fiestas",
-    "descripcion": "Lugar: plaza de Segovia.",
-    "url": "",
-    "fuente": ""
-  },
-  {
     "id": "fiestas-fuegos-artificiales-a-cargo-de-pirotecnia-gironina-2026-09-07",
     "titulo": "FUEGOS ARTIFICIALES. A cargo de Pirotecnia Gironina.",
     "fecha": "2026-09-07",
@@ -2378,6 +2364,20 @@
     "titulo": "ORQUESTA LA MUNDIAL.",
     "fecha": "2026-09-07",
     "hora": "00:45",
+    "lugar": "plaza de Segovia.",
+    "categoria": "cultura",
+    "subcategoria": null,
+    "esTaurino": false,
+    "origen": "fiestas",
+    "descripcion": "Lugar: plaza de Segovia.",
+    "url": "",
+    "fuente": ""
+  },
+  {
+    "id": "fiestas-animacion-musical-a-cargo-de-dj-piwi-2026-09-07",
+    "titulo": "ANIMACIÓN MUSICAL. A cargo de Dj Piwi.",
+    "fecha": "2026-09-07",
+    "hora": "01:00",
     "lugar": "plaza de Segovia.",
     "categoria": "cultura",
     "subcategoria": null,
@@ -3235,7 +3235,7 @@
     "lugar": "Navalcarnero",
     "categoria": "cultura",
     "origen": "cultural",
-    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios HORARIOS TALLERES MUNICIPALES CURSO 2026-202 MATRICULACION 2026-2027",
     "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/",
     "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
     "fuente": "Ayuntamiento"
@@ -3262,7 +3262,7 @@
     "lugar": "Navalcarnero",
     "categoria": "cultura",
     "origen": "cultural",
-    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios HORARIOS TALLERES MUNICIPALES CURSO 2026-202 MATRICULACION 2026-2027",
     "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-15",
     "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
     "fuente": "Ayuntamiento",
@@ -3290,7 +3290,7 @@
     "lugar": "Navalcarnero",
     "categoria": "cultura",
     "origen": "cultural",
-    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios HORARIOS TALLERES MUNICIPALES CURSO 2026-202 MATRICULACION 2026-2027",
     "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-16",
     "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
     "fuente": "Ayuntamiento",
@@ -3318,7 +3318,7 @@
     "lugar": "Navalcarnero",
     "categoria": "cultura",
     "origen": "cultural",
-    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios HORARIOS TALLERES MUNICIPALES CURSO 2026-202 MATRICULACION 2026-2027",
     "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-17",
     "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
     "fuente": "Ayuntamiento",
@@ -3346,7 +3346,7 @@
     "lugar": "Navalcarnero",
     "categoria": "cultura",
     "origen": "cultural",
-    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios",
+    "descripcion": "El próximo mes de octubre, dará comienzo el nuevo curso de los Talleres de la Concejalía de Cultura. El PLAZO DE MATRICULACIÓN para los antiguos alumnos que han estado matriculados en elgúno de los Talleres en junio de este año, y el PLAZO DE PREINSCRIPCIÓN para aquellas personas que deseen inscribirse por primera vez en cualquiera de los Talleres es del 14 al 18 de septiembre, en horario de 09.00 a 14.00 horas. Os indicamos los Talleres que se van a impartir, así como horarios y precios HORARIOS TALLERES MUNICIPALES CURSO 2026-202 MATRICULACION 2026-2027",
     "url": "https://navalcarnero.es/navalcarnero/cultura/talleres-de-cultura-2026-2027/#dia-2026-09-18",
     "imagen": "https://navalcarnero.es/navalcarnero/cultura/wp-content/themes/Plantilla_Base_Navalcarnero/images/thumb_para_redes_sociales_turismo.jpg",
     "fuente": "Ayuntamiento",
