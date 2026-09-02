@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "En Navalcarnero" — a Spanish-language civic web app for residents of Navalcarnero (Madrid): events agenda, a map/directory of local businesses and services, news, transit info, activity registrations, and push notifications. All UI copy and code comments are in Spanish.
 
+## Flujo de ramas
+
+Rama de feature → develop → main. **Fusionar rama→develop siempre con `git merge --no-ff <rama>`**: un fast-forward no deja commit de merge ni frontera de revisión visible en el log, así que una rama cortada desde el sitio equivocado puede arrastrar contenido no revisado a develop/main sin que nadie lo note (pasó el 2026-09-02: una rama cortada desde la punta de otra feature metió esa feature entera en develop y main vía dos fast-forwards encadenados, sin rastro en el historial). El `--no-ff` deja el merge auditable aunque el contenido fuera fast-forwardable. Excepción conocida: el cron de sync-events committea directo a main por diseño.
+
 ## Commands
 
 ```bash
