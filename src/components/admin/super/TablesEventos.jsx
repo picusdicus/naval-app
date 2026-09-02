@@ -139,8 +139,10 @@ function DetalleEvento({
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo asignar')
       await recargarGenericas()
       setGaleriaAbierta(false)
+      return true
     } catch (err) {
       alert(err.message)
+      return false
     } finally {
       setAsignando(false)
     }
@@ -277,6 +279,11 @@ function DetalleEvento({
               <img src={asignada.url} alt="" className="h-14 w-14 shrink-0 object-cover" />
               <span className="min-w-0 flex-1 font-serif-spectral text-sm text-tinta">
                 {asignada.descripcion || etiquetaDestino({ categoria: asignada.categoria, subtipo: asignada.disciplina })}
+                {asignada.soloAsignacion && (
+                  <span className="ml-2 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-mudo">
+                    · reservada, no se reparte
+                  </span>
+                )}
               </span>
               <button
                 type="button"
@@ -315,7 +322,7 @@ function DetalleEvento({
                     >
                       <img src={g.url} alt="" className="aspect-square w-full object-cover" />
                       <span className="block truncate bg-papel-calido px-1 py-0.5 font-mono-ibm text-[8px] uppercase tracking-etiqueta text-pardo">
-                        {g.disciplina || 'general'}
+                        {g.soloAsignacion ? '★ a mano' : g.disciplina || 'general'}
                       </span>
                     </button>
                   ))}
@@ -337,7 +344,12 @@ function DetalleEvento({
                 categoria={destinoImagen.categoria}
                 disciplina={destinoImagen.subtipo}
                 compacto
-                onSubida={async () => {
+                etiquetaSoloEste={`Usar solo en este evento (no se repartirá entre los demás de ${etiquetaSubtipo})`}
+                onSubida={async (fila) => {
+                  // Marcada "solo este": se le asigna sola, que es lo que el
+                  // superadmin acaba de pedir; si no, entra en el reparto de
+                  // su subtipo como cualquier otra.
+                  if (fila?.soloAsignacion && fila.id) await asignar(fila.id)
                   await recargarGenericas()
                   setSubidaAbierta(false)
                   setSubidaOk(true)

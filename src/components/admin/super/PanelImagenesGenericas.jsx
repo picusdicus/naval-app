@@ -108,8 +108,9 @@ export default function PanelImagenesGenericas() {
           las de su subtipo si el título, la subcategoría o la descripción lo dejan reconocer, o
           las generales de su categoría si no. Con varias imágenes en un subtipo, los eventos se
           reparten entre ellas. Una categoría sin imágenes activas se pinta con el degradado de
-          siempre. En la pestaña Eventos, cada fila indica qué subtipo le toca y permite subir
-          una imagen para él sin venir aquí.
+          siempre. En la pestaña Eventos, cada fila indica qué subtipo le toca, permite subir una
+          imagen para él sin venir aquí y elegir una concreta para ese evento; las marcadas
+          «★ solo a mano» quedan fuera del reparto y solo salen donde se asignen.
         </p>
       </div>
 
@@ -205,9 +206,11 @@ export default function PanelImagenesGenericas() {
                       {img.descripcion && (
                         <p className="line-clamp-2 text-tinta">{img.descripcion}</p>
                       )}
-                      {(img.disciplina || img.fuente) && (
+                      {(img.disciplina || img.fuente || img.soloAsignacion) && (
                         <p className="text-pardo">
-                          {[img.disciplina, img.fuente].filter(Boolean).join(' · ')}
+                          {[img.disciplina, img.fuente, img.soloAsignacion ? '★ solo a mano' : null]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </p>
                       )}
                       <div className="flex items-center gap-2">
@@ -245,6 +248,7 @@ export default function PanelImagenesGenericas() {
               key={`${categoriaActiva}/${disciplinaActiva || ''}`}
               categoria={categoriaActiva}
               disciplina={disciplinaActiva}
+              etiquetaSoloEste="Reservar para asignarla a mano: no se repartirá automáticamente entre los eventos de este subtipo. Úsala para fotos muy concretas (los fuegos artificiales de un día). Se elige desde el detalle del evento, en la pestaña Eventos."
               onSubida={handleSubida}
             />
           </div>
