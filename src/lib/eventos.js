@@ -199,22 +199,39 @@ export function agruparPorTramoHorario(eventos) {
   return tramos
 }
 
-// Infiere el subtipo ("disciplina") de un evento para afinar la imagen
-// ilustrativa: en deporte, la disciplina por palabra clave del título; en
-// fiestas, `religiosa` para los actos de registro religioso (novenas, misas,
-// procesiones), que no deben salir con una foto de fuegos o de encierro — el
-// programa 2026 trae 14. Devuelve el subtipo (string) o null si no se
-// reconoce. El vocabulario debe coincidir con DISCIPLINAS_POR_CATEGORIA del
-// panel de imágenes genéricas (PanelImagenesGenericas.jsx).
-// Orden: frases primero (ej. "tenis de mesa" antes que "tenis") para evitar
-// falsos positivos por contención.
-export function disciplinaDeEvento(evento) {
-  if (!evento.titulo && evento.categoria !== 'fiestas') return null
+// Subtipos de imagen "culturales": describen la FORMA del acto (una obra de
+// teatro, un DJ, una orquesta) y le pegan la misma foto tanto si el acto se
+// programa dentro de cultura como dentro de fiestas — la verbena con DJ es de
+// fiestas, pero la foto que la ilustra es la de un DJ. Por eso se guardan
+// SIEMPRE bajo la categoría 'cultura' a efectos de imagen (ver
+// destinoImagenEvento): así se suben una sola vez y sirven a las dos.
+export const SUBTIPOS_CULTURALES = [
+  'teatro',
+  'concierto',
+  'dj',
+  'orquesta',
+  'discoteca',
+  'danza',
+  'musica-callejera',
+  'cine',
+  'exposicion',
+]
 
-  const t = (evento.titulo || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+// Infiere el subtipo ("disciplina") de un evento para afinar la imagen
+// ilustrativa: en deporte, la disciplina (tenis, fútbol…); en cultura, la
+// forma del acto (teatro, dj, orquesta…); en fiestas, `religiosa` para los
+// actos de registro religioso (novenas, misas, procesiones), que no deben
+// salir con una foto de fuegos o de encierro — el programa 2026 trae 14 —, y
+// si no, el mismo vocabulario cultural (una verbena con orquesta).
+// Devuelve el subtipo (string) o null si no se reconoce. El vocabulario debe
+// coincidir con DISCIPLINAS_POR_CATEGORIA del panel de imágenes genéricas
+// (PanelImagenesGenericas.jsx).
+// Orden: frases y términos específicos primero (ej. "tenis de mesa" antes que
+// "tenis", "dj" antes que "musical") para evitar falsos positivos.
+export function disciplinaDeEvento(evento) {
+  if (!evento.titulo && !evento.subcategoria) return null
+
+  const t = normalizarTexto(evento.titulo || '')
 
   if (evento.categoria === 'fiestas') {
     // Subcategoría del programa primero; palabras clave de los títulos reales
@@ -225,7 +242,21 @@ export function disciplinaDeEvento(evento) {
     if (/(novena|\bmisa\b|procesion|ofrenda|rosario|eucaristia|\bsalve\b|\bpatrona\b|visperas|romeria)/.test(t)) {
       return 'religiosa'
     }
-    return null
+    // Un acto de fiestas que además es cultural (verbena con orquesta, teatro
+    // en la plaza) usa el vocabulario cultural; el resto (pregón, encierro,
+    // fuegos) se queda en las generales de fiestas.
+    return subtipoCulturalEn(t)
+  }
+
+  if (evento.categoria === 'cultura') {
+    // La subcategoría que ya traen TYL TYL, Red de Teatros e Instagram manda
+    // cuando es concreta; 'musica' es demasiado gruesa para elegir foto (no es
+    // lo mismo un DJ que una orquesta), así que se afina por título y solo si
+    // el título no dice nada se cae a 'concierto'.
+    const sub = evento.subcategoria
+    if (sub === 'teatro' || sub === 'cine' || sub === 'danza' || sub === 'exposicion') return sub
+    if (sub === 'musica') return subtipoCulturalEn(t) ?? 'concierto'
+    return subtipoCulturalEn(t)
   }
 
   if (evento.categoria !== 'deporte') return null
@@ -239,6 +270,39 @@ export function disciplinaDeEvento(evento) {
     disciplinaDeportivaEn(normalizarTexto(evento.descripcion || '')) ??
     null
   )
+}
+
+/**
+ * Dónde vive la imagen ilustrativa de un evento: la categoría bajo la que
+ * buscarla (o subirla) y el subtipo, null si no se reconoce ninguno. Los
+ * subtipos culturales se resuelven siempre contra 'cultura' aunque el evento
+ * sea de fiestas — ver SUBTIPOS_CULTURALES.
+ */
+export function destinoImagenEvento(evento) {
+  const subtipo = evento ? disciplinaDeEvento(evento) : null
+  if (subtipo && SUBTIPOS_CULTURALES.includes(subtipo)) {
+    return { categoria: 'cultura', subtipo }
+  }
+  return { categoria: evento?.categoria ?? null, subtipo: subtipo ?? null }
+}
+
+// Subtipo cultural en un texto ya normalizado (minúsculas, sin acentos), o
+// null. Lo específico antes que lo genérico: "animación musical a cargo de DJ
+// Piwi" es 'dj', no 'concierto'.
+function subtipoCulturalEn(t) {
+  if (!t) return null
+  if (/(charanga|pasacalles|batucada|dulzain|fanfarria|tamborrada)/.test(t)) return 'musica-callejera'
+  if (/(\bdj\b|\bdjs\b|disc\s*jockey)/.test(t)) return 'dj'
+  if (/(discoteca|disco\s*movil|discomovil)/.test(t)) return 'discoteca'
+  if (/orquesta/.test(t)) return 'orquesta'
+  if (/(danza|ballet|flamenco|\bbaile\b|\bbailes\b)/.test(t)) return 'danza'
+  if (/(teatro|comedia|monologo|titeres|marionetas|zarzuela)/.test(t)) return 'teatro'
+  if (/(\bcine\b|pelicula|proyeccion|cortometraje)/.test(t)) return 'cine'
+  if (/(exposicion|pinacoteca)/.test(t)) return 'exposicion'
+  if (/(concierto|recital|tributo|musical|\bcoro\b|\bbanda\b|sinfonic|cantautor)/.test(t)) {
+    return 'concierto'
+  }
+  return null
 }
 
 function normalizarTexto(texto) {

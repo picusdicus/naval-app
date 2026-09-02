@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
 import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
-import { CATEGORIAS_EVENTO, disciplinaDeEvento, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
+import { CATEGORIAS_EVENTO, destinoImagenEvento, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
 import { useImagenEvento } from '../../../lib/useImagenEvento.js'
@@ -84,10 +84,16 @@ export function MiniaturaEvento({ evento, clase = 'h-12 w-12', tamIcono = 20 }) 
 
 // Detalle desplegado bajo la fila (acordeón): imagen grande + los campos del
 // evento que la fila comprime. Solo lectura — las acciones siguen en la fila.
+// "Deporte · tenis" / "Fiestas · general": dónde vive la imagen ilustrativa.
+function etiquetaDestino({ categoria, subtipo }) {
+  const nombre = CATEGORIAS_EVENTO[categoria]?.nombre || categoria || '—'
+  return `${nombre} · ${subtipo ?? 'general'}`
+}
+
 function DetalleEvento({
   evento,
   fuenteIngesta,
-  subtipoImagen,
+  destinoImagen,
   conCartelPropio,
   fusiones = [],
   inertes = [],
@@ -100,11 +106,7 @@ function DetalleEvento({
   const recargarGenericas = useContext(RecargarGenericasContext)
   const [subidaAbierta, setSubidaAbierta] = useState(false)
   const [subidaOk, setSubidaOk] = useState(false)
-  const esGeneral = /\(general\)$/.test(subtipoImagen || '')
-  const disciplinaSubida = esGeneral ? null : subtipoImagen
-  const etiquetaSubtipo = `${CATEGORIAS_EVENTO[evento.categoria]?.nombre || evento.categoria} · ${
-    esGeneral ? 'general' : subtipoImagen
-  }`
+  const etiquetaSubtipo = etiquetaDestino(destinoImagen)
 
   const datos = [
     ['Fecha', evento.fecha ? formatearFechaLarga(evento.fecha) : 'Sin fecha'],
@@ -200,8 +202,8 @@ function DetalleEvento({
           {subidaAbierta ? (
             <div className="border border-filete bg-papel p-3">
               <FormularioImagenGenerica
-                categoria={evento.categoria}
-                disciplina={disciplinaSubida}
+                categoria={destinoImagen.categoria}
+                disciplina={destinoImagen.subtipo}
                 compacto
                 onSubida={async () => {
                   await recargarGenericas()
@@ -578,11 +580,13 @@ export default function TablesEventos() {
           const ocupado = ocupadoId === evento.id
           const pasado = diasHasta(evento.fecha) < 0
           const fuenteIngesta = fuenteDeIngesta(evento)
-          // Qué imagen ilustrativa le toca (panel de "Imágenes genéricas"): el
-          // subtipo/disciplina que infiere disciplinaDeEvento(), o las generales
-          // de su categoría. Con cartel propio se muestra como reserva (la
-          // agenda cae a ella si el cartel externo deja de existir).
-          const subtipoImagen = disciplinaDeEvento(evento) ?? `${evento.categoria} (general)`
+          // Qué imagen ilustrativa le toca (panel de "Imágenes genéricas"): la
+          // categoría de imagen y el subtipo que infiere destinoImagenEvento()
+          // — ojo, para un acto cultural dentro de fiestas (verbena con
+          // orquesta) la categoría de imagen es 'cultura'. Con cartel propio se
+          // muestra como reserva (la agenda cae a ella si el cartel externo
+          // deja de existir).
+          const destinoImagen = destinoImagenEvento(evento)
           const conCartelPropio = Boolean(evento.imagen && evento.imagen.trim())
           const abierto = abiertoId === evento.id
           const fusionesDelEvento = evento.fusionesManualesAplicadas || []
@@ -623,11 +627,14 @@ export default function TablesEventos() {
                       className="ml-2 text-mudo"
                       title={
                         conCartelPropio
-                          ? 'Trae cartel propio. Si su URL dejara de cargar, usaría las imágenes genéricas de esta categoría/disciplina (pestaña "Imágenes genéricas")'
-                          : 'Sin cartel propio: usa las imágenes genéricas subidas a esta categoría/disciplina (pestaña "Imágenes genéricas")'
+                          ? 'Trae cartel propio. Si su URL dejara de cargar, usaría las imágenes genéricas de esta categoría/subtipo (pestaña "Imágenes genéricas")'
+                          : 'Sin cartel propio: usa las imágenes genéricas subidas a esta categoría/subtipo (pestaña "Imágenes genéricas")'
                       }
                     >
-                      · {conCartelPropio ? `cartel propio (reserva: ${subtipoImagen})` : `ilustración: ${subtipoImagen}`}
+                      ·{' '}
+                      {conCartelPropio
+                        ? `cartel propio (reserva: ${etiquetaDestino(destinoImagen)})`
+                        : `ilustración: ${etiquetaDestino(destinoImagen)}`}
                     </span>
                     {pasado && <span className="ml-2 text-mudo">· pasado</span>}
                     {evento.fusionadoPorTituloAproximado && (
@@ -742,7 +749,7 @@ export default function TablesEventos() {
                 <DetalleEvento
                   evento={evento}
                   fuenteIngesta={fuenteIngesta}
-                  subtipoImagen={subtipoImagen}
+                  destinoImagen={destinoImagen}
                   conCartelPropio={conCartelPropio}
                   fusiones={fusionesDelEvento}
                   inertes={inertesDelEvento}

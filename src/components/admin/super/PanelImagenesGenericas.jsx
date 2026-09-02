@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react'
 import MIcon from '../../MIcon.jsx'
-import { CATEGORIAS_EVENTO } from '../../../lib/eventos.js'
+import { CATEGORIAS_EVENTO, SUBTIPOS_CULTURALES } from '../../../lib/eventos.js'
 import { RecargarGenericasContext } from '../../../lib/GenericasEventoContext.jsx'
 import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
 
@@ -8,9 +8,20 @@ const CATEGORIAS = Object.keys(CATEGORIAS_EVENTO).sort()
 // Debe coincidir con lo que devuelve disciplinaDeEvento() (src/lib/eventos.js).
 const DISCIPLINAS_POR_CATEGORIA = {
   deporte: ['tenis', 'futbol', 'padel', 'baloncesto', 'petanca', 'ajedrez', 'tenis-de-mesa', 'tiro-al-plato', 'natacion', 'atletismo'],
+  // Los subtipos culturales describen la forma del acto y valen igual dentro
+  // de cultura y de fiestas (la verbena con DJ es de fiestas, pero la foto que
+  // le pega es la de un DJ): se guardan aquí una sola vez.
+  cultura: SUBTIPOS_CULTURALES,
   // Actos de registro religioso (novenas, misas, procesiones): solo reciben
   // fotos de este subtipo, nunca las festivas generales.
   fiestas: ['religiosa'],
+}
+
+const AVISO_POR_CATEGORIA = {
+  cultura:
+    'Estas imágenes las usan también los actos culturales programados dentro de fiestas (una verbena con orquesta, teatro en la plaza).',
+  fiestas:
+    'Solo los actos que no son culturales (pregón, encierros, fuegos). Un acto de fiestas con orquesta, DJ o teatro usa las imágenes de Cultura.',
 }
 
 export default function PanelImagenesGenericas() {
@@ -91,11 +102,12 @@ export default function PanelImagenesGenericas() {
   return (
     <div className="space-y-6">
       <div className="text-sm text-pardo">
-        <p>Gestiona imágenes genéricas por categoría y disciplina.</p>
+        <p>Gestiona imágenes genéricas por categoría y subtipo.</p>
         <p className="mt-2">
           Un evento sin cartel propio muestra una de estas (elegida de forma estable por evento):
-          las de su disciplina si el título o la descripción la dejan reconocer, o las generales
-          de su categoría si no. Una categoría sin imágenes activas se pinta con el degradado de
+          las de su subtipo si el título, la subcategoría o la descripción lo dejan reconocer, o
+          las generales de su categoría si no. Con varias imágenes en un subtipo, los eventos se
+          reparten entre ellas. Una categoría sin imágenes activas se pinta con el degradado de
           siempre. En la pestaña Eventos, cada fila indica qué subtipo le toca y permite subir
           una imagen para él sin venir aquí.
         </p>
@@ -128,10 +140,16 @@ export default function PanelImagenesGenericas() {
             </div>
           </div>
 
+          {AVISO_POR_CATEGORIA[categoriaActiva] && (
+            <p className="border-l-2 border-filete pl-2 font-serif-spectral text-xs text-pardo">
+              {AVISO_POR_CATEGORIA[categoriaActiva]}
+            </p>
+          )}
+
           {disciplinas.length > 0 && (
             <div>
               <h3 className="mb-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta">
-                Disciplina
+                Subtipo
               </h3>
               <div className="space-y-1">
                 <button

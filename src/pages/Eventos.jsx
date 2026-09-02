@@ -1,7 +1,7 @@
 import { useMemo, useState, useContext } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
-import { proximosEventos, agruparEventosPorDia, disciplinaDeEvento } from '../lib/eventos.js'
+import { proximosEventos, agruparEventosPorDia } from '../lib/eventos.js'
 import TiraDeHoras from '../components/eventos/TiraDeHoras.jsx'
 import FiltrosEventos from '../components/eventos/FiltrosEventos.jsx'
 import MuroCartelera from '../components/eventos/MuroCartelera.jsx'
@@ -12,7 +12,7 @@ import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDeskto
 import { useDestacados } from '../lib/useDestacados.js'
 import { eventoATarjeta } from '../lib/destacados.js'
 import { GenericasEventoContext } from '../lib/GenericasEventoContext.jsx'
-import { creditosDe } from '../lib/imagenesEvento.js'
+import { creditosDe, genericasParaEvento } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { prefsLocales } from '../lib/push.js'
 import { hoyISO } from '../lib/fechas.js'
@@ -66,14 +66,7 @@ export default function Eventos() {
     const relleno = futuros
       .filter((e) => !ids.has(e.id))
       .slice(0, MIN_CARRUSEL - destacadosEvento.length)
-      .map((e) => {
-        const disciplina = disciplinaDeEvento(e)
-        const genericasFiltradas = genericas.filter((g) => {
-          if (g.categoria !== e.categoria) return false
-          return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
-        })
-        return eventoATarjeta(e, { genericas: genericasFiltradas })
-      })
+      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas) }))
     return [...destacadosEvento, ...relleno]
   }, [destacadosEvento, futuros, genericas])
 

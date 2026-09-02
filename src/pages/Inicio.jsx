@@ -1,6 +1,7 @@
 import { useMemo, useContext } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { proximosEventos, formatearFechaCorta, disciplinaDeEvento } from '../lib/eventos.js'
+import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
+import { genericasParaEvento } from '../lib/imagenesEvento.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { useImagenEvento } from '../lib/useImagenEvento.js'
@@ -131,14 +132,7 @@ export default function Inicio() {
     const faltantes = eventosProximos
       .filter((e) => !ids.has(e.id))
       .slice(0, minimos - destacadosOriginales.length)
-      .map((e) => {
-        const disciplina = disciplinaDeEvento(e)
-        const genericasFiltradas = genericas.filter((g) => {
-          if (g.categoria !== e.categoria) return false
-          return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
-        })
-        return eventoATarjeta(e, { genericas: genericasFiltradas })
-      })
+      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas) }))
     return [...destacadosOriginales, ...faltantes]
   }, [destacadosOriginales, eventos, genericas])
 

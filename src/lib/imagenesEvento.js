@@ -16,6 +16,8 @@
 //
 // Módulo "limpio" (sin React): lo importa también destacados.js.
 
+import { destinoImagenEvento } from './eventos.js'
+
 // Interruptor de seguridad: a false, imagenEvento() nunca devuelve una
 // ilustrativa aunque existan en Neon — cae en "sin imagen" (degradado +
 // icono). Las fotos propias de los eventos (posterUrl real) no dependen de él.
@@ -27,6 +29,24 @@ function hashDe(texto) {
   let h = 5381
   for (let i = 0; i < texto.length; i++) h = ((h << 5) + h + texto.charCodeAt(i)) >>> 0
   return h
+}
+
+/**
+ * Genéricas que le corresponden a un evento: las de su categoría de imagen y
+ * su subtipo (misma categoría y subtipo exactos), o las que no tienen subtipo
+ * si el evento no lo tiene. Nunca las de OTRO subtipo: un torneo de tenis no
+ * debe salir con una carrera popular, ni una novena con fuegos artificiales.
+ *
+ * Único sitio donde se decide qué imágenes ve un evento: lo usan el hook
+ * useImagenEvento y los carruseles de Inicio y Eventos.
+ */
+export function genericasParaEvento(evento, genericas = []) {
+  if (!evento || !genericas || genericas.length === 0) return []
+  const { categoria, subtipo } = destinoImagenEvento(evento)
+  return genericas.filter((g) => {
+    if (g.categoria !== categoria) return false
+    return subtipo === null ? g.disciplina === null : g.disciplina === subtipo
+  })
 }
 
 /** Atribución de una genérica: "autor, licencia" si los hay; si no, la fuente. */

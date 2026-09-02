@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { imagenEvento } from './imagenesEvento.js'
+import { genericasParaEvento, imagenEvento } from './imagenesEvento.js'
 import { GenericasEventoContext } from './GenericasEventoContext.jsx'
-import { disciplinaDeEvento } from './eventos.js'
 
 /**
  * Resuelve la imagen de un evento tolerando que la URL esté rota.
@@ -18,11 +17,10 @@ import { disciplinaDeEvento } from './eventos.js'
  * `destacados.js` y debe seguir "limpio" (sin React).
  *
  * Genéricas de Neon: se leen del Context (una sola petición compartida en
- * App.jsx) y se filtran por categoría y disciplina del evento antes de pasarlas
- * a imagenEvento(). Un evento sin disciplina reconocida solo recibe las
- * genéricas sin disciplina (generales de su categoría); uno reconocido, solo
- * las de la suya. El interruptor MOSTRAR_IMAGENES_GENERICAS vive SOLO en
- * imagenesEvento.js: aquí se pasan siempre y es imagenEvento() quien decide.
+ * App.jsx) y las filtra `genericasParaEvento` (categoría de imagen + subtipo
+ * del evento) antes de pasarlas a imagenEvento(). El interruptor
+ * MOSTRAR_IMAGENES_GENERICAS vive SOLO en imagenesEvento.js: aquí se pasan
+ * siempre y es imagenEvento() quien decide.
  *
  * Devuelve:
  *   - posterUrl: la url, o null si no hay imagen o si su carga falló
@@ -41,14 +39,10 @@ export function useImagenEvento(evento, opciones = {}) {
   // Tolera `evento` nulo para que quien tenga returns tempranos (EventoDetalle
   // mientras carga) pueda llamar al hook siempre, como exigen las reglas de
   // los hooks, sin romperse al leer `evento.imagen`.
-  const genericasFiltradas = useMemo(() => {
-    if (!evento) return []
-    const disciplina = disciplinaDeEvento(evento)
-    return (genericas || []).filter((g) => {
-      if (g.categoria !== evento.categoria) return false
-      return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
-    })
-  }, [evento, genericas])
+  const genericasFiltradas = useMemo(
+    () => genericasParaEvento(evento, genericas),
+    [evento, genericas]
+  )
 
   const propia = useMemo(
     () => (evento ? imagenEvento(evento, { ...opciones, genericas: genericasFiltradas }) : null),
