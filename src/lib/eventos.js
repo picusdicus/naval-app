@@ -198,3 +198,31 @@ export function agruparPorTramoHorario(eventos) {
 
   return tramos
 }
+
+// Infiere la disciplina de un evento de deporte por palabra clave del título.
+// Devuelve la disciplina (string) o null si no se reconoce.
+// Orden: frases primero (ej. "tenis de mesa" antes que "tenis") para evitar
+// falsos positivos por contención.
+export function disciplinaDeEvento(evento) {
+  if (evento.categoria !== 'deporte') return null
+  if (!evento.titulo) return null
+
+  const t = evento.titulo
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+
+  // Frases (antes que palabras simples, para contención exacta)
+  if (/tenis\s+de\s+mesa/.test(t)) return 'tenis-de-mesa'
+  if (/tiro\s+al\s+plato/.test(t)) return 'tiro-al-plato'
+
+  // Palabras simples
+  if (/\btenis\b/.test(t)) return 'tenis'
+  if (/(futbol|futbol)/.test(t)) return 'futbol'
+  if (/padel/.test(t)) return 'padel'
+  if (/(baloncesto|basketball)/.test(t)) return 'baloncesto'
+  if (/petanca/.test(t)) return 'petanca'
+  if (/ajedrez/.test(t)) return 'ajedrez'
+
+  return null
+}

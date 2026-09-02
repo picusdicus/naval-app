@@ -1,7 +1,7 @@
 import { useMemo, useState, useContext } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
-import { proximosEventos, agruparEventosPorDia } from '../lib/eventos.js'
+import { proximosEventos, agruparEventosPorDia, disciplinaDeEvento } from '../lib/eventos.js'
 import TiraDeHoras from '../components/eventos/TiraDeHoras.jsx'
 import FiltrosEventos from '../components/eventos/FiltrosEventos.jsx'
 import MuroCartelera from '../components/eventos/MuroCartelera.jsx'
@@ -67,8 +67,9 @@ export default function Eventos() {
       .filter((e) => !ids.has(e.id))
       .slice(0, MIN_CARRUSEL - destacadosEvento.length)
       .map((e) => {
+        const disciplina = disciplinaDeEvento(e)
         const genericasFiltradas = genericas.filter(
-          (g) => g.categoria === e.categoria && (!e.disciplina || g.disciplina === e.disciplina)
+          (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
         )
         return eventoATarjeta(e, genericasFiltradas)
       })

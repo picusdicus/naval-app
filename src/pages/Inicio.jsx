@@ -1,6 +1,6 @@
 import { useMemo, useContext } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
+import { proximosEventos, formatearFechaCorta, disciplinaDeEvento } from '../lib/eventos.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
@@ -58,8 +58,9 @@ export default function Inicio() {
       .filter((e) => !ids.has(e.id))
       .slice(0, minimos - destacadosOriginales.length)
       .map((e) => {
+        const disciplina = disciplinaDeEvento(e)
         const genericasFiltradas = genericas.filter(
-          (g) => g.categoria === e.categoria && (!e.disciplina || g.disciplina === e.disciplina)
+          (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
         )
         return eventoATarjeta(e, genericasFiltradas)
       })
@@ -124,8 +125,9 @@ export default function Inicio() {
             <span className="gz-label text-mudo">También esta semana</span>
             <div className="mt-3 grid grid-cols-2 gap-4">
               {semana.map((e) => {
+                const disciplina = disciplinaDeEvento(e)
                 const genericasFiltradas = genericas.filter(
-                  (g) => g.categoria === e.categoria && (!e.disciplina || g.disciplina === e.disciplina)
+                  (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
                 )
                 const img = imagenEvento(e, { genericas: genericasFiltradas })
                 const cartel = cartelDe(e.categoria)
@@ -214,8 +216,9 @@ export default function Inicio() {
             </div>
             <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
               {semana.map((e) => {
+                const disciplina = disciplinaDeEvento(e)
                 const genericasFiltradas = genericas.filter(
-                  (g) => g.categoria === e.categoria && (!e.disciplina || g.disciplina === e.disciplina)
+                  (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
                 )
                 const img = imagenEvento(e, { genericas: genericasFiltradas })
                 const cartel = cartelDe(e.categoria)

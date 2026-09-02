@@ -4,6 +4,7 @@
 import { useContext, useMemo } from 'react'
 import { imagenEvento } from './imagenesEvento.js'
 import { GenericasEventoContext } from './GenericasEventoContext.jsx'
+import { disciplinaDeEvento } from './eventos.js'
 
 const MOSTRAR_IMAGENES_GENERICAS = false
 
@@ -26,10 +27,9 @@ export function useImagenEvento(evento, options = {}) {
     }
 
     // Filtrar genéricas por categoría y disciplina del evento
+    const disciplina = disciplinaDeEvento(evento)
     const genericasFiltradas = genericas.filter(
-      (img) =>
-        img.categoria === evento.categoria &&
-        (!evento.disciplina || img.disciplina === evento.disciplina)
+      (img) => img.categoria === evento.categoria && (!disciplina || img.disciplina === disciplina)
     )
 
     return imagenEvento(evento, { ...options, genericas: genericasFiltradas })
