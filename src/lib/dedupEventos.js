@@ -353,6 +353,7 @@ function fusionar(base, otro) {
     url: base.url || otro.url,
     entradas: base.entradas || otro.entradas,
     subcategoria: base.subcategoria || otro.subcategoria,
+    organizacionId: base.organizacionId || otro.organizacionId,
     idsSecundarios: [...(base.idsSecundarios || []), otro.id],
   }
 }
