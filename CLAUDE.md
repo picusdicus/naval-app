@@ -10,6 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Rama de feature → develop → main. **Fusionar rama→develop siempre con `git merge --no-ff <rama>`**: un fast-forward no deja commit de merge ni frontera de revisión visible en el log, así que una rama cortada desde el sitio equivocado puede arrastrar contenido no revisado a develop/main sin que nadie lo note (pasó el 2026-09-02: una rama cortada desde la punta de otra feature metió esa feature entera en develop y main vía dos fast-forwards encadenados, sin rastro en el historial). El `--no-ff` deja el merge auditable aunque el contenido fuera fast-forwardable. Excepción conocida: el cron de sync-events committea directo a main por diseño.
 
+Además hay un **hook local `hooks/pre-push`** (activado vía `core.hooksPath`, que el script `prepare` de package.json configura solo en cada `npm install`): un push estando en main pide confirmación por teclado si hay terminal, y **se bloquea directamente si no la hay** (una sesión automatizada que no sabe que está en main — el caso del 2026-09-02). Para un push manual a main deliberado sin pregunta: `ALLOW_MAIN_PUSH=1 git push`.
+
 ## Commands
 
 ```bash
