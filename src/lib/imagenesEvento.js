@@ -11,6 +11,15 @@
 //
 // Módulo "limpio" (sin React): lo importa también destacados.js.
 
+// Interruptor temporal: mientras esté en false, imagenEvento() nunca devuelve
+// una foto del pool genérico, aunque exista y esté bien configurada — cae
+// directamente en "sin imagen" (degradado + icono), el comportamiento previo
+// a la issue #23. Se activará cuando el panel de subida esté en producción y
+// las imágenes de deporte estén bien curadas por disciplina (hoy un torneo de
+// tenis puede mostrar una carrera popular). Las fotos propias de los eventos
+// (posterUrl real, rotulado o no) no dependen de este flag.
+const MOSTRAR_IMAGENES_GENERICAS = false
+
 export const IMAGENES_EVENTO = {
   // Pool general de cultura (fachadas culturales reales de Navalcarnero).
   cultura: [
@@ -124,6 +133,9 @@ function poolDe(evento) {
  */
 export function imagenEvento(evento, { paraHeroe = false } = {}) {
   if (evento.imagen && evento.imagen.trim()) return { src: evento.imagen, real: true }
+  // Con el interruptor apagado, el mismo retorno que "sin imagen" tenía antes
+  // de #23 (null): los consumidores ya caen al degradado de categoría.
+  if (!MOSTRAR_IMAGENES_GENERICAS) return null
   const pool = poolDe(evento)
   if (!pool || pool.length === 0) return null
   const semilla = hashDe(String(evento.id ?? evento.titulo ?? ''))
