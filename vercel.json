@@ -17,12 +17,6 @@
       "destination": "/index.html"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/sync-events",
-      "schedule": "0 7 * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -2,7 +2,9 @@ name: Sync Events Daily
 
 on:
   schedule:
-    - cron: '30 8 * * *'
+    # 07:00 UTC = 09:00 hora peninsular (08:00 en invierno). GitHub puede
+    # retrasar el disparo unos minutos en horas de carga.
+    - cron: '0 7 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,6 +13,6 @@ jobs:
     steps:
       - name: Trigger sync-events cron
         run: |
-          curl -X POST https://ennavalcarnero.es/api/sync-events \
+          curl --fail-with-body -X POST https://ennavalcarnero.es/api/sync-events \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"
