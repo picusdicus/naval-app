@@ -199,18 +199,36 @@ export function agruparPorTramoHorario(eventos) {
   return tramos
 }
 
-// Infiere la disciplina de un evento de deporte por palabra clave del título.
-// Devuelve la disciplina (string) o null si no se reconoce.
+// Infiere el subtipo ("disciplina") de un evento para afinar la imagen
+// ilustrativa: en deporte, la disciplina por palabra clave del título; en
+// fiestas, `religiosa` para los actos de registro religioso (novenas, misas,
+// procesiones), que no deben salir con una foto de fuegos o de encierro — el
+// programa 2026 trae 14. Devuelve el subtipo (string) o null si no se
+// reconoce. El vocabulario debe coincidir con DISCIPLINAS_POR_CATEGORIA del
+// panel de imágenes genéricas (PanelImagenesGenericas.jsx).
 // Orden: frases primero (ej. "tenis de mesa" antes que "tenis") para evitar
 // falsos positivos por contención.
 export function disciplinaDeEvento(evento) {
-  if (evento.categoria !== 'deporte') return null
-  if (!evento.titulo) return null
+  if (!evento.titulo && evento.categoria !== 'fiestas') return null
 
-  const t = evento.titulo
+  const t = (evento.titulo || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
+
+  if (evento.categoria === 'fiestas') {
+    // Subcategoría del programa primero; palabras clave de los títulos reales
+    // como respaldo (fuentes que no la traen, p. ej. Instagram). `\bpatrona\b`
+    // con frontera para NO cazar "patronales" (un torneo de fiestas
+    // patronales no es una misa).
+    if (evento.subcategoria === 'religiosa') return 'religiosa'
+    if (/(novena|\bmisa\b|procesion|ofrenda|rosario|eucaristia|\bsalve\b|\bpatrona\b|visperas|romeria)/.test(t)) {
+      return 'religiosa'
+    }
+    return null
+  }
+
+  if (evento.categoria !== 'deporte') return null
 
   // Frases (antes que palabras simples, para contención exacta)
   if (/tenis\s+de\s+mesa/.test(t)) return 'tenis-de-mesa'

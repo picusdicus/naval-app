@@ -4,8 +4,12 @@ import { optimizarImagen } from '../../../lib/imageOptimizer.js'
 import { CATEGORIAS_EVENTO } from '../../../lib/eventos.js'
 
 const CATEGORIAS = Object.keys(CATEGORIAS_EVENTO).sort()
+// Debe coincidir con lo que devuelve disciplinaDeEvento() (src/lib/eventos.js).
 const DISCIPLINAS_POR_CATEGORIA = {
   deporte: ['tenis', 'futbol', 'padel', 'baloncesto', 'petanca', 'ajedrez', 'tenis-de-mesa', 'tiro-al-plato', 'natacion', 'atletismo'],
+  // Actos de registro religioso (novenas, misas, procesiones): solo reciben
+  // fotos de este subtipo, nunca las festivas generales.
+  fiestas: ['religiosa'],
 }
 
 export default function PanelImagenesGenericas() {
