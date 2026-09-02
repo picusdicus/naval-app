@@ -258,7 +258,7 @@ export default function PanelImagenesGenericas() {
               <SelectorImagen
                 etiqueta="Imagen"
                 opcional={false}
-                onSeleccionar={setFichero}
+                onChange={setFichero}
               />
 
               <div>
