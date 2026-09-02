@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
 import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
-import { CATEGORIAS_EVENTO, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
+import { CATEGORIAS_EVENTO, disciplinaDeEvento, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
 import { useImagenEvento } from '../../../lib/useImagenEvento.js'
@@ -506,6 +506,12 @@ export default function TablesEventos() {
           const ocupado = ocupadoId === evento.id
           const pasado = diasHasta(evento.fecha) < 0
           const fuenteIngesta = fuenteDeIngesta(evento)
+          // Qué imagen ilustrativa le tocaría (panel de "Imágenes genéricas"):
+          // su cartel propio si lo trae; si no, el subtipo/disciplina que
+          // infiere disciplinaDeEvento(), o las generales de su categoría.
+          const subtipoImagen = evento.imagen && evento.imagen.trim()
+            ? null
+            : (disciplinaDeEvento(evento) ?? `${evento.categoria} (general)`)
           const abierto = abiertoId === evento.id
           const fusionesDelEvento = evento.fusionesManualesAplicadas || []
           const inertesDelEvento = fusionesInertesDe(evento)
@@ -541,6 +547,16 @@ export default function TablesEventos() {
                         · {fuenteIngesta}
                       </span>
                     )}
+                    <span
+                      className="ml-2 text-mudo"
+                      title={
+                        subtipoImagen
+                          ? 'Sin cartel propio: usará las imágenes genéricas subidas a esta categoría/disciplina (pestaña "Imágenes genéricas")'
+                          : 'Trae cartel propio: no usa imágenes genéricas'
+                      }
+                    >
+                      · {subtipoImagen ? `ilustración: ${subtipoImagen}` : 'cartel propio'}
+                    </span>
                     {pasado && <span className="ml-2 text-mudo">· pasado</span>}
                     {evento.fusionadoPorTituloAproximado && (
                       <span

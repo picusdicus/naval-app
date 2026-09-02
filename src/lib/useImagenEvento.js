@@ -41,33 +41,50 @@ export function useImagenEvento(evento, opciones = {}) {
   // Tolera `evento` nulo para que quien tenga returns tempranos (EventoDetalle
   // mientras carga) pueda llamar al hook siempre, como exigen las reglas de
   // los hooks, sin romperse al leer `evento.imagen`.
-  const img = useMemo(() => {
-    if (!evento) return null
+  const genericasFiltradas = useMemo(() => {
+    if (!evento) return []
     const disciplina = disciplinaDeEvento(evento)
-    const genericasFiltradas = (genericas || []).filter((g) => {
+    return (genericas || []).filter((g) => {
       if (g.categoria !== evento.categoria) return false
       return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
     })
-    return imagenEvento(evento, { ...opciones, genericas: genericasFiltradas })
-  }, [evento, genericas, opciones?.paraHeroe])
+  }, [evento, genericas])
 
-  const src = img?.src ?? null
-  const [rota, setRota] = useState(false)
+  const propia = useMemo(
+    () => (evento ? imagenEvento(evento, { ...opciones, genericas: genericasFiltradas }) : null),
+    [evento, genericasFiltradas, opciones?.paraHeroe]
+  )
+  // Si la foto propia falla al cargar (un cartel externo que ya no existe), se
+  // cae a la ilustrativa que le tocaría sin foto — no al degradado.
+  const alternativa = useMemo(
+    () =>
+      evento && propia?.real
+        ? imagenEvento({ ...evento, imagen: '' }, { ...opciones, genericas: genericasFiltradas })
+        : null,
+    [evento, propia, genericasFiltradas, opciones?.paraHeroe]
+  )
+
+  const [rotas, setRotas] = useState(0)
+  const src = propia?.src ?? null
 
   // Reset al cambiar de imagen: estos componentes se reutilizan entre items de
   // una lista (React puede conservar la instancia y cambiarle el evento), y un
   // `rota` heredado del anterior escondería un cartel que sí carga.
   useEffect(() => {
-    setRota(false)
+    setRotas(0)
   }, [src])
 
-  const onError = useCallback(() => setRota(true), [])
+  const onError = useCallback(() => setRotas((n) => n + 1), [])
+
+  // 0 fallos: la propia (o la ilustrativa). 1 fallo con propia: la ilustrativa
+  // de reserva. Más fallos (o sin reserva): nada → degradado.
+  const img = rotas === 0 ? propia : rotas === 1 && propia?.real ? alternativa : null
 
   return {
-    posterUrl: rota ? null : src,
+    posterUrl: img?.src ?? null,
     pos: img?.pos || '50% 50%',
     onError,
-    real: Boolean(img?.real) && !rota,
+    real: Boolean(img?.real),
     credito: img?.real ? undefined : img?.credito,
   }
 }

@@ -241,7 +241,8 @@ export function disciplinaDeEvento(evento) {
   if (/(baloncesto|basketball)/.test(t)) return 'baloncesto'
   if (/petanca/.test(t)) return 'petanca'
   if (/ajedrez/.test(t)) return 'ajedrez'
-  if (/(natacion|natación|piscina|acuatlon|acuatlón)/.test(t)) return 'natacion'
+  // "aquatlón" con q es la grafía de la galería de Deportes ("Aquatlón 2 sept").
+  if (/(natacion|piscina|acuatlon|aquatlon|aquathlon|waterpolo|aquazumba)/.test(t)) return 'natacion'
   if (/(atletismo|carrera\s+popular|milla\s+atletica|milla\s+atletica|velocidad)/.test(t))
     return 'atletismo'
 
