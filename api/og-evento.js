@@ -20,6 +20,7 @@ import eventosCurados from '../src/data/eventos.json'
 import eventosExternos from '../src/data/eventos-externos.json'
 import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel } from '../src/lib/dedupEventos.js'
 import { formatearFechaLarga } from '../src/lib/eventos.js'
+import { genericasParaEvento, imagenEvento } from '../src/lib/imagenesEvento.js'
 
 const MAX_DESCRIPCION = 200
 
@@ -77,13 +78,33 @@ function descripcionDe(evento) {
   return DESCRIPCION_GENERICA
 }
 
+// Imagen de la vista previa, en la MISMA prioridad que la tarjeta de la app:
+// cartel propio > ilustrativa genérica de su subtipo > logo. Sin la
+// ilustrativa, compartir un evento que en la agenda se ve con foto sacaba una
+// burbuja gris con el logo (decisión 2026-09-02).
+//
 // og:image exige URL absoluta: 42 eventos curados llevan la imagen relativa
-// ('/img/eventos/…') y así WhatsApp no la resolvería.
-function imagenAbsoluta(evento, origen) {
+// ('/img/eventos/…') y así WhatsApp no la resolvería. Las genéricas ya vienen
+// absolutas (Vercel Blob).
+//
+// ⚠️ Al elegir las fotos genéricas, evitar caras protagonistas reconocibles:
+// la burbuja no lleva el pie "imagen ilustrativa" que sí muestra la ficha, y
+// un retrato podría leerse como el artista que actúa.
+function imagenDe(evento, origen, genericas) {
   const bruta = evento.imagen || ''
-  if (!bruta) return { url: `${origen}/logo.png`, propia: false }
-  if (/^https?:\/\//i.test(bruta)) return { url: bruta, propia: true }
-  return { url: `${origen}${bruta.startsWith('/') ? '' : '/'}${bruta}`, propia: true }
+  if (bruta) {
+    const url = /^https?:\/\//i.test(bruta)
+      ? bruta
+      : `${origen}${bruta.startsWith('/') ? '' : '/'}${bruta}`
+    return { url, esLogo: false }
+  }
+
+  const ilustrativa = imagenEvento(evento, {
+    genericas: genericasParaEvento(evento, genericas),
+  })
+  if (ilustrativa?.src) return { url: ilustrativa.src, esLogo: false }
+
+  return { url: `${origen}/logo.png`, esLogo: true }
 }
 
 // En un deploy con Deployment Protection (las previews de este proyecto lo
@@ -188,7 +209,12 @@ export default async function handler(req) {
     const id = url.searchParams.get('id')
     if (!id) return await indexHtml()
 
-    const evento = await eventoPorId(id, origen, internas)
+    // Las genéricas van en paralelo al resto del pipeline: no añaden latencia
+    // y, si su endpoint falla, la lista vacía degrada al logo de siempre.
+    const [evento, genericas] = await Promise.all([
+      eventoPorId(id, origen, internas),
+      json(`${origen}/api/imagenes-evento-genericas`, 'imagenes', [], internas),
+    ])
     // Evento inexistente, no publicado u oculto: el SPA sin tocar. Nunca un
     // 404 — el enlace puede estar pegado en un chat y debe seguir abriendo.
     if (!evento) return await indexHtml()
@@ -196,7 +222,7 @@ export default async function handler(req) {
     const enlace = `${origen}/eventos/${evento.id}`
     const titulo = evento.titulo || 'En Navalcarnero'
     const descripcion = descripcionDe(evento)
-    const imagen = imagenAbsoluta(evento, origen)
+    const imagen = imagenDe(evento, origen, genericas)
 
     const meta = [
       `<title>${escapar(titulo)} · En Navalcarnero</title>`,
@@ -209,16 +235,18 @@ export default async function handler(req) {
       `<meta property="og:image" content="${escapar(imagen.url)}" />`,
       `<meta property="og:locale" content="es_ES" />`,
       // Del logo sabemos que es cuadrado 1024 y conviene declararlo; de un
-      // cartel real no sabemos las dimensiones sin descargarlo: no se inventan.
-      ...(imagen.propia
-        ? []
-        : [
+      // cartel real o de una genérica no sabemos las dimensiones sin
+      // descargarlos: no se inventan.
+      ...(imagen.esLogo
+        ? [
             `<meta property="og:image:type" content="image/png" />`,
             `<meta property="og:image:width" content="1024" />`,
             `<meta property="og:image:height" content="1024" />`,
-          ]),
-      // Tarjeta grande solo si hay cartel real; con el logo queda mejor la chica.
-      `<meta name="twitter:card" content="${imagen.propia ? 'summary_large_image' : 'summary'}" />`,
+          ]
+        : []),
+      // Tarjeta grande siempre que haya una foto (propia o ilustrativa); con el
+      // logo queda mejor la chica.
+      `<meta name="twitter:card" content="${imagen.esLogo ? 'summary' : 'summary_large_image'}" />`,
       `<meta name="twitter:title" content="${escapar(titulo)}" />`,
       `<meta name="twitter:description" content="${escapar(descripcion)}" />`,
       `<meta name="twitter:image" content="${escapar(imagen.url)}" />`,
