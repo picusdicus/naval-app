@@ -32,6 +32,27 @@ function hashDe(texto) {
 }
 
 /**
+ * Semilla de la elección: el TÍTULO normalizado, no el id.
+ *
+ * Un mismo acto repetido varios días es una fila por día, con un id distinto
+ * cada una (`fiestas-gala-de-la-danza-2026-09-02` y `…-09-03`): sembrando por
+ * id, la Gala de la Danza salía con una foto el miércoles y otra el jueves,
+ * como si fueran actos distintos. Por título, las 18 series repetidas del
+ * programa (11 días de torneo de tenis, 9 novenas, 8 matinés…) mantienen su
+ * foto todos sus días, y los títulos distintos se siguen repartiendo entre las
+ * variantes, que era el motivo original del hash. Sin título, el id.
+ */
+function semillaDe(evento) {
+  const titulo = String(evento.titulo ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+  return titulo || String(evento.id ?? '')
+}
+
+/**
  * Genéricas que le corresponden a un evento.
  *
  * 1. Si el superadmin le asignó una imagen a mano desde el panel, ESA y solo
@@ -81,7 +102,7 @@ export function creditosDe(genericas = []) {
  *  - Con foto propia (campo `imagen`, p. ej. el cartel real): {src, real: true}.
  *    Gana siempre: una publicación con cartel sustituye a la ilustrativa.
  *  - Sin ella y con `genericas` (ya filtradas para este evento): una de ellas,
- *    estable por id del evento → {src, credito, real: false}.
+ *    estable por título del evento (ver semillaDe) → {src, credito, real: false}.
  *  - Sin ninguna de las dos: null (degradado de categoría).
  *  - `paraHeroe` se acepta por compatibilidad con los llamadores; hoy no
  *    excluye nada (las subidas no llevan marca de resolución).
@@ -91,7 +112,7 @@ export function imagenEvento(evento, { genericas = [] } = {}) {
   if (!MOSTRAR_IMAGENES_GENERICAS) return null
   if (!genericas || genericas.length === 0) return null
 
-  const semilla = hashDe(String(evento.id ?? evento.titulo ?? ''))
+  const semilla = hashDe(semillaDe(evento))
   const elegida = genericas[semilla % genericas.length]
   if (!elegida?.url) return null
   return { src: elegida.url, credito: creditoDe(elegida), real: false }

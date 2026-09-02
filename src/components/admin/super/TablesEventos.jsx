@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
 import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
@@ -38,7 +38,12 @@ import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
 // verdad con «Puertas abiertas patinaje» (2026-09-01). El panel debe listar
 // exactamente las tarjetas que la vista pública pinta.
 const ESTATICOS = enriquecerPorCartel([...eventosCurados, ...eventosExternos])
-const MAX_FILAS = 60
+// Scroll infinito (mismo patrón que Noticias.jsx): se pintan LOTE filas y otro
+// LOTE cada vez que el centinela del final entra en pantalla, hasta agotar la
+// lista. Todo en cliente — los eventos ya están en memoria, no hay peticiones
+// extra. Antes se cortaba en 60 fijas con un "afina la búsqueda", así que los
+// eventos del final de la temporada no había forma de ver sin buscarlos.
+const LOTE_FILAS = 40
 const DIAS_DESTACADO = 30 // duración por defecto al destacar con un clic
 
 const ETIQUETA_ORIGEN = { municipal: 'Ayuntamiento', vecinal: 'Vecinal', cultural: 'Cultural' }
@@ -396,6 +401,8 @@ export default function TablesEventos() {
   const [ocupadoId, setOcupadoId] = useState(null) // id del evento con acción en curso
   const [abiertoId, setAbiertoId] = useState(null) // id del evento con el detalle desplegado
   const [mensaje, setMensaje] = useState(null) // { tipo: 'error', texto }
+  const [cuantas, setCuantas] = useState(LOTE_FILAS) // filas pintadas (scroll infinito)
+  const centinelaRef = useRef(null)
   const [fusiones, setFusiones] = useState([]) // fusiones manuales [{principal, secundaria}]
   const [origenFusionId, setOrigenFusionId] = useState(null) // id del principal elegido en el modo fusión
 
@@ -487,7 +494,29 @@ export default function TablesEventos() {
       .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))
   }, [eventos, busqueda, incluirPasados])
 
-  const visibles = filtrados.slice(0, MAX_FILAS)
+  const visibles = filtrados.slice(0, cuantas)
+  const hayMas = filtrados.length > visibles.length
+
+  // Al cambiar el filtro se vuelve al primer lote: si no, buscar tras haber
+  // desplegado 400 filas seguiría pintando 400 de la nueva lista.
+  useEffect(() => {
+    setCuantas(LOTE_FILAS)
+  }, [busqueda, incluirPasados])
+
+  // Al asomar el centinela, revelar otro lote. Se re-observa cuando cambia
+  // `hayMas` para desconectar al llegar al final.
+  useEffect(() => {
+    const nodo = centinelaRef.current
+    if (!nodo || !hayMas) return undefined
+    const obs = new IntersectionObserver(
+      (entradas) => {
+        if (entradas[0].isIntersecting) setCuantas((n) => n + LOTE_FILAS)
+      },
+      { rootMargin: '300px' }
+    )
+    obs.observe(nodo)
+    return () => obs.disconnect()
+  }, [hayMas])
 
   async function destacar(evento) {
     setOcupadoId(evento.id)
@@ -704,7 +733,7 @@ export default function TablesEventos() {
         {cargando
           ? 'Cargando eventos…'
           : `${filtrados.length} ${filtrados.length === 1 ? 'evento' : 'eventos'}`}
-        {!cargando && filtrados.length > MAX_FILAS && ` (se muestran ${MAX_FILAS} — afina la búsqueda)`}
+        {!cargando && hayMas && ` (se muestran ${visibles.length}, sigue bajando para ver más)`}
       </p>
 
       <div className="divide-y divide-filete border-t border-tinta">
@@ -904,6 +933,15 @@ export default function TablesEventos() {
           <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
             No hay eventos que coincidan con el filtro.
           </p>
+        )}
+
+        {/* Centinela del scroll infinito: al entrar en pantalla carga más. */}
+        {hayMas && (
+          <div ref={centinelaRef} className="flex justify-center py-4">
+            <span className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+              Cargando más eventos…
+            </span>
+          </div>
         )}
       </div>
     </div>
