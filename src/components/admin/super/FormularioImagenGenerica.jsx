@@ -14,8 +14,17 @@ import { optimizarImagen } from '../../../lib/imageOptimizer.js'
  *  - categoria (obligatoria), disciplina (null = generales de la categoría)
  *  - onSubida(fila): la fila devuelta por la API
  *  - compacto: metadatos en una sola fila (para el detalle del evento)
+ *  - etiquetaSoloEste: si se pasa, muestra la casilla que marca la imagen como
+ *    `soloAsignacion` (fuera del reparto automático, solo para los eventos a
+ *    los que se asigne a mano). El texto describe el efecto en ese contexto.
  */
-export default function FormularioImagenGenerica({ categoria, disciplina = null, onSubida, compacto = false }) {
+export default function FormularioImagenGenerica({
+  categoria,
+  disciplina = null,
+  onSubida,
+  compacto = false,
+  etiquetaSoloEste = '',
+}) {
   const entrada = useRef(null)
   const [fichero, setFichero] = useState(null)
   const [previa, setPrevia] = useState('')
@@ -25,6 +34,7 @@ export default function FormularioImagenGenerica({ categoria, disciplina = null,
   const [descripcion, setDescripcion] = useState('')
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState('')
+  const [soloEste, setSoloEste] = useState(false)
 
   useEffect(() => {
     if (!fichero) {
@@ -55,6 +65,7 @@ export default function FormularioImagenGenerica({ categoria, disciplina = null,
           fuente: fuente.trim() || null,
           licencia: licencia.trim() || null,
           descripcion: descripcion.trim() || null,
+          soloAsignacion: soloEste,
         }),
       })
       const cuerpo = await res.json().catch(() => ({}))
@@ -64,6 +75,7 @@ export default function FormularioImagenGenerica({ categoria, disciplina = null,
       setFuente('')
       setLicencia('')
       setDescripcion('')
+      setSoloEste(false)
       onSubida?.(cuerpo)
     } catch (err) {
       setError(err.message)
@@ -159,6 +171,18 @@ export default function FormularioImagenGenerica({ categoria, disciplina = null,
             />
           </div>
         </>
+      )}
+
+      {etiquetaSoloEste && (
+        <label className="flex cursor-pointer items-start gap-2">
+          <input
+            type="checkbox"
+            checked={soloEste}
+            onChange={(e) => setSoloEste(e.target.checked)}
+            className="mt-1 h-3.5 w-3.5 shrink-0"
+          />
+          <span className="font-serif-spectral text-sm text-tinta">{etiquetaSoloEste}</span>
+        </label>
       )}
 
       {error && (

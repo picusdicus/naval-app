@@ -23,7 +23,8 @@ export default async function handler(req) {
     // El driver HTTP de Neon manda una sentencia por petición: dos consultas
     // son dos viajes, pero siguen siendo un solo fetch desde el cliente.
     const imagenes = await sql`
-      SELECT id, categoria, disciplina, url, autor, fuente, licencia, descripcion
+      SELECT id, categoria, disciplina, url, autor, fuente, licencia, descripcion,
+             solo_asignacion AS "soloAsignacion"
       FROM imagenes_evento_genericas
       WHERE activo = true
       ORDER BY categoria, disciplina, creado_en

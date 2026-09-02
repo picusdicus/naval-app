@@ -459,3 +459,10 @@ CREATE TABLE IF NOT EXISTS imagenes_evento_asignaciones (
 );
 
 CREATE INDEX IF NOT EXISTS idx_imagenes_asignaciones_imagen ON imagenes_evento_asignaciones (imagen_id);
+
+-- Imagen reservada para asignarla A MANO a eventos concretos: queda FUERA del
+-- reparto automático por categoría/subtipo. Sin esto, una foto muy específica
+-- (los fuegos artificiales del 7 de septiembre) entraba en el saco de su
+-- subtipo y podía tocarle a cualquier otro evento del grupo.
+ALTER TABLE imagenes_evento_genericas
+  ADD COLUMN IF NOT EXISTS solo_asignacion boolean NOT NULL DEFAULT false;

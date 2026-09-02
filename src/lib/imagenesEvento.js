@@ -57,11 +57,12 @@ function semillaDe(evento) {
  *
  * 1. Si el superadmin le asignó una imagen a mano desde el panel, ESA y solo
  *    esa (el pool queda reducido a una, así que sale siempre). La asignación
- *    existe justo para los casos que la inferencia no acierta.
+ *    existe justo para los casos que la inferencia no acierta, y es la única
+ *    vía por la que se usan las imágenes marcadas `soloAsignacion`.
  * 2. Si no, las de su categoría de imagen y su subtipo (ambos exactos), o las
- *    que no tienen subtipo si el evento tampoco lo tiene. Nunca las de OTRO
- *    subtipo: un torneo de tenis no debe salir con una carrera popular, ni una
- *    novena con fuegos artificiales.
+ *    que no tienen subtipo si el evento tampoco lo tiene, excluyendo siempre
+ *    las `soloAsignacion`. Nunca las de OTRO subtipo: un torneo de tenis no
+ *    debe salir con una carrera popular, ni una novena con fuegos.
  *
  * Fail-soft: una asignación cuya imagen ya no está en la lista (borrada o
  * desactivada) se ignora y el evento vuelve al criterio automático.
@@ -80,6 +81,10 @@ export function genericasParaEvento(evento, genericas = [], asignaciones = {}) {
 
   const { categoria, subtipo } = destinoImagenEvento(evento)
   return genericas.filter((g) => {
+    // Reservadas para asignación manual: no entran en el reparto automático.
+    // Es lo que permite subir una foto muy concreta (los fuegos artificiales
+    // del 7 de septiembre) sin que le toque a otro evento de su mismo grupo.
+    if (g.soloAsignacion) return false
     if (g.categoria !== categoria) return false
     return subtipo === null ? g.disciplina === null : g.disciplina === subtipo
   })

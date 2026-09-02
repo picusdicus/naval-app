@@ -61,7 +61,8 @@ async function handleGet(req, res) {
   try {
     const sql = obtenerSql()
     const imagenes = await sql`
-      SELECT id, categoria, disciplina, url, autor, fuente, licencia, descripcion, activo
+      SELECT id, categoria, disciplina, url, autor, fuente, licencia, descripcion, activo,
+             solo_asignacion AS "soloAsignacion"
       FROM imagenes_evento_genericas
       ORDER BY categoria, disciplina, creado_en
     `
@@ -73,7 +74,7 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  const { nombre, tipo, datos, categoria, disciplina, autor, fuente, licencia, descripcion } =
+  const { nombre, tipo, datos, categoria, disciplina, autor, fuente, licencia, descripcion, soloAsignacion } =
     req.body || {}
 
   // Validar entrada
@@ -120,10 +121,11 @@ async function handlePost(req, res) {
     const sql = obtenerSql()
     const resultado = await sql`
       INSERT INTO imagenes_evento_genericas
-        (categoria, disciplina, url, autor, fuente, licencia, descripcion, activo)
+        (categoria, disciplina, url, autor, fuente, licencia, descripcion, activo, solo_asignacion)
       VALUES
-        (${categoria}, ${disciplina || null}, ${url}, ${autor || null}, ${fuente || null}, ${licencia || null}, ${descripcion || null}, true)
-      RETURNING id, categoria, disciplina, url, autor, fuente, licencia, descripcion, activo
+        (${categoria}, ${disciplina || null}, ${url}, ${autor || null}, ${fuente || null}, ${licencia || null}, ${descripcion || null}, true, ${Boolean(soloAsignacion)})
+      RETURNING id, categoria, disciplina, url, autor, fuente, licencia, descripcion, activo,
+                solo_asignacion AS "soloAsignacion"
     `
 
     const fila = resultado[0]
@@ -151,7 +153,8 @@ async function handlePatch(req, res) {
       UPDATE imagenes_evento_genericas
       SET activo = ${Boolean(activo)}
       WHERE id = ${id}
-      RETURNING id, categoria, disciplina, url, autor, fuente, licencia, descripcion, activo
+      RETURNING id, categoria, disciplina, url, autor, fuente, licencia, descripcion, activo,
+                solo_asignacion AS "soloAsignacion"
     `
 
     if (resultado.length === 0) {
