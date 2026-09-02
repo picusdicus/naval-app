@@ -1,0 +1,16 @@
+name: Sync Events Daily
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-events cron
+        run: |
+          curl -X POST https://ennavalcarnero.es/api/sync-events \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
