@@ -418,17 +418,43 @@ export function propagarCartelDeSerie(eventos) {
   return alguno ? salida : eventos
 }
 
+/**
+ * Un cartel que la organización subió a mano desde /panel vale más que uno
+ * capturado de Instagram: es el original que ella publica, no una foto de un
+ * post municipal. Se reconocen por `origenExternoId === null` — exactamente
+ * las filas de Neon creadas a mano, frente a las de cualquier ingesta
+ * automática (`ig-…`, `fiestas-…`, `deportes-…`). Los eventos estáticos no
+ * traen el campo (undefined), así que no entran en esta categoría.
+ *
+ * Caso que lo motivó: "El Show de Boto Botones y Mandy Mandona" del 2 de
+ * septiembre llega dos veces, del Instagram del Ayuntamiento y de A.C. Imagina
+ * Magia, que subió su cartel. Ganaba el de Instagram solo por llegar antes.
+ */
+function prioridadDeImagen(evento) {
+  if (!evento?.imagen) return -1
+  return evento.origenExternoId === null ? 1 : 0
+}
+
 // Rellena en `base` los campos que tenga vacíos con los de `otro` y acumula el
 // id de `otro` en idsSecundarios (para que deep links y destacados que apunten
 // al duplicado sigan resolviendo). `base` no se pisa: gana la versión curada o
 // el primer duplicado encontrado. Devuelve un objeto nuevo (no muta).
 function fusionar(base, otro) {
-  // Quién aporta la imagen decide si lleva texto rotulado: el resultado hereda
-  // la identidad del estático base y perdería la procedencia de la foto.
-  const aportaImagen = base.imagen ? base : otro.imagen ? otro : null
+  // La imagen es la excepción a "gana base": entre dos carteles se queda el de
+  // más prioridad (ver prioridadDeImagen) y, a igualdad, el de base como
+  // siempre. Quién la aporta decide además si lleva texto rotulado, porque el
+  // resultado hereda la identidad del estático y perdería esa procedencia.
+  const aportaImagen =
+    prioridadDeImagen(otro) > prioridadDeImagen(base)
+      ? otro
+      : base.imagen
+        ? base
+        : otro.imagen
+          ? otro
+          : null
   return {
     ...base,
-    imagen: base.imagen || otro.imagen,
+    imagen: aportaImagen?.imagen || '',
     imagenRotulada: aportaImagen ? imagenConTextoRotulado(aportaImagen) : false,
     descripcion: base.descripcion || otro.descripcion,
     hora: base.hora || otro.hora,
