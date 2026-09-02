@@ -223,6 +223,9 @@ export function disciplinaDeEvento(evento) {
   if (/(baloncesto|basketball)/.test(t)) return 'baloncesto'
   if (/petanca/.test(t)) return 'petanca'
   if (/ajedrez/.test(t)) return 'ajedrez'
+  if (/(natacion|natación|piscina|acuatlon|acuatlón)/.test(t)) return 'natacion'
+  if (/(atletismo|carrera\s+popular|milla\s+atletica|milla\s+atletica|velocidad)/.test(t))
+    return 'atletismo'
 
   return null
 }

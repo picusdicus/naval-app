@@ -59,9 +59,10 @@ export default function Inicio() {
       .slice(0, minimos - destacadosOriginales.length)
       .map((e) => {
         const disciplina = disciplinaDeEvento(e)
-        const genericasFiltradas = genericas.filter(
-          (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
-        )
+        const genericasFiltradas = genericas.filter((g) => {
+          if (g.categoria !== e.categoria) return false
+          return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
+        })
         return eventoATarjeta(e, genericasFiltradas)
       })
     return [...destacadosOriginales, ...faltantes]
@@ -126,9 +127,10 @@ export default function Inicio() {
             <div className="mt-3 grid grid-cols-2 gap-4">
               {semana.map((e) => {
                 const disciplina = disciplinaDeEvento(e)
-                const genericasFiltradas = genericas.filter(
-                  (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
-                )
+                const genericasFiltradas = genericas.filter((g) => {
+                  if (g.categoria !== e.categoria) return false
+                  return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
+                })
                 const img = imagenEvento(e, { genericas: genericasFiltradas })
                 const cartel = cartelDe(e.categoria)
                 return (
@@ -217,9 +219,10 @@ export default function Inicio() {
             <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
               {semana.map((e) => {
                 const disciplina = disciplinaDeEvento(e)
-                const genericasFiltradas = genericas.filter(
-                  (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
-                )
+                const genericasFiltradas = genericas.filter((g) => {
+                  if (g.categoria !== e.categoria) return false
+                  return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
+                })
                 const img = imagenEvento(e, { genericas: genericasFiltradas })
                 const cartel = cartelDe(e.categoria)
                 return (

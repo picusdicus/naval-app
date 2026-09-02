@@ -26,11 +26,15 @@ export function useImagenEvento(evento, options = {}) {
       return imagenEvento(evento, options)
     }
 
-    // Filtrar genéricas por categoría y disciplina del evento
+    // Filtrar genéricas por categoría y disciplina del evento.
+    // Cuando disciplina es null (evento no reconocido), solo recibe genéricas
+    // sin disciplina específica (generales de categoría). Cuando sí se reconoce,
+    // compara por igualdad exacta.
     const disciplina = disciplinaDeEvento(evento)
-    const genericasFiltradas = genericas.filter(
-      (img) => img.categoria === evento.categoria && (!disciplina || img.disciplina === disciplina)
-    )
+    const genericasFiltradas = genericas.filter((img) => {
+      if (img.categoria !== evento.categoria) return false
+      return disciplina === null ? img.disciplina === null : img.disciplina === disciplina
+    })
 
     return imagenEvento(evento, { ...options, genericas: genericasFiltradas })
   }, [evento, genericas, options, options?.paraHeroe])

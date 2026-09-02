@@ -6,7 +6,7 @@ import { CATEGORIAS_EVENTO } from '../../../lib/eventos.js'
 
 const CATEGORIAS = Object.keys(CATEGORIAS_EVENTO).sort()
 const DISCIPLINAS_POR_CATEGORIA = {
-  deporte: ['tenis', 'futbol', 'padel', 'basketball', 'natacion', 'atletismo', 'otro'],
+  deporte: ['tenis', 'futbol', 'padel', 'baloncesto', 'petanca', 'ajedrez', 'tenis-de-mesa', 'tiro-al-plato', 'natacion', 'atletismo'],
 }
 
 export default function PanelImagenesGenericas() {

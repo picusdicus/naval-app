@@ -68,9 +68,10 @@ export default function Eventos() {
       .slice(0, MIN_CARRUSEL - destacadosEvento.length)
       .map((e) => {
         const disciplina = disciplinaDeEvento(e)
-        const genericasFiltradas = genericas.filter(
-          (g) => g.categoria === e.categoria && (!disciplina || g.disciplina === disciplina)
-        )
+        const genericasFiltradas = genericas.filter((g) => {
+          if (g.categoria !== e.categoria) return false
+          return disciplina === null ? g.disciplina === null : g.disciplina === disciplina
+        })
         return eventoATarjeta(e, genericasFiltradas)
       })
     return [...destacadosEvento, ...relleno]
