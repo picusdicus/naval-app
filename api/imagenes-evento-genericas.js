@@ -6,9 +6,11 @@ import { obtenerSql } from './_db.js'
 
 export const config = { runtime: 'edge' }
 
+const CACHE = { 'cache-control': 's-maxage=60, stale-while-revalidate=300' }
+
 export default async function handler(req) {
   if (req.method !== 'GET') {
-    return new Response(json({ error: 'Método no permitido' }), { status: 405 })
+    return json({ error: 'Método no permitido' }, 405)
   }
 
   try {
@@ -19,20 +21,9 @@ export default async function handler(req) {
       WHERE activo = true
       ORDER BY categoria, disciplina, creado_en
     `
-
-    return new Response(json({ imagenes }), {
-      status: 200,
-      headers: {
-        'cache-control': 's-maxage=60, stale-while-revalidate=300',
-      },
-    })
+    return json({ imagenes }, 200, CACHE)
   } catch (error) {
     console.error('Error al leer imágenes genéricas:', error)
-    return new Response(json({ imagenes: [] }), {
-      status: 200,
-      headers: {
-        'cache-control': 's-maxage=60, stale-while-revalidate=300',
-      },
-    })
+    return json({ imagenes: [] }, 200, CACHE)
   }
 }

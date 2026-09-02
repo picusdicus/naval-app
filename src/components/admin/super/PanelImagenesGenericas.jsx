@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import MIcon from '../../MIcon.jsx'
-import SelectorImagen from '../SelectorImagen.jsx'
-import { optimizarImagen, validarImagen } from '../../../lib/imageOptimizer.js'
+import { optimizarImagen } from '../../../lib/imageOptimizer.js'
 import { CATEGORIAS_EVENTO } from '../../../lib/eventos.js'
 
 const CATEGORIAS = Object.keys(CATEGORIAS_EVENTO).sort()
@@ -16,8 +15,20 @@ export default function PanelImagenesGenericas() {
   const [disciplinaActiva, setDisciplinaActiva] = useState(null)
   const [ocupado, setOcupado] = useState(false)
 
-  // Formulario de subida
+  // Formulario de subida: el fichero se queda en memoria y se optimiza y sube
+  // en un solo paso al guardar, junto con los metadatos.
+  const entrada = useRef(null)
   const [fichero, setFichero] = useState(null)
+  const [previa, setPrevia] = useState('')
+  useEffect(() => {
+    if (!fichero) {
+      setPrevia('')
+      return
+    }
+    const url = URL.createObjectURL(fichero)
+    setPrevia(url)
+    return () => URL.revokeObjectURL(url)
+  }, [fichero])
   const [autor, setAutor] = useState('')
   const [fuente, setFuente] = useState('')
   const [licencia, setLicencia] = useState('')
@@ -53,12 +64,6 @@ export default function PanelImagenesGenericas() {
       return
     }
 
-    const errorValidacion = validarImagen(fichero, 3)
-    if (errorValidacion) {
-      alert(errorValidacion)
-      return
-    }
-
     setOcupado(true)
     try {
       const optimizada = await optimizarImagen(fichero, 1200)
@@ -79,18 +84,17 @@ export default function PanelImagenesGenericas() {
         }),
       })
 
-      if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Error al subir')
-      }
+      const cuerpo = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(cuerpo.error || 'Error al subir')
 
-      // Limpiar formulario y recargar
+      // Estado local con la fila devuelta: un GET inmediato tras el INSERT
+      // puede no verla todavía (lectura por otra conexión HTTP de Neon).
+      setImagenes((prev) => [...prev, cuerpo])
       setFichero(null)
       setAutor('')
       setFuente('')
       setLicencia('')
       setDescripcion('')
-      await cargarImagenes()
     } catch (error) {
       alert(`Error: ${error.message}`)
     } finally {
@@ -107,7 +111,8 @@ export default function PanelImagenesGenericas() {
       })
 
       if (!res.ok) throw new Error('Error al actualizar')
-      await cargarImagenes()
+      const fila = await res.json()
+      setImagenes((prev) => prev.map((img) => (img.id === id ? { ...img, ...fila } : img)))
     } catch (error) {
       alert(`Error: ${error.message}`)
     }
@@ -122,7 +127,7 @@ export default function PanelImagenesGenericas() {
       })
 
       if (!res.ok) throw new Error('Error al borrar')
-      await cargarImagenes()
+      setImagenes((prev) => prev.filter((img) => img.id !== id))
     } catch (error) {
       alert(`Error: ${error.message}`)
     }
@@ -255,11 +260,47 @@ export default function PanelImagenesGenericas() {
               Subir nueva imagen
             </h3>
             <div className="space-y-3">
-              <SelectorImagen
-                etiqueta="Imagen"
-                opcional={false}
-                onChange={setFichero}
-              />
+              <div>
+                <span className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+                  Imagen
+                </span>
+                {fichero ? (
+                  <div className="relative overflow-hidden border border-tinta">
+                    <img src={previa} alt="" className="max-h-56 w-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setFichero(null)}
+                      className="absolute right-2 top-2 inline-flex items-center gap-1 bg-papel/95 px-3 py-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota"
+                    >
+                      <MIcon name="delete" className="text-[15px]" />
+                      Quitar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => entrada.current?.click()}
+                    className="flex w-full flex-col items-center gap-2 border border-dashed border-filete-punteado px-4 py-8 font-serif-spectral text-mudo transition-colors hover:border-tinta hover:text-tinta"
+                  >
+                    <MIcon name="add_photo_alternate" className="text-[28px]" />
+                    <span className="text-sm">Elegir una imagen</span>
+                    <span className="font-mono-ibm text-[9px] uppercase tracking-etiqueta">
+                      JPG · PNG · WebP — se optimiza al guardar
+                    </span>
+                  </button>
+                )}
+                <input
+                  ref={entrada}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null
+                    e.target.value = ''
+                    if (f) setFichero(f)
+                  }}
+                />
+              </div>
 
               <div>
                 <label className="block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo mb-1">

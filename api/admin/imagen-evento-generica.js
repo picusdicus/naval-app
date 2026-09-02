@@ -4,10 +4,11 @@
 // DELETE /api/admin/imagen-evento-generica?id=<uuid> — borra la fila (blob queda huérfano).
 
 import { put, del } from '@vercel/blob'
-import { requerirSesionEdge } from '../_auth.js'
-import { csrfInvalido, json, queryDe } from '../_http.js'
+import { requerirSesion } from '../_auth.js'
+import { csrfInvalido } from '../_http.js'
 import { obtenerSql } from '../_db.js'
 
+// Serverless (Node) a propósito: @vercel/blob no funciona en Edge (ver imagen.js).
 export const config = { runtime: 'nodejs' }
 
 const TIPOS_PERMITIDOS = {
@@ -30,15 +31,20 @@ function nombreSeguro(categoria, disciplina) {
 }
 
 export default async function handler(req, res) {
-  const sesion = await requerirSesionEdge(req)
-  if (sesion instanceof Response) return sesion
-
-  if (!sesion.esSuperAdmin) {
-    return res.status(403).json({ error: 'Solo superadmin' })
-  }
-
   if (csrfInvalido(req)) {
     return res.status(403).json({ error: 'Origen no permitido.' })
+  }
+
+  let sesion
+  try {
+    sesion = await requerirSesion(req, res)
+  } catch (error) {
+    console.error('Sesión mal configurada:', error.message)
+    return res.status(401).json({ error: 'No autenticado' })
+  }
+  if (!sesion) return
+  if (sesion.rol !== 'superadmin') {
+    return res.status(403).json({ error: 'Acceso denegado. Solo superadmin.' })
   }
 
   if (req.method === 'POST') return handlePost(req, res)
@@ -111,7 +117,7 @@ async function handlePost(req, res) {
 }
 
 async function handlePatch(req, res) {
-  const { id } = queryDe(req)
+  const { id } = req.query || {}
   if (!id) {
     return res.status(400).json({ error: 'Falta el id.' })
   }
@@ -142,7 +148,7 @@ async function handlePatch(req, res) {
 }
 
 async function handleDelete(req, res) {
-  const { id } = queryDe(req)
+  const { id } = req.query || {}
   if (!id) {
     return res.status(400).json({ error: 'Falta el id.' })
   }
@@ -163,9 +169,7 @@ async function handleDelete(req, res) {
     // Borrar de Blob si es posible (fail-soft si falla)
     if (url && hayCredencialesBlob()) {
       try {
-        const urlObj = new URL(url)
-        const pathname = urlObj.pathname.replace(/^\//, '')
-        await del(pathname, {
+        await del(url, {
           ...(process.env.BLOB_READ_WRITE_TOKEN
             ? { token: process.env.BLOB_READ_WRITE_TOKEN }
             : {}),
