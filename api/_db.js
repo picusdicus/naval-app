@@ -37,4 +37,5 @@ export const TABLAS = [
   'eventos_ocultos',
   'ingesta_log',
   'fusiones_eventos',
+  'imagenes_evento_genericas',
 ]

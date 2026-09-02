@@ -130,14 +130,29 @@ function poolDe(evento) {
  *  - `paraHeroe: true` (ficha de detalle) evita las variantes `soloTarjeta`
  *    (resolución insuficiente a tamaño de héroe); si el pool entero es
  *    soloTarjeta, devuelve null y la ficha cae al degradado de siempre.
+ *  - `genericas` (array): imágenes de Neon. Si se pasan y MOSTRAR_IMAGENES_GENERICAS
+ *    es true, se fusionan con el pool hardcodeado (genericas ganan orden, pero
+ *    hardcodeadas no se pierden). Permite que seasíncrono al nivel de React hooks.
  */
-export function imagenEvento(evento, { paraHeroe = false } = {}) {
+export function imagenEvento(evento, { paraHeroe = false, genericas = [] } = {}) {
   if (evento.imagen && evento.imagen.trim()) return { src: evento.imagen, real: true }
   // Con el interruptor apagado, el mismo retorno que "sin imagen" tenía antes
   // de #23 (null): los consumidores ya caen al degradado de categoría.
   if (!MOSTRAR_IMAGENES_GENERICAS) return null
-  const pool = poolDe(evento)
+
+  let pool = poolDe(evento)
   if (!pool || pool.length === 0) return null
+
+  // Fusionar con genericas si las hay: transformar {url, fuente, ...} a {src, credito, ...}
+  if (genericas.length > 0) {
+    const genericsPool = genericas.map((g) => ({
+      src: g.url,
+      credito: g.fuente || 'Imagen genérica',
+      real: false,
+    }))
+    pool = [...genericsPool, ...pool]
+  }
+
   const semilla = hashDe(String(evento.id ?? evento.titulo ?? ''))
   let elegida = pool[semilla % pool.length]
   if (paraHeroe && elegida.soloTarjeta) {

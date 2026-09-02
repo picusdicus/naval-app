@@ -1,53 +1,62 @@
-import { useCallback, useEffect, useState } from 'react'
+// Hook React para resolver la imagen de un evento de forma asíncrona.
+// Fusiona el pool hardcodeado con las genericas de Neon (si MOSTRAR_IMAGENES_GENERICAS=true).
+
+import { useState, useEffect } from 'react'
 import { imagenEvento } from './imagenesEvento.js'
 
+const MOSTRAR_IMAGENES_GENERICAS = false
+
 /**
- * Resuelve la imagen de un evento tolerando que la URL esté rota.
+ * Hook que resuelve la imagen de un evento.
+ * @param {object} evento — evento del que obtener imagen
+ * @param {object} options — {paraHeroe: boolean}
+ * @returns {object|null} {src, pos?, credito, real, cargando?}
  *
- * `imagenEvento()` es optimista por necesidad: decide mirando solo si el campo
- * `imagen` trae algo, y una URL que responde 404 es un string perfectamente
- * truthy. Con eso, la rama del <img> se tomaba igual y el navegador acababa
- * pintando el alt crudo sobre el velo negro — sin fecha, sin icono de
- * categoría y sin organizador, porque toda la plantilla editorial cuelga de
- * `!posterUrl`. Este hook convierte el fallo de carga en estado, de modo que
- * el componente re-renderiza SIN posterUrl y la plantilla completa vuelve.
- *
- * Vive fuera de `imagenesEvento.js` a propósito: ese módulo lo importa
- * `destacados.js` y debe seguir "limpio" (sin React).
- *
- * Devuelve:
- *   - posterUrl: la url, o null si no hay imagen o si su carga falló
- *   - pos: object-position para el <img>
- *   - onError: handler que hay que enchufar al <img>
- *   - real: true si posterUrl es la foto propia del evento; false si es una
- *     ilustrativa de la galería por categoría (o no hay imagen)
- *   - credito: atribución de la ilustrativa (undefined con foto propia)
- *
- * `opciones` se pasa tal cual a imagenEvento() (p. ej. {paraHeroe: true} en
- * la ficha de detalle, que excluye las variantes de resolución justa).
+ * Mientras carga, devuelve null (el componente cae al degradado). Al resolver,
+ * devuelve la imagen. Si MOSTRAR_IMAGENES_GENERICAS=false, devuelve directamente
+ * sin esperar (compatibilidad backward).
  */
-export function useImagenEvento(evento, opciones) {
-  // Tolera `evento` nulo para que quien tenga returns tempranos (EventoDetalle
-  // mientras carga) pueda llamar al hook siempre, como exigen las reglas de
-  // los hooks, sin romperse al leer `evento.imagen`.
-  const img = evento ? imagenEvento(evento, opciones) : null
-  const src = img?.src ?? null
-  const [rota, setRota] = useState(false)
+export function useImagenEvento(evento, options = {}) {
+  const [imagen, setImagen] = useState(null)
+  const [cargando, setCargando] = useState(false)
 
-  // Reset al cambiar de imagen: estos componentes se reutilizan entre items de
-  // una lista (React puede conservar la instancia y cambiarle el evento), y un
-  // `rota` heredado del anterior escondería un cartel que sí carga.
   useEffect(() => {
-    setRota(false)
-  }, [src])
+    if (!evento) {
+      setImagen(null)
+      return
+    }
 
-  const onError = useCallback(() => setRota(true), [])
+    if (!MOSTRAR_IMAGENES_GENERICAS) {
+      // Sin genericas activas, solo el pool hardcodeado (síncrono)
+      setImagen(imagenEvento(evento, options))
+      return
+    }
 
-  return {
-    posterUrl: rota ? null : src,
-    pos: img?.pos || '50% 50%',
-    onError,
-    real: Boolean(img?.real) && !rota,
-    credito: img?.real ? undefined : img?.credito,
-  }
+    setCargando(true)
+    ;(async () => {
+      try {
+        const res = await fetch('/api/imagenes-evento-genericas')
+        if (!res.ok) throw new Error('No se pudieron cargar imágenes genéricas')
+
+        const { imagenes } = await res.json()
+        // Filtrar por categoría (y disciplina si aplica)
+        const genericas = imagenes.filter(
+          (img) =>
+            img.categoria === evento.categoria &&
+            (!evento.disciplina || img.disciplina === evento.disciplina)
+        )
+
+        const resultado = imagenEvento(evento, { ...options, genericas })
+        setImagen(resultado)
+      } catch (error) {
+        console.warn('Error cargando imágenes genéricas:', error)
+        // Fallback al pool hardcodeado nada más
+        setImagen(imagenEvento(evento, options))
+      } finally {
+        setCargando(false)
+      }
+    })()
+  }, [evento, evento?.id, evento?.categoria, evento?.disciplina, options, options?.paraHeroe])
+
+  return imagen
 }

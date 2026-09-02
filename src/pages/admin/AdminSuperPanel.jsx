@@ -8,6 +8,7 @@ import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
 import TablesEventos from '../../components/admin/super/TablesEventos.jsx'
 import TablesPendientes from '../../components/admin/super/TablesPendientes.jsx'
 import TablesComercios from '../../components/admin/super/TablesComercios.jsx'
+import PanelImagenesGenericas from '../../components/admin/super/PanelImagenesGenericas.jsx'
 import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
 import UmamiStats from '../../components/admin/UmamiStats.jsx'
 import DialogoInfoUsuario from '../../components/admin/DialogoInfoUsuario.jsx'
@@ -87,6 +88,7 @@ export default function AdminSuperPanel() {
     ['pendientes', 'pending_actions', 'Pendientes'],
     ['eventos', 'event', 'Eventos'],
     ['comercios', 'storefront', 'Comercios'],
+    ['imagenes', 'image', 'Imágenes genéricas'],
     ['analytics', 'analytics', 'Analytics'],
   ]
 
@@ -173,6 +175,7 @@ export default function AdminSuperPanel() {
           {seccionActiva === 'pendientes' && <TablesPendientes />}
           {seccionActiva === 'eventos' && <TablesEventos />}
           {seccionActiva === 'comercios' && <TablesComercios />}
+          {seccionActiva === 'imagenes' && <PanelImagenesGenericas />}
           {seccionActiva === 'analytics' && (
             <div className="space-y-8">
               <TableAnalytics umamiSummary={umamiSummary} />

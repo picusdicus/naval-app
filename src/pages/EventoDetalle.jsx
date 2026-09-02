@@ -160,7 +160,7 @@ export default function EventoDetalle() {
       {/* Atribución de la ilustrativa (las licencias CC BY / BY-SA la exigen) */}
       {posterUrl && !real && credito && (
         <p className="mt-1 text-right font-mono-ibm text-[9px] text-mudo">
-          Imagen ilustrativa · {credito} · Wikimedia Commons
+          Imagen ilustrativa · {credito}
         </p>
       )}
 
