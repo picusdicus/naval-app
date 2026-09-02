@@ -37,7 +37,7 @@ export default function PanelImagenesGenericas() {
   const cargarImagenes = async () => {
     setCargando(true)
     try {
-      const res = await fetch('/api/imagenes-evento-genericas')
+      const res = await fetch('/api/admin/imagen-evento-generica')
       if (!res.ok) throw new Error('No se pudieron cargar las imágenes')
       const { imagenes } = await res.json()
       setImagenes(imagenes)
@@ -221,8 +221,8 @@ export default function PanelImagenesGenericas() {
                   <div key={img.id} className="border border-tinta bg-papel p-2">
                     <img
                       src={img.url}
-                      alt={img.descripcion}
-                      className="w-full aspect-square object-cover mb-2"
+                      alt={img.descripcion || ''}
+                      className={`w-full aspect-square object-cover mb-2 ${img.activo ? '' : 'opacity-40'}`}
                     />
                     <div className="space-y-1 text-[10px]">
                       {img.descripcion && (

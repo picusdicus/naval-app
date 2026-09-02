@@ -47,11 +47,29 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Acceso denegado. Solo superadmin.' })
   }
 
+  if (req.method === 'GET') return handleGet(req, res)
   if (req.method === 'POST') return handlePost(req, res)
   if (req.method === 'PATCH') return handlePatch(req, res)
   if (req.method === 'DELETE') return handleDelete(req, res)
 
   return res.status(405).json({ error: 'Método no permitido' })
+}
+
+// Todas las filas, activas o no, con la columna `activo`: el GET público solo
+// devuelve las activas y sin ese campo, y el panel necesita poder reactivarlas.
+async function handleGet(req, res) {
+  try {
+    const sql = obtenerSql()
+    const imagenes = await sql`
+      SELECT id, categoria, disciplina, url, autor, fuente, licencia, descripcion, activo
+      FROM imagenes_evento_genericas
+      ORDER BY categoria, disciplina, creado_en
+    `
+    return res.status(200).json({ imagenes })
+  } catch (error) {
+    console.error('Fallo al listar imágenes genéricas:', error)
+    return res.status(502).json({ error: 'No se pudo cargar la lista.' })
+  }
 }
 
 async function handlePost(req, res) {
