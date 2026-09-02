@@ -1,7 +1,7 @@
 import { useMemo, useState, useContext } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
-import { proximosEventos, agruparEventosPorDia } from '../lib/eventos.js'
+import { proximosEventos, agruparEventosPorDia, soloAmbitoNavalcarnero } from '../lib/eventos.js'
 import TiraDeHoras from '../components/eventos/TiraDeHoras.jsx'
 import FiltrosEventos from '../components/eventos/FiltrosEventos.jsx'
 import MuroCartelera from '../components/eventos/MuroCartelera.jsx'
@@ -36,7 +36,12 @@ export default function Eventos() {
   const [avisosActivos, setAvisosActivos] = useState(() => Boolean(prefsLocales()))
 
   // Data
-  const { eventos: todosEventos } = useEventosPublicos()
+  // La agenda pública solo lista lo que se celebra en Navalcarnero: un evento
+  // de una organización de aquí en otra población (ambito 'otro') se ve solo
+  // en su ficha de comercio (PerfilComercio, que lee useEventosPublicos sin
+  // filtrar).
+  const { eventos: todosLosEventos } = useEventosPublicos()
+  const todosEventos = useMemo(() => soloAmbitoNavalcarnero(todosLosEventos), [todosLosEventos])
   const futuros = useMemo(() => proximosEventos(todosEventos), [todosEventos])
   const eventosAgrupados = useMemo(() => agruparEventosPorDia(futuros), [futuros])
 

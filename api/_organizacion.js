@@ -6,7 +6,7 @@
 export async function organizacionDeSesion(sql, slug) {
   const [organizacion] = await sql`
     SELECT id, nombre, slug, categoria_defecto, lugar_defecto, comercio_id,
-           es_organizacion_cultural
+           es_organizacion_cultural, lugar_variable
     FROM organizaciones WHERE slug = ${slug}
   `
   return organizacion ?? null

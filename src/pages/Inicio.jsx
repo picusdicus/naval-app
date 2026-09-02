@@ -1,6 +1,6 @@
 import { useMemo, useContext } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
+import { proximosEventos, formatearFechaCorta, soloAmbitoNavalcarnero } from '../lib/eventos.js'
 import { genericasParaEvento } from '../lib/imagenesEvento.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
@@ -117,7 +117,11 @@ export default function Inicio() {
   // Las tres fuentes de la agenda: los dos JSON y los eventos publicados desde
   // /admin, que llegan por fetch. Se recalcula cuando llegan, no al cargar el
   // módulo, o los eventos de la base de datos nunca aparecerían.
-  const { eventos } = useEventosPublicos()
+  // Portada = agenda local: los eventos de ámbito 'otro' (fuera de
+  // Navalcarnero) quedan fuera tanto de "próximos" como de los destacados;
+  // solo se ven en la ficha de su comercio.
+  const { eventos: todosLosEventos } = useEventosPublicos()
+  const eventos = useMemo(() => soloAmbitoNavalcarnero(todosLosEventos), [todosLosEventos])
   const proximos = useMemo(() => proximosEventos(eventos, EVENTOS_EN_PORTADA), [eventos])
 
   // Teaser mixto (eventos + comercios) contratados como destacados.

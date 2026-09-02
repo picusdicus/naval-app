@@ -5,6 +5,14 @@ import CampoFormulario from '../../components/admin/CampoFormulario.jsx'
 import SelectorImagen from '../../components/admin/SelectorImagen.jsx'
 import { CATEGORIAS_EVENTO } from '../../lib/eventos.js'
 import { VALORES_INICIALES, LIMITES, validarEvento } from '../../lib/eventoForm.js'
+import { LUGARES_FIJOS } from '../../lib/lugares.js'
+
+// Sitios habituales de Navalcarnero (plazas, iglesia, recinto ferial…) que se
+// ofrecen como desplegable a las organizaciones con lugar variable (issue
+// #33). Cualquier otro sitio del municipio se escribe a mano.
+const NOMBRES_LUGARES_FIJOS = LUGARES_FIJOS.map((l) => l.nombre)
+const OTRO_SITIO = '__otro__'
+const esLugarFijo = (lugar) => NOMBRES_LUGARES_FIJOS.includes(lugar)
 
 /** Los campos que faltan en la respuesta llegan como null; el <input> quiere ''. */
 function aValoresDelFormulario(evento) {
@@ -62,10 +70,15 @@ export default function AdminEventoForm() {
 
         // El perfil manda: si la organización cambió de sala, el evento antiguo
         // se guarda con la nueva. El servidor impone lo mismo al recibirlo.
+        // Excepción: con lugar variable (issue #33) el evento conserva su
+        // propio lugar y, al crear, lugarDefecto es solo el punto de partida.
+        const lugarVariable = perfil.organizacion.lugarVariable === true
         setValores({
           ...base,
           categoria: perfil.organizacion.categoriaDefecto ?? base.categoria,
-          lugar: perfil.organizacion.lugarDefecto ?? base.lugar,
+          lugar: lugarVariable
+            ? base.lugar || perfil.organizacion.lugarDefecto || ''
+            : perfil.organizacion.lugarDefecto ?? base.lugar,
         })
       })
       .catch((err) => {
@@ -135,11 +148,39 @@ export default function AdminEventoForm() {
     ? `Definido en el perfil de ${organizacion.nombre}.`
     : 'Definido en el perfil de tu organización.'
 
+  // Organización itinerante (issue #33): elige ámbito y lugar evento a evento.
+  // Para las de sitio fijo (lo habitual) nada de esto se muestra.
+  const lugarVariable = organizacion?.lugarVariable === true
+  const lugarEsFijo = esLugarFijo(valores.lugar)
+
+  // Cambiar de ámbito reinicia el lugar: dentro del municipio se parte de
+  // lugarDefecto; fuera, lugar y población se escriben desde cero.
+  const cambiarAmbito = (evento) => {
+    const ambito = evento.target.value
+    setValores((previos) => ({
+      ...previos,
+      ambito,
+      lugar: ambito === 'otro' ? '' : (organizacion?.lugarDefecto ?? ''),
+      poblacion: '',
+    }))
+    setErrores(({ ambito: _a, lugar: _l, poblacion: _p, ...resto }) => resto)
+    setErrorGeneral('')
+  }
+
+  // "Otro sitio de Navalcarnero" vacía el lugar y revela el campo de texto.
+  const elegirLugarFijo = (evento) => {
+    const valor = evento.target.value
+    cambiar('lugar')(valor === OTRO_SITIO ? '' : valor)
+  }
+
   // Categoría y lugar son de solo lectura para el gestor: si el superadmin
   // aún no los asignó al perfil, marcar los campos en rojo solo confunde —
   // hay que decir claramente que la pelota está en el tejado del equipo.
+  // Con lugar variable el lugar lo pone el gestor, así que lugarDefecto ya
+  // no es imprescindible.
   const perfilIncompleto =
-    Boolean(organizacion) && (!organizacion.categoriaDefecto || !organizacion.lugarDefecto)
+    Boolean(organizacion) &&
+    (!organizacion.categoriaDefecto || (!lugarVariable && !organizacion.lugarDefecto))
 
   // Al crear, el botón secundario guarda un borrador. Al editar, lleva el
   // evento al estado contrario del que tiene ahora.
@@ -253,16 +294,112 @@ export default function AdminEventoForm() {
                 )}
               </CampoFormulario>
 
-              <CampoFormulario
-                id="lugar"
-                etiqueta="Lugar"
-                error={errores.lugar}
-                ayuda={ayudaDelPerfil}
-                soloLectura
-              >
-                {(props) => <input {...props} id="lugar" type="text" readOnly value={valores.lugar} />}
-              </CampoFormulario>
+              {!lugarVariable ? (
+                <CampoFormulario
+                  id="lugar"
+                  etiqueta="Lugar"
+                  error={errores.lugar}
+                  ayuda={ayudaDelPerfil}
+                  soloLectura
+                >
+                  {(props) => <input {...props} id="lugar" type="text" readOnly value={valores.lugar} />}
+                </CampoFormulario>
+              ) : (
+                <CampoFormulario id="ambito" etiqueta="¿Dónde es el evento?" error={errores.ambito}>
+                  {(props) => (
+                    <select {...props} id="ambito" value={valores.ambito} onChange={cambiarAmbito}>
+                      <option value="navalcarnero">Navalcarnero</option>
+                      <option value="otro">Otro lugar</option>
+                    </select>
+                  )}
+                </CampoFormulario>
+              )}
             </div>
+
+            {/* Lugar variable, dentro de Navalcarnero: sitios habituales en un
+                desplegable, o texto libre con "Otro sitio de Navalcarnero". */}
+            {lugarVariable && valores.ambito !== 'otro' && (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <CampoFormulario
+                  id="lugar-fijo"
+                  etiqueta="Lugar"
+                  error={lugarEsFijo ? errores.lugar : undefined}
+                  ayuda="Elige un sitio habitual o indica otro."
+                >
+                  {(props) => (
+                    <select
+                      {...props}
+                      id="lugar-fijo"
+                      value={lugarEsFijo ? valores.lugar : OTRO_SITIO}
+                      onChange={elegirLugarFijo}
+                    >
+                      {NOMBRES_LUGARES_FIJOS.map((nombre) => (
+                        <option key={nombre} value={nombre}>
+                          {nombre}
+                        </option>
+                      ))}
+                      <option value={OTRO_SITIO}>Otro sitio de Navalcarnero</option>
+                    </select>
+                  )}
+                </CampoFormulario>
+
+                {!lugarEsFijo && (
+                  <CampoFormulario id="lugar" etiqueta="¿Qué sitio?" error={errores.lugar}>
+                    {(props) => (
+                      <input
+                        {...props}
+                        id="lugar"
+                        type="text"
+                        maxLength={LIMITES.lugar}
+                        value={valores.lugar}
+                        onChange={cambiar('lugar')}
+                        placeholder="Sala, local o calle donde se celebra"
+                      />
+                    )}
+                  </CampoFormulario>
+                )}
+              </div>
+            )}
+
+            {/* Lugar variable, fuera de Navalcarnero: lugar y población a mano.
+                Sin mapa ni desplegable — el evento solo se verá en la ficha de
+                la organización, no en la agenda. */}
+            {lugarVariable && valores.ambito === 'otro' && (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <CampoFormulario id="lugar" etiqueta="Lugar" error={errores.lugar}>
+                  {(props) => (
+                    <input
+                      {...props}
+                      id="lugar"
+                      type="text"
+                      maxLength={LIMITES.lugar}
+                      value={valores.lugar}
+                      onChange={cambiar('lugar')}
+                      placeholder="Teatro, sala o plaza"
+                    />
+                  )}
+                </CampoFormulario>
+
+                <CampoFormulario
+                  id="poblacion"
+                  etiqueta="Población"
+                  error={errores.poblacion}
+                  ayuda="No saldrá en la agenda de Navalcarnero, solo en la ficha de tu organización."
+                >
+                  {(props) => (
+                    <input
+                      {...props}
+                      id="poblacion"
+                      type="text"
+                      maxLength={LIMITES.poblacion}
+                      value={valores.poblacion}
+                      onChange={cambiar('poblacion')}
+                      placeholder="Móstoles"
+                    />
+                  )}
+                </CampoFormulario>
+              </div>
+            )}
 
             <label className="flex items-start gap-2.5 font-serif-spectral text-sm text-tinta">
               <input

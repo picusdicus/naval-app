@@ -18,11 +18,15 @@ const ORIGEN = {
 }
 
 /**
- * Búsqueda en Google Maps del lugar dentro del municipio. Se busca por nombre
- * (no por coordenadas) porque los eventos solo guardan el nombre de la sala.
+ * Búsqueda en Google Maps del lugar. Se busca por nombre (no por coordenadas)
+ * porque los eventos solo guardan el nombre de la sala. Dentro del municipio
+ * se ancla a "Navalcarnero, Madrid"; un evento de ámbito 'otro' (issue #33)
+ * se busca en su población.
  */
-function enlaceGoogleMaps(lugar) {
-  const consulta = encodeURIComponent(`${lugar}, Navalcarnero, Madrid`)
+function enlaceGoogleMaps(lugar, evento) {
+  const donde =
+    evento?.ambito === 'otro' && evento.poblacion ? evento.poblacion : 'Navalcarnero, Madrid'
+  const consulta = encodeURIComponent(`${lugar}, ${donde}`)
   return `https://www.google.com/maps/search/?api=1&query=${consulta}`
 }
 
@@ -121,7 +125,10 @@ export default function EventoDetalle() {
   const procedencia = evento.fuente || ORIGEN[evento.origen] || 'Vecinal'
   // Coordenadas del lugar si está en el directorio (teatros, casas de cultura,
   // polideportivos…); las plazas/calles no son POIs y caen al enlace de Maps.
-  const coords = evento.lugar ? coordsDeLugar(evento.lugar) : null
+  // Un evento fuera de Navalcarnero (ambito 'otro') nunca pasa por el índice:
+  // lugares.js solo conoce sitios del municipio, y una coincidencia de
+  // tokens con un homónimo de aquí pintaría el pin en el sitio equivocado.
+  const coords = evento.lugar && evento.ambito !== 'otro' ? coordsDeLugar(evento.lugar) : null
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -316,7 +323,7 @@ export default function EventoDetalle() {
             {/* El nombre del lugar es el enlace a Google Maps (lo asume también
                 el e2e de perfil-organizacion: link accesible con el nombre). */}
             <a
-              href={enlaceGoogleMaps(evento.lugar)}
+              href={enlaceGoogleMaps(evento.lugar, evento)}
               target="_blank"
               rel="noreferrer"
               className="font-serif-dm text-lg text-tinta underline-offset-2 transition-colors hover:text-terracota hover:underline"
@@ -324,7 +331,7 @@ export default function EventoDetalle() {
               {evento.lugar}
             </a>
             <a
-              href={enlaceGoogleMaps(evento.lugar)}
+              href={enlaceGoogleMaps(evento.lugar, evento)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota transition-opacity hover:opacity-80"
@@ -337,7 +344,7 @@ export default function EventoDetalle() {
       )}
       {evento.lugar && !coords && (
         <a
-          href={enlaceGoogleMaps(evento.lugar)}
+          href={enlaceGoogleMaps(evento.lugar, evento)}
           target="_blank"
           rel="noreferrer"
           className="gz-trama relative mt-6 flex aspect-[16/9] items-end overflow-hidden border border-tinta"
@@ -346,7 +353,14 @@ export default function EventoDetalle() {
           <span className="absolute left-3 top-3 z-10 border border-filete-punteado bg-papel/70 px-2 py-0.5 font-mono-ibm text-[9px] uppercase tracking-etiqueta text-pardo">
             Mapa · ubicación
           </span>
-          <span className="relative z-10 p-4 font-serif-dm text-xl text-tinta">{evento.lugar}</span>
+          <span className="relative z-10 p-4 font-serif-dm text-xl text-tinta">
+            {evento.lugar}
+            {evento.ambito === 'otro' && evento.poblacion && (
+              <span className="block font-mono-ibm text-[11px] uppercase tracking-etiqueta text-pardo">
+                {evento.poblacion}
+              </span>
+            )}
+          </span>
         </a>
       )}
 

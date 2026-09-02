@@ -29,6 +29,10 @@ export default async function handler(req) {
         slug: organizacion.slug,
         categoriaDefecto: organizacion.categoria_defecto,
         lugarDefecto: organizacion.lugar_defecto,
+        // ¿Elige el gestor el lugar evento a evento? (organización itinerante,
+        // issue #33). Con false, el formulario muestra lugarDefecto como
+        // solo lectura y el servidor lo impone, como siempre.
+        lugarVariable: organizacion.lugar_variable === true,
         esOrganizacionCultural: organizacion.es_organizacion_cultural === true,
         // Decide si el panel enseña la pestaña "Mis eventos". NO basta con
         // `es_organizacion_cultural`: esa columna se añadió después y solo la

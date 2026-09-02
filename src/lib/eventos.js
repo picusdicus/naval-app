@@ -104,6 +104,18 @@ export function mesDe(iso) {
   return capitalizar(new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(aFecha(iso)))
 }
 
+// Ámbito de un evento (issue #33): 'navalcarnero' (agenda local) u 'otro'
+// (evento de una organización de aquí celebrado en otra población — solo se
+// muestra en su ficha de comercio como portafolio). Los eventos estáticos de
+// los JSON no traen el campo: se tratan como locales.
+export const AMBITOS_EVENTO = ['navalcarnero', 'otro']
+
+// Solo los eventos de Navalcarnero, para la agenda pública y los destacados.
+// PerfilComercio NO debe usarla: su portafolio muestra también los de fuera.
+export function soloAmbitoNavalcarnero(eventos) {
+  return eventos.filter((e) => e.ambito !== 'otro')
+}
+
 // Eventos futuros (o de hoy) ordenados por fecha ascendente.
 export function proximosEventos(eventos, limite) {
   const hoy = new Date()

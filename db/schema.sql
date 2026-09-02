@@ -466,3 +466,21 @@ CREATE INDEX IF NOT EXISTS idx_imagenes_asignaciones_imagen ON imagenes_evento_a
 -- subtipo y podía tocarle a cualquier otro evento del grupo.
 ALTER TABLE imagenes_evento_genericas
   ADD COLUMN IF NOT EXISTS solo_asignacion boolean NOT NULL DEFAULT false;
+
+-- Ámbito por evento (issue #33): permite publicar eventos fuera de Navalcarnero
+-- (portafolio completo de una organización itinerante) sin que entren en la
+-- agenda pública ni en el digest push. ADD COLUMN IF NOT EXISTS con DEFAULT
+-- (sin downtime, sin backfill): todo lo publicado hasta hoy es, por
+-- definición, local, así que la fila existente hereda 'navalcarnero' al leer.
+-- `poblacion` solo se rellena cuando ambito = 'otro'.
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS ambito text NOT NULL DEFAULT 'navalcarnero'
+  CHECK (ambito IN ('navalcarnero', 'otro'));
+
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS poblacion text;
+
+-- ¿Puede esta organización elegir el lugar evento a evento? Eje independiente
+-- de `ambito`: una compañía itinerante actúa en distintos sitios también
+-- DENTRO de Navalcarnero. Por defecto false ⇒ cero cambio para las orgs de
+-- sitio fijo (salas, teatros): el lugar sigue viniendo de lugar_defecto y el
+-- servidor lo sigue imponiendo. El superadmin lo activa caso a caso.
+ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS lugar_variable boolean NOT NULL DEFAULT false;

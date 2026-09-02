@@ -2,7 +2,7 @@
 // avisar antes de enviar) y `api/admin/eventos.js` (para no fiarse del cliente):
 // una única definición de qué es un evento válido.
 
-import { CATEGORIAS_EVENTO } from './eventos.js'
+import { CATEGORIAS_EVENTO, AMBITOS_EVENTO } from './eventos.js'
 import { sumarDias, duracionDe } from './fechas.js'
 
 export const ESTADOS_EVENTO = ['borrador', 'publicado']
@@ -26,12 +26,16 @@ export const VALORES_INICIALES = {
   entradasUrl: '',
   precio: '',
   estado: 'borrador',
+  // Ámbito (issue #33): 'navalcarnero' por defecto; 'otro' exige `poblacion`.
+  ambito: 'navalcarnero',
+  poblacion: '',
 }
 
 export const LIMITES = {
   titulo: 120,
   descripcion: 2000,
   lugar: 120,
+  poblacion: 80,
   entradasTexto: 40,
   precio: 40,
 }
@@ -72,6 +76,15 @@ export function validarEvento(valores) {
 
   if (!v('lugar')) errores.lugar = 'Indica dónde se celebra.'
   else if (v('lugar').length > LIMITES.lugar) errores.lugar = `Máximo ${LIMITES.lugar} caracteres.`
+
+  // Ámbito: la población solo hace falta (y solo se guarda) fuera de
+  // Navalcarnero.
+  if (!AMBITOS_EVENTO.includes(v('ambito'))) errores.ambito = 'Indica dónde es el evento.'
+  else if (v('ambito') === 'otro') {
+    if (!v('poblacion')) errores.poblacion = 'Indica la población donde se celebra.'
+    else if (v('poblacion').length > LIMITES.poblacion)
+      errores.poblacion = `Máximo ${LIMITES.poblacion} caracteres.`
+  }
 
   if (!v('fecha')) errores.fecha = 'La fecha es obligatoria.'
   else if (!FECHA_ISO.test(v('fecha'))) errores.fecha = 'Formato de fecha no válido.'
@@ -140,6 +153,8 @@ export function normalizarEvento(valores) {
     entradasUrl: hayEntradas ? v('entradasUrl') : null,
     precio: hayEntradas ? v('precio') || null : null,
     estado: valores.estado,
+    ambito: v('ambito') === 'otro' ? 'otro' : 'navalcarnero',
+    poblacion: v('ambito') === 'otro' ? v('poblacion') : null,
   }
 }
 

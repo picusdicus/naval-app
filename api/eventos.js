@@ -29,7 +29,7 @@ export default async function handler(req) {
              to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
              e.hora, e.hora_fin, e.imagen_url,
              e.entradas_texto, e.entradas_url, e.precio,
-             e.organizacion_id, e.origen_externo_id,
+             e.organizacion_id, e.origen_externo_id, e.ambito, e.poblacion,
              o.nombre AS organizacion, o.slug AS organizacion_slug
       FROM eventos_usuario e
       JOIN organizaciones o ON o.id = e.organizacion_id
@@ -61,6 +61,12 @@ export default async function handler(req) {
       // src/lib/dedupEventos.js): NULL = creado a mano desde /panel. Ningún
       // componente público debe pintarlo.
       origenExternoId: e.origen_externo_id || null,
+      // Ámbito del evento (issue #33): 'navalcarnero' | 'otro'. Aquí NO se
+      // filtra a propósito: PerfilComercio necesita el portafolio completo de
+      // la organización; la agenda pública filtra en cliente con
+      // soloAmbitoNavalcarnero() (src/lib/eventos.js).
+      ambito: e.ambito || 'navalcarnero',
+      poblacion: e.poblacion || null,
       entradas: e.entradas_url
         ? { texto: e.entradas_texto, url: e.entradas_url, precio: e.precio }
         : null,

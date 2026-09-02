@@ -16,6 +16,9 @@ const FORMULARIO_VACIO = {
   // la organización no puede publicar eventos.
   categoriaDefecto: '',
   lugarDefecto: '',
+  // Organización itinerante (issue #33): elige el lugar (y el ámbito, dentro
+  // o fuera de Navalcarnero) evento a evento en vez de heredar lugarDefecto.
+  lugarVariable: false,
 }
 
 export default function TablesOrganizaciones() {
@@ -163,6 +166,7 @@ export default function TablesOrganizaciones() {
       comercioId: org.comercioId || '',
       categoriaDefecto: org.categoriaDefecto || '',
       lugarDefecto: org.lugarDefecto || '',
+      lugarVariable: org.lugarVariable === true,
     })
     setEditandoId(org.id)
     setBusquedaComercio('')
@@ -404,6 +408,31 @@ export default function TablesOrganizaciones() {
                   />
                 </div>
               </div>
+
+              {/* Organización itinerante (issue #33): con el toggle activo, el
+                  gestor elige el lugar evento a evento (desplegable de sitios
+                  de Navalcarnero + texto libre, o lugar y población fuera del
+                  municipio) y el servidor deja de imponer lugarDefecto, que
+                  pasa a ser solo el valor de partida del formulario. */}
+              <label className="mt-4 flex items-start gap-2.5 font-serif-spectral text-sm text-tinta">
+                <input
+                  type="checkbox"
+                  checked={formularioData.lugarVariable}
+                  onChange={(e) =>
+                    setFormularioData({ ...formularioData, lugarVariable: e.target.checked })
+                  }
+                  className="mt-0.5 h-4 w-4 accent-terracota"
+                  disabled={enviando}
+                />
+                <span>
+                  Lugar variable por evento
+                  <span className="block font-serif-spectral text-[12.5px] text-pardo">
+                    Para organizaciones itinerantes: cada evento indica su propio lugar, dentro o
+                    fuera de Navalcarnero. Los de fuera no salen en la agenda pública ni en los
+                    avisos, solo en la ficha de su comercio.
+                  </span>
+                </span>
+              </label>
             </div>
 
             {/* Vincula la cuenta con su ficha del directorio: habilita que la

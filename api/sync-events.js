@@ -725,6 +725,7 @@ async function eventosNeonPendientes() {
     JOIN organizaciones o ON o.id = e.organizacion_id
     WHERE e.estado = 'publicado' AND o.activa = true
       AND e.notificado_en IS NULL AND e.fecha_inicio >= CURRENT_DATE
+      AND e.ambito = 'navalcarnero'
   `
   return filas.map((e) => ({
     // Mismo id público 'bd-…' que /api/eventos: la URL de la notificación

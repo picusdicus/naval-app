@@ -38,18 +38,33 @@ const aEvento = (e) => ({
   entradasUrl: e.entradas_url,
   precio: e.precio,
   estado: e.estado,
+  ambito: e.ambito,
+  poblacion: e.poblacion,
 })
 
 /**
  * La categoría y el lugar los fija el perfil de la organización, no el gestor:
  * en el formulario son de solo lectura, y aquí se imponen aunque el cliente
  * envíe otra cosa. Si el perfil aún no los tiene, se respeta lo recibido.
+ *
+ * Excepción (issue #33): con `lugar_variable` la organización es itinerante y
+ * elige el lugar (y el ámbito) evento a evento, así que se respeta lo
+ * recibido. Una organización de sitio fijo, en cambio, nunca publica fuera de
+ * Navalcarnero: se le impone también el ámbito local aunque el cliente mande
+ * 'otro'.
  */
 function conPerfilDeLaOrganizacion(cuerpo, organizacion) {
+  const lugarVariable = organizacion.lugar_variable === true
   return {
     ...cuerpo,
     categoria: organizacion.categoria_defecto ?? cuerpo?.categoria,
-    lugar: organizacion.lugar_defecto ?? cuerpo?.lugar,
+    ...(lugarVariable
+      ? {}
+      : {
+          lugar: organizacion.lugar_defecto ?? cuerpo?.lugar,
+          ambito: 'navalcarnero',
+          poblacion: '',
+        }),
   }
 }
 
@@ -57,7 +72,8 @@ async function listar(sql, organizacion) {
   const filas = await sql`
     SELECT id, titulo, descripcion, categoria, lugar,
            to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha, hora, hora_fin,
-           imagen_url, entradas_texto, entradas_url, precio, estado
+           imagen_url, entradas_texto, entradas_url, precio, estado,
+           ambito, poblacion
     FROM eventos_usuario
     WHERE organizacion_id = ${organizacion.id}
     ORDER BY fecha_inicio DESC, creado_en DESC
@@ -137,7 +153,8 @@ async function obtenerUno(sql, organizacion, id) {
   const [fila] = await sql`
     SELECT id, titulo, descripcion, categoria, lugar,
            to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha, hora, hora_fin,
-           imagen_url, entradas_texto, entradas_url, precio, estado
+           imagen_url, entradas_texto, entradas_url, precio, estado,
+           ambito, poblacion
     FROM eventos_usuario
     WHERE id = ${id} AND organizacion_id = ${organizacion.id}
   `
@@ -167,11 +184,11 @@ async function crear(sql, organizacion, cuerpoRecibido) {
       INSERT INTO eventos_usuario (
         organizacion_id, titulo, descripcion, categoria, lugar,
         fecha_inicio, hora, hora_fin, imagen_url,
-        entradas_texto, entradas_url, precio, estado
+        entradas_texto, entradas_url, precio, estado, ambito, poblacion
       ) VALUES (
         ${organizacion.id}, ${e.titulo}, ${e.descripcion}, ${e.categoria}, ${e.lugar},
         ${fecha}, ${e.hora}, ${e.horaFin}, ${e.imagen},
-        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}
+        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}, ${e.ambito}, ${e.poblacion}
       )
       RETURNING id, titulo, estado
     `
@@ -197,6 +214,7 @@ async function actualizar(sql, organizacion, id, cuerpoRecibido) {
       lugar = ${e.lugar}, fecha_inicio = ${e.fecha}, hora = ${e.hora}, hora_fin = ${e.horaFin},
       imagen_url = ${e.imagen}, entradas_texto = ${e.entradasTexto},
       entradas_url = ${e.entradasUrl}, precio = ${e.precio}, estado = ${e.estado},
+      ambito = ${e.ambito}, poblacion = ${e.poblacion},
       actualizado_en = now()
     WHERE id = ${id} AND organizacion_id = ${organizacion.id}
     RETURNING id, titulo, estado
@@ -214,11 +232,11 @@ async function actualizar(sql, organizacion, id, cuerpoRecibido) {
       INSERT INTO eventos_usuario (
         organizacion_id, titulo, descripcion, categoria, lugar,
         fecha_inicio, hora, hora_fin, imagen_url,
-        entradas_texto, entradas_url, precio, estado
+        entradas_texto, entradas_url, precio, estado, ambito, poblacion
       ) VALUES (
         ${organizacion.id}, ${e.titulo}, ${e.descripcion}, ${e.categoria}, ${e.lugar},
         ${fecha}, ${e.hora}, ${e.horaFin}, ${e.imagen},
-        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}
+        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}, ${e.ambito}, ${e.poblacion}
       )
     `
     creados += 1

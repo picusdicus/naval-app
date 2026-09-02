@@ -15,8 +15,9 @@ import comercios from '../data/comercios.json'
 // POIs de Google Places (no están en comercios.json). Curados a mano con
 // coordenadas de OpenStreetMap/Nominatim; añadir aquí los que vayan saliendo
 // en la agenda. Van ANTES que el directorio en el índice para ganar los
-// empates de puntuación.
-const LUGARES_FIJOS = [
+// empates de puntuación. Exportada: el formulario de /panel ofrece estos
+// nombres como desplegable a las organizaciones con lugar variable (issue #33).
+export const LUGARES_FIJOS = [
   { nombre: 'Plaza de Francisco Sandoval', lat: 40.2906258, lng: -4.0163167 },
   { nombre: 'Plaza de Segovia', lat: 40.2876685, lng: -4.0142827 },
   { nombre: 'Plaza de la Veracruz', lat: 40.2881244, lng: -4.0147148 },

@@ -65,6 +65,7 @@ async function manejarGet() {
       web,
       categoria_defecto,
       lugar_defecto,
+      lugar_variable,
       comercio_id,
       activa,
       creada_en
@@ -88,6 +89,7 @@ async function manejarGet() {
         web: org.web,
         categoriaDefecto: org.categoria_defecto,
         lugarDefecto: org.lugar_defecto,
+        lugarVariable: org.lugar_variable === true,
         comercioId: org.comercio_id,
         activa: org.activa,
         creadaEn: org.creada_en,
@@ -102,7 +104,7 @@ async function manejarGet() {
 }
 
 async function manejarPost(req) {
-  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto, comercioId } = await leerJson(req)
+  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto, lugarVariable, comercioId } = await leerJson(req)
 
   if (!nombre || !slug) {
     return json({ error: 'Nombre y slug son requeridos.' }, 400)
@@ -116,9 +118,9 @@ async function manejarPost(req) {
   let nueva
   try {
     nueva = await sql`
-      INSERT INTO organizaciones (nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa)
-      VALUES (${nombre}, ${slug}, ${descripcion || null}, ${emailContacto || null}, ${telefono || null}, ${web || null}, ${categoriaDefecto || null}, ${lugarDefecto || null}, ${comercioId || null}, true)
-      RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa, creada_en
+      INSERT INTO organizaciones (nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, lugar_variable, comercio_id, activa)
+      VALUES (${nombre}, ${slug}, ${descripcion || null}, ${emailContacto || null}, ${telefono || null}, ${web || null}, ${categoriaDefecto || null}, ${lugarDefecto || null}, ${lugarVariable === true}, ${comercioId || null}, true)
+      RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, lugar_variable, comercio_id, activa, creada_en
     `
   } catch (error) {
     const conflicto = conflictoUnico(error)
@@ -142,6 +144,7 @@ async function manejarPost(req) {
       web: org.web,
       categoriaDefecto: org.categoria_defecto,
       lugarDefecto: org.lugar_defecto,
+      lugarVariable: org.lugar_variable === true,
       comercioId: org.comercio_id,
       activa: org.activa,
       creadaEn: org.creada_en,
@@ -168,6 +171,7 @@ async function organizacionConContadores(sql, org) {
     web: org.web,
     categoriaDefecto: org.categoria_defecto,
     lugarDefecto: org.lugar_defecto,
+    lugarVariable: org.lugar_variable === true,
     comercioId: org.comercio_id,
     activa: org.activa,
     creadaEn: org.creada_en,
@@ -179,7 +183,7 @@ async function organizacionConContadores(sql, org) {
 
 async function manejarPut(req) {
   const { id } = queryDe(req)
-  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto, comercioId } = await leerJson(req)
+  const { nombre, slug, descripcion, emailContacto, telefono, web, categoriaDefecto, lugarDefecto, lugarVariable, comercioId } = await leerJson(req)
 
   if (!id || !UUID_REGEX.test(id)) {
     return json({ error: 'ID inválido.' }, 400)
@@ -206,9 +210,10 @@ async function manejarPut(req) {
           web = ${web || null},
           categoria_defecto = ${categoriaDefecto || null},
           lugar_defecto = ${lugarDefecto || null},
+          lugar_variable = ${lugarVariable === true},
           comercio_id = ${comercioId || null}
       WHERE id = ${id}
-      RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa, creada_en
+      RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, lugar_variable, comercio_id, activa, creada_en
     `
   } catch (error) {
     const conflicto = conflictoUnico(error)
@@ -241,7 +246,7 @@ async function manejarPatch(req) {
     UPDATE organizaciones
     SET activa = ${activa}
     WHERE id = ${id}
-    RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, comercio_id, activa, creada_en
+    RETURNING id, nombre, slug, descripcion, email_contacto, telefono, web, categoria_defecto, lugar_defecto, lugar_variable, comercio_id, activa, creada_en
   `
 
   if (actualizada.length === 0) {
