@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useContext } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { proximosEventos, agruparEventosPorDia } from '../lib/eventos.js'
@@ -11,7 +11,8 @@ import CarruselDestacados from '../components/destacados/CarruselDestacados.jsx'
 import HeroDestacadosDesktop from '../components/destacados/HeroDestacadosDesktop.jsx'
 import { useDestacados } from '../lib/useDestacados.js'
 import { eventoATarjeta } from '../lib/destacados.js'
-import { CREDITOS_FOTOS } from '../lib/imagenesEvento.js'
+import { GenericasEventoContext } from '../lib/GenericasEventoContext.jsx'
+import { creditosDe, genericasParaEvento } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
 import { prefsLocales } from '../lib/push.js'
 import { hoyISO } from '../lib/fechas.js'
@@ -19,6 +20,7 @@ import { hoyISO } from '../lib/fechas.js'
 export default function Eventos() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { genericas, asignaciones } = useContext(GenericasEventoContext)
 
   // Estado desde URL params
   const categoriasParam = searchParams.get('categorias')
@@ -64,9 +66,9 @@ export default function Eventos() {
     const relleno = futuros
       .filter((e) => !ids.has(e.id))
       .slice(0, MIN_CARRUSEL - destacadosEvento.length)
-      .map((e) => eventoATarjeta(e))
+      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas, asignaciones) }))
     return [...destacadosEvento, ...relleno]
-  }, [destacadosEvento, futuros])
+  }, [destacadosEvento, futuros, genericas, asignaciones])
 
   // Ids de eventos realmente destacados (para la tarjeta panorámica del muro).
   const idsDestacados = useMemo(
@@ -237,9 +239,11 @@ export default function Eventos() {
         </a>
       </section>
 
-      <p className="mb-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
-        Imágenes ilustrativas de bancos de imágenes de uso libre: {CREDITOS_FOTOS.join(' · ')}
-      </p>
+      {creditosDe(genericas).length > 0 && (
+        <p className="mb-6 text-center font-mono-ibm text-[9px] leading-relaxed text-mudo">
+          Imágenes ilustrativas de bancos de imágenes de uso libre: {creditosDe(genericas).join(' · ')}
+        </p>
+      )}
     </div>
   )
 }

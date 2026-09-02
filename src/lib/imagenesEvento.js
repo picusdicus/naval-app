@@ -1,78 +1,27 @@
-// Imágenes ilustrativas para los eventos sin cartel propio (Wikimedia Commons,
-// licencias libres verificadas al descargar). Cada categoría mapea a un ARRAY
-// de variantes para que varios eventos sin imagen seguidos no repitan foto
-// (con una sola por categoría, los 158 eventos de fiestas salían clonados —
-// ese fue el motivo del revert de ago-2026; ahora la selección es estable por
-// id, ver imagenEvento()). Cada entrada lleva su crédito para la atribución
-// que exigen las licencias CC BY / CC BY-SA; `pos` ajusta el encuadre
-// (object-position) cuando conviene; `soloTarjeta` marca resoluciones justas
-// (~640-750px) que valen para la tarjeta del muro pero no para el héroe de la
-// ficha de detalle.
+// Imagen ilustrativa para los eventos sin cartel propio.
+//
+// Las ilustrativas salen EXCLUSIVAMENTE de las que el superadmin sube desde
+// /admin → "Imágenes genéricas" (tabla `imagenes_evento_genericas`, ficheros
+// en Blob bajo eventos-genericas/<categoria>/<disciplina>). No hay pool en el
+// código: el que había (33 fotos de Wikimedia Commons por categoría, rama de
+// la issue #23) se retiró en sep-2026 al decidirse que solo se muestren las
+// subidas a mano — una categoría sin fotos subidas cae al degradado de
+// categoría de siempre hasta que se suba alguna.
+//
+// Quién filtra qué: este módulo NO sabe de categorías ni disciplinas. Recibe
+// en `genericas` la lista YA filtrada para el evento (misma categoría y, si el
+// título deja reconocer la disciplina, misma disciplina; si no, solo las
+// genéricas sin disciplina) — el filtro vive en useImagenEvento y en los dos
+// carruseles (Inicio/Eventos) que llaman a eventoATarjeta.
 //
 // Módulo "limpio" (sin React): lo importa también destacados.js.
 
-// Interruptor temporal: mientras esté en false, imagenEvento() nunca devuelve
-// una foto del pool genérico, aunque exista y esté bien configurada — cae
-// directamente en "sin imagen" (degradado + icono), el comportamiento previo
-// a la issue #23. Se activará cuando el panel de subida esté en producción y
-// las imágenes de deporte estén bien curadas por disciplina (hoy un torneo de
-// tenis puede mostrar una carrera popular). Las fotos propias de los eventos
-// (posterUrl real, rotulado o no) no dependen de este flag.
-const MOSTRAR_IMAGENES_GENERICAS = false
+import { destinoImagenEvento } from './eventos.js'
 
-export const IMAGENES_EVENTO = {
-  // Pool general de cultura (fachadas culturales reales de Navalcarnero).
-  cultura: [
-    { src: '/img/eventos/cultura/1.jpg', credito: 'Tyne & Wear Archives & Museums, sin restricciones' },
-    { src: '/img/eventos/cultura/2.jpg', credito: 'Zarateman, CC0' },
-    { src: '/img/eventos/cultura/3.jpg', credito: 'Zarateman, CC0' },
-    { src: '/img/eventos/cultura/4.jpg', credito: 'Zarateman, CC0' },
-  ],
-  // Sub-pools de cultura, elegidos por subcategoría o palabra clave del título.
-  concierto: [
-    { src: '/img/eventos/concierto/1.jpg', credito: 'Shixart1985, CC BY 2.0' },
-    { src: '/img/eventos/concierto/2.jpg', credito: 'Carlos Teixidor Cadenas, CC BY-SA 4.0' },
-  ],
-  cine: [{ src: '/img/eventos/cine/1.jpg', credito: 'Bdx, CC0' }],
-  // `soloRegistroFestivo` excluye la variante para los actos religiosos del
-  // programa (novenas, misas, procesiones): fuegos artificiales (1 y 3) y
-  // encierro (5) desentonan con una misa; quedan la Plaza de Segovia al
-  // atardecer y los gigantes y cabezudos, de tono neutro.
-  fiestas: [
-    { src: '/img/eventos/fiestas/1.jpg', pos: '50% 25%', credito: 'Henry Sattink Rath, CC BY-SA 3.0', soloRegistroFestivo: true },
-    { src: '/img/eventos/fiestas/2.jpg', credito: 'Lolalatorre, CC BY-SA 3.0' },
-    { src: '/img/eventos/fiestas/3.jpg', credito: 'Javier Pérez Montes, CC BY-SA 4.0', soloRegistroFestivo: true },
-    { src: '/img/eventos/fiestas/4.jpg', credito: 'Diario de Madrid, CC BY 4.0' },
-    { src: '/img/eventos/fiestas/5.jpg', credito: 'Dirección General de Turismo, Comunidad de Madrid, CC BY 3.0', soloRegistroFestivo: true },
-  ],
-  infantil: [
-    { src: '/img/eventos/infantil/1.jpg', credito: 'Jorge Royan, CC BY-SA 3.0' },
-    { src: '/img/eventos/infantil/2.jpg', credito: 'Diario de Madrid, CC BY 4.0' },
-    { src: '/img/eventos/infantil/3.jpg', credito: 'Diario de Madrid, CC BY 4.0' },
-    { src: '/img/eventos/infantil/4.jpg', credito: 'Zarateman, CC0' },
-    { src: '/img/eventos/infantil/5.jpg', credito: 'Diario de Madrid, CC BY 4.0', soloTarjeta: true },
-  ],
-  deporte: [
-    { src: '/img/eventos/deporte/1.jpg', credito: 'Shixart1985, CC BY 2.0' },
-    { src: '/img/eventos/deporte/2.jpg', credito: 'Cadiznoticias, CC BY-SA 2.0' },
-    { src: '/img/eventos/deporte/3.jpg', credito: 'Cadiznoticias, CC BY-SA 2.0' },
-    { src: '/img/eventos/deporte/4.jpg', credito: 'Diario de Madrid, CC BY 4.0' },
-  ],
-  gastronomia: [
-    { src: '/img/eventos/gastronomia/1.jpg', credito: 'Brian Snelson, CC BY 2.0' },
-    { src: '/img/eventos/gastronomia/2.jpg', credito: 'Juan Emilio Prades Bel, CC BY-SA 4.0' },
-  ],
-  mercado: [
-    { src: '/img/eventos/mercado/1.jpg', credito: 'Acabashi, CC BY-SA 4.0' },
-    { src: '/img/eventos/mercado/2.jpg', credito: 'Benjamín Núñez González, CC BY-SA 4.0' },
-  ],
-  educacion: [{ src: '/img/eventos/educacion/1.jpg', credito: 'Benjamín Núñez González, CC BY-SA 4.0' }],
-  ayudas: [{ src: '/img/eventos/ayudas/1.jpg', credito: 'Diario de Madrid, CC BY 4.0' }],
-  talleres: [{ src: '/img/eventos/talleres/1.jpg', credito: 'Rayhanphotos, CC BY-SA 4.0' }],
-  mayores: [{ src: '/img/eventos/mayores/1.jpg', credito: 'Diario de Madrid, CC BY 4.0' }],
-  empleo: [{ src: '/img/eventos/empleo/1.jpg', credito: 'Diario de Madrid, CC BY 4.0', soloTarjeta: true }],
-  general: [{ src: '/img/eventos/general/1.jpg', credito: 'Dirección General de Turismo, Comunidad de Madrid, CC BY 3.0' }],
-}
+// Interruptor de seguridad: a false, imagenEvento() nunca devuelve una
+// ilustrativa aunque existan en Neon — cae en "sin imagen" (degradado +
+// icono). Las fotos propias de los eventos (posterUrl real) no dependen de él.
+const MOSTRAR_IMAGENES_GENERICAS = true
 
 // Hash determinista y barato (djb2) para que cada evento elija SIEMPRE la
 // misma variante entre recargas y dispositivos — nunca aleatoria por render.
@@ -82,77 +31,89 @@ function hashDe(texto) {
   return h
 }
 
-// ¿Acto de registro religioso dentro de fiestas? Subcategoría del programa
-// primero (los 14 actos religiosos del programa 2026 la llevan) y palabras
-// clave del título como respaldo (fuentes que no la traen, p. ej. Instagram).
-// Palabras sacadas de los títulos reales del programa: NOVENA, MISA DE LAS
-// PEÑAS, MISA SOLEMNE, PROCESIÓN, GRAN OFRENDA DE FLORES A LA PATRONA,
-// TRADICIONAL SALVE. `\bpatrona\b` con frontera para NO cazar "patronales"
-// (Torneo de tenis Fiestas Patronales no es una misa).
-function esReligioso(evento) {
-  if (evento.subcategoria === 'religiosa') return true
-  const t = (evento.titulo || '')
+/**
+ * Semilla de la elección: el TÍTULO normalizado, no el id.
+ *
+ * Un mismo acto repetido varios días es una fila por día, con un id distinto
+ * cada una (`fiestas-gala-de-la-danza-2026-09-02` y `…-09-03`): sembrando por
+ * id, la Gala de la Danza salía con una foto el miércoles y otra el jueves,
+ * como si fueran actos distintos. Por título, las 18 series repetidas del
+ * programa (11 días de torneo de tenis, 9 novenas, 8 matinés…) mantienen su
+ * foto todos sus días, y los títulos distintos se siguen repartiendo entre las
+ * variantes, que era el motivo original del hash. Sin título, el id.
+ */
+function semillaDe(evento) {
+  const titulo = String(evento.titulo ?? '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-  return /(novena|\bmisa\b|procesion|ofrenda|rosario|eucaristia|\bsalve\b|\bpatrona\b|visperas|romeria)/.test(t)
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+  return titulo || String(evento.id ?? '')
 }
 
-// Pool de variantes para un evento. Dentro de "cultura" se afina por
-// subcategoría (la de Neon: musica/cine) o, en su defecto, por palabra clave
-// del título — un concierto debe enseñar un concierto, no una fachada.
-// Dentro de "fiestas", los actos religiosos excluyen las variantes marcadas
-// `soloRegistroFestivo` (fuegos, encierro): una novena con foto taurina es un
-// desajuste de tono, no un caso raro — el programa trae 14 actos religiosos.
-function poolDe(evento) {
-  if (evento.categoria === 'cultura') {
-    if (evento.subcategoria === 'musica') return IMAGENES_EVENTO.concierto
-    if (evento.subcategoria === 'cine') return IMAGENES_EVENTO.cine
-    const t = (evento.titulo || '').toLowerCase()
-    if (/(concierto|música|musica|jazz|banda|coro)/.test(t)) return IMAGENES_EVENTO.concierto
-    if (/(cine|película|pelicula|proyección|proyeccion|film)/.test(t)) return IMAGENES_EVENTO.cine
-    return IMAGENES_EVENTO.cultura
+/**
+ * Genéricas que le corresponden a un evento.
+ *
+ * 1. Si el superadmin le asignó una imagen a mano desde el panel, ESA y solo
+ *    esa (el pool queda reducido a una, así que sale siempre). La asignación
+ *    existe justo para los casos que la inferencia no acierta.
+ * 2. Si no, las de su categoría de imagen y su subtipo (ambos exactos), o las
+ *    que no tienen subtipo si el evento tampoco lo tiene. Nunca las de OTRO
+ *    subtipo: un torneo de tenis no debe salir con una carrera popular, ni una
+ *    novena con fuegos artificiales.
+ *
+ * Fail-soft: una asignación cuya imagen ya no está en la lista (borrada o
+ * desactivada) se ignora y el evento vuelve al criterio automático.
+ *
+ * Único sitio donde se decide qué imágenes ve un evento: lo usan el hook
+ * useImagenEvento, los carruseles de Inicio y Eventos y api/og-evento.js.
+ */
+export function genericasParaEvento(evento, genericas = [], asignaciones = {}) {
+  if (!evento || !genericas || genericas.length === 0) return []
+
+  const idAsignado = asignaciones?.[evento.id]
+  if (idAsignado) {
+    const asignada = genericas.find((g) => g.id === idAsignado)
+    if (asignada) return [asignada]
   }
-  if (evento.categoria === 'fiestas' && esReligioso(evento)) {
-    const neutras = IMAGENES_EVENTO.fiestas.filter((v) => !v.soloRegistroFestivo)
-    // Guarda defensiva: si algún día todo el pool quedara marcado, mejor la
-    // más neutra (la Plaza de Segovia al atardecer) que forzar una excluida.
-    return neutras.length > 0 ? neutras : [IMAGENES_EVENTO.fiestas[1]]
-  }
-  return IMAGENES_EVENTO[evento.categoria] || IMAGENES_EVENTO.general
+
+  const { categoria, subtipo } = destinoImagenEvento(evento)
+  return genericas.filter((g) => {
+    if (g.categoria !== categoria) return false
+    return subtipo === null ? g.disciplina === null : g.disciplina === subtipo
+  })
+}
+
+/** Atribución de una genérica: "autor, licencia" si los hay; si no, la fuente. */
+export function creditoDe(g) {
+  const partes = [g.autor, g.licencia].filter((x) => x && String(x).trim())
+  if (partes.length > 0) return partes.join(', ')
+  return g.fuente && String(g.fuente).trim() ? g.fuente : ''
+}
+
+/** Créditos únicos de un conjunto de genéricas (pie de la página de eventos). */
+export function creditosDe(genericas = []) {
+  return [...new Set(genericas.map(creditoDe).filter(Boolean))]
 }
 
 /**
  * Elige la imagen de un evento.
  *  - Con foto propia (campo `imagen`, p. ej. el cartel real): {src, real: true}.
- *  - Sin ella: una ilustrativa del pool de su categoría, estable por id del
- *    evento → {src, pos?, credito, real: false}.
- *  - `paraHeroe: true` (ficha de detalle) evita las variantes `soloTarjeta`
- *    (resolución insuficiente a tamaño de héroe); si el pool entero es
- *    soloTarjeta, devuelve null y la ficha cae al degradado de siempre.
+ *    Gana siempre: una publicación con cartel sustituye a la ilustrativa.
+ *  - Sin ella y con `genericas` (ya filtradas para este evento): una de ellas,
+ *    estable por título del evento (ver semillaDe) → {src, credito, real: false}.
+ *  - Sin ninguna de las dos: null (degradado de categoría).
+ *  - `paraHeroe` se acepta por compatibilidad con los llamadores; hoy no
+ *    excluye nada (las subidas no llevan marca de resolución).
  */
-export function imagenEvento(evento, { paraHeroe = false } = {}) {
+export function imagenEvento(evento, { genericas = [] } = {}) {
   if (evento.imagen && evento.imagen.trim()) return { src: evento.imagen, real: true }
-  // Con el interruptor apagado, el mismo retorno que "sin imagen" tenía antes
-  // de #23 (null): los consumidores ya caen al degradado de categoría.
   if (!MOSTRAR_IMAGENES_GENERICAS) return null
-  const pool = poolDe(evento)
-  if (!pool || pool.length === 0) return null
-  const semilla = hashDe(String(evento.id ?? evento.titulo ?? ''))
-  let elegida = pool[semilla % pool.length]
-  if (paraHeroe && elegida.soloTarjeta) {
-    const aptas = pool.filter((v) => !v.soloTarjeta)
-    if (aptas.length === 0) return null
-    elegida = aptas[semilla % aptas.length]
-  }
-  return { src: elegida.src, pos: elegida.pos, credito: elegida.credito, real: false }
-}
+  if (!genericas || genericas.length === 0) return null
 
-// Lista de créditos únicos para la atribución en la página de eventos.
-export const CREDITOS_FOTOS = [
-  ...new Set(
-    Object.values(IMAGENES_EVENTO)
-      .flat()
-      .map((i) => i.credito),
-  ),
-]
+  const semilla = hashDe(semillaDe(evento))
+  const elegida = genericas[semilla % genericas.length]
+  if (!elegida?.url) return null
+  return { src: elegida.url, credito: creditoDe(elegida), real: false }
+}

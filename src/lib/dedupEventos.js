@@ -335,6 +335,89 @@ export function imagenConTextoRotulado(evento) {
   return evento.organizacionSlug === SLUG_AYUNTAMIENTO || evento.origen === 'deportes'
 }
 
+// Tope de días entre dos funciones del mismo acto para considerarlas la misma
+// serie. El programa de fiestas dura ~10 días y el ciclo más largo que admite
+// el panel son 31 (MAX_DIAS_CICLO): con eso se cubre cualquier serie real y se
+// evita que un acto anual del mismo nombre (los "Ensayos al fresco" de junio y
+// los de septiembre) herede el cartel del año o la temporada equivocados.
+const MAX_DIAS_SERIE = 31
+
+const DIA_MS = 24 * 60 * 60 * 1000
+
+function diasEntre(a, b) {
+  const fa = Date.parse(`${a}T00:00:00`)
+  const fb = Date.parse(`${b}T00:00:00`)
+  if (Number.isNaN(fa) || Number.isNaN(fb)) return Infinity
+  return Math.abs(fa - fb) / DIA_MS
+}
+
+/**
+ * Reparte el cartel real entre las funciones de un mismo acto.
+ *
+ * Un acto que se celebra varios días es una fila por día, y el cartel llega
+ * por una sola de ellas: la Gala de la Danza del 2 y 3 de septiembre se
+ * anuncia con UN cartel (que además dice "los días 2 y 3"), publicado en
+ * Instagram con la fecha del día 2. Al fusionarse, solo la fila del día 2
+ * recibía la imagen y la del 3 se quedaba con el degradado, como si fueran
+ * actos distintos.
+ *
+ * Copia la imagen del hermano con cartel más cercano en fecha a los que no
+ * tienen ninguno. Criterios, todos a la vez:
+ *   · mismo título normalizado (claveTitulo, el mismo criterio del dedup),
+ *   · a menos de MAX_DIAS_SERIE días,
+ *   · y SOLO sobre eventos sin imagen: nunca sustituye un cartel propio.
+ * Viaja también `imagenRotulada`, que es una propiedad de la foto y no del
+ * evento: si el cartel lleva el título impreso, lo lleva en los dos días.
+ *
+ * Se aplica al final del pipeline (tras el dedup y las fusiones manuales), de
+ * modo que aprovecha las imágenes que llegan por cualquiera de esas vías. Con
+ * ningún hermano al que copiar devuelve la MISMA referencia de array.
+ */
+export function propagarCartelDeSerie(eventos) {
+  if (!Array.isArray(eventos) || eventos.length === 0) return eventos
+
+  // Índice título → funciones con cartel. Solo se construye para los títulos
+  // que de verdad tienen alguna, que son pocos.
+  const conCartel = new Map()
+  for (const e of eventos) {
+    if (!e?.imagen || !e.titulo || !e.fecha) continue
+    const clave = claveTitulo(e.titulo)
+    if (!clave) continue
+    if (!conCartel.has(clave)) conCartel.set(clave, [])
+    conCartel.get(clave).push(e)
+  }
+  if (conCartel.size === 0) return eventos
+
+  let alguno = false
+  const salida = eventos.map((e) => {
+    if (!e || e.imagen || !e.titulo || !e.fecha) return e
+    const hermanos = conCartel.get(claveTitulo(e.titulo))
+    if (!hermanos) return e
+
+    // El más cercano en fecha: con una serie larga, el cartel de su tramo.
+    let mejor = null
+    let mejorDistancia = Infinity
+    for (const h of hermanos) {
+      const d = diasEntre(e.fecha, h.fecha)
+      if (d <= MAX_DIAS_SERIE && d < mejorDistancia) {
+        mejor = h
+        mejorDistancia = d
+      }
+    }
+    if (!mejor) return e
+
+    alguno = true
+    return {
+      ...e,
+      imagen: mejor.imagen,
+      imagenRotulada: imagenConTextoRotulado(mejor),
+      cartelDeSerie: true,
+    }
+  })
+
+  return alguno ? salida : eventos
+}
+
 // Rellena en `base` los campos que tenga vacíos con los de `otro` y acumula el
 // id de `otro` en idsSecundarios (para que deep links y destacados que apunten
 // al duplicado sigan resolviendo). `base` no se pisa: gana la versión curada o

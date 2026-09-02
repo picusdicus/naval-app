@@ -1,22 +1,13 @@
 import { useRef, useState } from 'react'
 import MIcon from '../MIcon.jsx'
+import { optimizarImagen } from '../../lib/imageOptimizer.js'
 
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_BYTES = 3 * 1024 * 1024
-
-/** Lee el fichero como base64 (sin el prefijo `data:...;base64,`). */
-function aBase64(fichero) {
-  return new Promise((resolve, reject) => {
-    const lector = new FileReader()
-    lector.onload = () => resolve(String(lector.result).split(',')[1])
-    lector.onerror = () => reject(new Error('No se pudo leer el fichero.'))
-    lector.readAsDataURL(fichero)
-  })
-}
 
 /**
- * Sube el cartel del evento a Vercel Blob y comunica la URL resultante al
- * formulario. La imagen viaja en base64 dentro del JSON (ver api/admin/imagen.js).
+ * Selector de imagen que optimiza (redimensiona a 1200px max, convierte a WebP),
+ * sube a Vercel Blob y comunica la URL al formulario. La imagen viaja en base64
+ * dentro del JSON (ver api/admin/imagen.js).
  */
 export default function SelectorImagen({
   valor,
@@ -41,18 +32,16 @@ export default function SelectorImagen({
       setFallo('Formato no admitido. Usa JPG, PNG o WebP.')
       return
     }
-    if (fichero.size > MAX_BYTES) {
-      setFallo('La imagen supera los 3 MB.')
-      return
-    }
 
     setSubiendo(true)
     try {
-      const datos = await aBase64(fichero)
+      // Optimizar primero (redimensiona a max 1200px y convierte a WebP)
+      const optimizada = await optimizarImagen(fichero, 1200)
+
       const respuesta = await fetch('/api/admin/imagen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: fichero.name, tipo: fichero.type, datos }),
+        body: JSON.stringify({ nombre: fichero.name, tipo: optimizada.tipo, datos: optimizada.datos }),
       })
       const cuerpo = await respuesta.json().catch(() => ({}))
       if (!respuesta.ok) throw new Error(cuerpo.error || 'No se pudo subir la imagen.')

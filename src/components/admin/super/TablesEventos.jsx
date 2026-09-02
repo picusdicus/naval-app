@@ -1,13 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
-import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
-import { CATEGORIAS_EVENTO, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
+import {
+  aplicarFusionesManuales,
+  combinarEventos,
+  enriquecerPorCartel,
+  fuenteDeIngesta,
+  propagarCartelDeSerie,
+} from '../../../lib/dedupEventos.js'
+import { CATEGORIAS_EVENTO, destinoImagenEvento, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
 import { useImagenEvento } from '../../../lib/useImagenEvento.js'
+import { GenericasEventoContext, RecargarGenericasContext } from '../../../lib/GenericasEventoContext.jsx'
 import MIcon from '../../MIcon.jsx'
 import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
+import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
 
 // Tab "Eventos" del panel superadmin: lista todos los eventos publicados de la
 // agenda (los tres orígenes ya fusionados con combinarEventos, como la vista
@@ -36,7 +44,12 @@ import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
 // verdad con «Puertas abiertas patinaje» (2026-09-01). El panel debe listar
 // exactamente las tarjetas que la vista pública pinta.
 const ESTATICOS = enriquecerPorCartel([...eventosCurados, ...eventosExternos])
-const MAX_FILAS = 60
+// Scroll infinito (mismo patrón que Noticias.jsx): se pintan LOTE filas y otro
+// LOTE cada vez que el centinela del final entra en pantalla, hasta agotar la
+// lista. Todo en cliente — los eventos ya están en memoria, no hay peticiones
+// extra. Antes se cortaba en 60 fijas con un "afina la búsqueda", así que los
+// eventos del final de la temporada no había forma de ver sin buscarlos.
+const LOTE_FILAS = 40
 const DIAS_DESTACADO = 30 // duración por defecto al destacar con un clic
 
 const ETIQUETA_ORIGEN = { municipal: 'Ayuntamiento', vecinal: 'Vecinal', cultural: 'Cultural' }
@@ -82,7 +95,82 @@ export function MiniaturaEvento({ evento, clase = 'h-12 w-12', tamIcono = 20 }) 
 
 // Detalle desplegado bajo la fila (acordeón): imagen grande + los campos del
 // evento que la fila comprime. Solo lectura — las acciones siguen en la fila.
-function DetalleEvento({ evento, fuenteIngesta, fusiones = [], inertes = [], onDeshacer, ocupado }) {
+// "Deporte · tenis" / "Fiestas · general": dónde vive la imagen ilustrativa.
+function etiquetaDestino({ categoria, subtipo }) {
+  const nombre = CATEGORIAS_EVENTO[categoria]?.nombre || categoria || '—'
+  return `${nombre} · ${subtipo ?? 'general'}`
+}
+
+function DetalleEvento({
+  evento,
+  fuenteIngesta,
+  destinoImagen,
+  conCartelPropio,
+  fusiones = [],
+  inertes = [],
+  onDeshacer,
+  ocupado,
+}) {
+  // Subir una genérica para la categoría/subtipo de ESTE evento sin ir al
+  // panel de imágenes; al terminar se recarga el Context para que las
+  // miniaturas (esta y las de los demás eventos del mismo subtipo) cambien.
+  const recargarGenericas = useContext(RecargarGenericasContext)
+  const { genericas, asignaciones } = useContext(GenericasEventoContext)
+  const [subidaAbierta, setSubidaAbierta] = useState(false)
+  const [subidaOk, setSubidaOk] = useState(false)
+  const [galeriaAbierta, setGaleriaAbierta] = useState(false)
+  const [asignando, setAsignando] = useState(false)
+  const etiquetaSubtipo = etiquetaDestino(destinoImagen)
+
+  const idAsignado = asignaciones[evento.id]
+  const asignada = genericas.find((g) => g.id === idAsignado)
+
+  // Elegir una de las imágenes ya subidas para ESTE evento, cuando la
+  // inferencia por título/descripción no acierta. Se guarda por id público del
+  // evento, así que sobrevive a las regeneraciones del cron.
+  const asignar = async (imagenId) => {
+    setAsignando(true)
+    try {
+      const res = await fetch('/api/super/imagenes-asignaciones', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referenciaId: evento.id, imagenId }),
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo asignar')
+      await recargarGenericas()
+      setGaleriaAbierta(false)
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setAsignando(false)
+    }
+  }
+
+  const quitarAsignacion = async () => {
+    setAsignando(true)
+    try {
+      const res = await fetch(
+        `/api/super/imagenes-asignaciones?referenciaId=${encodeURIComponent(evento.id)}`,
+        { method: 'DELETE' }
+      )
+      if (!res.ok) throw new Error('No se pudo volver a la automática')
+      await recargarGenericas()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setAsignando(false)
+    }
+  }
+
+  // Para elegir: primero las del subtipo que le tocaría, luego el resto; así
+  // lo más probable queda arriba sin esconder las demás.
+  const candidatas = [...genericas].sort((a, b) => {
+    const pesoA = a.categoria === destinoImagen.categoria ? 0 : 1
+    const pesoB = b.categoria === destinoImagen.categoria ? 0 : 1
+    if (pesoA !== pesoB) return pesoA - pesoB
+    return `${a.categoria}${a.disciplina ?? ''}`.localeCompare(`${b.categoria}${b.disciplina ?? ''}`)
+  })
+
   const datos = [
     ['Fecha', evento.fecha ? formatearFechaLarga(evento.fecha) : 'Sin fecha'],
     ['Hora', evento.hora || null],
@@ -164,6 +252,134 @@ function DetalleEvento({ evento, fuenteIngesta, fusiones = [], inertes = [], onD
             ))}
           </div>
         )}
+        <div className="space-y-2 border-t border-filete pt-3">
+          <p className="font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-mudo">
+            Imagen ilustrativa · {etiquetaSubtipo}
+          </p>
+          <p className="font-serif-spectral text-sm text-tinta">
+            {asignada ? (
+              <>
+                Imagen elegida a mano para este evento. Manda sobre el subtipo, y se mantiene
+                aunque el cron regenere la agenda.
+              </>
+            ) : (
+              <>
+                {conCartelPropio
+                  ? 'Este evento trae cartel propio; las genéricas de este subtipo son su reserva si el cartel dejara de cargar.'
+                  : 'Sin cartel propio: se pinta con las genéricas activas de este subtipo (o el degradado si no hay ninguna).'}{' '}
+                Una imagen subida aquí vale para todos los eventos del mismo subtipo.
+              </>
+            )}
+          </p>
+
+          {asignada && (
+            <div className="flex items-center gap-3 border border-filete bg-papel p-2">
+              <img src={asignada.url} alt="" className="h-14 w-14 shrink-0 object-cover" />
+              <span className="min-w-0 flex-1 font-serif-spectral text-sm text-tinta">
+                {asignada.descripcion || etiquetaDestino({ categoria: asignada.categoria, subtipo: asignada.disciplina })}
+              </span>
+              <button
+                type="button"
+                onClick={quitarAsignacion}
+                disabled={asignando}
+                className="inline-flex shrink-0 items-center gap-1 border border-filete px-2 py-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota disabled:opacity-40"
+                title="Volver a la imagen que le toca automáticamente"
+              >
+                <MIcon name="undo" className="text-[13px]" />
+                Automática
+              </button>
+            </div>
+          )}
+
+          {galeriaAbierta && (
+            <div className="space-y-2 border border-filete bg-papel p-3">
+              <p className="font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-mudo">
+                Elige una imagen para este evento
+              </p>
+              {candidatas.length === 0 ? (
+                <p className="font-serif-spectral text-sm text-pardo">
+                  Todavía no hay ninguna imagen subida.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {candidatas.map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => asignar(g.id)}
+                      disabled={asignando}
+                      className={`group relative overflow-hidden border transition-colors disabled:opacity-40 ${
+                        g.id === idAsignado ? 'border-terracota' : 'border-filete hover:border-tinta'
+                      }`}
+                      title={etiquetaDestino({ categoria: g.categoria, subtipo: g.disciplina })}
+                    >
+                      <img src={g.url} alt="" className="aspect-square w-full object-cover" />
+                      <span className="block truncate bg-papel-calido px-1 py-0.5 font-mono-ibm text-[8px] uppercase tracking-etiqueta text-pardo">
+                        {g.disciplina || 'general'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setGaleriaAbierta(false)}
+                className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo hover:text-tinta"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          {subidaAbierta ? (
+            <div className="border border-filete bg-papel p-3">
+              <FormularioImagenGenerica
+                categoria={destinoImagen.categoria}
+                disciplina={destinoImagen.subtipo}
+                compacto
+                onSubida={async () => {
+                  await recargarGenericas()
+                  setSubidaAbierta(false)
+                  setSubidaOk(true)
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setSubidaAbierta(false)}
+                className="mt-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo hover:text-tinta"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              {!galeriaAbierta && (
+                <button
+                  type="button"
+                  onClick={() => setGaleriaAbierta(true)}
+                  className="inline-flex items-center gap-1 border border-filete px-2 py-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota"
+                >
+                  <MIcon name="photo_library" className="text-[13px]" />
+                  {asignada ? 'Elegir otra imagen' : 'Elegir una imagen ya subida'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSubidaAbierta(true)
+                  setSubidaOk(false)
+                }}
+                className="inline-flex items-center gap-1 border border-filete px-2 py-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota"
+              >
+                <MIcon name="add_photo_alternate" className="text-[13px]" />
+                Subir imagen para {etiquetaSubtipo}
+              </button>
+              {subidaOk && (
+                <span className="font-serif-spectral text-sm text-verde">Imagen guardada y aplicada.</span>
+              )}
+            </div>
+          )}
+        </div>
         <a
           href={`/eventos/${encodeURIComponent(evento.id)}`}
           target="_blank"
@@ -179,6 +395,9 @@ function DetalleEvento({ evento, fuenteIngesta, fusiones = [], inertes = [], onD
 }
 
 export default function TablesEventos() {
+  // Asignaciones manuales de imagen: se leen aquí para marcar la fila, y el
+  // detalle desplegable las usa para pintar la elegida y poder cambiarla.
+  const { asignaciones } = useContext(GenericasEventoContext)
   const [deLaBase, setDeLaBase] = useState([])
   const [destacados, setDestacados] = useState([]) // solo tipo evento
   const [ocultos, setOcultos] = useState(() => new Set())
@@ -188,6 +407,8 @@ export default function TablesEventos() {
   const [ocupadoId, setOcupadoId] = useState(null) // id del evento con acción en curso
   const [abiertoId, setAbiertoId] = useState(null) // id del evento con el detalle desplegado
   const [mensaje, setMensaje] = useState(null) // { tipo: 'error', texto }
+  const [cuantas, setCuantas] = useState(LOTE_FILAS) // filas pintadas (scroll infinito)
+  const centinelaRef = useRef(null)
   const [fusiones, setFusiones] = useState([]) // fusiones manuales [{principal, secundaria}]
   const [origenFusionId, setOrigenFusionId] = useState(null) // id del principal elegido en el modo fusión
 
@@ -219,7 +440,9 @@ export default function TablesEventos() {
   // encuentran alguna de sus dos partes, para avisar en el detalle desplegable.
   const { eventos, inertesPorRef } = useMemo(() => {
     const estado = { inertes: [] }
-    const lista = aplicarFusionesManuales(combinarEventos(ESTATICOS, deLaBase), fusiones, estado)
+    const lista = propagarCartelDeSerie(
+      aplicarFusionesManuales(combinarEventos(ESTATICOS, deLaBase), fusiones, estado),
+    )
     const mapa = new Map()
     for (const f of estado.inertes) {
       for (const ref of [f.principal, f.secundaria]) {
@@ -279,7 +502,29 @@ export default function TablesEventos() {
       .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))
   }, [eventos, busqueda, incluirPasados])
 
-  const visibles = filtrados.slice(0, MAX_FILAS)
+  const visibles = filtrados.slice(0, cuantas)
+  const hayMas = filtrados.length > visibles.length
+
+  // Al cambiar el filtro se vuelve al primer lote: si no, buscar tras haber
+  // desplegado 400 filas seguiría pintando 400 de la nueva lista.
+  useEffect(() => {
+    setCuantas(LOTE_FILAS)
+  }, [busqueda, incluirPasados])
+
+  // Al asomar el centinela, revelar otro lote. Se re-observa cuando cambia
+  // `hayMas` para desconectar al llegar al final.
+  useEffect(() => {
+    const nodo = centinelaRef.current
+    if (!nodo || !hayMas) return undefined
+    const obs = new IntersectionObserver(
+      (entradas) => {
+        if (entradas[0].isIntersecting) setCuantas((n) => n + LOTE_FILAS)
+      },
+      { rootMargin: '300px' }
+    )
+    obs.observe(nodo)
+    return () => obs.disconnect()
+  }, [hayMas])
 
   async function destacar(evento) {
     setOcupadoId(evento.id)
@@ -496,7 +741,7 @@ export default function TablesEventos() {
         {cargando
           ? 'Cargando eventos…'
           : `${filtrados.length} ${filtrados.length === 1 ? 'evento' : 'eventos'}`}
-        {!cargando && filtrados.length > MAX_FILAS && ` (se muestran ${MAX_FILAS} — afina la búsqueda)`}
+        {!cargando && hayMas && ` (se muestran ${visibles.length}, sigue bajando para ver más)`}
       </p>
 
       <div className="divide-y divide-filete border-t border-tinta">
@@ -506,6 +751,15 @@ export default function TablesEventos() {
           const ocupado = ocupadoId === evento.id
           const pasado = diasHasta(evento.fecha) < 0
           const fuenteIngesta = fuenteDeIngesta(evento)
+          // Qué imagen ilustrativa le toca (panel de "Imágenes genéricas"): la
+          // categoría de imagen y el subtipo que infiere destinoImagenEvento()
+          // — ojo, para un acto cultural dentro de fiestas (verbena con
+          // orquesta) la categoría de imagen es 'cultura'. Con cartel propio se
+          // muestra como reserva (la agenda cae a ella si el cartel externo
+          // deja de existir).
+          const destinoImagen = destinoImagenEvento(evento)
+          const conCartelPropio = Boolean(evento.imagen && evento.imagen.trim())
+          const imagenElegida = Boolean(asignaciones[evento.id])
           const abierto = abiertoId === evento.id
           const fusionesDelEvento = evento.fusionesManualesAplicadas || []
           const inertesDelEvento = fusionesInertesDe(evento)
@@ -541,6 +795,23 @@ export default function TablesEventos() {
                         · {fuenteIngesta}
                       </span>
                     )}
+                    <span
+                      className="ml-2 text-mudo"
+                      title={
+                        imagenElegida
+                          ? 'El superadmin le eligió una imagen concreta; despliega el detalle para verla o volver a la automática'
+                          : conCartelPropio
+                            ? 'Trae cartel propio. Si su URL dejara de cargar, usaría las imágenes genéricas de esta categoría/subtipo (pestaña "Imágenes genéricas")'
+                            : 'Sin cartel propio: usa las imágenes genéricas subidas a esta categoría/subtipo (pestaña "Imágenes genéricas")'
+                      }
+                    >
+                      ·{' '}
+                      {imagenElegida
+                        ? 'ilustración: elegida a mano'
+                        : conCartelPropio
+                          ? `cartel propio (reserva: ${etiquetaDestino(destinoImagen)})`
+                          : `ilustración: ${etiquetaDestino(destinoImagen)}`}
+                    </span>
                     {pasado && <span className="ml-2 text-mudo">· pasado</span>}
                     {evento.fusionadoPorTituloAproximado && (
                       <span
@@ -654,6 +925,8 @@ export default function TablesEventos() {
                 <DetalleEvento
                   evento={evento}
                   fuenteIngesta={fuenteIngesta}
+                  destinoImagen={destinoImagen}
+                  conCartelPropio={conCartelPropio}
                   fusiones={fusionesDelEvento}
                   inertes={inertesDelEvento}
                   onDeshacer={deshacerFusion}
@@ -668,6 +941,15 @@ export default function TablesEventos() {
           <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
             No hay eventos que coincidan con el filtro.
           </p>
+        )}
+
+        {/* Centinela del scroll infinito: al entrar en pantalla carga más. */}
+        {hayMas && (
+          <div ref={centinelaRef} className="flex justify-center py-4">
+            <span className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+              Cargando más eventos…
+            </span>
+          </div>
         )}
       </div>
     </div>

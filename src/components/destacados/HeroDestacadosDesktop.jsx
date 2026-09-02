@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
 import { reportarClicDestacado } from '../../lib/useAnalytics.js'
+import { useImagenDestacado } from './useImagenDestacado.js'
 
 // Hero de destacados para ESCRITORIO (mockup Comercios / Eventos): cabecera con
 // título editorial + CTA opcional y flechas, y una fila de tarjetas grandes a
@@ -51,6 +52,7 @@ function TarjetaHero({ d, onSeleccionar, seccion }) {
     `${item.nombre}, Navalcarnero, Madrid`,
   )}`
   const registrarClic = seccion ? () => reportarClicDestacado(d, seccion) : undefined
+  const { imagen, imagenPos, onError } = useImagenDestacado(d)
 
   const claseCarta =
     'group relative block h-[380px] overflow-hidden rounded-lg shadow-cartel lg:h-[440px]'
@@ -58,12 +60,13 @@ function TarjetaHero({ d, onSeleccionar, seccion }) {
   // Fondo común (foto o trama de categoría), degradado y badge.
   const fondo = (
     <>
-      {d.imagen ? (
+      {imagen ? (
         <img
-          src={d.imagen}
+          src={imagen}
           alt=""
+          onError={onError}
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          style={{ objectPosition: d.imagenPos || '50% 50%' }}
+          style={{ objectPosition: imagenPos || '50% 50%' }}
         />
       ) : (
         <div

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import MIcon from '../MIcon.jsx'
 import { cartelDe } from '../../lib/gaceta.js'
 import { reportarClicDestacado } from '../../lib/useAnalytics.js'
+import { useImagenDestacado } from './useImagenDestacado.js'
 
 // Carrusel inmersivo de destacados para el Inicio de escritorio (mockup 4a):
 // slides a sangre completa (min 340px en tablet, 440px en lg+) con la foto o
@@ -18,6 +19,8 @@ function Slide({ d, seccion }) {
   const cartel = cartelDe(item.categoria)
   const desc = (item.descripcion || '').trim()
   const secundario = d.tipo === 'comercio' ? { to: '/comercios', texto: 'Ver el directorio' } : { to: '/eventos', texto: 'Ver toda la agenda' }
+  // Con fallback si la foto falla al cargar (cartel externo que ya no existe).
+  const { imagen, imagenPos, onError } = useImagenDestacado(d)
 
   return (
     <div className="min-w-full">
@@ -26,13 +29,14 @@ function Slide({ d, seccion }) {
             (queda feo), se usa una versión ampliada y desenfocada como ambiente
             y el cartel real se muestra entero a la derecha. Sin foto: degradado
             de cartel con el símbolo de la categoría. */}
-        {d.imagen ? (
+        {imagen ? (
           <img
-            src={d.imagen}
+            src={imagen}
             alt=""
             aria-hidden="true"
+            onError={onError}
             className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl"
-            style={{ objectPosition: d.imagenPos || '50% 50%' }}
+            style={{ objectPosition: imagenPos || '50% 50%' }}
           />
         ) : (
           <div className="gz-trama-clara absolute inset-0" style={{ background: cartel.fondo }}>
@@ -87,13 +91,13 @@ function Slide({ d, seccion }) {
               desenfocado queda como una mancha sin imagen. En tablet (md) se
               muestra más pequeño; solo en móvil desaparece (ahí manda el
               carrusel nativo, este componente ni se monta). */}
-          {d.imagen && (
+          {imagen && (
             <div className="hidden flex-shrink-0 md:block">
               <img
-                src={d.imagen}
+                src={imagen}
                 alt=""
                 className="max-h-[250px] w-auto rounded-lg shadow-cartel lg:max-h-[360px]"
-                style={{ objectPosition: d.imagenPos || '50% 50%' }}
+                style={{ objectPosition: imagenPos || '50% 50%' }}
               />
             </div>
           )}

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { imagenEvento } from './imagenesEvento.js'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { genericasParaEvento, imagenEvento } from './imagenesEvento.js'
+import { GenericasEventoContext } from './GenericasEventoContext.jsx'
 
 /**
  * Resuelve la imagen de un evento tolerando que la URL esté rota.
@@ -15,6 +16,12 @@ import { imagenEvento } from './imagenesEvento.js'
  * Vive fuera de `imagenesEvento.js` a propósito: ese módulo lo importa
  * `destacados.js` y debe seguir "limpio" (sin React).
  *
+ * Genéricas de Neon: se leen del Context (una sola petición compartida en
+ * App.jsx) y las filtra `genericasParaEvento` (categoría de imagen + subtipo
+ * del evento) antes de pasarlas a imagenEvento(). El interruptor
+ * MOSTRAR_IMAGENES_GENERICAS vive SOLO en imagenesEvento.js: aquí se pasan
+ * siempre y es imagenEvento() quien decide.
+ *
  * Devuelve:
  *   - posterUrl: la url, o null si no hay imagen o si su carga falló
  *   - pos: object-position para el <img>
@@ -26,28 +33,52 @@ import { imagenEvento } from './imagenesEvento.js'
  * `opciones` se pasa tal cual a imagenEvento() (p. ej. {paraHeroe: true} en
  * la ficha de detalle, que excluye las variantes de resolución justa).
  */
-export function useImagenEvento(evento, opciones) {
+export function useImagenEvento(evento, opciones = {}) {
+  const { genericas, asignaciones } = useContext(GenericasEventoContext)
+
   // Tolera `evento` nulo para que quien tenga returns tempranos (EventoDetalle
   // mientras carga) pueda llamar al hook siempre, como exigen las reglas de
   // los hooks, sin romperse al leer `evento.imagen`.
-  const img = evento ? imagenEvento(evento, opciones) : null
-  const src = img?.src ?? null
-  const [rota, setRota] = useState(false)
+  const genericasFiltradas = useMemo(
+    () => genericasParaEvento(evento, genericas, asignaciones),
+    [evento, genericas, asignaciones]
+  )
+
+  const propia = useMemo(
+    () => (evento ? imagenEvento(evento, { ...opciones, genericas: genericasFiltradas }) : null),
+    [evento, genericasFiltradas, opciones?.paraHeroe]
+  )
+  // Si la foto propia falla al cargar (un cartel externo que ya no existe), se
+  // cae a la ilustrativa que le tocaría sin foto — no al degradado.
+  const alternativa = useMemo(
+    () =>
+      evento && propia?.real
+        ? imagenEvento({ ...evento, imagen: '' }, { ...opciones, genericas: genericasFiltradas })
+        : null,
+    [evento, propia, genericasFiltradas, opciones?.paraHeroe]
+  )
+
+  const [rotas, setRotas] = useState(0)
+  const src = propia?.src ?? null
 
   // Reset al cambiar de imagen: estos componentes se reutilizan entre items de
   // una lista (React puede conservar la instancia y cambiarle el evento), y un
   // `rota` heredado del anterior escondería un cartel que sí carga.
   useEffect(() => {
-    setRota(false)
+    setRotas(0)
   }, [src])
 
-  const onError = useCallback(() => setRota(true), [])
+  const onError = useCallback(() => setRotas((n) => n + 1), [])
+
+  // 0 fallos: la propia (o la ilustrativa). 1 fallo con propia: la ilustrativa
+  // de reserva. Más fallos (o sin reserva): nada → degradado.
+  const img = rotas === 0 ? propia : rotas === 1 && propia?.real ? alternativa : null
 
   return {
-    posterUrl: rota ? null : src,
+    posterUrl: img?.src ?? null,
     pos: img?.pos || '50% 50%',
     onError,
-    real: Boolean(img?.real) && !rota,
+    real: Boolean(img?.real),
     credito: img?.real ? undefined : img?.credito,
   }
 }

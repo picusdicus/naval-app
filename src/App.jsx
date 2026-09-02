@@ -5,6 +5,7 @@ import InstallPrompt from './components/InstallPrompt.jsx'
 import OfflineIndicator from './components/OfflineIndicator.jsx'
 import RutaProtegida from './components/admin/RutaProtegida.jsx'
 import { AdminAuthProvider } from './lib/adminAuth.jsx'
+import { GenericasEventoProvider } from './lib/GenericasEventoContext.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Eventos from './pages/Eventos.jsx'
 import EventoDetalle from './pages/EventoDetalle.jsx'
@@ -71,12 +72,13 @@ export default function App() {
 
   return (
     <AdminAuthProvider>
-      <>
-        <ScrollManager />
-        <OfflineIndicator />
-        <InstallPrompt />
-        <CookieBanner />
-        <Routes>
+      <GenericasEventoProvider>
+        <>
+          <ScrollManager />
+          <OfflineIndicator />
+          <InstallPrompt />
+          <CookieBanner />
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           {/* Superadmin: login y su panel fusionados en la misma ruta. */}
@@ -122,7 +124,8 @@ export default function App() {
               específico, así que nunca le roba nada al `*` de /panel. */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </>
+        </>
+      </GenericasEventoProvider>
     </AdminAuthProvider>
   )
 }
