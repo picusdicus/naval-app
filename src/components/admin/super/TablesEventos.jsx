@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
 import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
@@ -6,8 +6,10 @@ import { CATEGORIAS_EVENTO, disciplinaDeEvento, formatearFechaCorta, formatearFe
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
 import { useImagenEvento } from '../../../lib/useImagenEvento.js'
+import { RecargarGenericasContext } from '../../../lib/GenericasEventoContext.jsx'
 import MIcon from '../../MIcon.jsx'
 import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
+import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
 
 // Tab "Eventos" del panel superadmin: lista todos los eventos publicados de la
 // agenda (los tres orígenes ya fusionados con combinarEventos, como la vista
@@ -82,7 +84,28 @@ export function MiniaturaEvento({ evento, clase = 'h-12 w-12', tamIcono = 20 }) 
 
 // Detalle desplegado bajo la fila (acordeón): imagen grande + los campos del
 // evento que la fila comprime. Solo lectura — las acciones siguen en la fila.
-function DetalleEvento({ evento, fuenteIngesta, fusiones = [], inertes = [], onDeshacer, ocupado }) {
+function DetalleEvento({
+  evento,
+  fuenteIngesta,
+  subtipoImagen,
+  conCartelPropio,
+  fusiones = [],
+  inertes = [],
+  onDeshacer,
+  ocupado,
+}) {
+  // Subir una genérica para la categoría/subtipo de ESTE evento sin ir al
+  // panel de imágenes; al terminar se recarga el Context para que las
+  // miniaturas (esta y las de los demás eventos del mismo subtipo) cambien.
+  const recargarGenericas = useContext(RecargarGenericasContext)
+  const [subidaAbierta, setSubidaAbierta] = useState(false)
+  const [subidaOk, setSubidaOk] = useState(false)
+  const esGeneral = /\(general\)$/.test(subtipoImagen || '')
+  const disciplinaSubida = esGeneral ? null : subtipoImagen
+  const etiquetaSubtipo = `${CATEGORIAS_EVENTO[evento.categoria]?.nombre || evento.categoria} · ${
+    esGeneral ? 'general' : subtipoImagen
+  }`
+
   const datos = [
     ['Fecha', evento.fecha ? formatearFechaLarga(evento.fecha) : 'Sin fecha'],
     ['Hora', evento.hora || null],
@@ -164,6 +187,55 @@ function DetalleEvento({ evento, fuenteIngesta, fusiones = [], inertes = [], onD
             ))}
           </div>
         )}
+        <div className="space-y-2 border-t border-filete pt-3">
+          <p className="font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-mudo">
+            Imagen ilustrativa · {etiquetaSubtipo}
+          </p>
+          <p className="font-serif-spectral text-sm text-tinta">
+            {conCartelPropio
+              ? 'Este evento trae cartel propio; las genéricas de este subtipo son su reserva si el cartel dejara de cargar.'
+              : 'Sin cartel propio: se pinta con las genéricas activas de este subtipo (o el degradado si no hay ninguna).'}{' '}
+            Una imagen subida aquí vale para todos los eventos del mismo subtipo.
+          </p>
+          {subidaAbierta ? (
+            <div className="border border-filete bg-papel p-3">
+              <FormularioImagenGenerica
+                categoria={evento.categoria}
+                disciplina={disciplinaSubida}
+                compacto
+                onSubida={async () => {
+                  await recargarGenericas()
+                  setSubidaAbierta(false)
+                  setSubidaOk(true)
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setSubidaAbierta(false)}
+                className="mt-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo hover:text-tinta"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSubidaAbierta(true)
+                  setSubidaOk(false)
+                }}
+                className="inline-flex items-center gap-1 border border-filete px-2 py-1 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota"
+              >
+                <MIcon name="add_photo_alternate" className="text-[13px]" />
+                Subir imagen para {etiquetaSubtipo}
+              </button>
+              {subidaOk && (
+                <span className="font-serif-spectral text-sm text-verde">Imagen guardada y aplicada.</span>
+              )}
+            </div>
+          )}
+        </div>
         <a
           href={`/eventos/${encodeURIComponent(evento.id)}`}
           target="_blank"
@@ -670,6 +742,8 @@ export default function TablesEventos() {
                 <DetalleEvento
                   evento={evento}
                   fuenteIngesta={fuenteIngesta}
+                  subtipoImagen={subtipoImagen}
+                  conCartelPropio={conCartelPropio}
                   fusiones={fusionesDelEvento}
                   inertes={inertesDelEvento}
                   onDeshacer={deshacerFusion}

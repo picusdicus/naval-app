@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import MIcon from '../../MIcon.jsx'
-import { optimizarImagen } from '../../../lib/imageOptimizer.js'
 import { CATEGORIAS_EVENTO } from '../../../lib/eventos.js'
+import { RecargarGenericasContext } from '../../../lib/GenericasEventoContext.jsx'
+import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
 
 const CATEGORIAS = Object.keys(CATEGORIAS_EVENTO).sort()
 // Debe coincidir con lo que devuelve disciplinaDeEvento() (src/lib/eventos.js).
@@ -13,30 +14,11 @@ const DISCIPLINAS_POR_CATEGORIA = {
 }
 
 export default function PanelImagenesGenericas() {
+  const recargarGenericas = useContext(RecargarGenericasContext)
   const [imagenes, setImagenes] = useState([])
   const [cargando, setCargando] = useState(false)
   const [categoriaActiva, setCategoriaActiva] = useState(CATEGORIAS[0] || 'cultura')
   const [disciplinaActiva, setDisciplinaActiva] = useState(null)
-  const [ocupado, setOcupado] = useState(false)
-
-  // Formulario de subida: el fichero se queda en memoria y se optimiza y sube
-  // en un solo paso al guardar, junto con los metadatos.
-  const entrada = useRef(null)
-  const [fichero, setFichero] = useState(null)
-  const [previa, setPrevia] = useState('')
-  useEffect(() => {
-    if (!fichero) {
-      setPrevia('')
-      return
-    }
-    const url = URL.createObjectURL(fichero)
-    setPrevia(url)
-    return () => URL.revokeObjectURL(url)
-  }, [fichero])
-  const [autor, setAutor] = useState('')
-  const [fuente, setFuente] = useState('')
-  const [licencia, setLicencia] = useState('')
-  const [descripcion, setDescripcion] = useState('')
 
   const cargarImagenes = async () => {
     setCargando(true)
@@ -62,48 +44,13 @@ export default function PanelImagenesGenericas() {
       (!disciplinaActiva || img.disciplina === disciplinaActiva)
   )
 
-  const handleSubir = async () => {
-    if (!fichero) {
-      alert('Selecciona una imagen')
-      return
-    }
-
-    setOcupado(true)
-    try {
-      const optimizada = await optimizarImagen(fichero, 1200)
-
-      const res = await fetch('/api/admin/imagen-evento-generica', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: fichero.name,
-          tipo: optimizada.tipo,
-          datos: optimizada.datos,
-          categoria: categoriaActiva,
-          disciplina: disciplinaActiva || null,
-          autor: autor.trim() || null,
-          fuente: fuente.trim() || null,
-          licencia: licencia.trim() || null,
-          descripcion: descripcion.trim() || null,
-        }),
-      })
-
-      const cuerpo = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(cuerpo.error || 'Error al subir')
-
-      // Estado local con la fila devuelta: un GET inmediato tras el INSERT
-      // puede no verla todavía (lectura por otra conexión HTTP de Neon).
-      setImagenes((prev) => [...prev, cuerpo])
-      setFichero(null)
-      setAutor('')
-      setFuente('')
-      setLicencia('')
-      setDescripcion('')
-    } catch (error) {
-      alert(`Error: ${error.message}`)
-    } finally {
-      setOcupado(false)
-    }
+  // Estado local con la fila devuelta por la API en POST/PATCH/DELETE: un GET
+  // inmediato tras escribir puede no ver la fila todavía (lectura por otra
+  // conexión HTTP de Neon). El Context público se recarga aparte para que las
+  // miniaturas de la agenda/panel de eventos reflejen el cambio.
+  const handleSubida = (fila) => {
+    setImagenes((prev) => [...prev, fila])
+    recargarGenericas()
   }
 
   const handleCambiarActivo = async (id, nuevoActivo) => {
@@ -117,6 +64,7 @@ export default function PanelImagenesGenericas() {
       if (!res.ok) throw new Error('Error al actualizar')
       const fila = await res.json()
       setImagenes((prev) => prev.map((img) => (img.id === id ? { ...img, ...fila } : img)))
+      recargarGenericas()
     } catch (error) {
       alert(`Error: ${error.message}`)
     }
@@ -132,6 +80,7 @@ export default function PanelImagenesGenericas() {
 
       if (!res.ok) throw new Error('Error al borrar')
       setImagenes((prev) => prev.filter((img) => img.id !== id))
+      recargarGenericas()
     } catch (error) {
       alert(`Error: ${error.message}`)
     }
@@ -145,8 +94,10 @@ export default function PanelImagenesGenericas() {
         <p>Gestiona imágenes genéricas por categoría y disciplina.</p>
         <p className="mt-2">
           Un evento sin cartel propio muestra una de estas (elegida de forma estable por evento):
-          las de su disciplina si el título la deja reconocer, o las generales de su categoría si
-          no. Una categoría sin imágenes activas se pinta con el degradado de siempre.
+          las de su disciplina si el título o la descripción la dejan reconocer, o las generales
+          de su categoría si no. Una categoría sin imágenes activas se pinta con el degradado de
+          siempre. En la pestaña Eventos, cada fila indica qué subtipo le toca y permite subir
+          una imagen para él sin venir aquí.
         </p>
       </div>
 
@@ -236,7 +187,11 @@ export default function PanelImagenesGenericas() {
                       {img.descripcion && (
                         <p className="line-clamp-2 text-tinta">{img.descripcion}</p>
                       )}
-                      {img.fuente && <p className="text-pardo">{img.fuente}</p>}
+                      {(img.disciplina || img.fuente) && (
+                        <p className="text-pardo">
+                          {[img.disciplina, img.fuente].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2">
                         <label className="flex items-center gap-1 cursor-pointer">
                           <input
@@ -262,114 +217,18 @@ export default function PanelImagenesGenericas() {
             )}
           </div>
 
-          {/* Formulario de subida */}
+          {/* Formulario de subida: sube a la categoría/disciplina seleccionadas */}
           <div className="border border-tinta bg-papel p-4">
             <h3 className="mb-3 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-tinta">
-              Subir nueva imagen
+              Subir nueva imagen · {CATEGORIAS_EVENTO[categoriaActiva].nombre} ·{' '}
+              {disciplinaActiva || 'general'}
             </h3>
-            <div className="space-y-3">
-              <div>
-                <span className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
-                  Imagen
-                </span>
-                {fichero ? (
-                  <div className="relative overflow-hidden border border-tinta">
-                    <img src={previa} alt="" className="max-h-56 w-full object-contain" />
-                    <button
-                      type="button"
-                      onClick={() => setFichero(null)}
-                      className="absolute right-2 top-2 inline-flex items-center gap-1 bg-papel/95 px-3 py-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-terracota"
-                    >
-                      <MIcon name="delete" className="text-[15px]" />
-                      Quitar
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => entrada.current?.click()}
-                    className="flex w-full flex-col items-center gap-2 border border-dashed border-filete-punteado px-4 py-8 font-serif-spectral text-mudo transition-colors hover:border-tinta hover:text-tinta"
-                  >
-                    <MIcon name="add_photo_alternate" className="text-[28px]" />
-                    <span className="text-sm">Elegir una imagen</span>
-                    <span className="font-mono-ibm text-[9px] uppercase tracking-etiqueta">
-                      JPG · PNG · WebP — se optimiza al guardar
-                    </span>
-                  </button>
-                )}
-                <input
-                  ref={entrada}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null
-                    e.target.value = ''
-                    if (f) setFichero(f)
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo mb-1">
-                  Autor
-                </label>
-                <input
-                  type="text"
-                  value={autor}
-                  onChange={(e) => setAutor(e.target.value)}
-                  placeholder="Nombre del autor"
-                  className="w-full border border-tinta px-2 py-1 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo mb-1">
-                  Fuente (Pexels, Unsplash, etc.)
-                </label>
-                <input
-                  type="text"
-                  value={fuente}
-                  onChange={(e) => setFuente(e.target.value)}
-                  placeholder="Fuente de la imagen"
-                  className="w-full border border-tinta px-2 py-1 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo mb-1">
-                  Licencia
-                </label>
-                <input
-                  type="text"
-                  value={licencia}
-                  onChange={(e) => setLicencia(e.target.value)}
-                  placeholder="CC BY, CC0, etc."
-                  className="w-full border border-tinta px-2 py-1 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo mb-1">
-                  Descripción
-                </label>
-                <textarea
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                  placeholder="Descripción breve (ej: pista y raqueta)"
-                  rows="2"
-                  className="w-full border border-tinta px-2 py-1 text-sm resize-none"
-                />
-              </div>
-
-              <button
-                onClick={handleSubir}
-                disabled={ocupado || !fichero}
-                className="w-full bg-terracota px-3 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel transition-colors hover:bg-tinta disabled:opacity-50"
-              >
-                {ocupado ? 'Subiendo...' : 'Guardar imagen'}
-              </button>
-            </div>
+            <FormularioImagenGenerica
+              key={`${categoriaActiva}/${disciplinaActiva || ''}`}
+              categoria={categoriaActiva}
+              disciplina={disciplinaActiva}
+              onSubida={handleSubida}
+            />
           </div>
         </div>
       </div>

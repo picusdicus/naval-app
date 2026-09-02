@@ -230,21 +230,40 @@ export function disciplinaDeEvento(evento) {
 
   if (evento.categoria !== 'deporte') return null
 
-  // Frases (antes que palabras simples, para contención exacta)
+  // Título primero; si no dice nada, la descripción (un "Memorial Ángel
+  // Carrizo" no nombra el deporte, pero su descripción dice "Equipos: CDA
+  // Navalcarnero – Real Madrid CF"). Solo dentro de deporte: en otras
+  // categorías la descripción daría falsos positivos.
+  return (
+    disciplinaDeportivaEn(t) ??
+    disciplinaDeportivaEn(normalizarTexto(evento.descripcion || '')) ??
+    null
+  )
+}
+
+function normalizarTexto(texto) {
+  return String(texto)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+}
+
+// Disciplina deportiva en un texto ya normalizado (minúsculas, sin acentos),
+// o null. Frases antes que palabras simples (contención).
+function disciplinaDeportivaEn(t) {
+  if (!t) return null
   if (/tenis\s+de\s+mesa/.test(t)) return 'tenis-de-mesa'
   if (/tiro\s+al\s+plato/.test(t)) return 'tiro-al-plato'
 
-  // Palabras simples
   if (/\btenis\b/.test(t)) return 'tenis'
-  if (/(futbol|futbol)/.test(t)) return 'futbol'
+  // "CF"/"FC" (Real Madrid CF), "futsal"/"futsi" (fútbol sala) y "fútbol 7".
+  if (/(futbol|futsal|futsi|\bcf\b|\bfc\b)/.test(t)) return 'futbol'
   if (/padel/.test(t)) return 'padel'
-  if (/(baloncesto|basketball)/.test(t)) return 'baloncesto'
+  if (/(baloncesto|basketball|basket)/.test(t)) return 'baloncesto'
   if (/petanca/.test(t)) return 'petanca'
   if (/ajedrez/.test(t)) return 'ajedrez'
   // "aquatlón" con q es la grafía de la galería de Deportes ("Aquatlón 2 sept").
   if (/(natacion|piscina|acuatlon|aquatlon|aquathlon|waterpolo|aquazumba)/.test(t)) return 'natacion'
-  if (/(atletismo|carrera\s+popular|milla\s+atletica|milla\s+atletica|velocidad)/.test(t))
-    return 'atletismo'
-
+  if (/(atletismo|carrera\s+popular|milla\s+atletica|\bcross\b|velocidad)/.test(t)) return 'atletismo'
   return null
 }
