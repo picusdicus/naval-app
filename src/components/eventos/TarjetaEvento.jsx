@@ -21,7 +21,8 @@ import { IconoCategoriaTabler } from './iconosEvento'
  *    trama + plantilla editorial completa con remate.
  * Props:
  *   - evento
- *   - destacado: ocupa 2 columnas (panorámico) y lleva sello "Destacado"
+ *   - destacado: en md+ ocupa 2 columnas (panorámico 16/9); en móvil mantiene
+ *     el 3/4 de una tarjeta normal. Lleva sello "Destacado"
  *   - onClick
  */
 export default function TarjetaEvento({ evento, destacado = false, onClick = () => {} }) {
@@ -42,14 +43,19 @@ export default function TarjetaEvento({ evento, destacado = false, onClick = () 
   const esGenerica = Boolean(posterUrl) && !real
   const conPlantillaEditorial = !posterUrl || esGenerica
 
+  // El panorámico de una destacada va SIEMPRE junto a las dos columnas, y las
+  // dos columnas solo existen en md+: en el muro de móvil la rejilla es de dos
+  // y una destacada ocupa una sola, así que con 16/9 quedaba una tira de
+  // 187×105 — menos de la mitad de alto que una normal (187×249), justo lo
+  // contrario de destacar. Por eso el aspecto va en clases con breakpoint y no
+  // en `style`, que no admite media queries.
   return (
     <button
       type="button"
       onClick={onClick}
       className={`group relative block overflow-hidden rounded-lg text-left shadow-cartel transition-all hover:shadow-lg ${
-        destacado ? 'md:col-span-2' : ''
+        destacado ? 'aspect-[3/4] md:col-span-2 md:aspect-[16/9]' : 'aspect-[3/4]'
       }`}
-      style={{ aspectRatio: destacado ? '16 / 9' : '3 / 4' }}
     >
       {/* Fondo: cartel real, ilustrativa de galería o degradado de categoría */}
       {posterUrl ? (
