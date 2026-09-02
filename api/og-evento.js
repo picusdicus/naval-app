@@ -18,7 +18,12 @@ export const config = { runtime: 'edge' }
 // api/chat.js, que es Node y además está desactivado desde julio de 2026.)
 import eventosCurados from '../src/data/eventos.json'
 import eventosExternos from '../src/data/eventos-externos.json'
-import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel } from '../src/lib/dedupEventos.js'
+import {
+  aplicarFusionesManuales,
+  combinarEventos,
+  enriquecerPorCartel,
+  propagarCartelDeSerie,
+} from '../src/lib/dedupEventos.js'
 import { formatearFechaLarga } from '../src/lib/eventos.js'
 import { genericasParaEvento, imagenEvento } from '../src/lib/imagenesEvento.js'
 
@@ -172,12 +177,14 @@ async function eventoPorId(id, origen, headers) {
   // Las fusiones manuales van al final, igual que en useEventosPublicos: si
   // este merge y el de la agenda divergieran, la vista previa enseñaría algo
   // distinto de lo que ve quien pincha el enlace.
-  const combinados = aplicarFusionesManuales(
-    combinarEventos(
-      enriquecerPorCartel([...eventosCurados, ...eventosExternos]),
-      [...deLaBase, ...deActividades],
+  const combinados = propagarCartelDeSerie(
+    aplicarFusionesManuales(
+      combinarEventos(
+        enriquecerPorCartel([...eventosCurados, ...eventosExternos]),
+        [...deLaBase, ...deActividades],
+      ),
+      fusiones,
     ),
-    fusiones,
   )
 
   const evento = combinados.find((e) => e.id === id || (e.idsSecundarios || []).includes(id))

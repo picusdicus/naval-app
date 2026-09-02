@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import eventosCurados from '../data/eventos.json'
 import eventosExternos from '../data/eventos-externos.json'
-import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel } from './dedupEventos.js'
+import {
+  aplicarFusionesManuales,
+  combinarEventos,
+  enriquecerPorCartel,
+  propagarCartelDeSerie,
+} from './dedupEventos.js'
 
 // La agenda pública combina tres orígenes: los JSON estáticos (curados y
 // sincronizados desde fuentes externas), los eventos que las organizaciones
@@ -113,9 +118,16 @@ export function useEventosPublicos() {
   // siga funcionando.
   const eventos = useMemo(() => {
     const estaticosEnriquecidos = enriquecerPorCartel(ESTATICOS)
-    const combinados = aplicarFusionesManuales(
-      combinarEventos(estaticosEnriquecidos, [...deLaBase, ...eventosDeActividades]),
-      fusiones,
+    // propagarCartelDeSerie va al final: un acto de varios días recibe el
+    // cartel por una sola de sus fechas (la Gala de la Danza del 2 y 3 de
+    // septiembre se anuncia con un único cartel fechado el día 2), y los demás
+    // días se quedaban sin él. Después de las fusiones para aprovechar también
+    // las imágenes que llegan por ahí.
+    const combinados = propagarCartelDeSerie(
+      aplicarFusionesManuales(
+        combinarEventos(estaticosEnriquecidos, [...deLaBase, ...eventosDeActividades]),
+        fusiones,
+      ),
     )
     if (!ocultos.size) return combinados
     return combinados.filter(

@@ -1,7 +1,13 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import eventosCurados from '../../../data/eventos.json'
 import eventosExternos from '../../../data/eventos-externos.json'
-import { aplicarFusionesManuales, combinarEventos, enriquecerPorCartel, fuenteDeIngesta } from '../../../lib/dedupEventos.js'
+import {
+  aplicarFusionesManuales,
+  combinarEventos,
+  enriquecerPorCartel,
+  fuenteDeIngesta,
+  propagarCartelDeSerie,
+} from '../../../lib/dedupEventos.js'
 import { CATEGORIAS_EVENTO, destinoImagenEvento, formatearFechaCorta, formatearFechaLarga } from '../../../lib/eventos.js'
 import { hoyISO, sumarDias, diasHasta } from '../../../lib/fechas.js'
 import { cartelDe } from '../../../lib/gaceta.js'
@@ -434,7 +440,9 @@ export default function TablesEventos() {
   // encuentran alguna de sus dos partes, para avisar en el detalle desplegable.
   const { eventos, inertesPorRef } = useMemo(() => {
     const estado = { inertes: [] }
-    const lista = aplicarFusionesManuales(combinarEventos(ESTATICOS, deLaBase), fusiones, estado)
+    const lista = propagarCartelDeSerie(
+      aplicarFusionesManuales(combinarEventos(ESTATICOS, deLaBase), fusiones, estado),
+    )
     const mapa = new Map()
     for (const f of estado.inertes) {
       for (const ref of [f.principal, f.secundaria]) {
