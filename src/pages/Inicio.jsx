@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useContext } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { proximosEventos, formatearFechaCorta } from '../lib/eventos.js'
 import { CATEGORIAS_EVENTO } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { imagenEvento } from '../lib/imagenesEvento.js'
+import { GenericasEventoContext } from '../lib/GenericasEventoContext.jsx'
 import { cartelDe } from '../lib/gaceta.js'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { useDestacados } from '../lib/useDestacados.js'
@@ -31,6 +32,7 @@ function fechaMasthead() {
 
 export default function Inicio() {
   const weather = useWeather()
+  const genericas = useContext(GenericasEventoContext)
 
   // Alertas urgentes vigentes del Ayuntamiento (Instagram → Neon), filtradas
   // client-side en el hook: sin ninguna activa, la sección móvil se oculta y
@@ -55,9 +57,14 @@ export default function Inicio() {
     const faltantes = eventosProximos
       .filter((e) => !ids.has(e.id))
       .slice(0, minimos - destacadosOriginales.length)
-      .map((e) => eventoATarjeta(e))
+      .map((e) => {
+        const genericasFiltradas = genericas.filter(
+          (g) => g.categoria === e.categoria && (!e.disciplina || g.disciplina === e.disciplina)
+        )
+        return eventoATarjeta(e, genericasFiltradas)
+      })
     return [...destacadosOriginales, ...faltantes]
-  }, [destacadosOriginales, eventos])
+  }, [destacadosOriginales, eventos, genericas])
 
   const semana = proximos.slice(0, 4)
   // Tres comercios bien poblados y distintos para la banda de escritorio (mockup
@@ -117,7 +124,10 @@ export default function Inicio() {
             <span className="gz-label text-mudo">También esta semana</span>
             <div className="mt-3 grid grid-cols-2 gap-4">
               {semana.map((e) => {
-                const img = imagenEvento(e)
+                const genericasFiltradas = genericas.filter(
+                  (g) => g.categoria === e.categoria && (!e.disciplina || g.disciplina === e.disciplina)
+                )
+                const img = imagenEvento(e, { genericas: genericasFiltradas })
                 const cartel = cartelDe(e.categoria)
                 return (
                   <Link key={e.id} to={`/eventos/${e.id}`} className="border-t-2 border-tinta pt-2">
@@ -204,7 +214,10 @@ export default function Inicio() {
             </div>
             <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
               {semana.map((e) => {
-                const img = imagenEvento(e)
+                const genericasFiltradas = genericas.filter(
+                  (g) => g.categoria === e.categoria && (!e.disciplina || g.disciplina === e.disciplina)
+                )
+                const img = imagenEvento(e, { genericas: genericasFiltradas })
                 const cartel = cartelDe(e.categoria)
                 return (
                   <Link key={e.id} to={`/eventos/${e.id}`} className="group">

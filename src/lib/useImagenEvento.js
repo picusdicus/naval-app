@@ -1,8 +1,9 @@
-// Hook React para resolver la imagen de un evento de forma asíncrona.
-// Fusiona el pool hardcodeado con las genericas de Neon (si MOSTRAR_IMAGENES_GENERICAS=true).
+// Hook React para resolver la imagen de un evento.
+// Lee las imágenes genéricas del Context (ya cacheadas en App.jsx).
 
-import { useState, useEffect } from 'react'
+import { useContext, useMemo } from 'react'
 import { imagenEvento } from './imagenesEvento.js'
+import { GenericasEventoContext } from './GenericasEventoContext.jsx'
 
 const MOSTRAR_IMAGENES_GENERICAS = false
 
@@ -10,53 +11,27 @@ const MOSTRAR_IMAGENES_GENERICAS = false
  * Hook que resuelve la imagen de un evento.
  * @param {object} evento — evento del que obtener imagen
  * @param {object} options — {paraHeroe: boolean}
- * @returns {object|null} {src, pos?, credito, real, cargando?}
+ * @returns {object|null} {src, pos?, credito, real}
  *
- * Mientras carga, devuelve null (el componente cae al degradado). Al resolver,
- * devuelve la imagen. Si MOSTRAR_IMAGENES_GENERICAS=false, devuelve directamente
- * sin esperar (compatibilidad backward).
+ * Lee las genéricas del Context (una sola petición compartida en App).
  */
 export function useImagenEvento(evento, options = {}) {
-  const [imagen, setImagen] = useState(null)
-  const [cargando, setCargando] = useState(false)
+  const genericas = useContext(GenericasEventoContext)
 
-  useEffect(() => {
-    if (!evento) {
-      setImagen(null)
-      return
-    }
+  return useMemo(() => {
+    if (!evento) return null
 
     if (!MOSTRAR_IMAGENES_GENERICAS) {
-      // Sin genericas activas, solo el pool hardcodeado (síncrono)
-      setImagen(imagenEvento(evento, options))
-      return
+      return imagenEvento(evento, options)
     }
 
-    setCargando(true)
-    ;(async () => {
-      try {
-        const res = await fetch('/api/imagenes-evento-genericas')
-        if (!res.ok) throw new Error('No se pudieron cargar imágenes genéricas')
+    // Filtrar genéricas por categoría y disciplina del evento
+    const genericasFiltradas = genericas.filter(
+      (img) =>
+        img.categoria === evento.categoria &&
+        (!evento.disciplina || img.disciplina === evento.disciplina)
+    )
 
-        const { imagenes } = await res.json()
-        // Filtrar por categoría (y disciplina si aplica)
-        const genericas = imagenes.filter(
-          (img) =>
-            img.categoria === evento.categoria &&
-            (!evento.disciplina || img.disciplina === evento.disciplina)
-        )
-
-        const resultado = imagenEvento(evento, { ...options, genericas })
-        setImagen(resultado)
-      } catch (error) {
-        console.warn('Error cargando imágenes genéricas:', error)
-        // Fallback al pool hardcodeado nada más
-        setImagen(imagenEvento(evento, options))
-      } finally {
-        setCargando(false)
-      }
-    })()
-  }, [evento, evento?.id, evento?.categoria, evento?.disciplina, options, options?.paraHeroe])
-
-  return imagen
+    return imagenEvento(evento, { ...options, genericas: genericasFiltradas })
+  }, [evento, genericas, options, options?.paraHeroe])
 }

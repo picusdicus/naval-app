@@ -52,16 +52,16 @@ export function campanaFinalizada(destacado) {
   )
 }
 
-export function eventoATarjeta(evento, imagenOverride) {
-  const propia = imagenEvento(evento)
+export function eventoATarjeta(evento, genericas = []) {
+  const propia = imagenEvento(evento, { genericas })
   return {
     id: `evento-${evento.id}`,
     tipo: 'evento',
     to: `/eventos/${evento.id}`,
     titulo: evento.titulo,
     badge: CATEGORIAS_EVENTO[evento.categoria]?.nombre || 'Evento',
-    imagen: imagenOverride || propia?.src || '',
-    imagenPos: imagenOverride ? undefined : propia?.pos,
+    imagen: propia?.src || '',
+    imagenPos: propia?.pos,
     colorCategoria: CATEGORIAS_EVENTO[evento.categoria]?.color,
     simbolo: SIMBOLO_EVENTO[evento.categoria] || 'event',
     lineas: [
