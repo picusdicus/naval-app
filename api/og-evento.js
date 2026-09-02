@@ -90,7 +90,7 @@ function descripcionDe(evento) {
 // ⚠️ Al elegir las fotos genéricas, evitar caras protagonistas reconocibles:
 // la burbuja no lleva el pie "imagen ilustrativa" que sí muestra la ficha, y
 // un retrato podría leerse como el artista que actúa.
-function imagenDe(evento, origen, genericas) {
+function imagenDe(evento, origen, genericas, asignaciones) {
   const bruta = evento.imagen || ''
   if (bruta) {
     const url = /^https?:\/\//i.test(bruta)
@@ -100,7 +100,7 @@ function imagenDe(evento, origen, genericas) {
   }
 
   const ilustrativa = imagenEvento(evento, {
-    genericas: genericasParaEvento(evento, genericas),
+    genericas: genericasParaEvento(evento, genericas, asignaciones),
   })
   if (ilustrativa?.src) return { url: ilustrativa.src, esLogo: false }
 
@@ -127,6 +127,20 @@ async function json(url, clave, porDefecto, headers) {
     return (await r.json())[clave] ?? porDefecto
   } catch {
     return porDefecto
+  }
+}
+
+// Como json(), pero devolviendo el cuerpo entero: el endpoint de ilustrativas
+// trae imágenes y asignaciones manuales en la misma respuesta.
+async function jsonCompleto(url, headers) {
+  const vacio = { imagenes: [], asignaciones: {} }
+  try {
+    const r = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!r.ok) return vacio
+    const cuerpo = await r.json()
+    return { imagenes: cuerpo.imagenes ?? [], asignaciones: cuerpo.asignaciones ?? {} }
+  } catch {
+    return vacio
   }
 }
 
@@ -211,9 +225,9 @@ export default async function handler(req) {
 
     // Las genéricas van en paralelo al resto del pipeline: no añaden latencia
     // y, si su endpoint falla, la lista vacía degrada al logo de siempre.
-    const [evento, genericas] = await Promise.all([
+    const [evento, ilustrativas] = await Promise.all([
       eventoPorId(id, origen, internas),
-      json(`${origen}/api/imagenes-evento-genericas`, 'imagenes', [], internas),
+      jsonCompleto(`${origen}/api/imagenes-evento-genericas`, internas),
     ])
     // Evento inexistente, no publicado u oculto: el SPA sin tocar. Nunca un
     // 404 — el enlace puede estar pegado en un chat y debe seguir abriendo.
@@ -222,7 +236,7 @@ export default async function handler(req) {
     const enlace = `${origen}/eventos/${evento.id}`
     const titulo = evento.titulo || 'En Navalcarnero'
     const descripcion = descripcionDe(evento)
-    const imagen = imagenDe(evento, origen, genericas)
+    const imagen = imagenDe(evento, origen, ilustrativas.imagenes, ilustrativas.asignaciones)
 
     const meta = [
       `<title>${escapar(titulo)} · En Navalcarnero</title>`,

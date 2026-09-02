@@ -32,16 +32,31 @@ function hashDe(texto) {
 }
 
 /**
- * Genéricas que le corresponden a un evento: las de su categoría de imagen y
- * su subtipo (misma categoría y subtipo exactos), o las que no tienen subtipo
- * si el evento no lo tiene. Nunca las de OTRO subtipo: un torneo de tenis no
- * debe salir con una carrera popular, ni una novena con fuegos artificiales.
+ * Genéricas que le corresponden a un evento.
+ *
+ * 1. Si el superadmin le asignó una imagen a mano desde el panel, ESA y solo
+ *    esa (el pool queda reducido a una, así que sale siempre). La asignación
+ *    existe justo para los casos que la inferencia no acierta.
+ * 2. Si no, las de su categoría de imagen y su subtipo (ambos exactos), o las
+ *    que no tienen subtipo si el evento tampoco lo tiene. Nunca las de OTRO
+ *    subtipo: un torneo de tenis no debe salir con una carrera popular, ni una
+ *    novena con fuegos artificiales.
+ *
+ * Fail-soft: una asignación cuya imagen ya no está en la lista (borrada o
+ * desactivada) se ignora y el evento vuelve al criterio automático.
  *
  * Único sitio donde se decide qué imágenes ve un evento: lo usan el hook
- * useImagenEvento y los carruseles de Inicio y Eventos.
+ * useImagenEvento, los carruseles de Inicio y Eventos y api/og-evento.js.
  */
-export function genericasParaEvento(evento, genericas = []) {
+export function genericasParaEvento(evento, genericas = [], asignaciones = {}) {
   if (!evento || !genericas || genericas.length === 0) return []
+
+  const idAsignado = asignaciones?.[evento.id]
+  if (idAsignado) {
+    const asignada = genericas.find((g) => g.id === idAsignado)
+    if (asignada) return [asignada]
+  }
+
   const { categoria, subtipo } = destinoImagenEvento(evento)
   return genericas.filter((g) => {
     if (g.categoria !== categoria) return false

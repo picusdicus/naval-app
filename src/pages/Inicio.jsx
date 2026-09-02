@@ -107,7 +107,7 @@ function TarjetaSemanaEscritorio({ e }) {
 
 export default function Inicio() {
   const weather = useWeather()
-  const genericas = useContext(GenericasEventoContext)
+  const { genericas, asignaciones } = useContext(GenericasEventoContext)
 
   // Alertas urgentes vigentes del Ayuntamiento (Instagram → Neon), filtradas
   // client-side en el hook: sin ninguna activa, la sección móvil se oculta y
@@ -132,9 +132,9 @@ export default function Inicio() {
     const faltantes = eventosProximos
       .filter((e) => !ids.has(e.id))
       .slice(0, minimos - destacadosOriginales.length)
-      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas) }))
+      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas, asignaciones) }))
     return [...destacadosOriginales, ...faltantes]
-  }, [destacadosOriginales, eventos, genericas])
+  }, [destacadosOriginales, eventos, genericas, asignaciones])
 
   const semana = proximos.slice(0, 4)
   // Tres comercios bien poblados y distintos para la banda de escritorio (mockup

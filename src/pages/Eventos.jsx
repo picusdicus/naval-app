@@ -20,7 +20,7 @@ import { hoyISO } from '../lib/fechas.js'
 export default function Eventos() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const genericas = useContext(GenericasEventoContext)
+  const { genericas, asignaciones } = useContext(GenericasEventoContext)
 
   // Estado desde URL params
   const categoriasParam = searchParams.get('categorias')
@@ -66,9 +66,9 @@ export default function Eventos() {
     const relleno = futuros
       .filter((e) => !ids.has(e.id))
       .slice(0, MIN_CARRUSEL - destacadosEvento.length)
-      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas) }))
+      .map((e) => eventoATarjeta(e, { genericas: genericasParaEvento(e, genericas, asignaciones) }))
     return [...destacadosEvento, ...relleno]
-  }, [destacadosEvento, futuros, genericas])
+  }, [destacadosEvento, futuros, genericas, asignaciones])
 
   // Ids de eventos realmente destacados (para la tarjeta panorámica del muro).
   const idsDestacados = useMemo(

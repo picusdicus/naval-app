@@ -34,14 +34,14 @@ import { GenericasEventoContext } from './GenericasEventoContext.jsx'
  * la ficha de detalle, que excluye las variantes de resolución justa).
  */
 export function useImagenEvento(evento, opciones = {}) {
-  const genericas = useContext(GenericasEventoContext)
+  const { genericas, asignaciones } = useContext(GenericasEventoContext)
 
   // Tolera `evento` nulo para que quien tenga returns tempranos (EventoDetalle
   // mientras carga) pueda llamar al hook siempre, como exigen las reglas de
   // los hooks, sin romperse al leer `evento.imagen`.
   const genericasFiltradas = useMemo(
-    () => genericasParaEvento(evento, genericas),
-    [evento, genericas]
+    () => genericasParaEvento(evento, genericas, asignaciones),
+    [evento, genericas, asignaciones]
   )
 
   const propia = useMemo(

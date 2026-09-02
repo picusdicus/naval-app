@@ -38,4 +38,5 @@ export const TABLAS = [
   'ingesta_log',
   'fusiones_eventos',
   'imagenes_evento_genericas',
+  'imagenes_evento_asignaciones',
 ]

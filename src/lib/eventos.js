@@ -320,8 +320,9 @@ function disciplinaDeportivaEn(t) {
   if (/tiro\s+al\s+plato/.test(t)) return 'tiro-al-plato'
 
   if (/\btenis\b/.test(t)) return 'tenis'
-  // "CF"/"FC" (Real Madrid CF), "futsal"/"futsi" (fútbol sala) y "fútbol 7".
-  if (/(futbol|futsal|futsi|\bcf\b|\bfc\b)/.test(t)) return 'futbol'
+  // "CF"/"FC" (Real Madrid CF) y las siglas de fútbol sala que usan los clubes
+  // locales: "futsal", "futsi", "FS Navalcarnero".
+  if (/(futbol|futsal|futsi|\bcf\b|\bfc\b|\bfs\b)/.test(t)) return 'futbol'
   if (/padel/.test(t)) return 'padel'
   if (/(baloncesto|basketball|basket)/.test(t)) return 'baloncesto'
   if (/petanca/.test(t)) return 'petanca'
