@@ -11,6 +11,7 @@
     "fetch:eventos": "node scripts/fetch-eventos.mjs",
     "fetch:noticias": "node scripts/fetch-noticias.mjs",
     "fetch:transporte": "node scripts/fetch-transporte.mjs",
+    "fetch:municipios": "node scripts/fetch-municipios.mjs",
     "optimizar:imagenes": "node scripts/optimizar-imagenes.mjs",
     "optimizar:eventos": "node scripts/optimizar-imagenes.mjs --dir=eventos",
     "rellenar:imagenes": "node scripts/rellenar-imagenes.mjs",

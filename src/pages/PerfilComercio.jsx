@@ -10,6 +10,7 @@ import servicios from '../data/servicios-locales.json'
 import { datoComercio } from '../lib/comerciosHelper.js'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { hoyISO } from '../lib/fechas.js'
+import { textoPoblacion } from '../lib/eventos.js'
 import { normalizarHorarios, tieneHorarioPublicado, formatearFranjas, diasDisplay } from '../lib/horarios.js'
 
 
@@ -372,11 +373,10 @@ export default function PerfilComercio({ id: idProp }) {
                       const mesCorto = MESES_CORTOS[Number(mes) - 1]
                       // Portafolio completo (issue #33): un evento fuera de
                       // Navalcarnero lleva su población pegada al lugar —
-                      // "Teatro Amaya, Madrid" —; los de aquí, solo el lugar.
-                      const lugarConPoblacion =
-                        evento.ambito === 'otro' && evento.poblacion
-                          ? `${evento.lugar}, ${evento.poblacion}`
-                          : evento.lugar
+                      // "Teatro Amaya, Móstoles (Madrid)" —; los de aquí,
+                      // solo el lugar.
+                      const poblacion = textoPoblacion(evento)
+                      const lugarConPoblacion = poblacion ? `${evento.lugar}, ${poblacion}` : evento.lugar
                       const meta = [
                         evento.hora,
                         lugarConPoblacion,

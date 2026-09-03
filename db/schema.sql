@@ -484,3 +484,12 @@ ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS poblacion text;
 -- sitio fijo (salas, teatros): el lugar sigue viniendo de lugar_defecto y el
 -- servidor lo sigue imponiendo. El superadmin lo activa caso a caso.
 ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS lugar_variable boolean NOT NULL DEFAULT false;
+
+-- Provincia del municipio de un evento de ámbito 'otro' (issue #33, segunda
+-- iteración): `poblacion` pasa a ser el nombre oficial del municipio elegido
+-- en un desplegable (src/data/municipios.json, del INE) y `provincia` el de su
+-- provincia — juntos son unívocos (no hay dos municipios con el mismo nombre
+-- en una provincia). NULL en eventos locales y en los de fuera guardados
+-- antes de esta columna (la ficha muestra solo la población hasta que se
+-- reediten).
+ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS provincia text;

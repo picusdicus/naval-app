@@ -29,7 +29,7 @@ export default async function handler(req) {
              to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
              e.hora, e.hora_fin, e.imagen_url,
              e.entradas_texto, e.entradas_url, e.precio,
-             e.organizacion_id, e.origen_externo_id, e.ambito, e.poblacion,
+             e.organizacion_id, e.origen_externo_id, e.ambito, e.provincia, e.poblacion,
              o.nombre AS organizacion, o.slug AS organizacion_slug
       FROM eventos_usuario e
       JOIN organizaciones o ON o.id = e.organizacion_id
@@ -66,6 +66,7 @@ export default async function handler(req) {
       // la organización; la agenda pública filtra en cliente con
       // soloAmbitoNavalcarnero() (src/lib/eventos.js).
       ambito: e.ambito || 'navalcarnero',
+      provincia: e.provincia || null,
       poblacion: e.poblacion || null,
       entradas: e.entradas_url
         ? { texto: e.entradas_texto, url: e.entradas_url, precio: e.precio }

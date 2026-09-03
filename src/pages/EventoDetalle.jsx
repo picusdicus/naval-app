@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useEventosPublicos } from '../lib/useEventosPublicos.js'
 import { reportarVisitaEvento } from '../lib/useAnalytics.js'
-import { CATEGORIAS_EVENTO, formatearFechaLarga } from '../lib/eventos.js'
+import { CATEGORIAS_EVENTO, formatearFechaLarga, textoPoblacion } from '../lib/eventos.js'
 import { IconoEvento } from '../components/eventos/iconosEvento.jsx'
 import { useImagenEvento } from '../lib/useImagenEvento.js'
 import { cartelDe } from '../lib/gaceta.js'
@@ -25,7 +25,9 @@ const ORIGEN = {
  */
 function enlaceGoogleMaps(lugar, evento) {
   const donde =
-    evento?.ambito === 'otro' && evento.poblacion ? evento.poblacion : 'Navalcarnero, Madrid'
+    evento?.ambito === 'otro' && evento.poblacion
+      ? [evento.poblacion, evento.provincia].filter(Boolean).join(', ')
+      : 'Navalcarnero, Madrid'
   const consulta = encodeURIComponent(`${lugar}, ${donde}`)
   return `https://www.google.com/maps/search/?api=1&query=${consulta}`
 }
@@ -355,9 +357,9 @@ export default function EventoDetalle() {
           </span>
           <span className="relative z-10 p-4 font-serif-dm text-xl text-tinta">
             {evento.lugar}
-            {evento.ambito === 'otro' && evento.poblacion && (
+            {textoPoblacion(evento) && (
               <span className="block font-mono-ibm text-[11px] uppercase tracking-etiqueta text-pardo">
-                {evento.poblacion}
+                {textoPoblacion(evento)}
               </span>
             )}
           </span>

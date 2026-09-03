@@ -26,8 +26,10 @@ export const VALORES_INICIALES = {
   entradasUrl: '',
   precio: '',
   estado: 'borrador',
-  // Ámbito (issue #33): 'navalcarnero' por defecto; 'otro' exige `poblacion`.
+  // Ámbito (issue #33): 'navalcarnero' por defecto; 'otro' exige provincia y
+  // población (municipio), elegidas de src/data/municipios.json.
   ambito: 'navalcarnero',
+  provincia: '',
   poblacion: '',
 }
 
@@ -35,6 +37,7 @@ export const LIMITES = {
   titulo: 120,
   descripcion: 2000,
   lugar: 120,
+  provincia: 80,
   poblacion: 80,
   entradasTexto: 40,
   precio: 40,
@@ -77,11 +80,18 @@ export function validarEvento(valores) {
   if (!v('lugar')) errores.lugar = 'Indica dónde se celebra.'
   else if (v('lugar').length > LIMITES.lugar) errores.lugar = `Máximo ${LIMITES.lugar} caracteres.`
 
-  // Ámbito: la población solo hace falta (y solo se guarda) fuera de
-  // Navalcarnero.
+  // Ámbito: provincia y población (municipio) solo hacen falta (y solo se
+  // guardan) fuera de Navalcarnero. Aquí se comprueba presencia y longitud;
+  // que el municipio exista en la provincia lo comprueba municipioValido()
+  // (src/lib/municipios.js) en el servidor — ese módulo carga el catálogo
+  // entero y este debe seguir siendo ligero.
   if (!AMBITOS_EVENTO.includes(v('ambito'))) errores.ambito = 'Indica dónde es el evento.'
   else if (v('ambito') === 'otro') {
-    if (!v('poblacion')) errores.poblacion = 'Indica la población donde se celebra.'
+    if (!v('provincia')) errores.provincia = 'Elige la provincia.'
+    else if (v('provincia').length > LIMITES.provincia)
+      errores.provincia = `Máximo ${LIMITES.provincia} caracteres.`
+
+    if (!v('poblacion')) errores.poblacion = 'Elige el municipio donde se celebra.'
     else if (v('poblacion').length > LIMITES.poblacion)
       errores.poblacion = `Máximo ${LIMITES.poblacion} caracteres.`
   }
@@ -154,6 +164,7 @@ export function normalizarEvento(valores) {
     precio: hayEntradas ? v('precio') || null : null,
     estado: valores.estado,
     ambito: v('ambito') === 'otro' ? 'otro' : 'navalcarnero',
+    provincia: v('ambito') === 'otro' ? v('provincia') : null,
     poblacion: v('ambito') === 'otro' ? v('poblacion') : null,
   }
 }

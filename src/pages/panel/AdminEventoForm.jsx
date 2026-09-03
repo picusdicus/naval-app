@@ -41,6 +41,36 @@ export default function AdminEventoForm() {
   const [errorGeneral, setErrorGeneral] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [cargando, setCargando] = useState(true)
+  // Catálogo de provincias y municipios del INE (src/lib/municipios.js,
+  // ~200 KB): se carga con import() dinámico y solo para organizaciones con
+  // lugar variable, que son las únicas que pueden elegir "Otro lugar".
+  const [catalogo, setCatalogo] = useState(null)
+
+  useEffect(() => {
+    if (!organizacion?.lugarVariable) return
+    let vigente = true
+    import('../../lib/municipios.js')
+      .then((modulo) => {
+        if (vigente) setCatalogo(modulo)
+      })
+      .catch((err) => {
+        if (vigente) setErrorGeneral(err.message || 'No se pudo cargar la lista de municipios.')
+      })
+    return () => {
+      vigente = false
+    }
+  }, [organizacion])
+
+  // Evento de fuera guardado antes de existir `provincia`: si el nombre del
+  // municipio es único en toda España, se prerrellena la provincia para que
+  // el gestor no tenga que buscarla.
+  useEffect(() => {
+    if (!catalogo || valores.ambito !== 'otro' || valores.provincia || !valores.poblacion) return
+    const candidatas = catalogo.provinciasConMunicipio(valores.poblacion)
+    if (candidatas.length === 1) {
+      setValores((previos) => ({ ...previos, provincia: candidatas[0].nombre }))
+    }
+  }, [catalogo, valores.ambito, valores.provincia, valores.poblacion])
 
   // Siempre hace falta el perfil de la organización (fija categoría y lugar);
   // al editar, además, el evento que se está modificando.
@@ -161,11 +191,25 @@ export default function AdminEventoForm() {
       ...previos,
       ambito,
       lugar: ambito === 'otro' ? '' : (organizacion?.lugarDefecto ?? ''),
+      provincia: '',
       poblacion: '',
     }))
-    setErrores(({ ambito: _a, lugar: _l, poblacion: _p, ...resto }) => resto)
+    setErrores(({ ambito: _a, lugar: _l, provincia: _v, poblacion: _p, ...resto }) => resto)
     setErrorGeneral('')
   }
+
+  // Cambiar de provincia vacía el municipio: el desplegable de municipios
+  // depende de ella.
+  const cambiarProvincia = (evento) => {
+    const provincia = evento.target.value
+    setValores((previos) => ({ ...previos, provincia, poblacion: '' }))
+    setErrores(({ provincia: _v, poblacion: _p, ...resto }) => resto)
+    setErrorGeneral('')
+  }
+
+  const municipios = catalogo
+    ? catalogo.municipiosDe(catalogo.codigoDeProvincia(valores.provincia))
+    : []
 
   // "Otro sitio de Navalcarnero" vacía el lugar y revela el campo de texto.
   const elegirLugarFijo = (evento) => {
@@ -366,36 +410,66 @@ export default function AdminEventoForm() {
                 la organización, no en la agenda. */}
             {lugarVariable && valores.ambito === 'otro' && (
               <div className="grid gap-5 sm:grid-cols-2">
-                <CampoFormulario id="lugar" etiqueta="Lugar" error={errores.lugar}>
+                <div className="sm:col-span-2">
+                  <CampoFormulario id="lugar" etiqueta="Lugar" error={errores.lugar}>
+                    {(props) => (
+                      <input
+                        {...props}
+                        id="lugar"
+                        type="text"
+                        maxLength={LIMITES.lugar}
+                        value={valores.lugar}
+                        onChange={cambiar('lugar')}
+                        placeholder="Teatro, sala o plaza"
+                      />
+                    )}
+                  </CampoFormulario>
+                </div>
+
+                {/* Provincia → municipio, del catálogo del INE: nada de texto
+                    libre, y el servidor comprueba que el par exista. */}
+                <CampoFormulario id="provincia" etiqueta="Provincia" error={errores.provincia}>
                   {(props) => (
-                    <input
+                    <select
                       {...props}
-                      id="lugar"
-                      type="text"
-                      maxLength={LIMITES.lugar}
-                      value={valores.lugar}
-                      onChange={cambiar('lugar')}
-                      placeholder="Teatro, sala o plaza"
-                    />
+                      id="provincia"
+                      value={valores.provincia}
+                      onChange={cambiarProvincia}
+                      disabled={!catalogo}
+                    >
+                      <option value="">{catalogo ? '— Elige provincia —' : 'Cargando…'}</option>
+                      {(catalogo?.PROVINCIAS ?? []).map((p) => (
+                        <option key={p.codigo} value={p.nombre}>
+                          {p.nombre}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </CampoFormulario>
 
                 <CampoFormulario
                   id="poblacion"
-                  etiqueta="Población"
+                  etiqueta="Municipio"
                   error={errores.poblacion}
                   ayuda="No saldrá en la agenda de Navalcarnero, solo en la ficha de tu organización."
                 >
                   {(props) => (
-                    <input
+                    <select
                       {...props}
                       id="poblacion"
-                      type="text"
-                      maxLength={LIMITES.poblacion}
                       value={valores.poblacion}
                       onChange={cambiar('poblacion')}
-                      placeholder="Móstoles"
-                    />
+                      disabled={!valores.provincia || !catalogo}
+                    >
+                      <option value="">
+                        {valores.provincia ? '— Elige municipio —' : 'Primero la provincia'}
+                      </option>
+                      {municipios.map((m) => (
+                        <option key={m.codigo} value={m.nombre}>
+                          {m.nombre}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </CampoFormulario>
               </div>

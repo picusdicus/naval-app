@@ -110,6 +110,16 @@ export function mesDe(iso) {
 // los JSON no traen el campo: se tratan como locales.
 export const AMBITOS_EVENTO = ['navalcarnero', 'otro']
 
+// "Móstoles (Madrid)" para un evento de ámbito 'otro'; "Madrid" a secas si
+// municipio y provincia coinciden, y solo la población si el evento se guardó
+// antes de existir `provincia`. Cadena vacía para eventos locales. No necesita
+// el catálogo de municipios (src/lib/municipios.js, pesado): solo formatea.
+export function textoPoblacion(evento) {
+  if (evento?.ambito !== 'otro' || !evento.poblacion) return ''
+  const { poblacion, provincia } = evento
+  return provincia && provincia !== poblacion ? `${poblacion} (${provincia})` : poblacion
+}
+
 // Solo los eventos de Navalcarnero, para la agenda pública y los destacados.
 // PerfilComercio NO debe usarla: su portafolio muestra también los de fuera.
 export function soloAmbitoNavalcarnero(eventos) {

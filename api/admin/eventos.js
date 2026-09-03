@@ -14,6 +14,7 @@ import { requerirSesionEdge } from '../_auth.js'
 import { organizacionDeSesion } from '../_organizacion.js'
 import { json, leerJson, csrfInvalido, rechazoCsrf } from '../_http.js'
 import { validarEvento, normalizarEvento, fechasDelCiclo, ESTADOS_EVENTO } from '../../src/lib/eventoForm.js'
+import { municipioValido } from '../../src/lib/municipios.js'
 
 export const config = { runtime: 'edge' }
 
@@ -39,6 +40,7 @@ const aEvento = (e) => ({
   precio: e.precio,
   estado: e.estado,
   ambito: e.ambito,
+  provincia: e.provincia,
   poblacion: e.poblacion,
 })
 
@@ -63,9 +65,26 @@ function conPerfilDeLaOrganizacion(cuerpo, organizacion) {
       : {
           lugar: organizacion.lugar_defecto ?? cuerpo?.lugar,
           ambito: 'navalcarnero',
+          provincia: '',
           poblacion: '',
         }),
   }
+}
+
+/**
+ * Reglas del formulario (validarEvento) más la que solo el servidor puede
+ * comprobar: fuera de Navalcarnero, el municipio tiene que existir en la
+ * provincia según el catálogo del INE (los desplegables del panel solo ofrecen
+ * pares válidos; esto cubre a quien mande el JSON a mano).
+ */
+function erroresDelEvento(cuerpo) {
+  const errores = validarEvento(cuerpo)
+  if (cuerpo?.ambito === 'otro' && !errores.provincia && !errores.poblacion) {
+    if (!municipioValido(String(cuerpo.provincia).trim(), String(cuerpo.poblacion).trim())) {
+      errores.poblacion = 'Ese municipio no existe en esa provincia.'
+    }
+  }
+  return errores
 }
 
 async function listar(sql, organizacion) {
@@ -73,7 +92,7 @@ async function listar(sql, organizacion) {
     SELECT id, titulo, descripcion, categoria, lugar,
            to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha, hora, hora_fin,
            imagen_url, entradas_texto, entradas_url, precio, estado,
-           ambito, poblacion
+           ambito, provincia, poblacion
     FROM eventos_usuario
     WHERE organizacion_id = ${organizacion.id}
     ORDER BY fecha_inicio DESC, creado_en DESC
@@ -154,7 +173,7 @@ async function obtenerUno(sql, organizacion, id) {
     SELECT id, titulo, descripcion, categoria, lugar,
            to_char(fecha_inicio, 'YYYY-MM-DD') AS fecha, hora, hora_fin,
            imagen_url, entradas_texto, entradas_url, precio, estado,
-           ambito, poblacion
+           ambito, provincia, poblacion
     FROM eventos_usuario
     WHERE id = ${id} AND organizacion_id = ${organizacion.id}
   `
@@ -166,7 +185,7 @@ async function crear(sql, organizacion, cuerpoRecibido) {
   const cuerpo = conPerfilDeLaOrganizacion(cuerpoRecibido, organizacion)
 
   // No nos fiamos del cliente: se revalida con las mismas reglas del formulario.
-  const errores = validarEvento(cuerpo)
+  const errores = erroresDelEvento(cuerpo)
   if (Object.keys(errores).length > 0) {
     return json({ error: 'Revisa los campos del formulario.', errores }, 422)
   }
@@ -184,11 +203,12 @@ async function crear(sql, organizacion, cuerpoRecibido) {
       INSERT INTO eventos_usuario (
         organizacion_id, titulo, descripcion, categoria, lugar,
         fecha_inicio, hora, hora_fin, imagen_url,
-        entradas_texto, entradas_url, precio, estado, ambito, poblacion
+        entradas_texto, entradas_url, precio, estado, ambito, provincia, poblacion
       ) VALUES (
         ${organizacion.id}, ${e.titulo}, ${e.descripcion}, ${e.categoria}, ${e.lugar},
         ${fecha}, ${e.hora}, ${e.horaFin}, ${e.imagen},
-        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}, ${e.ambito}, ${e.poblacion}
+        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado},
+        ${e.ambito}, ${e.provincia}, ${e.poblacion}
       )
       RETURNING id, titulo, estado
     `
@@ -201,7 +221,7 @@ async function crear(sql, organizacion, cuerpoRecibido) {
 async function actualizar(sql, organizacion, id, cuerpoRecibido) {
   const cuerpo = conPerfilDeLaOrganizacion(cuerpoRecibido, organizacion)
 
-  const errores = validarEvento(cuerpo)
+  const errores = erroresDelEvento(cuerpo)
   if (Object.keys(errores).length > 0) {
     return json({ error: 'Revisa los campos del formulario.', errores }, 422)
   }
@@ -214,7 +234,7 @@ async function actualizar(sql, organizacion, id, cuerpoRecibido) {
       lugar = ${e.lugar}, fecha_inicio = ${e.fecha}, hora = ${e.hora}, hora_fin = ${e.horaFin},
       imagen_url = ${e.imagen}, entradas_texto = ${e.entradasTexto},
       entradas_url = ${e.entradasUrl}, precio = ${e.precio}, estado = ${e.estado},
-      ambito = ${e.ambito}, poblacion = ${e.poblacion},
+      ambito = ${e.ambito}, provincia = ${e.provincia}, poblacion = ${e.poblacion},
       actualizado_en = now()
     WHERE id = ${id} AND organizacion_id = ${organizacion.id}
     RETURNING id, titulo, estado
@@ -232,11 +252,12 @@ async function actualizar(sql, organizacion, id, cuerpoRecibido) {
       INSERT INTO eventos_usuario (
         organizacion_id, titulo, descripcion, categoria, lugar,
         fecha_inicio, hora, hora_fin, imagen_url,
-        entradas_texto, entradas_url, precio, estado, ambito, poblacion
+        entradas_texto, entradas_url, precio, estado, ambito, provincia, poblacion
       ) VALUES (
         ${organizacion.id}, ${e.titulo}, ${e.descripcion}, ${e.categoria}, ${e.lugar},
         ${fecha}, ${e.hora}, ${e.horaFin}, ${e.imagen},
-        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado}, ${e.ambito}, ${e.poblacion}
+        ${e.entradasTexto}, ${e.entradasUrl}, ${e.precio}, ${e.estado},
+        ${e.ambito}, ${e.provincia}, ${e.poblacion}
       )
     `
     creados += 1
