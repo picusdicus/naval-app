@@ -137,6 +137,15 @@ const MAX_IMAGENES_VISION = 40
 // Instagram dejaría el run entero esperando hasta que la función muera.
 const TIMEOUT_IMAGEN_MS = 10000
 
+// En una petición con VARIAS imágenes, la API rechaza la petición entera con
+// un 400 si alguna pasa de 2000 px de lado. No degrada: se pierden todos los
+// posts del lote, no solo el de la foto grande. Pasó de verdad el 3-sep-2026
+// con un post de 2016x1133 —16 px de más— que se llevó por delante los 10
+// posts de su lote, entre ellos la Matiné y la Feria, en todas las
+// ejecuciones. Apify ya da las dimensiones, así que la foto se descarta aquí
+// sin llegar a descargarla.
+const MAX_LADO_IMAGEN = 2000
+
 // Descargas en tandas y no todas a la vez, mismo criterio que la visión de los
 // carteles de deportes: no ametrallar al CDN.
 const CONCURRENCIA_IMAGENES = 5
@@ -170,6 +179,25 @@ async function enTandas(items, limite, fn) {
   return salida
 }
 
+export /** Una petición de extracción: valida el motivo de parada y parsea la salida. */
+async function pedirExtraccion(client, contenido, postsEnLote) {
+  const respuesta = await client.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: [{ type: 'text', text: INSTRUCCIONES, cache_control: { type: 'ephemeral' } }],
+    output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
+    messages: [{ role: 'user', content: contenido }],
+  })
+  if (respuesta.stop_reason === 'refusal') {
+    throw new Error('el modelo rechazó la petición de extracción')
+  }
+  if (respuesta.stop_reason === 'max_tokens') {
+    throw new Error(`respuesta truncada por max_tokens (${postsEnLote} posts en el lote)`)
+  }
+  const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
+  return JSON.parse(texto).eventos || []
+}
+
 export async function extraerEventos(posts) {
   const client = new Anthropic()
   const lotes = []
@@ -196,14 +224,17 @@ export async function extraerEventos(posts) {
         // Se recogen primero todas las URLs y se descargan después, en tandas:
         // en serie, una foto lenta multiplicaba por el número de fotos el
         // tiempo del run.
+        // `lado` viene de Apify; 0 = desconocido, y en ese caso se manda (el
+        // reintento sin imágenes de más abajo cubre lo que se escape).
+        const cabe = (f) => !f.lado || f.lado <= MAX_LADO_IMAGEN
         const urlsImagenes = []
         for (const post of lote) {
           const hijasGenéricas = (post.carrusel || []).filter(
             (c) => c.imagen && esAltGenerico(c.alt)
           )
           if (!esAltGenerico(post.alt) && hijasGenéricas.length === 0) continue
-          if (post.imagen) urlsImagenes.push(post.imagen)
-          for (const c of hijasGenéricas) urlsImagenes.push(c.imagen)
+          if (post.imagen && cabe(post)) urlsImagenes.push(post.imagen)
+          for (const c of hijasGenéricas) if (cabe(c)) urlsImagenes.push(c.imagen)
         }
         const imagenes = await enTandas(
           urlsImagenes.slice(0, MAX_IMAGENES_VISION),
@@ -212,27 +243,23 @@ export async function extraerEventos(posts) {
         )
         contenido.push(...imagenes.filter(Boolean))
 
-        const respuesta = await client.messages.create({
-          model: MODEL,
-          max_tokens: 8192,
-          system: [
-            {
-              type: 'text',
-              text: INSTRUCCIONES,
-              cache_control: { type: 'ephemeral' },
-            },
-          ],
-          output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
-          messages: [{ role: 'user', content: contenido }],
-        })
-        if (respuesta.stop_reason === 'refusal') {
-          throw new Error('el modelo rechazó la petición de extracción')
+        try {
+          return { items: await pedirExtraccion(client, contenido, lote.length) }
+        } catch (err) {
+          // Red de seguridad: cualquier fallo atribuible a las imágenes (un
+          // tamaño que no veníamos venir, un formato raro) tumbaría los 10
+          // posts del lote. Antes de darlos por perdidos se reintenta con solo
+          // el texto, que es como funcionaba esto antes de la visión: se pierde
+          // la lectura de los carteles del lote, no los posts.
+          const soloTexto = contenido.filter((b) => b.type !== 'image')
+          if (soloTexto.length === contenido.length) throw err
+          console.warn(`Lote ${idx + 1}: reintento sin imágenes tras "${err.message}"`)
+          return {
+            items: await pedirExtraccion(client, soloTexto, lote.length),
+            degradados: lote.length,
+            causaDegradado: err.message,
+          }
         }
-        if (respuesta.stop_reason === 'max_tokens') {
-          throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
-        }
-        const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
-        return { items: JSON.parse(texto).eventos || [] }
       } catch (err) {
         // `fallidos` = posts que el modelo NUNCA llegó a evaluar. Sin este
         // dato sus posts se contaban como "no es evento (rechazo del triaje)",
@@ -255,7 +282,15 @@ export async function extraerEventos(posts) {
       const causa = r.error.replace(/^Extracción lote \d+: /, '').slice(0, 80)
       const clave = `lote de extracción con error: ${causa}`
       fallosPorCausa[clave] = (fallosPorCausa[clave] || 0) + (r.fallidos || 0)
-    } else eventos.push(...r.items)
+      continue
+    }
+    eventos.push(...r.items)
+    if (r.degradados) {
+      // El lote salió adelante, pero sin leer sus carteles: no es un descarte,
+      // es una pérdida de calidad que conviene ver en el log para arreglarla.
+      const clave = `lote reintentado SIN imágenes: ${String(r.causaDegradado).slice(0, 80)}`
+      fallosPorCausa[clave] = (fallosPorCausa[clave] || 0) + r.degradados
+    }
   }
   return { eventos, errores, postsNoEvaluados, fallosPorCausa }
 }

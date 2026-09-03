@@ -86,6 +86,20 @@ function idDeFotoCarrusel(childPost) {
  * (OCR de Instagram) — p. ej. la programación deportiva, un cartel por
  * prueba. El alt del post padre es solo "Photo by …", así que sin esto los
  * carteles interiores son invisibles para la extracción. */
+/** Lado mayor de una foto en píxeles según lo que da Apify, o 0 si no lo dice.
+ *  La API de Anthropic rechaza la petición ENTERA (400) si en una petición con
+ *  varias imágenes alguna pasa de 2000 px de lado, así que saberlo antes de
+ *  descargarla es lo que permite dejarla fuera en vez de perder el lote. */
+export function ladoMayorDe(foto) {
+  if (!foto || typeof foto !== 'object') return 0
+  return Math.max(
+    Number(foto.dimensionsWidth) || 0,
+    Number(foto.dimensionsHeight) || 0,
+    Number(foto.originalWidth) || 0,
+    Number(foto.originalHeight) || 0
+  )
+}
+
 export function carruselDe(post) {
   if (!Array.isArray(post.childPosts)) return []
   return post.childPosts
@@ -93,6 +107,9 @@ export function carruselDe(post) {
       alt: typeof c?.alt === 'string' ? c.alt.trim() : '',
       imagen: c?.displayUrl || '',
       id: idDeFotoCarrusel(c),
+      // Lado mayor en píxeles, para poder descartar antes de descargarla una
+      // foto que la API rechazaría (ver ladoMayorDe).
+      lado: ladoMayorDe(c),
     }))
     // Con la extracción por visión basta la imagen; el alt (OCR de
     // Instagram) queda como apoyo/fallback si la descarga falla.
@@ -174,6 +191,10 @@ export function normalizarPost(post) {
     publicado: post.timestamp || '',
     url: post.url || `https://www.instagram.com/p/${shortCode}/`,
     imagen: primeraImagen(post),
+    // Lado mayor de la portada, mismo uso que el `lado` de cada foto del
+    // carrusel: descartar antes de descargarla una imagen que la API
+    // rechazaría en una petición con varias imágenes.
+    lado: ladoMayorDe(post),
     // Todas las fotos del post (carrusel completo); imagen sigue siendo solo
     // la primera, para no tocar nada de lo que ya consume ese campo.
     imagenes: todasLasImagenes(post),
