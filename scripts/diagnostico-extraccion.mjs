@@ -78,7 +78,7 @@ const porPost = new Map(posts.map((p) => [p.shortCode, []]))
 
 for (let i = 1; i <= repeticiones; i++) {
   const t0 = Date.now()
-  const { eventos, errores, postsNoEvaluados, fallosPorCausa } = await extraerEventos(entrada)
+  const { eventos, errores, postsNoEvaluados, fallosPorCausa, uso } = await extraerEventos(entrada)
   const { validos, descartados } = validarExtraccion(eventos, mapa)
   const segs = ((Date.now() - t0) / 1000).toFixed(1)
 
@@ -97,6 +97,23 @@ for (let i = 1; i <= repeticiones; i++) {
     porPost.get(sc)?.push({ eventos: n, titulo: validos.find((v) => v.shortCode === sc)?.titulo })
   }
   console.log('   eventos por post:', JSON.stringify(cuenta))
+  // Coste por modelo con los MISMOS tokens: lo que cambia entre modelos es la
+  // tarifa, no el tamaño de la entrada (las imágenes pesan igual).
+  const total = uso.entrada + uso.cacheEscrito + uso.cacheLeido
+  console.log(
+    `   tokens: entrada=${uso.entrada} cache(escrito=${uso.cacheEscrito} leído=${uso.cacheLeido}) salida=${uso.salida}`
+  )
+  const TARIFAS = {
+    'claude-haiku-4-5': [1, 5],
+    'claude-sonnet-5': [2, 10],
+    'claude-opus-4-8': [5, 25],
+    'claude-opus-5': [5, 25],
+  }
+  const linea = Object.entries(TARIFAS).map(([m, [ent, sal]]) => {
+    const usd = (total / 1e6) * ent + (uso.salida / 1e6) * sal
+    return `${m.replace('claude-', '')} $${usd.toFixed(4)} (${(usd * 365).toFixed(0)}/año)`
+  })
+  console.log('   coste/run:', linea.join('  |  '))
   console.log()
 }
 

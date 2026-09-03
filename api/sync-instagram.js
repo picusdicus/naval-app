@@ -195,7 +195,7 @@ async function pedirExtraccion(client, contenido, postsEnLote) {
     throw new Error(`respuesta truncada por max_tokens (${postsEnLote} posts en el lote)`)
   }
   const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
-  return JSON.parse(texto).eventos || []
+  return { eventos: JSON.parse(texto).eventos || [], uso: respuesta.usage }
 }
 
 export async function extraerEventos(posts) {
@@ -244,7 +244,8 @@ export async function extraerEventos(posts) {
         contenido.push(...imagenes.filter(Boolean))
 
         try {
-          return { items: await pedirExtraccion(client, contenido, lote.length) }
+          const { eventos: items, uso } = await pedirExtraccion(client, contenido, lote.length)
+          return { items, uso }
         } catch (err) {
           // Red de seguridad: cualquier fallo atribuible a las imágenes (un
           // tamaño que no veníamos venir, un formato raro) tumbaría los 10
@@ -254,11 +255,8 @@ export async function extraerEventos(posts) {
           const soloTexto = contenido.filter((b) => b.type !== 'image')
           if (soloTexto.length === contenido.length) throw err
           console.warn(`Lote ${idx + 1}: reintento sin imágenes tras "${err.message}"`)
-          return {
-            items: await pedirExtraccion(client, soloTexto, lote.length),
-            degradados: lote.length,
-            causaDegradado: err.message,
-          }
+          const { eventos: items, uso } = await pedirExtraccion(client, soloTexto, lote.length)
+          return { items, uso, degradados: lote.length, causaDegradado: err.message }
         }
       } catch (err) {
         // `fallidos` = posts que el modelo NUNCA llegó a evaluar. Sin este
@@ -275,6 +273,17 @@ export async function extraerEventos(posts) {
   // Motivos para ingesta_log: la CAUSA como clave y los POSTS afectados como
   // valor (misma unidad que el resto de motivos del log, que cuentan posts).
   const fallosPorCausa = {}
+  // Tokens de todas las peticiones del run: lo consume el script de
+  // diagnóstico para medir el coste real por modelo.
+  const uso = { entrada: 0, salida: 0, cacheEscrito: 0, cacheLeido: 0 }
+  for (const r of resultados) {
+    if (r.uso) {
+      uso.entrada += r.uso.input_tokens || 0
+      uso.salida += r.uso.output_tokens || 0
+      uso.cacheEscrito += r.uso.cache_creation_input_tokens || 0
+      uso.cacheLeido += r.uso.cache_read_input_tokens || 0
+    }
+  }
   for (const r of resultados) {
     if (r.error) {
       errores.push(r.error)
@@ -292,7 +301,7 @@ export async function extraerEventos(posts) {
       fallosPorCausa[clave] = (fallosPorCausa[clave] || 0) + r.degradados
     }
   }
-  return { eventos, errores, postsNoEvaluados, fallosPorCausa }
+  return { eventos, errores, postsNoEvaluados, fallosPorCausa, uso }
 }
 
 /** Exportada, como validarExtraccion, SOLO para verificación/diagnóstico.
