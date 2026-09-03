@@ -3,10 +3,11 @@
 // también apunta aquí con un segundo webhook) en eventos de la agenda.
 //
 // Flujo: Apify termina su ejecución semanal → llama aquí → se identifican con
-// Claude los posts que anuncian un evento real (fecha + hora + lugar en el
-// caption) → la imagen del post se sube a Vercel Blob (las URLs del CDN de
-// Instagram caducan) → upsert en eventos_usuario bajo la organización que
-// corresponde al autor del post (ORG_POR_USUARIO), en estado 'publicado'.
+// Claude los posts que anuncian un evento real (fecha y lugar en el caption o
+// en el cartel; la hora es opcional) → la imagen del post se sube a Vercel
+// Blob (las URLs del CDN de Instagram caducan) → upsert en eventos_usuario
+// bajo la organización que corresponde al autor del post (ORG_POR_USUARIO),
+// en estado 'publicado'.
 //
 // Integración con el resto del sistema, sin tocar el cron diario:
 // - GET /api/eventos ya emite estos eventos con origen 'cultural' y la
@@ -55,6 +56,10 @@ const CATEGORIAS = ['cultura', 'deporte', 'fiestas', 'gastronomia', 'infantil', 
 // el perfil de las orgs no se tocan). Whitelist compartida con la UI.
 const SUBCATEGORIAS = Object.keys(SUBCATEGORIAS_CULTURA)
 
+// Un acto puede no tener hora de inicio (una feria abierta todo el día, un
+// mercado): la hora es opcional y se guarda NULL, la fecha y el lugar no.
+const HORA_VALIDA = /^([01]\d|2[0-3]):[0-5]\d$/
+
 // Constantes de posts e imágenes, helpers de Apify/Blob y la atribución por
 // autor (ORG_POR_USUARIO → orgDeUsuario/asegurarOrganizacion) compartidos con
 // el webhook de noticias: en api/_instagram.js.
@@ -71,12 +76,12 @@ const ESQUEMA_EXTRACCION = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['shortCode', 'titulo', 'fecha', 'hora', 'lugar', 'categoria', 'subcategoria', 'descripcion'],
+        required: ['shortCode', 'titulo', 'fecha', 'lugar', 'categoria', 'subcategoria', 'descripcion'],
         properties: {
           shortCode: { type: 'string' },
           titulo: { type: 'string' },
           fecha: { type: 'string' },
-          hora: { type: 'string' },
+          hora: { type: ['string', 'null'] },
           lugar: { type: 'string' },
           categoria: { enum: CATEGORIAS },
           // '' = sin subcategoría (no es cultura, o no está clara).
@@ -92,7 +97,7 @@ const ESQUEMA_EXTRACCION = {
 
 const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Navalcarnero (Madrid) — la concejalía de cultura y el Ayuntamiento — e identifica cuáles anuncian un EVENTO REAL al que un vecino puede asistir.
 
-Un post es un evento SOLO si menciona explícitamente las tres cosas: una fecha concreta, una hora y un lugar. Pueden aparecer en el caption o en el texto del cartel (campo "alt", la descripción automática de la imagen) — es habitual que el caption sea solo la sinopsis y los datos prácticos estén en el cartel.
+Un post es un evento SOLO si menciona explícitamente una fecha concreta y un lugar. La hora es deseable pero NO obligatoria: hay actos sin hora de inicio (una feria abierta todo el día, un mercado, una exposición). Estos datos pueden aparecer en el caption o en el texto del cartel (campo "alt", la descripción automática de la imagen) — es habitual que el caption sea solo la sinopsis y los datos prácticos estén en el cartel.
 
 Además, un evento de agenda es un ACTO al que el vecino asiste en un momento concreto como público o participante: una función, un concierto, una proyección, una fiesta, un mercado, una carrera popular, un encierro. Tener fecha, hora y lugar NO basta. Descarta aunque los tengan:
 - Aperturas de plazos de inscripción y bases de concursos (cursos de natación, talleres, campamentos).
@@ -105,7 +110,7 @@ Para cada evento devuelve:
 - shortCode: el del post, copiado tal cual.
 - titulo: corto y legible en español (sin mayúsculas gritadas).
 - fecha: YYYY-MM-DD. Resuelve fechas relativas ("este sábado 18") con el campo "publicado" del post. Si el evento dura varios días, usa el día de inicio.
-- hora: HH:MM en formato 24 h.
+- hora: HH:MM en formato 24 h, o null si el acto no tiene hora específica (ferris, stands, zonas de ocio continuadas todo el día).
 - lugar: el nombre del sitio tal como aparece (sin ", Navalcarnero").
 - categoria: la más apropiada de la lista permitida.
 - subcategoria: SOLO si categoria es "cultura", el tipo concreto de acto: "teatro", "cine", "musica" (conciertos, recitales), "danza", "exposicion", u "otros" si es cultural pero no encaja en ninguno. Para cualquier otra categoria, "".
@@ -120,6 +125,50 @@ Devuelve solo los posts que son eventos; si ninguno lo es, devuelve la lista vac
 // run entero (50 posts) puede superar max_tokens y llegar truncada — el
 // JSON.parse del texto cortado tumbaba el run completo.
 const LOTE_TRIAJE = 10
+
+// Tope de imágenes que viajan en UNA petición de extracción. La API rechaza
+// la petición entera por encima de 100 imágenes, y un lote de 10 posts con
+// carruseles de hasta MAX_FOTOS_ALT (10) fotos llegaría a 110 — el error se
+// come el lote completo y sus eventos. 40 cubre de sobra los carruseles
+// municipales reales sin acercarse al límite.
+const MAX_IMAGENES_VISION = 40
+
+// Un fetch sin señal no vence nunca: una conexión colgada del CDN de
+// Instagram dejaría el run entero esperando hasta que la función muera.
+const TIMEOUT_IMAGEN_MS = 10000
+
+// Descargas en tandas y no todas a la vez, mismo criterio que la visión de los
+// carteles de deportes: no ametrallar al CDN.
+const CONCURRENCIA_IMAGENES = 5
+
+/** Descarga una imagen y la devuelve como bloque `image` base64 para la API.
+ *  Nunca lanza: un fallo devuelve null y la extracción sigue sin esa foto. */
+async function descargarImagenBase64(url) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_IMAGEN_MS) })
+    if (!res.ok) return null
+    const buffer = await res.arrayBuffer()
+    return {
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: res.headers.get('content-type') || 'image/jpeg',
+        data: Buffer.from(buffer).toString('base64'),
+      },
+    }
+  } catch (err) {
+    console.warn(`No se pudo descargar la imagen ${url}: ${err.message}`)
+    return null
+  }
+}
+
+async function enTandas(items, limite, fn) {
+  const salida = []
+  for (let i = 0; i < items.length; i += limite) {
+    salida.push(...(await Promise.all(items.slice(i, i + limite).map(fn))))
+  }
+  return salida
+}
 
 async function extraerEventos(posts) {
   const client = new Anthropic()
@@ -140,64 +189,28 @@ async function extraerEventos(posts) {
           text: JSON.stringify(lote),
         })
 
-        // 2. Imágenes solo si el alt del post (o algún childPost) es genérico
-        // Descargar y convertir a base64 para evitar bloques de robots.txt
+        // 2. Imágenes solo si el alt del post (o el de alguna hija del
+        // carrusel) es genérico. Se descargan y viajan en base64: las URLs del
+        // CDN de Instagram van firmadas y la API no puede ir a buscarlas.
+        //
+        // Se recogen primero todas las URLs y se descargan después, en tandas:
+        // en serie, una foto lenta multiplicaba por el número de fotos el
+        // tiempo del run.
+        const urlsImagenes = []
         for (const post of lote) {
-          const altPostGenérico = esAltGenerico(post.alt)
-          const altsCarruselGenéricos =
-            post.carrusel?.filter((c) => esAltGenerico(c.alt)) || []
-
-          // Si hay alt genérico en el post o en el carrusel, incluir imágenes
-          if (altPostGenérico || altsCarruselGenéricos.length > 0) {
-            // Portada del post (si existe)
-            if (post.imagen) {
-              try {
-                const resImg = await fetch(post.imagen)
-                if (resImg.ok) {
-                  const buffer = await resImg.arrayBuffer()
-                  const base64 = Buffer.from(buffer).toString('base64')
-                  const tipoContenido = resImg.headers.get('content-type') || 'image/jpeg'
-                  contenido.push({
-                    type: 'image',
-                    source: {
-                      type: 'base64',
-                      media_type: tipoContenido,
-                      data: base64,
-                    },
-                  })
-                }
-              } catch (err) {
-                console.warn(`No se pudo descargar imagen portada de ${post.shortCode}: ${err.message}`)
-              }
-            }
-
-            // Fotos del carrusel marcadas con [Imagen N]
-            if (Array.isArray(post.carrusel)) {
-              for (const c of post.carrusel) {
-                if (c.imagen && esAltGenerico(c.alt)) {
-                  try {
-                    const resImg = await fetch(c.imagen)
-                    if (resImg.ok) {
-                      const buffer = await resImg.arrayBuffer()
-                      const base64 = Buffer.from(buffer).toString('base64')
-                      const tipoContenido = resImg.headers.get('content-type') || 'image/jpeg'
-                      contenido.push({
-                        type: 'image',
-                        source: {
-                          type: 'base64',
-                          media_type: tipoContenido,
-                          data: base64,
-                        },
-                      })
-                    }
-                  } catch (err) {
-                    console.warn(`No se pudo descargar imagen de carrusel de ${post.shortCode}: ${err.message}`)
-                  }
-                }
-              }
-            }
-          }
+          const hijasGenéricas = (post.carrusel || []).filter(
+            (c) => c.imagen && esAltGenerico(c.alt)
+          )
+          if (!esAltGenerico(post.alt) && hijasGenéricas.length === 0) continue
+          if (post.imagen) urlsImagenes.push(post.imagen)
+          for (const c of hijasGenéricas) urlsImagenes.push(c.imagen)
         }
+        const imagenes = await enTandas(
+          urlsImagenes.slice(0, MAX_IMAGENES_VISION),
+          CONCURRENCIA_IMAGENES,
+          descargarImagenBase64
+        )
+        contenido.push(...imagenes.filter(Boolean))
 
         const respuesta = await client.messages.create({
           model: MODEL,
@@ -253,7 +266,7 @@ function validarExtraccion(eventos, postsPorShortCode) {
       typeof ev.titulo === 'string' &&
       ev.titulo.trim() &&
       /^\d{4}-\d{2}-\d{2}$/.test(ev.fecha) &&
-      /^([01]\d|2[0-3]):[0-5]\d$/.test(ev.hora) &&
+      (ev.hora == null || ev.hora === '' || HORA_VALIDA.test(ev.hora)) &&
       typeof ev.lugar === 'string' &&
       ev.lugar.trim() &&
       CATEGORIAS.includes(ev.categoria)
@@ -271,7 +284,7 @@ function validarExtraccion(eventos, postsPorShortCode) {
       shortCode: ev.shortCode,
       titulo: ev.titulo.trim().slice(0, 200),
       fecha: ev.fecha,
-      hora: ev.hora,
+      hora: HORA_VALIDA.test(ev.hora) ? ev.hora : null,
       lugar: ev.lugar.trim().slice(0, 120),
       categoria: ev.categoria,
       // Solo tiene sentido bajo cultura; fuera de la whitelist queda NULL (un
@@ -482,14 +495,22 @@ async function procesar(posts, resumen, noNormalizables = 0) {
   // Borradores REALMENTE insertados este run (no actualizados): son los que
   // avisan por email al superadmin, mismo patrón que el webhook de noticias.
   const pendientesEventos = []
+  // Contar motivosVisión: diferencia entre extracciones sin visión (alt útil)
+  // y con visión (alt genérico) — observabilidad de la ingesta.
+  //
+  // Declarado FUERA del try a propósito: lo lee el registrarIngesta del final,
+  // que vive después del catch. Dentro del try quedaba fuera de su alcance y
+  // el spread lanzaba un ReferenceError EN TODAS las ejecuciones, ya después
+  // del catch — así que la promesa de procesar() se rechazaba dentro del
+  // waitUntil y ninguna ejecución llegaba a escribir su fila en ingesta_log
+  // (el webhook ya había respondido 202, así que Apify seguía viendo un éxito
+  // y el fallo era invisible por los dos lados).
+  const motivosVisión = {
+    'extraccion sin visión (alt útil)': 0,
+    'extraccion con visión (alt genérico)': 0,
+    'extraccion con visión parcial (algunos alt genéricos en carrusel)': 0,
+  }
   try {
-    // Contar motivosVisión: diferencia entre extracciones sin visión (alt útil)
-    // y con visión (alt genérico) — observabilidad de la ingesta.
-    const motivosVisión = {
-      'extraccion sin visión (alt útil)': 0,
-      'extraccion con visión (alt genérico)': 0,
-      'extraccion con visión parcial (algunos alt genéricos en carrusel)': 0,
-    }
     for (const post of posts) {
       const altPostGenérico = esAltGenerico(post.alt)
       const hijas = post.carrusel || []

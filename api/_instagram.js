@@ -328,9 +328,18 @@ export function esAltGenerico(alt) {
   if (typeof alt !== 'string') return true
   const trimmed = alt.trim()
   if (!trimmed) return true
-  // Patrón "Photo by ... on <fecha>": Instagram formula automática sin datos útiles
-  // Casos como "Photo by Cultura_navalcarnero on August 27, 2026."
-  if (/^Photo by \w+(?:_\w+)* on \w+ \d{1,2}, \d{4}\.$/.test(trimmed)) {
+  // Patrón "Photo by ... on <fecha>": fórmula automática de Instagram, sin
+  // ningún dato útil. El autor puede ser el usuario ("Cultura_navalcarnero")
+  // o el nombre para mostrar CON ESPACIOS ("Ayuntamiento de Navalcarnero"):
+  // con `\w+` (sin espacios) los posts del Ayuntamiento — que son justo los
+  // que llevan los datos rotulados en el cartel — se daban por alt ÚTIL, la
+  // visión no se activaba nunca para ellos y el triaje los rechazaba en
+  // bloque por no encontrar fecha/hora/lugar en ninguna parte.
+  //
+  // El `\.$` final se mantiene: cuando Instagram añade su descripción
+  // ("… 2026. May be an image of text.") el alt SÍ aporta algo y no debe
+  // tratarse como genérico.
+  if (/^Photo by .{1,100}? on \w+ \d{1,2}, \d{4}\.$/.test(trimmed)) {
     return true
   }
   return false
