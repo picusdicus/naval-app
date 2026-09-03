@@ -46,7 +46,28 @@ import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 import { registrarIngesta } from './_ingesta-log.js'
 import { enviarEmailPendientes } from './_email.js'
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
+// Modelo AISLADO de ANTHROPIC_MODEL a propósito, igual que
+// ANTHROPIC_MODEL_DEPORTES_VISION. Esta extracción lee carteles rotulados —
+// mandando ~60 imágenes por ejecución— y no es lo mismo que el triaje de texto
+// de los webhooks, que es para lo que se puso Haiku en ANTHROPIC_MODEL. Con la
+// variable compartida, un cambio pensado para los webhooks degradaba esto en
+// silencio (es lo que le pasó a la visión de deportes en agosto).
+//
+// Se eligió por CALIDAD, no por precio, midiendo los tres sobre el dataset
+// real del 3-sep (15 posts) con las imágenes ya reducidas, dos ejecuciones
+// cada uno:
+//
+//   opus-5     los 2 eventos reales, IDÉNTICOS en ambas ejecuciones, 0 falsos
+//              positivos.  ~$0.33/run, ~$122/año con el cron diario.
+//   haiku-4-5  12 eventos en una ejecución y 4 en la otra con la MISMA
+//              entrada, y publica crónicas de actos ya celebrados como si
+//              fueran eventos futuros.  ~$28/año.
+//   sonnet-5   pierde la Feria en las dos, y cuesta el doble que Haiku.
+//
+// Los falsos positivos de Haiku no son inocuos: un post de un solo evento nace
+// 'publicado' y NO pasa por Pendientes, así que una crónica de ayer aparece
+// sola en la agenda.
+export const MODEL = process.env.ANTHROPIC_MODEL_INSTAGRAM_EVENTOS || 'claude-opus-5'
 
 // Misma taxonomía que eventos.json / la UI de la agenda.
 const CATEGORIAS = ['cultura', 'deporte', 'fiestas', 'gastronomia', 'infantil', 'mercado']
@@ -150,20 +171,65 @@ const MAX_LADO_IMAGEN = 2000
 // carteles de deportes: no ametrallar al CDN.
 const CONCURRENCIA_IMAGENES = 5
 
-/** Descarga una imagen y la devuelve como bloque `image` base64 para la API.
+// Las imágenes se facturan por (ancho x alto) / 750 tokens, así que su tamaño
+// es LA palanca de coste de esta extracción: son el 99 % de la entrada.
+// Medido sobre el dataset real del 3-sep, con Opus 5 y el run completo:
+//
+//   sin reducir  108k tokens  ~$209/año     600 px   48k  ~$100/año
+//   1000 px       76k tokens  ~$150/año     800 px   61k  ~$122/año
+//
+// 800 px porque Opus extrae los mismos 2 eventos, idénticos, a 1000, 800 y
+// 600: la calidad no se resiente en ese tramo. No se baja a 600 porque solo
+// ahorra $22/año más y estos carteles llevan la fecha y la hora en letra
+// pequeña — el margen de legibilidad vale más que eso, sobre todo para
+// carteles más densos que los dos que hoy se extraen.
+const MAX_LADO_VISION = 800
+
+let sharpCargado
+/** sharp, cargado una sola vez y de forma perezosa. null si no está. */
+async function obtenerSharp() {
+  if (sharpCargado === undefined) {
+    try {
+      sharpCargado = (await import('sharp')).default
+    } catch (err) {
+      console.warn(`sharp no disponible, las imágenes van sin reducir: ${err.message}`)
+      sharpCargado = null
+    }
+  }
+  return sharpCargado
+}
+
+/** Descarga una imagen, la reduce y la devuelve como bloque `image` base64.
  *  Nunca lanza: un fallo devuelve null y la extracción sigue sin esa foto. */
-async function descargarImagenBase64(url) {
+async function descargarImagenBase64(foto) {
+  const { url, lado = 0 } = foto
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_IMAGEN_MS) })
     if (!res.ok) return null
-    const buffer = await res.arrayBuffer()
+    let datos = Buffer.from(await res.arrayBuffer())
+    let tipo = res.headers.get('content-type') || 'image/jpeg'
+
+    const sharp = await obtenerSharp()
+    if (sharp) {
+      try {
+        datos = await sharp(datos)
+          .resize({ width: MAX_LADO_VISION, height: MAX_LADO_VISION, fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 82 })
+          .toBuffer()
+        tipo = 'image/jpeg'
+      } catch (err) {
+        // Si no se pudo reducir, una foto que pase del tope de la API no puede
+        // mandarse: tumbaría la petición entera del lote (ver MAX_LADO_IMAGEN).
+        console.warn(`No se pudo reducir ${url}: ${err.message}`)
+        if (lado > MAX_LADO_IMAGEN) return null
+      }
+    } else if (lado > MAX_LADO_IMAGEN) {
+      return null
+    }
+
     return {
       type: 'image',
-      source: {
-        type: 'base64',
-        media_type: res.headers.get('content-type') || 'image/jpeg',
-        data: Buffer.from(buffer).toString('base64'),
-      },
+      source: { type: 'base64', media_type: tipo, data: datos.toString('base64') },
     }
   } catch (err) {
     console.warn(`No se pudo descargar la imagen ${url}: ${err.message}`)
@@ -224,20 +290,21 @@ export async function extraerEventos(posts) {
         // Se recogen primero todas las URLs y se descargan después, en tandas:
         // en serie, una foto lenta multiplicaba por el número de fotos el
         // tiempo del run.
-        // `lado` viene de Apify; 0 = desconocido, y en ese caso se manda (el
-        // reintento sin imágenes de más abajo cubre lo que se escape).
-        const cabe = (f) => !f.lado || f.lado <= MAX_LADO_IMAGEN
-        const urlsImagenes = []
+        // Ya NO se descarta aquí la foto que pasa del tope de la API: al
+        // reducirlas a MAX_LADO_VISION todas caben, así que un cartel grande
+        // se aprovecha en vez de perderse. `lado` viaja para poder decidir si
+        // la reducción falla (ver descargarImagenBase64).
+        const fotos = []
         for (const post of lote) {
           const hijasGenéricas = (post.carrusel || []).filter(
             (c) => c.imagen && esAltGenerico(c.alt)
           )
           if (!esAltGenerico(post.alt) && hijasGenéricas.length === 0) continue
-          if (post.imagen && cabe(post)) urlsImagenes.push(post.imagen)
-          for (const c of hijasGenéricas) if (cabe(c)) urlsImagenes.push(c.imagen)
+          if (post.imagen) fotos.push({ url: post.imagen, lado: post.lado })
+          for (const c of hijasGenéricas) fotos.push({ url: c.imagen, lado: c.lado })
         }
         const imagenes = await enTandas(
-          urlsImagenes.slice(0, MAX_IMAGENES_VISION),
+          fotos.slice(0, MAX_IMAGENES_VISION),
           CONCURRENCIA_IMAGENES,
           descargarImagenBase64
         )

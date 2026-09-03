@@ -42,7 +42,7 @@ if (!ruta) {
 }
 
 // Import dinámico: MODEL se fija al cargar el módulo, así que el .env ya debe estar puesto.
-const { extraerEventos, validarExtraccion } = await import('../api/sync-instagram.js')
+const { extraerEventos, validarExtraccion, MODEL } = await import('../api/sync-instagram.js')
 const { normalizarPost, esPostReciente, esAltGenerico, MAX_POSTS } = await import('../api/_instagram.js')
 
 const crudos = JSON.parse(readFileSync(ruta, 'utf8'))
@@ -50,7 +50,9 @@ const lista = Array.isArray(crudos) ? crudos : crudos.posts || crudos.items || [
 const normalizados = lista.map(normalizarPost).filter(Boolean)
 const posts = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
 
-console.log('Modelo            :', process.env.ANTHROPIC_MODEL || '(por defecto del handler)')
+// El MODEL que usa de verdad el handler, no la variable que uno supone: son
+// distintas desde que esta extracción tiene la suya.
+console.log('Modelo            :', MODEL)
 console.log('Posts en el fichero:', lista.length)
 console.log('Tras normalizar   :', normalizados.length)
 console.log('Tras el corte de 30 días:', posts.length)
