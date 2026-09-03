@@ -370,9 +370,16 @@ export default function PerfilComercio({ id: idProp }) {
                     {proximasFunciones.map((evento) => {
                       const [, mes, dia] = evento.fecha.split('-')
                       const mesCorto = MESES_CORTOS[Number(mes) - 1]
+                      // Portafolio completo (issue #33): un evento fuera de
+                      // Navalcarnero lleva su población pegada al lugar —
+                      // "Teatro Amaya, Madrid" —; los de aquí, solo el lugar.
+                      const lugarConPoblacion =
+                        evento.ambito === 'otro' && evento.poblacion
+                          ? `${evento.lugar}, ${evento.poblacion}`
+                          : evento.lugar
                       const meta = [
                         evento.hora,
-                        evento.lugar,
+                        lugarConPoblacion,
                         evento.entradas?.precio || (evento.entradas ? 'Con entradas' : ''),
                       ]
                         .filter(Boolean)
