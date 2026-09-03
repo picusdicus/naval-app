@@ -234,17 +234,30 @@ export async function extraerEventos(posts) {
         const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"eventos":[]}'
         return { items: JSON.parse(texto).eventos || [] }
       } catch (err) {
-        return { error: `Extracción lote ${idx + 1}: ${err.message}` }
+        // `fallidos` = posts que el modelo NUNCA llegó a evaluar. Sin este
+        // dato sus posts se contaban como "no es evento (rechazo del triaje)",
+        // que es justo lo contrario de lo que pasó y manda la investigación en
+        // la dirección equivocada.
+        return { error: `Extracción lote ${idx + 1}: ${err.message}`, fallidos: lote.length }
       }
     })
   )
   const eventos = []
   const errores = []
+  let postsNoEvaluados = 0
+  // Motivos para ingesta_log: la CAUSA como clave y los POSTS afectados como
+  // valor (misma unidad que el resto de motivos del log, que cuentan posts).
+  const fallosPorCausa = {}
   for (const r of resultados) {
-    if (r.error) errores.push(r.error)
-    else eventos.push(...r.items)
+    if (r.error) {
+      errores.push(r.error)
+      postsNoEvaluados += r.fallidos || 0
+      const causa = r.error.replace(/^Extracción lote \d+: /, '').slice(0, 80)
+      const clave = `lote de extracción con error: ${causa}`
+      fallosPorCausa[clave] = (fallosPorCausa[clave] || 0) + (r.fallidos || 0)
+    } else eventos.push(...r.items)
   }
-  return { eventos, errores }
+  return { eventos, errores, postsNoEvaluados, fallosPorCausa }
 }
 
 /** Exportada, como validarExtraccion, SOLO para verificación/diagnóstico.
@@ -438,6 +451,10 @@ export default async function handler(req, res) {
     actualizados: 0,
     duplicadosOmitidos: 0,
     descartadosPorValidacion: 0,
+    // Posts de un lote que falló: el modelo ni llegó a verlos. Inicializado
+    // aquí porque el registrarIngesta del final resta este valor, y con
+    // undefined la cuenta saldría NaN.
+    postsNoEvaluados: 0,
     imagenesSubidas: 0,
     imagenesReutilizadas: 0,
     errores: [],
@@ -506,6 +523,9 @@ async function procesar(posts, resumen, noNormalizables = 0) {
   // waitUntil y ninguna ejecución llegaba a escribir su fila en ingesta_log
   // (el webhook ya había respondido 202, así que Apify seguía viendo un éxito
   // y el fallo era invisible por los dos lados).
+  // Fuera del try por el mismo motivo que motivosVisión: lo lee el
+  // registrarIngesta del final, que vive después del catch.
+  const motivosLote = {}
   const motivosVisión = {
     'extraccion sin visión (alt útil)': 0,
     'extraccion con visión (alt genérico)': 0,
@@ -530,10 +550,17 @@ async function procesar(posts, resumen, noNormalizables = 0) {
     }
 
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
-    const { eventos: extraidos, errores: erroresTriaje } = await extraerEventos(
+    const {
+      eventos: extraidos,
+      errores: erroresTriaje,
+      postsNoEvaluados,
+      fallosPorCausa,
+    } = await extraerEventos(
       posts.map(({ shortCode, caption, alt, publicado, carrusel }) => ({ shortCode, caption, alt, publicado, carrusel }))
     )
     resumen.errores.push(...erroresTriaje)
+    resumen.postsNoEvaluados = postsNoEvaluados
+    Object.assign(motivosLote, fallosPorCausa)
     extraidosTotal = extraidos.length
     const { validos, descartados } = validarExtraccion(extraidos, postsPorShortCode)
     resumen.eventos = validos.length
@@ -736,7 +763,13 @@ async function procesar(posts, resumen, noNormalizables = 0) {
     motivos: {
       'post no normalizable': noNormalizables,
       'antigüedad (>30 días) o tope de posts': resumen.descartadosPorAntiguedad,
-      'no es evento (rechazo del triaje del modelo)': Math.max(0, resumen.analizados - extraidosTotal),
+      // Los posts de un lote que falló NO los rechazó el triaje: el modelo ni
+      // los llegó a ver. Se restan aquí y se cuentan en su propio motivo.
+      'no es evento (rechazo del triaje del modelo)': Math.max(
+        0,
+        resumen.analizados - resumen.postsNoEvaluados - extraidosTotal
+      ),
+      ...motivosLote,
       'validación de la extracción': resumen.descartadosPorValidacion,
       'duplicado de evento existente': resumen.duplicadosOmitidos,
       ...motivosVisión,
