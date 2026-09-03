@@ -99,10 +99,10 @@ const INSTRUCCIONES = `Analiza posts de Instagram de cuentas municipales de Nava
 
 Un post es un evento SOLO si menciona explícitamente una fecha concreta y un lugar. La hora es deseable pero NO obligatoria: hay actos sin hora de inicio (una feria abierta todo el día, un mercado, una exposición). Estos datos pueden aparecer en el caption o en el texto del cartel (campo "alt", la descripción automática de la imagen) — es habitual que el caption sea solo la sinopsis y los datos prácticos estén en el cartel.
 
-Además, un evento de agenda es un ACTO al que el vecino asiste en un momento concreto como público o participante: una función, un concierto, una proyección, una fiesta, un mercado, una carrera popular, un encierro. Tener fecha, hora y lugar NO basta. Descarta aunque los tengan:
+Además, un evento de agenda es un ACTO al que el vecino asiste como público o participante: una función, un concierto, una proyección, una fiesta, un mercado, una feria, una carrera popular, un encierro. Puede ser puntual o durar varios días seguidos y estar abierto todo el día (una feria de atracciones, un mercado medieval, una exposición temporal): lo que cuenta es que sea algo a lo que se va y que empiece y termine en fechas concretas. Tener fecha, hora y lugar NO basta. Descarta aunque los tengan:
 - Aperturas de plazos de inscripción y bases de concursos (cursos de natación, talleres, campamentos).
 - Campañas y servicios: donaciones de sangre, sorteos comerciales, custodia de llaves, objetos perdidos.
-- Horarios de temporada o de instalaciones (piscina municipal, biblioteca, polideportivo).
+- El horario de servicio de una instalación permanente o de una temporada entera: la piscina municipal abre de 11 a 21 h en verano, el horario de la biblioteca, el del polideportivo. La diferencia con el punto anterior es que aquí NO hay un acto que empiece y acabe, solo las horas a las que abre algo que ya existía.
 - Noticias, agradecimientos, balances y comunicados.
 - Actos fuera de Navalcarnero.
 
@@ -170,7 +170,7 @@ async function enTandas(items, limite, fn) {
   return salida
 }
 
-async function extraerEventos(posts) {
+export async function extraerEventos(posts) {
   const client = new Anthropic()
   const lotes = []
   for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
@@ -247,8 +247,9 @@ async function extraerEventos(posts) {
   return { eventos, errores }
 }
 
-/** Valida los valores extraídos contra los posts realmente enviados. */
-function validarExtraccion(eventos, postsPorShortCode) {
+/** Exportada, como validarExtraccion, SOLO para verificación/diagnóstico.
+ *  Valida los valores extraídos contra los posts realmente enviados. */
+export function validarExtraccion(eventos, postsPorShortCode) {
   const validos = []
   const descartados = []
   // Dedup DENTRO de la respuesta del modelo. Antes la clave era el shortCode
