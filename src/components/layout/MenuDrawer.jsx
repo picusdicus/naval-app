@@ -85,12 +85,6 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
           >
             Emergencias (112)
           </a>
-          <a
-            href="tel:918101141"
-            className="block px-3.5 py-2.5 text-tinta transition-colors hover:bg-papel-calido"
-          >
-            Ayuntamiento
-          </a>
 
           {/* Corriendo ya en standalone el botón sobra. */}
           {!esPWAInstalada() && (
@@ -131,12 +125,6 @@ export default function MenuDrawer({ abierto, onCerrar, onLogout }) {
             <span className="text-tinta">Navalcarnero</span>
             <span>v0.1.0</span>
           </div>
-          <a
-            href="tel:918101141"
-            className="gz-boton-borde flex items-center justify-center gap-2 transition-colors hover:bg-papel-calido"
-          >
-            Llamar al Ayuntamiento
-          </a>
           <button type="button" onClick={onLogout} className="gz-boton-peligro">
             Cerrar sesión
           </button>
