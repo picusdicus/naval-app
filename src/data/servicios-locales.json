@@ -1718,25 +1718,5 @@
     "fuente": "guia-municipal",
     "fuenteCategoria": "Transportes",
     "fuenteSubcategoria": "Transportes de Viajeros"
-  },
-  {
-    "id": "local/alimentacion-panaderia-prueba-commit-real-playwright",
-    "nombre": "Panadería Prueba Commit Real Playwright",
-    "categoria": "alimentacion",
-    "subtipo": "bakery",
-    "cocina": [],
-    "lat": null,
-    "lng": null,
-    "direccion": "Calle de Prueba Commit, 99",
-    "telefono": "",
-    "web": "",
-    "horario": "",
-    "rating": null,
-    "totalReviews": null,
-    "precioNivel": "",
-    "tipoDisplay": "",
-    "fuente": "alta-vecinal",
-    "fuenteCategoria": null,
-    "fuenteSubcategoria": null
   }
 ]
