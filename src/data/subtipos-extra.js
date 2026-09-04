@@ -6,5 +6,9 @@ export default {
   "frutas_y_verduras": {
     "nombre": "Frutas y Verduras",
     "icono": "grocery"
+  },
+  "piensos": {
+    "nombre": "Piensos",
+    "icono": "storefront"
   }
 }
