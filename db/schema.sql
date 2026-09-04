@@ -298,6 +298,29 @@ CREATE INDEX IF NOT EXISTS idx_solicitudes_comercio ON solicitudes_reclamacion (
 
 CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON solicitudes_reclamacion (estado);
 
+-- Solicitudes de alta de un negocio que todavía no está en el directorio
+-- (issue #35). A diferencia de una reclamación (que vincula un comercio ya
+-- publicado a su dueño), aquí no existe ningún `comercio_id` de partida: el
+-- superadmin revisa la solicitud, completa lo que falte (subtipo, web,
+-- horario…) y, al aprobar, la ficha se publica con un commit a
+-- servicios-locales.json (mismo mecanismo que las correcciones de
+-- api/super/comercios.js) — no una fila de esta tabla, que solo sirve de
+-- bandeja de entrada. Rechazar no borra la solicitud (permite auditar qué se
+-- descartó y por qué, y evita que un reenvío del mismo negocio la resucite en
+-- silencio si se reintentara con el mismo formulario).
+CREATE TABLE IF NOT EXISTS solicitudes_alta_comercio (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre            text NOT NULL,
+  categoria         text NOT NULL,
+  direccion         text NOT NULL,
+  telefono          text,
+  notas             text,
+  estado            text NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aprobada', 'rechazada')),
+  creado_en         timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_altas_comercio_estado ON solicitudes_alta_comercio (estado);
+
 -- Perfil enriquecido de un comercio reclamado. Cada org puede tener un
 -- comercio vinculado (organizaciones.comercio_id); el perfil se almacena aquí
 -- y tiene prioridad sobre los datos estáticos del JSON. Upsert por comercio_id

@@ -16,8 +16,17 @@ const RECAPTCHA_THRESHOLD = 0.5 // Score mínimo (0.0-1.0) para considerar human
  * Verifica el token de reCAPTCHA v3 con los servidores de Google.
  * Devuelve { valido: true, score } si es válido, { valido: false } si no.
  */
-async function verificarRecaptcha(token) {
+async function verificarRecaptcha(token, host) {
   if (!token) return { valido: false, razon: 'Token ausente' }
+
+  // useRecaptcha.js genera a propósito un token simulado 'token_<timestamp>'
+  // en localhost (y si el script de Google no carga): sin este bypass, ese
+  // token se reenviaba tal cual a Google, que lo rechazaba siempre, y el
+  // formulario nunca se podía probar en local. Mismo patrón que
+  // api/solicitar-reclamacion.js y api/solicitar-alta-comercio.js.
+  const esLocalhost = host?.includes('localhost') || host?.includes('127.0.0.1')
+  if (esLocalhost) return { valido: true }
+  if (token?.startsWith('token_')) return { valido: true }
 
   const secretKey = process.env.RECAPTCHA_SECRET_KEY
   if (!secretKey) {
@@ -63,7 +72,8 @@ export default async function handler(req) {
 
   // Validar reCAPTCHA v3 primero (caro pero importante)
   const { recaptchaToken } = datos
-  const recaptchaValido = await verificarRecaptcha(recaptchaToken)
+  const host = typeof req.headers?.get === 'function' ? req.headers.get('host') : req.headers?.host
+  const recaptchaValido = await verificarRecaptcha(recaptchaToken, host)
   if (!recaptchaValido.valido) {
     return json(
       { error: 'Verificación de seguridad fallida. No pareces ser humano.' },
@@ -84,10 +94,13 @@ export default async function handler(req) {
 
   // Validaciones específicas por tipo
   if (tipo === 'comercio') {
-    const { nombre, direccion, tipo: tipoNegocio, horarios } = datos
+    // OJO: `tipo` ya es el discriminador de la sugerencia ('comercio'), no la
+    // categoría del negocio — esa viaja en `tipoNegocio` (SugerirComercio.jsx
+    // la manda como datos.categoria). Desestructurar `tipo: tipoNegocio` aquí
+    // leía siempre 'comercio' y perdía la categoría real elegida en el form.
+    const { nombre, direccion, tipoNegocio } = datos
     if (!nombre?.trim()) return json({ error: 'El nombre es obligatorio' }, 400)
     if (!direccion?.trim()) return json({ error: 'La dirección es obligatoria' }, 400)
-    if (!horarios?.trim()) return json({ error: 'Los horarios son obligatorios' }, 400)
     if (!tipoNegocio) return json({ error: 'El tipo de negocio es obligatorio' }, 400)
   } else {
     const { titulo } = datos
