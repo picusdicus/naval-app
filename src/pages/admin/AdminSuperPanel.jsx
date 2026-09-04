@@ -4,6 +4,7 @@ import MIcon from '../../components/MIcon.jsx'
 import TablesOrganizaciones from '../../components/admin/super/TablesOrganizaciones.jsx'
 import TablesCodigosInvitacion from '../../components/admin/super/TablesCodigosInvitacion.jsx'
 import TableReclamaciones from '../../components/admin/super/TableReclamaciones.jsx'
+import TableAltasComercio from '../../components/admin/super/TableAltasComercio.jsx'
 import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
 import TablesEventos from '../../components/admin/super/TablesEventos.jsx'
 import TablesPendientes from '../../components/admin/super/TablesPendientes.jsx'
@@ -84,6 +85,7 @@ export default function AdminSuperPanel() {
     ['organizaciones', 'business', 'Organizaciones'],
     ['codigos', 'card_giftcard', 'Códigos de invitación'],
     ['reclamaciones', 'verified_user', 'Reclamaciones'],
+    ['altas', 'add_business', 'Altas'],
     ['destacados', 'star', 'Destacados'],
     ['pendientes', 'pending_actions', 'Pendientes'],
     ['eventos', 'event', 'Eventos'],
@@ -171,6 +173,7 @@ export default function AdminSuperPanel() {
           {seccionActiva === 'organizaciones' && <TablesOrganizaciones />}
           {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}
           {seccionActiva === 'reclamaciones' && <TableReclamaciones />}
+          {seccionActiva === 'altas' && <TableAltasComercio />}
           {seccionActiva === 'destacados' && <TablesDestacados />}
           {seccionActiva === 'pendientes' && <TablesPendientes />}
           {seccionActiva === 'eventos' && <TablesEventos />}
