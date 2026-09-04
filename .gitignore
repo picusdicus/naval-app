@@ -50,3 +50,6 @@ blob-report/
 
 # Imágenes de prueba locales (no van al repo)
 public/img/test/
+
+# Playwright MCP
+.playwright-mcp/

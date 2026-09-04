@@ -527,7 +527,7 @@ function confianzaEnlace(servicio, ficha) {
 const PLACES_BASE = "https://places.googleapis.com/v1";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function searchText(query, pageToken = null, maxResultCount = 20) {
+async function searchText(query, pageToken = null, maxResultCount = 20, rankPreference = null) {
   const body = {
     textQuery: query,
     locationBias: {
@@ -537,6 +537,7 @@ async function searchText(query, pageToken = null, maxResultCount = 20) {
     languageCode: "es",
   };
   if (pageToken) body.pageToken = pageToken;
+  if (rankPreference) body.rankPreference = rankPreference;
 
   const res = await fetch(`${PLACES_BASE}/places:searchText`, {
     method: "POST",
@@ -791,6 +792,37 @@ function trasladarCurado(servicio, comercio, overrides) {
 }
 
 // ---------------------------------------------------------------------------
+// Búsqueda paginada (reutilizable para múltiples rankPreference)
+// ---------------------------------------------------------------------------
+
+async function paginarBusqueda(query, rankPreference, searchCalls, rawPlaces) {
+  let pageToken = null;
+  let page = 1;
+  const logParts = [];
+
+  do {
+    try {
+      const { places, nextPageToken } = await searchText(query, pageToken, 20, rankPreference);
+      searchCalls.count++;
+      let added = 0;
+      for (const p of places) {
+        if (!rawPlaces.has(p.id)) { rawPlaces.set(p.id, p); added++; }
+      }
+      logParts.push(`[p${page}:+${added}]`);
+      pageToken = nextPageToken;
+      page++;
+      if (pageToken) await sleep(API_THROTTLE_MS);
+    } catch (err) {
+      logParts.push(`[ERR]`);
+      console.error(err.message);
+      break;
+    }
+  } while (pageToken);
+
+  return logParts.join(" ");
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -801,38 +833,24 @@ async function main() {
   // ── Phase 1: collect unique place IDs ─────────────────────────────────────
   console.log("\nPhase 1 — Text search");
   const rawPlaces = new Map();
-  let searchCalls = 0;
+  const searchCalls = { count: 0 };
 
   for (const query of SOLO_SERVICIOS ? [] : SEARCH_QUERIES) {
-    let pageToken = null;
-    let page = 1;
     process.stdout.write(`  "${query}" `);
 
-    do {
-      try {
-        const { places, nextPageToken } = await searchText(query, pageToken);
-        searchCalls++;
-        let added = 0;
-        for (const p of places) {
-          if (!rawPlaces.has(p.id)) { rawPlaces.set(p.id, p); added++; }
-        }
-        process.stdout.write(`[p${page}:+${added}] `);
-        pageToken = nextPageToken;
-        page++;
-        if (pageToken) await sleep(API_THROTTLE_MS);
-      } catch (err) {
-        process.stdout.write(`[ERR] `);
-        console.error(err.message);
-        break;
-      }
-    } while (pageToken);
+    // Pasada 1: por relevancia (comportamiento de siempre). Pasada 2: por
+    // distancia, que reordena el ranking y rescata negocios recientes o con
+    // pocas reseñas que la relevancia deja fuera del tope de 60 por query.
+    process.stdout.write(await paginarBusqueda(query, null, searchCalls, rawPlaces));
+    process.stdout.write(" · ");
+    process.stdout.write(await paginarBusqueda(query, "DISTANCE", searchCalls, rawPlaces));
 
     console.log();
     await sleep(API_THROTTLE_MS);
   }
 
   console.log(`\n  Total unique places found: ${rawPlaces.size}`);
-  console.log(`  Search calls used: ${searchCalls}\n`);
+  console.log(`  Search calls used: ${searchCalls.count}\n`);
 
   // ── Phase 1b: no perder las fichas que ya estaban publicadas ──────────────
   // Las búsquedas de texto devuelven ~60 resultados por consulta ordenados por
@@ -869,7 +887,7 @@ async function main() {
     console.log(`Phase 1c — Servicios curados (${Math.min(servicios.length, LIMITE_SERVICIOS)} de ${servicios.length})`);
     const r = await enlazarServiciosCurados(rawPlaces, servicios);
     enlaces = r.enlaces;
-    searchCalls += r.stats.llamadas;
+    searchCalls.count += r.stats.llamadas;
     console.log(
       `  Enlazados: ${enlaces.size}  (${r.stats.yaEstaban} ya estaban en los resultados, ${r.stats.nuevos} nuevos)` +
         `  |  sin enlace: ${r.stats.sinEnlace}  |  llamadas: ${r.stats.llamadas}  |  errores: ${r.stats.errores}\n`,
@@ -1009,7 +1027,7 @@ async function main() {
   }
 
   // ── Summary ────────────────────────────────────────────────────────────────
-  const totalCalls = searchCalls + detailCalls;
+  const totalCalls = searchCalls.count + detailCalls;
   console.log("=".repeat(65));
   console.log(`Done!  ${final.length} comercios written to src/data/comercios.json`);
   console.log("\nBy category:");
@@ -1037,7 +1055,7 @@ async function main() {
   console.log(`  atributos    ${withAttrs}/${final.length}`);
 
   console.log(`\nAPI calls used: ${totalCalls}  (~$${(totalCalls * 0.017).toFixed(2)})`);
-  console.log(`  ${searchCalls} search  +  ${detailCalls} detail`);
+  console.log(`  ${searchCalls.count} search  +  ${detailCalls} detail`);
 
   informarServicios(absorbidos, revisar, restantes);
 }
