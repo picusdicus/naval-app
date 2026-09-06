@@ -63,7 +63,7 @@ export default async function handler(req, res) {
 
   // Primero lo que ha enviado el usuario, y solo después la infraestructura:
   // un formato no admitido debe decir "usa JPG" aunque falte el token.
-  const { nombre, tipo, datos } = req.body || {}
+  const { nombre, tipo, datos, carpeta: carpetaPedida } = req.body || {}
 
   const extension = TIPOS_PERMITIDOS[tipo]
   if (!extension) {
@@ -87,10 +87,16 @@ export default async function handler(req, res) {
     })
   }
 
-  // La sesión de superadmin no lleva organización: sus subidas (imágenes de
-  // destacados desde /admin) van a una carpeta propia en lugar de a
-  // eventos/undefined/.
-  const carpeta = sesion.organizacionSlug ? `eventos/${sesion.organizacionSlug}` : 'destacados'
+  // La sesión de superadmin no lleva organización: sus subidas van a una
+  // carpeta propia en lugar de a eventos/undefined/ — 'destacados' por defecto
+  // (imágenes de destacados desde /admin) o 'eventos/admin' si el cliente pide
+  // `carpeta: 'eventos'` (carteles de eventos creados a mano desde el tab
+  // Eventos). Lista cerrada: el cliente nunca elige una ruta libre.
+  const carpeta = sesion.organizacionSlug
+    ? `eventos/${sesion.organizacionSlug}`
+    : carpetaPedida === 'eventos'
+      ? 'eventos/admin'
+      : 'destacados'
 
   try {
     const { url } = await put(

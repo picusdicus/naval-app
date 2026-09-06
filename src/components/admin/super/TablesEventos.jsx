@@ -16,6 +16,7 @@ import { GenericasEventoContext, RecargarGenericasContext } from '../../../lib/G
 import MIcon from '../../MIcon.jsx'
 import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
 import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
+import FormularioEventoManual from './FormularioEventoManual.jsx'
 
 // Tab "Eventos" del panel superadmin: lista todos los eventos publicados de la
 // agenda (los tres orígenes ya fusionados con combinarEventos, como la vista
@@ -423,6 +424,20 @@ export default function TablesEventos() {
   const centinelaRef = useRef(null)
   const [fusiones, setFusiones] = useState([]) // fusiones manuales [{principal, secundaria}]
   const [origenFusionId, setOrigenFusionId] = useState(null) // id del principal elegido en el modo fusión
+  const [creando, setCreando] = useState(false) // formulario "Nuevo evento" desplegado
+  const [aviso, setAviso] = useState(null) // { texto } — confirmación tras crear un evento
+
+  // Recarga solo los eventos de Neon (los estáticos no cambian en sesión):
+  // tras crear un evento a mano, la fila aparece en la lista sin recargar.
+  async function recargarDeLaBase() {
+    try {
+      const r = await fetch('/api/eventos', { cache: 'no-store' })
+      const d = r.ok ? await r.json() : { eventos: [] }
+      setDeLaBase(d.eventos ?? [])
+    } catch {
+      /* la lista se queda como estaba */
+    }
+  }
 
   useEffect(() => {
     let vigente = true
@@ -684,19 +699,80 @@ export default function TablesEventos() {
 
   const origenFusion = origenFusionId ? eventos.find((e) => e.id === origenFusionId) : null
 
+  // Lugares de la agenda ya cargada, para el desplegable del formulario de
+  // creación (se suman a los que devuelve el servidor).
+  const lugaresDeLaAgenda = useMemo(() => {
+    const vistos = new Set()
+    for (const e of eventos) {
+      const l = String(e.lugar || '').trim()
+      if (l && (e.ambito ?? 'navalcarnero') === 'navalcarnero') vistos.add(l)
+    }
+    return [...vistos]
+  }, [eventos])
+
+  async function eventoCreado({ evento, organizacion }) {
+    setCreando(false)
+    setMensaje(null)
+    await recargarDeLaBase()
+    setBusqueda('')
+    setAviso({
+      texto: `Evento «${evento.titulo}» creado${evento.estado === 'publicado' ? ' y publicado' : ' como borrador'}${
+        organizacion?.creada ? ` (organizador nuevo: ${organizacion.nombre})` : ''
+      }.`,
+    })
+  }
+
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="font-serif-dm text-xl text-tinta">Eventos publicados</h2>
-        <p className="mt-1 font-serif-spectral text-sm text-pardo">
-          Todos los eventos de la agenda (curados, sincronizados y de las organizaciones).
-          Destaca cualquiera con un clic (dura {DIAS_DESTACADO} días; afina su orden y vigencia
-          en el tab Destacados) u ocúltalo de la agenda pública. Ocultar es reversible y no
-          borra el evento. Si dos entradas son el mismo acto y el matcher automático no las
-          une, fusiónalas: «Fusionar» en la que debe sobrevivir y «Fusionar aquí» en la
-          duplicada — la fusión persiste entre sincronizaciones y se deshace desde el detalle.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="font-serif-dm text-xl text-tinta">Eventos publicados</h2>
+          <p className="mt-1 font-serif-spectral text-sm text-pardo">
+            Todos los eventos de la agenda (curados, sincronizados y de las organizaciones).
+            Destaca cualquiera con un clic (dura {DIAS_DESTACADO} días; afina su orden y vigencia
+            en el tab Destacados) u ocúltalo de la agenda pública. Ocultar es reversible y no
+            borra el evento. Si dos entradas son el mismo acto y el matcher automático no las
+            une, fusiónalas: «Fusionar» en la que debe sobrevivir y «Fusionar aquí» en la
+            duplicada — la fusión persiste entre sincronizaciones y se deshace desde el detalle.
+          </p>
+        </div>
+        {!creando && (
+          <button
+            type="button"
+            onClick={() => {
+              setAviso(null)
+              setCreando(true)
+            }}
+            className="gz-boton-tinta inline-flex shrink-0 items-center gap-1.5"
+          >
+            <MIcon name="add" className="text-[16px]" />
+            Crear evento
+          </button>
+        )}
       </div>
+
+      {creando && (
+        <FormularioEventoManual
+          lugaresDeLaAgenda={lugaresDeLaAgenda}
+          onCreado={eventoCreado}
+          onCancelar={() => setCreando(false)}
+        />
+      )}
+
+      {aviso && (
+        <p
+          role="status"
+          className="flex items-start justify-between gap-2 border border-verde bg-papel-calido px-4 py-3 font-serif-spectral text-sm text-tinta"
+        >
+          <span className="flex items-start gap-2">
+            <MIcon name="check_circle" className="mt-0.5 text-[18px] text-verde" />
+            <span>{aviso.texto}</span>
+          </span>
+          <button type="button" onClick={() => setAviso(null)} aria-label="Cerrar aviso" className="text-pardo">
+            <MIcon name="close" className="text-[16px]" />
+          </button>
+        </p>
+      )}
 
       {mensaje && (
         <p className="flex items-start gap-2 border border-terracota bg-terracota-fondo px-4 py-3 font-serif-spectral text-sm text-terracota">

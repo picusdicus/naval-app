@@ -15,6 +15,9 @@ export default function SelectorImagen({
   error,
   etiqueta = 'Cartel del evento',
   opcional = true,
+  // Solo la usa el superadmin (sin org en sesión): 'eventos' guarda el cartel
+  // en eventos/admin/ en vez de en destacados/ (ver api/admin/imagen.js).
+  carpeta,
 }) {
   const entrada = useRef(null)
   const [subiendo, setSubiendo] = useState(false)
@@ -41,7 +44,12 @@ export default function SelectorImagen({
       const respuesta = await fetch('/api/admin/imagen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: fichero.name, tipo: optimizada.tipo, datos: optimizada.datos }),
+        body: JSON.stringify({
+          nombre: fichero.name,
+          tipo: optimizada.tipo,
+          datos: optimizada.datos,
+          ...(carpeta ? { carpeta } : {}),
+        }),
       })
       const cuerpo = await respuesta.json().catch(() => ({}))
       if (!respuesta.ok) throw new Error(cuerpo.error || 'No se pudo subir la imagen.')
