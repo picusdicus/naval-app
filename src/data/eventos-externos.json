@@ -9,7 +9,7 @@
     "origen": "cultural",
     "descripcion": "Este sábado 1 de marzo celebramos el CARNAVAL DE 2025, que inicia los festejos con el tradicional pasacalles que arranca desde la Plaza de Segovia a las 18.00 horas y continúa por las calles Real, Libertad, Alemania, Paseo del Alparrache y finaliza en la Plaza de Toros \"Félix Colomo\". Hay previsto una zona de movilidad reducida a la altura del número 10 de la calle Alemania, así como un tramo sin ruido entre los números 45 y 65 de la misma calle. No te pierdas la oportunidad de disfrutar de esta Fiesta llena de imaginación, color y risas, pero observando en todo momento las NORMAS DE SEGURIDAD para que nada estropee la alegría y la diversión de este día. NORMAS BÁSICAS DE SEGURIDAD CARNAVAL 2025",
     "url": "https://navalcarnero.es/navalcarnero/cultura/carnaval-2025-1-de-marzo-a-las-18-00-plaza-de-segovia/",
-    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/Carnaval-2025-CARTEL.png",
+    "imagen": "",
     "fuente": "Ayuntamiento"
   },
   {
@@ -22,7 +22,7 @@
     "origen": "cultural",
     "descripcion": "El próximo 1 de marzo, a las 18.00 horas celebraremos el tradicional DESFILE DE CARNAVAL. Las Asociaciones legalmente constituidas, los grupos sin personalidad jurídica y los grupos independientes que estén interesados en participar, pueden consultar las Bases y descargar los impresos para participar más abajo. El plazo de inscripción finaliza el viernes 14 de febrero . Las solicitudes podrán presentarse presencialmente en el Registro General del Ayuntamiento (Pza. de Francisco Sandoval,1, planta baja), de lunes a viernes en horario de 08.00 a 14.15 horas o por Sede Electrónica BASES REGULADORAS PARA PARTICIPAR EN EL DESFILE DE CARNAVAL 2025 SOLICITUD DE PARTICIPACIÓN ASOCIACIONES DECLARACION RESPONSABLE ASOCIACIONES SOLICITUD DE PARTICIPACIÓN GRUPOS SIN PERSONALIDAD JURIDICA DECLARACION RESPONSABLE GRUPOS SIN PERSONALIDAD JURÍDICA SOLICITUD DE PARTICIPACIÓN GRUPOS INDEPENDIENTES",
     "url": "https://navalcarnero.es/navalcarnero/cultura/participacion-en-el-desfile-de-carnaval-2025/",
-    "imagen": "https://navalcarnero.es/navalcarnero/cultura/files/Carnaval-2025-LOGO-2.png",
+    "imagen": "",
     "fuente": "Ayuntamiento"
   },
   {
@@ -1051,21 +1051,6 @@
     "fuente": ""
   },
   {
-    "id": "deportes-28-competicion-calistenia-2-sept",
-    "titulo": "Competición calistenia 2 sept",
-    "fecha": "2026-09-02",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/28.-COMPETICIÓN-CALISTENIA-2-Sept.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/28.-COMPETICIÓN-CALISTENIA-2-Sept.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": "fiestas-competicion-amateur-de-calistenia-2026-09-02"
-  },
-  {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-09-02",
     "titulo": "TORNEO DE TENIS FIESTAS PATRONALES.",
     "fecha": "2026-09-02",
@@ -1192,36 +1177,6 @@
     "fuente": ""
   },
   {
-    "id": "deportes-31-trofeo-cd-futsi",
-    "titulo": "Trofeo cd futsi",
-    "fecha": "2026-09-03",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/31.-TROFEO-CD-FUTSI.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/31.-TROFEO-CD-FUTSI.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": "fiestas-trofeo-fiestas-patronales-cd-futsi-navalcarnero-2026-09-03"
-  },
-  {
-    "id": "deportes-plazo-puerta-abiertas-rugby-3-sept",
-    "titulo": "Puerta abiertas rugby 3 sept",
-    "fecha": "2026-09-03",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/32.-fin-plazo-PUERTA-ABIERTAS-RUGBY-3-Sept.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/32.-fin-plazo-PUERTA-ABIERTAS-RUGBY-3-Sept.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": null
-  },
-  {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-09-03",
     "titulo": "TORNEO DE TENIS FIESTAS PATRONALES.",
     "fecha": "2026-09-03",
@@ -1346,21 +1301,6 @@
     "descripcion": "A cargo de la Escuela de Danza Cristina Magro, Escuela de Danza & Música Anita Lorenzo y Karma Dance Studio. Lugar: plaza de Segovia.",
     "url": "",
     "fuente": ""
-  },
-  {
-    "id": "deportes-33-homenaje-futsi",
-    "titulo": "Homenaje futsi",
-    "fecha": "2026-09-04",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/33.-HOMENAJE-FUTSI.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/33.-HOMENAJE-FUTSI.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": null
   },
   {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-09-04",
@@ -1514,51 +1454,6 @@
     "descripcion": "Lugar: plaza de Segovia.",
     "url": "",
     "fuente": ""
-  },
-  {
-    "id": "deportes-36-torneo-baloncesto-partido",
-    "titulo": "Torneo baloncesto partido",
-    "fecha": "2026-09-05",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/36.-TORNEO-BALONCESTO-PARTIDO.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/36.-TORNEO-BALONCESTO-PARTIDO.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": "fiestas-torneo-baloncesto-villa-real-de-navalcarnero-2026-09-05"
-  },
-  {
-    "id": "deportes-35-trio-al-plato",
-    "titulo": "Trio al plato",
-    "fecha": "2026-09-05",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/35.-Trio-al-plato.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/35.-Trio-al-plato.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": null
-  },
-  {
-    "id": "deportes-34-torneo-ajedrez-5-sept",
-    "titulo": "Torneo ajedrez 5 sept",
-    "fecha": "2026-09-05",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/34.-TORNEO-AJEDREZ-5-Sept.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/34.-TORNEO-AJEDREZ-5-Sept.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": "fiestas-torneo-de-ajedrez-fiestas-patronales-2026-09-05"
   },
   {
     "id": "fiestas-torneo-de-tenis-fiestas-patronales-2026-09-05",
@@ -1755,36 +1650,6 @@
     "descripcion": "El Ayuntamiento de Navalcarnero vuelve a ofrecer el homenaje a nuestros mayores, en el que se concederá este reconocimiento al señor y a la señora de más edad de nuestro municipio, así como al matrimonio más longevo del municipio. Además, en este acto se entregará el Premio a la Mejor Labor Social del año 2026. Lugar: plaza de Segovia.",
     "url": "",
     "fuente": ""
-  },
-  {
-    "id": "deportes-39-iv-torofeo-fs-navalcarnero",
-    "titulo": "Iv torofeo fs navalcarnero",
-    "fecha": "2026-09-06",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/39.-IV-TOROFEO-FS-NAVALCARNERO.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/39.-IV-TOROFEO-FS-NAVALCARNERO.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": null
-  },
-  {
-    "id": "deportes-38-carrera-del-galgos",
-    "titulo": "Carrera del galgos",
-    "fecha": "2026-09-06",
-    "hora": null,
-    "lugar": "Navalcarnero",
-    "categoria": "deporte",
-    "subcategoria": null,
-    "origen": "deportes",
-    "descripcion": "",
-    "url": "https://navalcarnero.es/navalcarnero/deportes/files/38.-Carrera-del-galgos.jpg",
-    "imagen": "https://navalcarnero.es/navalcarnero/deportes/files/38.-Carrera-del-galgos.jpg",
-    "fuente": "Actividades Deportivas",
-    "enriqueceEvento": "fiestas-xxxiv-trofeo-carrera-galgos-en-pista-fiestas-patro-2026-09-06"
   },
   {
     "id": "fiestas-dia-de-la-infancia-2026-09-06",
