@@ -301,6 +301,16 @@ export function disciplinaDeEvento(evento) {
  * sea de fiestas — ver SUBTIPOS_CULTURALES.
  */
 export function destinoImagenEvento(evento) {
+  // Talleres del catálogo municipal (src/lib/talleres.js): la disciplina viaja
+  // explícita en `subcategoria` — es un dato, no algo que haya que adivinar
+  // por el título. Se resuelve ANTES que nada para que un taller de teatro
+  // reciba fotos de "talleres · teatro" y no las de las funciones de teatro:
+  // 'teatro' está también en SUBTIPOS_CULTURALES y, sin este corte, la regla
+  // de abajo lo mandaría a la categoría 'cultura'.
+  if (evento?.categoria === 'talleres' && evento?.subcategoria) {
+    return { categoria: 'talleres', subtipo: evento.subcategoria }
+  }
+
   const subtipo = evento ? disciplinaDeEvento(evento) : null
   if (subtipo && SUBTIPOS_CULTURALES.includes(subtipo)) {
     return { categoria: 'cultura', subtipo }

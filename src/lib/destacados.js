@@ -14,6 +14,7 @@ import comerciosData from '../data/comercios.json'
 import serviciosLocales from '../data/servicios-locales.json'
 import { diasHasta, UMBRAL_AVISO_CADUCIDAD } from './fechas.js'
 import { CATEGORIAS_EVENTO, formatearFechaCorta } from './eventos.js'
+import { colorCategoriaTaller, nombreCategoriaTaller, tallerComoEvento, textoTurno } from './talleres.js'
 import { imagenEvento } from './imagenesEvento.js'
 import { CATEGORIAS } from './categorias.js'
 import { SIMBOLO_EVENTO } from '../components/eventos/iconosEvento.jsx'
@@ -83,6 +84,45 @@ export function eventoATarjeta(evento, { imagenOverride, genericas = [] } = {}) 
       ...(evento.lugar ? [{ icono: 'location_on', texto: evento.lugar }] : []),
     ],
     item: evento,
+  }
+}
+
+/**
+ * Tarjeta de carrusel para un taller municipal.
+ *
+ * Gemelo de eventoATarjeta: mismas claves, para que <TarjetaDestacado> y
+ * <CarruselDestacados> no tengan que saber de qué tipo es el item. La imagen
+ * sigue la misma prioridad (contratada > propia > ilustrativa de #23), pasando
+ * el taller por tallerComoEvento() para no duplicar nada de imagenesEvento.js.
+ *
+ * A diferencia de un evento no hay fecha que pintar: la primera línea es el
+ * primer turno ("Martes y jueves · 10:00-11:00"), que es el dato por el que un
+ * vecino decide si le encaja.
+ */
+export function tallerATarjeta(taller, { imagenOverride, genericas = [] } = {}) {
+  const comoEvento = tallerComoEvento(taller)
+  const propia = imagenEvento(comoEvento, { genericas })
+  const reserva = propia?.real
+    ? imagenEvento({ ...comoEvento, imagen: '' }, { genericas })
+    : null
+  const primerTurno = taller.turnos?.[0]
+
+  return {
+    id: `taller-${taller.id}`,
+    tipo: 'taller',
+    to: `/talleres/${taller.id}`,
+    titulo: taller.nombre,
+    badge: nombreCategoriaTaller(taller.categoria),
+    imagen: imagenOverride || propia?.src || '',
+    imagenPos: imagenOverride ? undefined : propia?.pos,
+    imagenReserva: reserva?.src || '',
+    colorCategoria: colorCategoriaTaller(taller.categoria),
+    simbolo: 'school',
+    lineas: [
+      ...(primerTurno ? [{ icono: 'schedule', texto: textoTurno(primerTurno) }] : []),
+      ...(taller.lugar ? [{ icono: 'location_on', texto: taller.lugar }] : []),
+    ],
+    item: taller,
   }
 }
 

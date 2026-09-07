@@ -92,11 +92,11 @@ export default async function handler(req, res) {
   // (imágenes de destacados desde /admin) o 'eventos/admin' si el cliente pide
   // `carpeta: 'eventos'` (carteles de eventos creados a mano desde el tab
   // Eventos). Lista cerrada: el cliente nunca elige una ruta libre.
+  // Los talleres municipales suben a 'talleres' con `carpeta: 'talleres'`.
+  const CARPETAS_SUPERADMIN = { eventos: 'eventos/admin', talleres: 'talleres' }
   const carpeta = sesion.organizacionSlug
     ? `eventos/${sesion.organizacionSlug}`
-    : carpetaPedida === 'eventos'
-      ? 'eventos/admin'
-      : 'destacados'
+    : CARPETAS_SUPERADMIN[carpetaPedida] || 'destacados'
 
   try {
     const { url } = await put(

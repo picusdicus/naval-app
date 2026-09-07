@@ -80,14 +80,31 @@ export function genericasParaEvento(evento, genericas = [], asignaciones = {}) {
   }
 
   const { categoria, subtipo } = destinoImagenEvento(evento)
-  return genericas.filter((g) => {
+  const deLaCategoria = genericas.filter((g) => {
     // Reservadas para asignación manual: no entran en el reparto automático.
     // Es lo que permite subir una foto muy concreta (los fuegos artificiales
     // del 7 de septiembre) sin que le toque a otro evento de su mismo grupo.
     if (g.soloAsignacion) return false
-    if (g.categoria !== categoria) return false
-    return subtipo === null ? g.disciplina === null : g.disciplina === subtipo
+    return g.categoria === categoria
   })
+
+  const delSubtipo = deLaCategoria.filter((g) =>
+    subtipo === null ? g.disciplina === null : g.disciplina === subtipo,
+  )
+  if (delSubtipo.length > 0 || subtipo === null) return delSubtipo
+
+  // Sin fotos de ese subtipo: en TALLERES (y solo ahí) se cae a las de la
+  // categoría sin disciplina. El catálogo tiene 12 disciplinas y la foto
+  // neutra de "talleres" es justo la que se sube para cubrirlas mientras no
+  // haya una de cada; sin este fallback esa foto no la usaría nadie, porque
+  // todo taller declara disciplina.
+  //
+  // NO se generaliza a deporte, cultura ni fiestas a propósito: ahí el subtipo
+  // se INFIERE del título y una foto neutra de "deporte" saliendo en un torneo
+  // de ajedrez es justo el error que la regla estricta evita. Aquí la
+  // disciplina es un dato explícito del catálogo y la foto neutra se sube
+  // sabiendo que va a repartirse.
+  return categoria === 'talleres' ? deLaCategoria.filter((g) => g.disciplina === null) : []
 }
 
 /** Atribución de una genérica: "autor, licencia" si los hay; si no, la fuente. */
