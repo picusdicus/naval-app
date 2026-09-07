@@ -60,6 +60,7 @@ export default function AdminSuperPanel() {
   // cambiar de sección (así se refrescan tras gestionar dentro del propio
   // tab); pueden ir un refresco por detrás sin salir del tab, y no pasa nada.
   const [pendientesSync, setPendientesSync] = useState(0)
+  const [propuestasTalleres, setPropuestasTalleres] = useState(0)
   useEffect(() => {
     let vigente = true
 
@@ -74,6 +75,15 @@ export default function AdminSuperPanel() {
       .then((r) => (r.ok ? r.json() : { eventos: [], actividades: [] }))
       .then(({ eventos = [], actividades = [] }) => {
         if (vigente) setPendientesSync(eventos.length + actividades.length)
+      })
+      .catch(() => {})
+
+    // Actualizaciones que una reimportación del folleto propone sobre talleres
+    // que ya existen: son trabajo sin gestionar, como los otros dos.
+    fetch('/api/super/talleres-propuestas')
+      .then((r) => (r.ok ? r.json() : { propuestas: [] }))
+      .then(({ propuestas = [] }) => {
+        if (vigente) setPropuestasTalleres(propuestas.length)
       })
       .catch(() => {})
 
@@ -164,6 +174,11 @@ export default function AdminSuperPanel() {
               {clave === 'pendientes' && pendientesSync > 0 && (
                 <span className="min-w-[1.25rem] rounded-full bg-terracota px-1.5 py-0.5 text-center text-[10px] font-bold text-papel">
                   {pendientesSync}
+                </span>
+              )}
+              {clave === 'talleres' && propuestasTalleres > 0 && (
+                <span className="min-w-[1.25rem] rounded-full bg-terracota px-1.5 py-0.5 text-center text-[10px] font-bold text-papel">
+                  {propuestasTalleres}
                 </span>
               )}
             </button>

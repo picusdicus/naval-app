@@ -10,8 +10,10 @@
 // nada automáticamente y NO archiva el catálogo anterior — el archivado tiene
 // su propio corte del 31 de julio y es independiente de cuándo se importe.
 //
-// SIN detección de duplicados (eso es la fase 3): reimportar el mismo PDF crea
-// otras tantas filas en borrador, visibles y borrables desde el panel.
+// Reimportar NO duplica el catálogo (fase 3): un taller extraído cuyo nombre ya
+// existe en ese mismo curso no crea fila, deja una PROPUESTA DE ACTUALIZACIÓN
+// en `talleres_propuestas` para que el superadmin vea el diff y decida. Si lo
+// extraído coincide en todo con lo guardado no se propone nada ("sin cambios").
 //
 // Node y no Edge —a diferencia de api/super/talleres.js— porque el SDK de
 // Anthropic y los Buffers de PDF necesitan el runtime de Node.
@@ -23,6 +25,13 @@ import { obtenerSql } from '../_db.js'
 import { descargarDocumento, esUrlMunicipal } from '../_descargar-documento.js'
 import { extraerTalleresDePdf } from '../_talleres-parser.js'
 import { validarTaller, normalizarTaller, LIMITES } from '../../src/lib/tallerForm.js'
+import { diferenciasTaller, emparejarTaller } from '../../src/lib/talleresPropuestas.js'
+import {
+  asegurarTablaPropuestas,
+  borrarPropuestaDeTaller,
+  guardarPropuesta,
+} from '../_talleres-propuestas.js'
+import { aSalida, turnosDe } from './talleres.js'
 
 // El cuerpo de una función de Vercel está limitado (~4,5 MB) y base64 infla un
 // tercio, así que el PDF que llega por el cuerpo no puede pasar de 3 MB — el
@@ -48,6 +57,23 @@ function prepararTaller(bruto, curso) {
     // "Por determinar" — es lo que hace el folleto con Historia del arte.
     turnos: Array.isArray(bruto?.turnos) && bruto.turnos.length > 0 ? bruto.turnos : [{}],
   })
+}
+
+/**
+ * Talleres YA guardados de ese curso, con sus turnos, para emparejar contra
+ * ellos. CUALQUIER estado cuenta: un borrador de una importación anterior sin
+ * revisar también es una fila del catálogo, y volver a crearlo sería justo el
+ * duplicado que esto evita.
+ */
+async function catalogoDelCurso(sql, curso) {
+  const filas = await sql`
+    SELECT id, nombre, categoria, descripcion, lugar, precio, edades,
+           imagen_url, curso, estado
+    FROM talleres
+    WHERE curso = ${curso}
+  `
+  const turnos = await turnosDe(sql, filas.map((t) => t.id))
+  return filas.map((t) => aSalida(t, turnos.get(t.id)))
 }
 
 async function insertar(sql, taller) {
@@ -158,8 +184,18 @@ export default async function handler(req, res) {
   // se descarta con su motivo en vez de romper la importación entera — un
   // folleto con una fila rara no debe impedir importar las otras trece.
   const sql = obtenerSql()
+  await asegurarTablaPropuestas(sql)
+
+  const existentes = await catalogoDelCurso(sql, curso)
   const creados = []
+  const propuestas = []
+  const sinCambios = []
   const descartados = []
+  // Un taller ya emparejado en esta misma pasada no vuelve a emparejarse: si el
+  // folleto trae dos filas con el mismo nombre, la segunda se trata como taller
+  // nuevo (y se ve en borrador) en vez de pisar la propuesta de la primera.
+  const yaEmparejados = new Set()
+
   for (const bruto of extraccion.talleres) {
     const taller = prepararTaller(bruto, curso)
     const errores = validarTaller(taller)
@@ -167,21 +203,53 @@ export default async function handler(req, res) {
       descartados.push({ nombre: taller.nombre || '(sin nombre)', motivo: Object.values(errores)[0] })
       continue
     }
+
+    const encontrado = emparejarTaller(taller, existentes, curso)
+    const emparejado = encontrado && !yaEmparejados.has(encontrado.id) ? encontrado : null
+
     try {
-      creados.push(await insertar(sql, taller))
+      if (!emparejado) {
+        creados.push(await insertar(sql, taller))
+        continue
+      }
+      yaEmparejados.add(emparejado.id)
+
+      // Idéntico a lo guardado: ni fila nueva ni propuesta que revisar. Es lo
+      // que hace que reimportar el mismo folleto después de aceptarlo todo no
+      // deje nada pendiente.
+      const cambios = diferenciasTaller(emparejado, taller)
+      if (cambios.length === 0) {
+        // Y si quedaba una propuesta de una importación anterior, sobra: hoy no
+        // cambiaría nada y solo sería ruido en la bandeja.
+        await borrarPropuestaDeTaller(sql, emparejado.id)
+        sinCambios.push({ id: emparejado.id, nombre: emparejado.nombre })
+        continue
+      }
+
+      const propuesta = await guardarPropuesta(sql, emparejado.id, taller, curso)
+      propuestas.push({
+        id: propuesta.id,
+        tallerId: emparejado.id,
+        nombre: emparejado.nombre,
+        campos: cambios.map((c) => c.etiqueta),
+      })
     } catch (error) {
-      console.error(`No se pudo guardar el taller "${taller.nombre}":`, error)
+      console.error(`No se pudo procesar el taller "${taller.nombre}":`, error)
       descartados.push({ nombre: taller.nombre, motivo: 'No se pudo guardar en la base de datos.' })
     }
   }
 
   console.log(
-    `[talleres-importar] curso ${curso}: ${creados.length} creados, ${descartados.length} descartados` +
+    `[talleres-importar] curso ${curso}: ${creados.length} creados, ` +
+      `${propuestas.length} propuestas, ${sinCambios.length} sin cambios, ` +
+      `${descartados.length} descartados` +
       (extraccion.uso ? ` (${extraccion.uso.input_tokens} tokens de entrada)` : '')
   )
 
   return res.status(201).json({
     creados: creados.length,
+    propuestas,
+    sinCambios,
     descartados,
     curso,
     // El curso que el modelo leyó en el folleto, para avisar si no coincide con

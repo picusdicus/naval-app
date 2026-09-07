@@ -12,6 +12,10 @@
 //
 // La validación es la misma que ejecuta el formulario en el navegador
 // (validarTaller en src/lib/tallerForm.js): el cliente nunca se cree.
+//
+// turnosDe/aSalida/guardarTurnos se exportan para que
+// api/super/talleres-propuestas.js aplique una actualización con EXACTAMENTE el
+// mismo escritor que usa el PUT, en vez de duplicar el delete+insert.
 import { requerirSuperAdminEdge } from '../_auth.js'
 import { obtenerSql } from '../_db.js'
 import { json, leerJson, queryDe, csrfInvalido, rechazoCsrf } from '../_http.js'
@@ -22,7 +26,7 @@ export const config = { runtime: 'edge' }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** Turnos de varios talleres a la vez, agrupados por taller_id. */
-async function turnosDe(sql, ids) {
+export async function turnosDe(sql, ids) {
   if (ids.length === 0) return new Map()
   const filas = await sql`
     SELECT id, taller_id, etiqueta, dias, hora_inicio, hora_fin, lugar, orden
@@ -45,7 +49,7 @@ async function turnosDe(sql, ids) {
   return mapa
 }
 
-const aSalida = (t, turnos) => ({
+export const aSalida = (t, turnos) => ({
   id: t.id,
   nombre: t.nombre,
   categoria: t.categoria,
@@ -106,7 +110,7 @@ async function uno(sql, id) {
  * desaparecer, y casarlo por id complicaría el cliente sin ganar nada (los
  * turnos no se referencian desde ninguna otra tabla).
  */
-async function guardarTurnos(sql, tallerId, turnos) {
+export async function guardarTurnos(sql, tallerId, turnos) {
   await sql`DELETE FROM talleres_horarios WHERE taller_id = ${tallerId}`
   for (const t of turnos) {
     await sql`

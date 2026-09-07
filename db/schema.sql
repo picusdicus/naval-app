@@ -572,6 +572,39 @@ CREATE TABLE IF NOT EXISTS talleres_horarios (
 
 CREATE INDEX IF NOT EXISTS idx_talleres_horarios_taller ON talleres_horarios (taller_id, orden);
 
+-- Propuesta de actualización de un taller a partir de una reimportación del
+-- folleto (fase 3). Al importar un PDF, un taller extraído cuyo nombre ya
+-- existe NO crea una fila nueva: deja aquí lo extraído para que el superadmin
+-- vea el diff contra el taller vivo y decida.
+--
+-- Tabla propia y no un borrador de `talleres` con un puntero: una propuesta no
+-- es un taller, y serlo la haría publicable desde su fila — justo el duplicado
+-- que esta fase evita. Aparte no puede publicarse, destacarse, archivarse ni
+-- salir por GET /api/talleres.
+--
+-- `datos` es el taller extraído ENTERO, turnos incluidos. Aquí sí es jsonb (y
+-- no una tabla como talleres_horarios) porque este payload es transitorio, se
+-- lee entero y nunca se consulta por día: la comparación día a día se hace en
+-- JS contra las filas canónicas, que ya vienen desempaquetadas.
+--
+-- NO hay columna de estado: aceptar aplica y borra la fila, descartar la
+-- borra. Una propuesta es un derivado de la última importación, no un registro
+-- de decisiones — y como importar es 100 % manual, si alguien reimporta el
+-- mismo folleto tras descartar, volver a verla es lo correcto.
+--
+-- UNIQUE (taller_id): una propuesta pendiente por taller; reimportar reemplaza
+-- la pendiente (ON CONFLICT DO UPDATE) en vez de acumularlas.
+-- ON DELETE CASCADE: borrar el taller se lleva su propuesta, nunca cuelga.
+CREATE TABLE IF NOT EXISTS talleres_propuestas (
+  id        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  taller_id uuid NOT NULL UNIQUE REFERENCES talleres(id) ON DELETE CASCADE,
+  datos     jsonb NOT NULL,
+  curso     text,
+  creado_en timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_talleres_propuestas_creado ON talleres_propuestas (creado_en DESC);
+
 -- Los talleres se destacan con el MISMO mecanismo que eventos y comercios (una
 -- fila en `destacados` con tipo='taller' y referencia_id = el uuid del
 -- taller). CREATE TABLE IF NOT EXISTS no toca una tabla que ya existe, así que
