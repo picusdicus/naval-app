@@ -614,3 +614,22 @@ ALTER TABLE destacados DROP CONSTRAINT IF EXISTS destacados_tipo_check;
 
 ALTER TABLE destacados ADD CONSTRAINT destacados_tipo_check
   CHECK (tipo IN ('evento', 'comercio', 'taller'));
+
+-- Marcas de tiempo de RESOLUCIÓN, no solo de estado (paso 2a del resumen del
+-- panel de superadmin). `estado` dice QUÉ pasó con una solicitud o un código,
+-- pero no CUÁNDO: una reclamación aprobada hace un mes y otra aprobada hace
+-- diez minutos son indistinguibles, y la lista de "última actividad" del panel
+-- necesita justamente ordenarlas en el tiempo. `creado_en` no sirve para eso
+-- (es cuándo llegó la solicitud, no cuándo se despachó).
+--
+-- Nullable y sin backfill a propósito: de lo resuelto antes de esta columna no
+-- se sabe la fecha, y ponerle `now()` la inventaría — las consultas de
+-- actividad filtran por IS NOT NULL, así que lo antiguo simplemente no aparece.
+ALTER TABLE solicitudes_reclamacion ADD COLUMN IF NOT EXISTS resuelto_en timestamptz;
+
+ALTER TABLE solicitudes_alta_comercio ADD COLUMN IF NOT EXISTS resuelto_en timestamptz;
+
+-- Mismo motivo en los códigos: `usos_actuales` cuenta cuántas veces se canjeó
+-- un código, pero no cuándo fue la última — sin esto, un registro reciente es
+-- invisible en la actividad del panel.
+ALTER TABLE codigos_invitacion ADD COLUMN IF NOT EXISTS ultimo_uso_en timestamptz;

@@ -205,7 +205,7 @@ async function aprobar(sql, solicitudId, esOrganizacionCultural) {
     // 4. Marcar solicitud como aprobada
     await sql`
       UPDATE solicitudes_reclamacion
-      SET estado = 'aprobada'
+      SET estado = 'aprobada', resuelto_en = now()
       WHERE id = ${solicitudId}
     `
 
@@ -235,7 +235,7 @@ async function rechazar(sql, solicitudId) {
   try {
     await sql`
       UPDATE solicitudes_reclamacion
-      SET estado = 'rechazada'
+      SET estado = 'rechazada', resuelto_en = now()
       WHERE id = ${solicitudId}
     `
     return json({ ok: true }, 200)

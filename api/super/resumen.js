@@ -3,7 +3,7 @@
 //   GET — { reclamacionesPendientes, altasPendientes, destacadosRequierenAccion,
 //           pendientesSync, propuestasTalleres, organizacionesActivas,
 //           organizacionesTotal, eventosPublicados, eventosTotal,
-//           usuariosTotal, usuariosAdmin }
+//           usuariosTotal, usuariosAdmin, atencion, actividad }
 //
 // Sustituye a los tres GET completos que el panel hacía solo para contar
 // (destacados, pendientes, talleres-propuestas): traían listas enteras para
@@ -29,6 +29,33 @@ async function contar(etiqueta, consulta) {
   }
 }
 
+/**
+ * Hermana de contar() para lo que no es un número suelto: devuelve las filas,
+ * o null si la consulta falla. Mismo contrato — un fallo aislado deja ESE
+ * campo a null, nunca tira la respuesta entera abajo.
+ */
+async function consultar(etiqueta, consulta) {
+  try {
+    return await consulta()
+  } catch (error) {
+    console.error(`Error consultando ${etiqueta} en /api/super/resumen:`, error)
+    return null
+  }
+}
+
+/**
+ * Tarjeta de "requiere tu atención" a partir de una fila {n, mas_antigua}.
+ * null cuando no hay nada pendiente de ese tipo (el panel omite la tarjeta
+ * entera) y null también cuando la consulta falló: un 0 inventado diría "todo
+ * al día" sin saberlo.
+ */
+function tarjetaAtencion(filas) {
+  if (filas === null) return null
+  const cantidad = Number(filas[0]?.n ?? 0)
+  if (cantidad === 0) return null
+  return { cantidad, masAntiguaDesde: filas[0]?.mas_antigua ?? null }
+}
+
 export default async function handler(req) {
   const sesion = await requerirSuperAdminEdge(req)
   if (sesion instanceof Response) return sesion
@@ -44,8 +71,8 @@ export default async function handler(req) {
   }
 
   const [
-    reclamacionesPendientes,
-    altasPendientes,
+    filasReclamaciones,
+    filasAltas,
     destacadosRequierenAccion,
     pendientesEventos,
     pendientesActividades,
@@ -56,14 +83,26 @@ export default async function handler(req) {
     eventosTotal,
     usuariosTotal,
     usuariosAdmin,
+    filasActividad,
   ] = await Promise.all([
-    contar(
+    // Cuenta y fecha de la más antigua en la MISMA consulta: la tarjeta de
+    // atención necesita las dos, y separarlas solo abriría la puerta a que una
+    // fallara y la otra no, dejando la tarjeta a medias. La fecha viaja como
+    // texto ISO (to_char, convención del proyecto) — el driver de Neon
+    // devolvería un Date y convertirlo en JS arrastra la zona horaria.
+    consultar(
       'reclamaciones',
-      () => sql`SELECT count(*)::int AS n FROM solicitudes_reclamacion WHERE estado = 'pendiente'`,
+      () => sql`
+        SELECT count(*)::int AS n,
+               to_char(min(creado_en) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS mas_antigua
+        FROM solicitudes_reclamacion WHERE estado = 'pendiente'`,
     ),
-    contar(
+    consultar(
       'altas',
-      () => sql`SELECT count(*)::int AS n FROM solicitudes_alta_comercio WHERE estado = 'pendiente'`,
+      () => sql`
+        SELECT count(*)::int AS n,
+               to_char(min(creado_en) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS mas_antigua
+        FROM solicitudes_alta_comercio WHERE estado = 'pendiente'`,
     ),
     // "Requiere acción" = lo que el superadmin todavía tiene que tocar: las
     // solicitudes sin aprobar más las campañas activas cuyo plazo ya pasó
@@ -106,6 +145,51 @@ export default async function handler(req) {
       'usuarios admin',
       () => sql`SELECT count(*)::int AS n FROM usuarios WHERE rol IN ('admin', 'superadmin')`,
     ),
+    // Últimos sucesos de las cuatro fuentes que dejan rastro fechado. La
+    // mezcla y el orden van en SQL (UNION ALL + ORDER BY + LIMIT) y no en JS:
+    // así solo viajan las 8 filas que se pintan, en vez de cuatro listas
+    // enteras para tirar casi todo al ordenarlas aquí.
+    consultar(
+      'actividad reciente',
+      () => sql`
+        SELECT tipo, texto,
+               to_char(fecha AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS fecha
+        FROM (
+          SELECT 'alta' AS tipo,
+                 'Alta pendiente: ' || nombre AS texto,
+                 creado_en AS fecha
+            FROM solicitudes_alta_comercio
+           WHERE estado = 'pendiente'
+          UNION ALL
+          -- Solo las YA resueltas: una reclamación pendiente no es un suceso,
+          -- es cola de trabajo, y para eso está su tarjeta de atención.
+          SELECT 'reclamacion',
+                 'Reclamación '
+                   || CASE WHEN estado = 'aprobada' THEN 'aprobada' ELSE 'rechazada' END
+                   || ': ' || nombre,
+                 resuelto_en
+            FROM solicitudes_reclamacion
+           WHERE resuelto_en IS NOT NULL
+          UNION ALL
+          SELECT 'codigo',
+                 'Código usado · ' || o.nombre,
+                 c.ultimo_uso_en
+            FROM codigos_invitacion c
+            JOIN organizaciones o ON o.id = c.organizacion_id
+           WHERE c.ultimo_uso_en IS NOT NULL
+          UNION ALL
+          -- Un run que no trajo nada no es actividad, es ruido: el cron corre
+          -- a diario y taparía lo demás con filas de "0 nuevos".
+          SELECT 'sincronizacion',
+                 'Sincronización: ' || nuevos
+                   || CASE WHEN nuevos = 1 THEN ' nuevo' ELSE ' nuevos' END,
+                 ejecutado_en
+            FROM ingesta_log
+           WHERE nuevos > 0
+        ) sucesos
+        ORDER BY fecha DESC
+        LIMIT 8`,
+    ),
   ])
 
   // La bandeja Pendientes mezcla las dos tablas en un único contador, como el
@@ -115,6 +199,23 @@ export default async function handler(req) {
     pendientesEventos === null || pendientesActividades === null
       ? null
       : pendientesEventos + pendientesActividades
+
+  // Las cifras de la sidebar salen de las mismas filas que las tarjetas de
+  // atención: una consulta, dos consumidores.
+  const reclamacionesPendientes =
+    filasReclamaciones === null ? null : Number(filasReclamaciones[0]?.n ?? 0)
+  const altasPendientes = filasAltas === null ? null : Number(filasAltas[0]?.n ?? 0)
+
+  const atencion = {
+    reclamaciones: tarjetaAtencion(filasReclamaciones),
+    altas: tarjetaAtencion(filasAltas),
+    // Sin fecha a propósito: el contexto de esta tarjeta ("siguen activos con
+    // la vigencia caducada") no depende de cuál sea la más antigua.
+    destacados:
+      destacadosRequierenAccion === null || destacadosRequierenAccion === 0
+        ? null
+        : { cantidad: destacadosRequierenAccion },
+  }
 
   return json({
     reclamacionesPendientes,
@@ -128,5 +229,7 @@ export default async function handler(req) {
     eventosTotal,
     usuariosTotal,
     usuariosAdmin,
+    atencion,
+    actividad: filasActividad,
   })
 }
