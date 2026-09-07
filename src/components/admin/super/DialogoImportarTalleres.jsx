@@ -6,8 +6,12 @@ import MIcon from '../../MIcon.jsx'
 // Dos vías, porque el folleto llega de las dos maneras: como fichero que le
 // pasan al superadmin y como enlace publicado en navalcarnero.es.
 //
-// Todo lo importado nace BORRADOR y hay que revisarlo antes de publicar: se
+// Lo que NO existía nace BORRADOR y hay que revisarlo antes de publicar: se
 // avisa aquí para que nadie espere ver el catálogo en la web al terminar.
+//
+// Lo que YA existe en ese curso no se duplica: deja una propuesta de
+// actualización que se revisa en el propio tab Talleres (fase 3). Por eso el
+// resumen del final tiene tres cifras y no una.
 
 const MAX_MB = 3
 
@@ -69,14 +73,45 @@ export default function DialogoImportarTalleres({ cursoSugerido = '', onImportad
   }
 
   if (resultado) {
+    const propuestas = resultado.propuestas || []
+    const sinCambios = resultado.sinCambios || []
     return (
       <div className="flex flex-col gap-4 border border-tinta bg-papel p-4">
         <h3 className="font-serif-dm text-lg text-tinta">Folleto importado</h3>
-        <p className="font-serif-spectral text-sm text-tinta">
-          Se han creado <strong>{resultado.creados}</strong>{' '}
-          {resultado.creados === 1 ? 'taller' : 'talleres'} del curso {resultado.curso}, todos en{' '}
-          <strong>borrador</strong>: revísalos y publícalos uno a uno.
-        </p>
+        <ul className="flex flex-col gap-1 font-serif-spectral text-sm text-tinta">
+          <li>
+            <strong>{resultado.creados}</strong>{' '}
+            {resultado.creados === 1 ? 'taller nuevo' : 'talleres nuevos'} del curso{' '}
+            {resultado.curso}, en <strong>borrador</strong>: revísalos y publícalos uno a uno.
+          </li>
+          <li>
+            <strong>{propuestas.length}</strong>{' '}
+            {propuestas.length === 1 ? 'ya existía y cambia' : 'ya existían y cambian'}
+            {propuestas.length > 0 && ': se proponen como actualización, sin tocar nada todavía'}.
+          </li>
+          <li>
+            <strong>{sinCambios.length}</strong>{' '}
+            {sinCambios.length === 1 ? 'ya existía' : 'ya existían'} sin ningún cambio.
+          </li>
+        </ul>
+        {propuestas.length > 0 && (
+          <div className="border border-oro bg-papel-calido p-2.5">
+            <p className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-tinta">
+              Actualizaciones propuestas
+            </p>
+            <ul className="mt-1 font-serif-spectral text-xs text-tinta">
+              {propuestas.map((p) => (
+                <li key={p.id}>
+                  {p.nombre} — cambia {p.campos.join(', ').toLowerCase()}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1.5 font-serif-spectral text-xs text-pardo">
+              Revísalas arriba del listado de talleres: hasta que las aceptes, el catálogo
+              sigue como estaba.
+            </p>
+          </div>
+        )}
         {resultado.cursoDetectado && resultado.cursoDetectado !== resultado.curso && (
           <p className="flex items-start gap-2 border border-oro bg-papel-calido p-2.5 font-serif-spectral text-sm text-tinta">
             <MIcon name="warning" className="mt-0.5 text-[16px] text-oro" />
