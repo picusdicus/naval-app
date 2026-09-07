@@ -41,4 +41,5 @@ export const TABLAS = [
   'imagenes_evento_asignaciones',
   'talleres',
   'talleres_horarios',
+  'talleres_propuestas',
 ]

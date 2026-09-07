@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CATEGORIAS_TALLER, cursoVigente, nombreCategoriaTaller, textoTurno } from '../../../lib/talleres.js'
 import { hoyISO, sumarDias } from '../../../lib/fechas.js'
+import { fusionarConPropuesta } from '../../../lib/talleresPropuestas.js'
 import FormularioTaller from './FormularioTaller.jsx'
 import DialogoImportarTalleres from './DialogoImportarTalleres.jsx'
+import PropuestasTalleres from './PropuestasTalleres.jsx'
 import MIcon from '../../MIcon.jsx'
 
 // Tab Talleres de /admin: listado, alta, edición, publicación y borrado de los
@@ -13,6 +15,9 @@ import MIcon from '../../MIcon.jsx'
 //   · Borrar                 — DELETE ?id= (los turnos caen en cascada)
 //   · Destacar               — crea una fila en `destacados` (tipo 'taller')
 //     con la misma duración por defecto que un evento destacado desde su tab.
+//
+// Encima del listado va la bandeja de PROPUESTAS DE ACTUALIZACIÓN (fase 3): lo
+// que una reimportación del folleto cambiaría en talleres que ya existen.
 
 const DIAS_DESTACADO = 30
 
@@ -25,13 +30,18 @@ const plural = (n, singular) =>
 
 export default function TablesTalleres() {
   const [talleres, setTalleres] = useState([])
+  const [propuestas, setPropuestas] = useState([])
   const [destacados, setDestacados] = useState([])
   const [resumen, setResumen] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [mensaje, setMensaje] = useState(null)
   const [ocupadoId, setOcupadoId] = useState(null)
   const [formulario, setFormulario] = useState(null) // null | 'nuevo' | taller
+  // Propuesta que se está aceptando por la vía "Editar y aceptar": el
+  // formulario guarda con el PUT de siempre y al volver se descarta la fila.
+  const [propuestaEnEdicion, setPropuestaEnEdicion] = useState(null)
   const [importando, setImportando] = useState(false)
+  const [ultimaImportacion, setUltimaImportacion] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   // Cola de revisión: lo importado de un PDF nace en borrador y hay que poder
   // aislarlo del catálogo ya publicado. Filtra en cliente sobre la lista que el
@@ -41,14 +51,18 @@ export default function TablesTalleres() {
   async function cargar() {
     setCargando(true)
     try {
-      const [resTalleres, resDestacados] = await Promise.all([
+      const [resTalleres, resPropuestas, resDestacados] = await Promise.all([
         fetch('/api/super/talleres').then((r) => (r.ok ? r.json() : { talleres: [] })),
+        fetch('/api/super/talleres-propuestas')
+          .then((r) => (r.ok ? r.json() : { propuestas: [] }))
+          .catch(() => ({ propuestas: [] })),
         fetch('/api/super/destacados')
           .then((r) => (r.ok ? r.json() : { destacados: [] }))
           .catch(() => ({ destacados: [] })),
       ])
       setTalleres(resTalleres.talleres || [])
       setResumen(resTalleres.resumen || null)
+      setPropuestas(resPropuestas.propuestas || [])
       setDestacados((resDestacados.destacados || []).filter((d) => d.tipo === 'taller'))
     } catch {
       setMensaje({ tipo: 'error', texto: 'No se pudieron cargar los talleres.' })
@@ -86,6 +100,55 @@ export default function TablesTalleres() {
   // SIGUIENTE tiene que cambiarlo a mano, y es lo correcto — el vigente en
   // junio es todavía el que está acabando.
   const cursoSugerido = cursoVigente()
+
+  /**
+   * Aplica la propuesta. La fusión la hace el SERVIDOR leyendo el taller vivo
+   * (el cliente no manda el resultado), así que aquí solo se refresca la lista.
+   */
+  async function aceptarPropuesta(propuesta) {
+    setOcupadoId(propuesta.id)
+    setMensaje(null)
+    try {
+      const res = await fetch(`/api/super/talleres-propuestas?id=${propuesta.id}`, {
+        method: 'POST',
+      })
+      const datos = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(datos.error || 'No se pudo aplicar la actualización.')
+      setPropuestas((previas) => previas.filter((p) => p.id !== propuesta.id))
+      setTalleres((previos) => previos.map((t) => (t.id === datos.taller.id ? datos.taller : t)))
+      setMensaje({ tipo: 'ok', texto: `«${datos.taller.nombre}» actualizado.` })
+    } catch (err) {
+      setMensaje({ tipo: 'error', texto: err.message })
+    } finally {
+      setOcupadoId(null)
+    }
+  }
+
+  /** Descartar no toca el taller: solo quita la propuesta. */
+  async function descartarPropuesta(propuesta) {
+    setOcupadoId(propuesta.id)
+    setMensaje(null)
+    try {
+      const res = await fetch(`/api/super/talleres-propuestas?id=${propuesta.id}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const datos = await res.json().catch(() => ({}))
+        throw new Error(datos.error || 'No se pudo descartar la propuesta.')
+      }
+      setPropuestas((previas) => previas.filter((p) => p.id !== propuesta.id))
+    } catch (err) {
+      setMensaje({ tipo: 'error', texto: err.message })
+    } finally {
+      setOcupadoId(null)
+    }
+  }
+
+  /** Abre el formulario de siempre con el resultado de la fusión ya aplicado. */
+  function editarPropuesta(taller, propuesta) {
+    setPropuestaEnEdicion(propuesta)
+    setFormulario(fusionarConPropuesta(taller, propuesta.datos))
+  }
 
   async function cambiarEstado(taller, estado) {
     setOcupadoId(taller.id)
@@ -179,11 +242,16 @@ export default function TablesTalleres() {
     return (
       <DialogoImportarTalleres
         cursoSugerido={cursoSugerido}
-        onImportado={() => cargar()}
+        onImportado={(datos) => {
+          setUltimaImportacion(datos)
+          cargar()
+        }}
         onCerrar={() => {
           setImportando(false)
-          // Tras importar, se enseña justo lo que hay que revisar.
-          setEstadoFiltro('borrador')
+          // Tras importar se enseña justo lo que hay que revisar; si el folleto
+          // no trajo ningún taller nuevo, el filtro de borradores estaría vacío
+          // y lo revisable son las propuestas, que se ven con cualquier filtro.
+          setEstadoFiltro(ultimaImportacion?.creados > 0 ? 'borrador' : 'todos')
         }}
       />
     )
@@ -193,9 +261,17 @@ export default function TablesTalleres() {
     return (
       <FormularioTaller
         taller={formulario === 'nuevo' ? null : formulario}
-        onCancelar={() => setFormulario(null)}
-        onGuardado={(taller) => {
+        onCancelar={() => {
           setFormulario(null)
+          setPropuestaEnEdicion(null)
+        }}
+        onGuardado={async (taller) => {
+          setFormulario(null)
+          // El PUT ya aplicó los cambios: la propuesta que los motivaba sobra.
+          if (propuestaEnEdicion) {
+            await descartarPropuesta(propuestaEnEdicion)
+            setPropuestaEnEdicion(null)
+          }
           setMensaje({ tipo: 'ok', texto: `«${taller.nombre}» guardado.` })
           cargar()
         }}
@@ -247,6 +323,15 @@ export default function TablesTalleres() {
           {mensaje.texto}
         </p>
       )}
+
+      <PropuestasTalleres
+        propuestas={propuestas}
+        talleres={talleres}
+        ocupadoId={ocupadoId}
+        onAceptar={aceptarPropuesta}
+        onDescartar={descartarPropuesta}
+        onEditar={editarPropuesta}
+      />
 
       <div className="flex flex-wrap gap-2">
         {[
