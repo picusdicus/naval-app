@@ -33,6 +33,9 @@ export default {
           oscuro: '#7a2d1e', // final de degradados de cartel
           palido: '#e2c4bb', // bordes de acciones destructivas
           fondo: '#f2d9d2', // fondo de badges de error/caducado
+          // El terracota base sobre el fondo oscuro del panel no llega a 4.5:1;
+          // esta variante aclarada sí. Solo para texto en /admin.
+          legible: '#e07a5c',
         },
         ocre: {
           DEFAULT: '#c68a2e', // barras de gráfico, ratings
@@ -46,6 +49,27 @@ export default {
           bosque: '#2b3a34', // tarjeta del tiempo
           'bosque-borde': '#3f5148',
           'salvia-claro': '#9db0a4', // labels sobre verde bosque
+          noche: '#4fae7c', // estado OK sobre fondo oscuro (panel de admin)
+          'noche-suave': '#7fc39c', // texto secundario en verde sobre oscuro
+        },
+
+        // ── Paleta oscura del PANEL DE ADMINISTRACIÓN (/admin) ──
+        // NO usar en la app pública: allí el sistema es "La Gaceta", tema
+        // claro sobre papel. Estos tonos existen para que el backoffice se
+        // distinga de un vistazo de lo que ven los vecinos.
+        nocturno: {
+          fondo: '#14120e', // fondo de página del panel
+          superficie: '#221e17', // tarjetas y paneles sobre el fondo
+          sidebar: '#1c1913', // columna de navegación
+          borde: '#2c271e', // separadores tenues
+          seccion: '#332e24', // fondo de encabezado de grupo / hover
+          outline: '#4a4436', // bordes visibles, focus
+          texto: '#ece4d1', // texto principal (13.6:1 sobre fondo)
+          secundario: '#a89e86', // texto secundario (mínimo admitido, 6.4:1)
+          terciario: '#97907c', // metadatos en tamaños ≥12px
+        },
+        azul: {
+          DEFAULT: '#5d86b8', // eventos de sincronización en el panel
         },
       },
       fontFamily: {
