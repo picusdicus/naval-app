@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CATEGORIAS_TALLER, nombreCategoriaTaller, textoTurno } from '../../../lib/talleres.js'
+import { CATEGORIAS_TALLER, cursoVigente, nombreCategoriaTaller, textoTurno } from '../../../lib/talleres.js'
 import { hoyISO, sumarDias } from '../../../lib/fechas.js'
 import FormularioTaller from './FormularioTaller.jsx'
 import DialogoImportarTalleres from './DialogoImportarTalleres.jsx'
@@ -76,13 +76,16 @@ export default function TablesTalleres() {
     })
   }, [talleres, busqueda, estadoFiltro])
 
-  // Curso que se propone al importar: el del taller más reciente del catálogo.
-  // Se deriva de los datos y no de la fecha a propósito — quien importa en
-  // junio el folleto del curso siguiente lo corrige en el campo.
-  const cursoSugerido = useMemo(
-    () => talleres.map((t) => t.curso).filter(Boolean).sort().pop() || '',
-    [talleres],
-  )
+  // Curso que se propone al importar: el vigente según la fecha (la misma
+  // función que decide el archivado automático, para que las dos piezas no
+  // puedan discrepar sobre "en qué curso estamos"). Antes se derivaba del
+  // catálogo cargado, que era un apaño mientras cursoVigente() vivía en otra
+  // rama sin fusionar.
+  //
+  // Sigue siendo editable: quien importe en junio el folleto del curso
+  // SIGUIENTE tiene que cambiarlo a mano, y es lo correcto — el vigente en
+  // junio es todavía el que está acabando.
+  const cursoSugerido = cursoVigente()
 
   async function cambiarEstado(taller, estado) {
     setOcupadoId(taller.id)
