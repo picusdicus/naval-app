@@ -113,7 +113,7 @@ export default async function handler(req) {
     // 5. Incrementar el contador de usos del código.
     await sql`
       UPDATE codigos_invitacion
-      SET usos_actuales = usos_actuales + 1
+      SET usos_actuales = usos_actuales + 1, ultimo_uso_en = now()
       WHERE id = ${codigo_inv.id}
     `
 
