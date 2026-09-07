@@ -5,6 +5,7 @@ import {
   CATEGORIAS_TALLER,
   LISTA_CATEGORIAS_TALLER,
   LISTA_FAMILIAS_TALLER,
+  TEXTO_MATRICULA,
   tallerComoEvento,
 } from '../lib/talleres.js'
 import FiltrosEventos from '../components/eventos/FiltrosEventos.jsx'
@@ -15,6 +16,7 @@ import { useDestacados } from '../lib/useDestacados.js'
 import { tallerATarjeta } from '../lib/destacados.js'
 import { GenericasEventoContext } from '../lib/GenericasEventoContext.jsx'
 import { creditosDe, genericasParaEvento } from '../lib/imagenesEvento.js'
+import MIcon from '../components/MIcon.jsx'
 
 // Mínimo de items del carrusel, igual que en Eventos: sin destacados
 // contratados se rellena con los primeros talleres para que la franja no
@@ -108,6 +110,13 @@ export default function Talleres() {
           <div className="gz-label text-mudo">Aprender en</div>
           <h1 className="font-serif-dm text-seccion leading-none text-tinta">Los talleres</h1>
         </div>
+        {/* La matrícula se avisa aquí y en cada ficha: el precio que se ve en
+            la tarjeta es solo la cuota mensual, y enterarse del pago único al
+            llegar al mostrador es justo la sorpresa que hay que evitar. */}
+        <p className="mt-3 flex items-start gap-1.5 font-serif-spectral text-sm text-pardo">
+          <MIcon name="info" className="mt-0.5 flex-shrink-0 text-[15px] text-terracota" />
+          {TEXTO_MATRICULA}
+        </p>
       </header>
 
       {conCarrusel && (
