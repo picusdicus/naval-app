@@ -15,6 +15,7 @@ import TableAnalytics from '../../components/admin/super/TableAnalytics.jsx'
 import UmamiStats from '../../components/admin/UmamiStats.jsx'
 import DialogoInfoUsuario from '../../components/admin/DialogoInfoUsuario.jsx'
 import SidebarSuperAdmin from '../../components/admin/super/SidebarSuperAdmin.jsx'
+import ResumenSuperAdmin from '../../components/admin/super/ResumenSuperAdmin.jsx'
 import { useAdminAuth } from '../../lib/adminAuth.jsx'
 
 // Ancho a partir del cual el panel usa la sidebar en vez de la fila de tabs.
@@ -126,12 +127,11 @@ export default function AdminSuperPanel() {
   const contenido = (
     <>
       {seccionActiva === 'resumen' && (
-        <div>
-          <h2 className="font-serif-dm text-seccion-sm text-tinta">Resumen</h2>
-          <p className="mt-2 font-serif-spectral text-sm text-pardo">
-            Panel de resumen en construcción.
-          </p>
-        </div>
+        <ResumenSuperAdmin
+          resumen={resumen}
+          usuario={usuario}
+          onCambiarSeccion={setSeccionActiva}
+        />
       )}
       {seccionActiva === 'organizaciones' && <TablesOrganizaciones />}
       {seccionActiva === 'codigos' && <TablesCodigosInvitacion />}

@@ -74,7 +74,7 @@ async function rechazar(sql, solicitudId) {
   try {
     await sql`
       UPDATE solicitudes_alta_comercio
-      SET estado = 'rechazada'
+      SET estado = 'rechazada', resuelto_en = now()
       WHERE id = ${solicitudId}
     `
     return json({ ok: true }, 200)
@@ -156,7 +156,7 @@ async function aprobar(sql, solicitudId, ficha) {
 
     await sql`
       UPDATE solicitudes_alta_comercio
-      SET estado = 'aprobada'
+      SET estado = 'aprobada', resuelto_en = now()
       WHERE id = ${solicitudId}
     `
 
