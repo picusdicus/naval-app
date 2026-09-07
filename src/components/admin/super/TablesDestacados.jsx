@@ -5,12 +5,19 @@ import DialogoConfirmacion from '../DialogoConfirmacion.jsx'
 import { COMERCIOS_POR_ID, diasParaCaducar, textoCaducidad } from '../../../lib/destacados.js'
 import { useEventosPublicos } from '../../../lib/useEventosPublicos.js'
 import { proximosEventos, formatearFechaCorta } from '../../../lib/eventos.js'
+import { useTalleres } from '../../../lib/useTalleres.js'
+import { nombreCategoriaTaller, textoTurno } from '../../../lib/talleres.js'
 import { duracionDe, hoyISO, sumarDias } from '../../../lib/fechas.js'
 import { PRESETS_DURACION } from '../../../lib/tarifasDestacados.js'
 
 // Gestión de los destacados contratados: qué eventos y comercios se realzan
 // en portada, agenda y guía, con qué orden y durante qué periodo. El pago se
 // acuerda fuera de la app; aquí el superadmin lo refleja.
+
+// Los tres tipos destacables. Un tipo desconocido (fila de una versión futura)
+// degrada a "Comercio" en la tabla en vez de romper el render.
+const ETIQUETA_TIPO = { evento: 'Evento', comercio: 'Comercio', taller: 'Taller' }
+const ICONO_TIPO = { evento: 'event', comercio: 'storefront', taller: 'school' }
 
 const ETIQUETA_ESTADO = {
   activo: { texto: 'Activo', clases: 'bg-verde text-papel hover:opacity-80' },
@@ -48,6 +55,11 @@ export default function TablesDestacados() {
   // Para resolver referencias y para el buscador del formulario.
   const { eventos } = useEventosPublicos()
   const eventosPorId = useMemo(() => new Map(eventos.map((e) => [e.id, e])), [eventos])
+  // Los talleres se destacan como eventos y comercios, así que esta tabla
+  // también tiene que saber resolver su nombre: sin esto un taller destacado
+  // se listaba como "Comercio · Referencia no encontrada".
+  const { talleres } = useTalleres()
+  const talleresPorId = useMemo(() => new Map(talleres.map((t) => [t.id, t])), [talleres])
 
   useEffect(() => {
     cargarDestacados()
@@ -76,6 +88,7 @@ export default function TablesDestacados() {
   /** Nombre visible del item referenciado, o null si la referencia está muerta. */
   const nombreDeReferencia = (destacado) => {
     if (destacado.tipo === 'comercio') return COMERCIOS_POR_ID.get(destacado.referenciaId)?.nombre ?? null
+    if (destacado.tipo === 'taller') return talleresPorId.get(destacado.referenciaId)?.nombre ?? null
     return eventosPorId.get(destacado.referenciaId)?.titulo ?? null
   }
 
@@ -87,9 +100,17 @@ export default function TablesDestacados() {
     const lista =
       formularioData.tipo === 'comercio'
         ? [...COMERCIOS_POR_ID.values()].map((c) => ({ id: c.id, nombre: c.nombre, detalle: c.tipoDisplay || c.subtipo || '' }))
-        : proximosEventos(eventos).map((e) => ({ id: e.id, nombre: e.titulo, detalle: `${formatearFechaCorta(e.fecha)} · ${e.lugar || ''}` }))
+        : formularioData.tipo === 'taller'
+          ? talleres.map((t) => ({
+              id: t.id,
+              nombre: t.nombre,
+              // Un taller no tiene fecha: lo que distingue dos parecidos es su
+              // disciplina y su primer turno.
+              detalle: `${nombreCategoriaTaller(t.categoria)} · ${t.turnos?.[0] ? textoTurno(t.turnos[0]) : 'sin horario'}`,
+            }))
+          : proximosEventos(eventos).map((e) => ({ id: e.id, nombre: e.titulo, detalle: `${formatearFechaCorta(e.fecha)} · ${e.lugar || ''}` }))
     return lista.filter((i) => i.nombre.toLowerCase().includes(texto)).slice(0, 8)
-  }, [busquedaItem, formularioData.tipo, eventos])
+  }, [busquedaItem, formularioData.tipo, eventos, talleres])
 
   const itemElegido = formularioData.referenciaId
     ? nombreDeReferencia({ tipo: formularioData.tipo, referenciaId: formularioData.referenciaId })
@@ -270,8 +291,11 @@ export default function TablesDestacados() {
                       <tr key={d.id} className="border-b border-filete hover:bg-papel-calido/60">
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-1.5">
-                            <MIcon name={d.tipo === 'evento' ? 'event' : 'storefront'} className="text-[18px] text-terracota" />
-                            {d.tipo === 'evento' ? 'Evento' : 'Comercio'}
+                            <MIcon
+                              name={ICONO_TIPO[d.tipo] || 'storefront'}
+                              className="text-[18px] text-terracota"
+                            />
+                            {ETIQUETA_TIPO[d.tipo] || 'Comercio'}
                           </span>
                         </td>
                         <td className="px-4 py-3 font-medium">
@@ -376,6 +400,7 @@ export default function TablesDestacados() {
                   disabled={enviando || Boolean(editandoId)}
                 >
                   <option value="evento">Evento</option>
+                  <option value="taller">Taller</option>
                   <option value="comercio">Comercio</option>
                 </select>
               </div>
@@ -403,7 +428,7 @@ export default function TablesDestacados() {
                 es inmutable; para cambiar de item, eliminar y crear). */}
             <div>
               <label className="mb-1.5 block font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
-                {formularioData.tipo === 'evento' ? 'Evento a destacar' : 'Comercio a destacar'}
+                {`${ETIQUETA_TIPO[formularioData.tipo] || 'Comercio'} a destacar`}
               </label>
               {formularioData.referenciaId ? (
                 <div className="flex items-center justify-between border border-filete bg-papel-calido px-4 py-2">
@@ -432,7 +457,9 @@ export default function TablesDestacados() {
                     value={busquedaItem}
                     onChange={(e) => setBusquedaItem(e.target.value)}
                     placeholder={
-                      formularioData.tipo === 'evento'
+                      formularioData.tipo === 'taller'
+                        ? 'Escribe para buscar entre los talleres publicados y elige uno…'
+                        : formularioData.tipo === 'evento'
                         ? 'Escribe para buscar entre los próximos eventos y elige uno…'
                         : 'Escribe para buscar en el directorio y elige uno…'
                     }

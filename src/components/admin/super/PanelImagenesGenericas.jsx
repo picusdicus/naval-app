@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react'
 import MIcon from '../../MIcon.jsx'
 import { CATEGORIAS_EVENTO, SUBTIPOS_CULTURALES } from '../../../lib/eventos.js'
+import { IDS_CATEGORIAS_TALLER } from '../../../lib/talleres.js'
 import { RecargarGenericasContext } from '../../../lib/GenericasEventoContext.jsx'
 import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
 
@@ -15,9 +16,16 @@ const DISCIPLINAS_POR_CATEGORIA = {
   // Actos de registro religioso (novenas, misas, procesiones): solo reciben
   // fotos de este subtipo, nunca las festivas generales.
   fiestas: ['religiosa'],
+  // Talleres municipales: aquí la "disciplina" es la categoría del taller
+  // (pintura, yoga…), que viaja explícita en el dato y la resuelve
+  // destinoImagenEvento() sin heurística. Mientras una disciplina no tenga
+  // fotos propias, sus talleres usan las de "talleres" sin disciplina.
+  talleres: IDS_CATEGORIAS_TALLER,
 }
 
 const AVISO_POR_CATEGORIA = {
+  talleres:
+    'Las disciplinas son las del catálogo de talleres municipales. Una foto sin disciplina sirve a todos los talleres que no tengan una propia.',
   cultura:
     'Estas imágenes las usan también los actos culturales programados dentro de fiestas (una verbena con orquesta, teatro en la plaza).',
   fiestas:

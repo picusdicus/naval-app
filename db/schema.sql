@@ -516,3 +516,68 @@ ALTER TABLE organizaciones ADD COLUMN IF NOT EXISTS lugar_variable boolean NOT N
 -- antes de esta columna (la ficha muestra solo la población hasta que se
 -- reediten).
 ALTER TABLE eventos_usuario ADD COLUMN IF NOT EXISTS provincia text;
+
+-- ---------------------------------------------------------------------------
+-- Talleres municipales (fase 1: CRUD manual + página pública)
+-- ---------------------------------------------------------------------------
+-- Un taller NO es un evento: no tiene fecha puntual, sino turnos semanales que
+-- se repiten durante todo el curso. Por eso tabla propia y no una fila más en
+-- `eventos_usuario` — meterlo allí obligaría a inventar una fecha falsa y lo
+-- colaría en la agenda, el digest push y el dedup del cron.
+--
+-- `categoria` es la DISCIPLINA (pintura, yoga…), el vocabulario de
+-- src/lib/talleres.js. Sin CHECK a propósito: el catálogo cambia cada curso y
+-- un CHECK obligaría a un ALTER por disciplina nueva; una desconocida degrada
+-- a etiqueta cruda en la UI, nunca rompe.
+--
+-- `precio` es texto, no numeric: el folleto municipal mezcla cuota mensual,
+-- matrícula y descuento por empadronamiento ("22 €/mes"), y un numeric
+-- obligaría a inventar una estructura que la importación por PDF (fase 2)
+-- tendría que rellenar a ciegas.
+CREATE TABLE IF NOT EXISTS talleres (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre         text NOT NULL,
+  categoria      text NOT NULL,
+  descripcion    text,
+  lugar          text,
+  precio         text,
+  edades         text,
+  imagen_url     text,
+  curso          text,
+  estado         text NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador', 'publicado', 'archivado')),
+  creado_en      timestamptz NOT NULL DEFAULT now(),
+  actualizado_en timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_talleres_estado ON talleres (estado, categoria);
+
+-- Turnos de un taller: "Pintura adultos iniciación" tiene dos el mismo lunes,
+-- y "Teatro" cuatro por franja de edad. Tabla aparte y no un jsonb porque la
+-- detección de duplicados (fase 3) va a comparar turnos día a día, y un array
+-- JSON no se puede indexar ni comparar sin desempaquetarlo en cada consulta.
+--
+-- `lugar` es nullable y solo se rellena cuando ESE turno se imparte en un
+-- sitio distinto al del taller (Relajación reparte sus tres turnos entre la
+-- Casa de la Cultura y el Centro de Artes Escénicas).
+CREATE TABLE IF NOT EXISTS talleres_horarios (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  taller_id   uuid NOT NULL REFERENCES talleres(id) ON DELETE CASCADE,
+  etiqueta    text,
+  dias        text[] NOT NULL DEFAULT '{}',
+  hora_inicio text,
+  hora_fin    text,
+  lugar       text,
+  orden       integer NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_talleres_horarios_taller ON talleres_horarios (taller_id, orden);
+
+-- Los talleres se destacan con el MISMO mecanismo que eventos y comercios (una
+-- fila en `destacados` con tipo='taller' y referencia_id = el uuid del
+-- taller). CREATE TABLE IF NOT EXISTS no toca una tabla que ya existe, así que
+-- el CHECK del tipo hay que recrearlo aquí. Idempotente: se borra y se vuelve
+-- a crear con el tercer valor.
+ALTER TABLE destacados DROP CONSTRAINT IF EXISTS destacados_tipo_check;
+
+ALTER TABLE destacados ADD CONSTRAINT destacados_tipo_check
+  CHECK (tipo IN ('evento', 'comercio', 'taller'));

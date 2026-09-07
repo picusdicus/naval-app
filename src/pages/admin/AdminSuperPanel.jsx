@@ -7,6 +7,7 @@ import TableReclamaciones from '../../components/admin/super/TableReclamaciones.
 import TableAltasComercio from '../../components/admin/super/TableAltasComercio.jsx'
 import TablesDestacados from '../../components/admin/super/TablesDestacados.jsx'
 import TablesEventos from '../../components/admin/super/TablesEventos.jsx'
+import TablesTalleres from '../../components/admin/super/TablesTalleres.jsx'
 import TablesPendientes from '../../components/admin/super/TablesPendientes.jsx'
 import TablesComercios from '../../components/admin/super/TablesComercios.jsx'
 import PanelImagenesGenericas from '../../components/admin/super/PanelImagenesGenericas.jsx'
@@ -89,6 +90,7 @@ export default function AdminSuperPanel() {
     ['destacados', 'star', 'Destacados'],
     ['pendientes', 'pending_actions', 'Pendientes'],
     ['eventos', 'event', 'Eventos'],
+    ['talleres', 'school', 'Talleres'],
     ['comercios', 'storefront', 'Comercios'],
     ['imagenes', 'image', 'Imágenes genéricas'],
     ['analytics', 'analytics', 'Analytics'],
@@ -177,6 +179,7 @@ export default function AdminSuperPanel() {
           {seccionActiva === 'destacados' && <TablesDestacados />}
           {seccionActiva === 'pendientes' && <TablesPendientes />}
           {seccionActiva === 'eventos' && <TablesEventos />}
+          {seccionActiva === 'talleres' && <TablesTalleres />}
           {seccionActiva === 'comercios' && <TablesComercios />}
           {seccionActiva === 'imagenes' && <PanelImagenesGenericas />}
           {seccionActiva === 'analytics' && (
