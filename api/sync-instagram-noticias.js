@@ -40,6 +40,7 @@ import {
   subirImagen,
 } from './_instagram.js'
 import { extraerDeCarrusel, extraerDeDocumento } from './_actividades-parser.js'
+import { descargarDocumento, detectarUrl } from './_descargar-documento.js'
 import { enviarEmailPendientes } from './_email.js'
 import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 import { registrarIngesta } from './_ingesta-log.js'
@@ -191,83 +192,6 @@ async function extraerNoticias(posts) {
   console.log('[webhook] Triaje: noticias=', noticias.map(n => ({ shortCode: n.shortCode, tipo: n.tipo, titulo: n.titulo })))
   return { noticias, errores }
 }
-
-/** Primera URL del caption que apunte a la web municipal. Allowlist a
- * propósito: el caption viene de un tercero (Instagram) y este handler
- * scrapea lo que encuentre — solo se sigue a navalcarnero.es. */
-function detectarUrl(caption) {
-  if (!caption) return null
-  for (const cruda of caption.match(/https?:\/\/[^\s]+/g) || []) {
-    try {
-      const u = new URL(cruda.replace(/[),.;]+$/, ''))
-      if (u.hostname === 'navalcarnero.es' || u.hostname.endsWith('.navalcarnero.es')) {
-        return u.href
-      }
-    } catch {
-      // URL malformada en el caption: se ignora.
-    }
-  }
-  return null
-}
-
-// Un PDF de agenda trimestral ronda 2-5 MB; 15 MB da margen sin acercarse al
-// límite de la API de Anthropic (~32 MB de petición).
-const MAX_PDF_BYTES = 15 * 1024 * 1024
-
-/**
- * Descarga el documento enlazado y lo clasifica: {tipo: 'pdf', buffer} para
- * las agendas en PDF, {tipo: 'html', html} (máx 50 KB) para el resto.
- */
-/**
- * Descarga HTML o PDF desde una URL. Para HTML, extrae el contenido principal
- * del artículo y descarta cabecera, menú, sidebar para maximizar el contenido útil
- * antes de aplicar el límite de tamaño (evita truncamiento de galerias al final).
- */
-async function descargarDocumento(url) {
-  const MAX_HTML_BYTES = 300_000 // 300 KB: páginas municipales largas (39+ actividades)
-
-  try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'NavalcarneroCrawler/1.0' },
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const contentType = (response.headers.get('content-type') || '').split(';')[0].trim()
-    if (contentType === 'application/pdf' || /\.pdf(?:[?#]|$)/i.test(url)) {
-      const buffer = Buffer.from(await response.arrayBuffer())
-      if (buffer.length === 0 || buffer.length > MAX_PDF_BYTES) {
-        throw new Error(`PDF fuera de límite (${buffer.length} bytes)`)
-      }
-      return { tipo: 'pdf', buffer }
-    }
-
-    let html = await response.text()
-    const htmlOriginalSize = html.length
-
-    // Recortar por contenido: extraer solo el artículo principal (WordPress)
-    // y descartar cabecera, menú, sidebar para maximizar contenido útil.
-    // Los selectores son específicos del WordPress de Navalcarnero (art-postcontent o entrada).
-    const match = html.match(/<div[^>]*class="[^"]*(?:entrada|art-postcontent)[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)
-    if (match && match[1].length > 1000) {
-      // Si el contenido extraído es significativo, úsalo (descarta chrome de la página)
-      html = match[1]
-      console.log(`[descargarDocumento] Contenido extraído: ${htmlOriginalSize} → ${html.length} bytes`)
-    }
-
-    // Aplicar límite de tamaño DESPUÉS del recorte por contenido
-    if (html.length > MAX_HTML_BYTES) {
-      console.warn(
-        `[descargarDocumento] HTML truncado: ${html.length} → ${MAX_HTML_BYTES} bytes (límite) de ${url}`
-      )
-      html = html.substring(0, MAX_HTML_BYTES)
-    }
-
-    return { tipo: 'html', html }
-  } catch (err) {
-    throw new Error(`Error al descargar ${url}: ${err.message}`)
-  }
-}
-
 
 /** Fecha de publicación de la fila: el timestamp del post si es parseable. */
 function fechaPublicacion(post) {
