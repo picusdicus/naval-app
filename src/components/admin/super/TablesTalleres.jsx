@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CATEGORIAS_TALLER, nombreCategoriaTaller, textoTurno } from '../../../lib/talleres.js'
 import { hoyISO, sumarDias } from '../../../lib/fechas.js'
 import FormularioTaller from './FormularioTaller.jsx'
+import DialogoImportarTalleres from './DialogoImportarTalleres.jsx'
 import MIcon from '../../MIcon.jsx'
 
 // Tab Talleres de /admin: listado, alta, edición, publicación y borrado de los
@@ -15,6 +16,13 @@ import MIcon from '../../MIcon.jsx'
 
 const DIAS_DESTACADO = 30
 
+/**
+ * "1 borrador" / "2 borradores", "1 publicado" / "2 publicados". El plural
+ * depende de la terminación: vocal suma -s, consonante suma -es.
+ */
+const plural = (n, singular) =>
+  n === 1 ? singular : /[aeiou]$/i.test(singular) ? `${singular}s` : `${singular}es`
+
 export default function TablesTalleres() {
   const [talleres, setTalleres] = useState([])
   const [destacados, setDestacados] = useState([])
@@ -23,7 +31,12 @@ export default function TablesTalleres() {
   const [mensaje, setMensaje] = useState(null)
   const [ocupadoId, setOcupadoId] = useState(null)
   const [formulario, setFormulario] = useState(null) // null | 'nuevo' | taller
+  const [importando, setImportando] = useState(false)
   const [busqueda, setBusqueda] = useState('')
+  // Cola de revisión: lo importado de un PDF nace en borrador y hay que poder
+  // aislarlo del catálogo ya publicado. Filtra en cliente sobre la lista que el
+  // GET ya devuelve entera — no hace falta endpoint nuevo.
+  const [estadoFiltro, setEstadoFiltro] = useState('todos')
 
   async function cargar() {
     setCargando(true)
@@ -52,14 +65,24 @@ export default function TablesTalleres() {
 
   const visibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase()
-    if (!q) return talleres
-    return talleres.filter(
-      (t) =>
+    return talleres.filter((t) => {
+      if (estadoFiltro !== 'todos' && t.estado !== estadoFiltro) return false
+      if (!q) return true
+      return (
         t.nombre.toLowerCase().includes(q) ||
         nombreCategoriaTaller(t.categoria).toLowerCase().includes(q) ||
-        (t.lugar || '').toLowerCase().includes(q),
-    )
-  }, [talleres, busqueda])
+        (t.lugar || '').toLowerCase().includes(q)
+      )
+    })
+  }, [talleres, busqueda, estadoFiltro])
+
+  // Curso que se propone al importar: el del taller más reciente del catálogo.
+  // Se deriva de los datos y no de la fecha a propósito — quien importa en
+  // junio el folleto del curso siguiente lo corrige en el campo.
+  const cursoSugerido = useMemo(
+    () => talleres.map((t) => t.curso).filter(Boolean).sort().pop() || '',
+    [talleres],
+  )
 
   async function cambiarEstado(taller, estado) {
     setOcupadoId(taller.id)
@@ -149,6 +172,20 @@ export default function TablesTalleres() {
     }
   }
 
+  if (importando) {
+    return (
+      <DialogoImportarTalleres
+        cursoSugerido={cursoSugerido}
+        onImportado={() => cargar()}
+        onCerrar={() => {
+          setImportando(false)
+          // Tras importar, se enseña justo lo que hay que revisar.
+          setEstadoFiltro('borrador')
+        }}
+      />
+    )
+  }
+
   if (formulario) {
     return (
       <FormularioTaller
@@ -170,17 +207,29 @@ export default function TablesTalleres() {
           <h2 className="font-serif-dm text-xl text-tinta">Talleres</h2>
           {resumen && (
             <p className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
-              {resumen.total} en total · {resumen.publicados} publicados ·{' '}
-              {resumen.borradores} borradores
-              {resumen.archivados > 0 &&
-                ` · ${resumen.archivados} ${resumen.archivados === 1 ? 'archivado' : 'archivados'}`}
+              {[
+                `${resumen.total} en total`,
+                `${resumen.publicados} ${plural(resumen.publicados, 'publicado')}`,
+                `${resumen.borradores} ${plural(resumen.borradores, 'borrador')}`,
+                // Los archivados solo se nombran cuando los hay: el cron no
+                // archiva nada hasta que termina un curso.
+                ...(resumen.archivados > 0
+                  ? [`${resumen.archivados} ${plural(resumen.archivados, 'archivado')}`]
+                  : []),
+              ].join(' · ')}
             </p>
           )}
         </div>
-        <button type="button" onClick={() => setFormulario('nuevo')} className="gz-boton-tinta">
-          <MIcon name="add" className="mr-1 text-[16px]" />
-          Crear taller
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setImportando(true)} className="gz-boton-borde">
+            <MIcon name="upload_file" className="mr-1 text-[16px]" />
+            Importar PDF
+          </button>
+          <button type="button" onClick={() => setFormulario('nuevo')} className="gz-boton-tinta">
+            <MIcon name="add" className="mr-1 text-[16px]" />
+            Crear taller
+          </button>
+        </div>
       </div>
 
       {mensaje && (
@@ -195,6 +244,30 @@ export default function TablesTalleres() {
           {mensaje.texto}
         </p>
       )}
+
+      <div className="flex flex-wrap gap-2">
+        {[
+          ['todos', 'Todos', resumen?.total],
+          ['borrador', 'Borradores', resumen?.borradores],
+          ['publicado', 'Publicados', resumen?.publicados],
+          ['archivado', 'Archivados', resumen?.archivados],
+        ].map(([valor, texto, n]) => (
+          <button
+            key={valor}
+            type="button"
+            onClick={() => setEstadoFiltro(valor)}
+            aria-pressed={estadoFiltro === valor}
+            className={`border px-3 py-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta transition-colors ${
+              estadoFiltro === valor
+                ? 'border-tinta bg-tinta text-papel'
+                : 'border-filete bg-papel text-pardo hover:border-tinta'
+            }`}
+          >
+            {texto}
+            {typeof n === 'number' && <span className="ml-1.5 opacity-70">{n}</span>}
+          </button>
+        ))}
+      </div>
 
       <input
         type="search"
