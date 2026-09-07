@@ -99,7 +99,8 @@ Para cada TURNO de un taller:
 
 REGLAS QUE NO PUEDES SALTARTE:
 - No inventes ni deduzcas talleres, turnos, días ni horas que no estén escritos en el documento. Si un dato no aparece, cadena vacía o lista vacía.
-- Distinto es que el folleto diga EXPLÍCITAMENTE que un dato está pendiente ("Por determinar", "Pendiente de confirmar"): eso es información, no ausencia de dato. Transcribe ese texto tal cual en el campo que corresponda en vez de dejarlo vacío.
+- Distinto es que el folleto diga EXPLÍCITAMENTE que un dato está pendiente ("Por determinar", "Pendiente de confirmar"): eso es información, no ausencia de dato. Transcribe ese texto tal cual, PERO SOLO en los campos de texto libre: lugar, precio y edades.
+- NUNCA en horaInicio ni en horaFin, que solo admiten HH:MM. Si el folleto dice que el horario está por determinar, deja esos dos campos como cadena vacía y dias como lista vacía: un turno vacío es la forma correcta de decir "horario por determinar". No escribas "Por determinar" ni ningún otro texto dentro de una hora.
 - Transcribe los días EXACTAMENTE como los indica el folleto. Dos turnos del mismo taller pueden caer en días distintos (uno el jueves y otro el viernes): no los unifiques ni supongas que comparten día.
 - Si un taller aparece sin horario concreto, inclúyelo igualmente con un único turno de días vacíos y horas vacías.
 - Extrae TODOS los talleres del documento, sin omitir ninguno.`
@@ -150,7 +151,41 @@ export async function extraerTalleresDePdf(buffer) {
 
   return {
     curso: typeof datos.curso === 'string' && datos.curso.trim() ? datos.curso.trim() : null,
-    talleres: Array.isArray(datos.talleres) ? datos.talleres : [],
+    talleres: (Array.isArray(datos.talleres) ? datos.talleres : []).map(sanearTaller),
     uso: respuesta.usage,
   }
+}
+
+const HORA = /^([01]\d|2[0-3]):[0-5]\d$/
+
+/**
+ * Vacía las horas que no tengan formato HH:MM.
+ *
+ * El motivo es concreto: "Historia del arte y literatura" viene en el folleto
+ * con horario Y lugar "Por determinar", y el modelo metía ese texto también en
+ * `horaInicio` — donde `validarTaller()` lo rechaza, y como la validación es
+ * por taller entero, se perdía el taller completo por un campo. Un turno sin
+ * horas ya es válido y significa exactamente eso ("Por determinar"), así que
+ * degradar a turno vacío conserva el taller y dice la verdad.
+ *
+ * El prompt ya pide no hacerlo; esto es la red por debajo, porque el folleto
+ * del año que viene puede escribirlo de otra forma ("A concretar", "Pendiente")
+ * y el fallo no debe volver a costar una fila entera. Se avisa por consola para
+ * que no pase inadvertido.
+ */
+function sanearTaller(taller) {
+  const turnos = (Array.isArray(taller?.turnos) ? taller.turnos : []).map((t) => {
+    const inicio = HORA.test(String(t?.horaInicio ?? '')) ? t.horaInicio : ''
+    const fin = HORA.test(String(t?.horaFin ?? '')) ? t.horaFin : ''
+    if (inicio !== (t?.horaInicio ?? '') || fin !== (t?.horaFin ?? '')) {
+      console.warn(
+        `[talleres-parser] "${taller?.nombre}": hora no válida descartada ` +
+          `(${JSON.stringify(t?.horaInicio)}-${JSON.stringify(t?.horaFin)}) → turno sin horario`
+      )
+    }
+    // Sin hora de inicio no hay turno que describir: se vacían también los días
+    // para que quede como el turno "por determinar" que ya admite el formulario.
+    return inicio ? { ...t, horaInicio: inicio, horaFin: fin } : { ...t, horaInicio: '', horaFin: '', dias: [] }
+  })
+  return { ...taller, turnos }
 }
