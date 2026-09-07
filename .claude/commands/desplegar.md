@@ -1,6 +1,6 @@
 ---
 description: Despliega la rama actual — la fusiona en develop y develop en main, con push en cada paso
-allowed-tools: Bash(sh scripts/desplegar.sh:*), Bash(git status:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*)
+allowed-tools: "Bash(sh scripts/desplegar.sh:*), Bash(git status:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*)"
 ---
 
 Despliega la rama en la que está el usuario siguiendo el flujo del proyecto
