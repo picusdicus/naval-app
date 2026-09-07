@@ -199,10 +199,14 @@ export default function ResumenSuperAdmin({ resumen, usuario, onCambiarSeccion }
           <StatCard
             label="Organizaciones"
             value={cifra(resumen.organizacionesActivas)}
+            // "todas activas" en verde: es la única de las tres cifras que
+            // además dice que no hay nada desactivado esperando atención.
             sub={
-              todasActivas
-                ? 'todas activas'
-                : `de ${cifra(resumen.organizacionesTotal)} registradas`
+              todasActivas ? (
+                <span className="text-verde">todas activas</span>
+              ) : (
+                `de ${cifra(resumen.organizacionesTotal)} registradas`
+              )
             }
             icon="🏛️"
           />
@@ -219,11 +223,6 @@ export default function ResumenSuperAdmin({ resumen, usuario, onCambiarSeccion }
             icon="👥"
           />
         </div>
-        {todasActivas && (
-          <p className="mt-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-verde">
-            ✓ Ninguna organización desactivada
-          </p>
-        )}
       </section>
 
       {/* Última actividad */}
