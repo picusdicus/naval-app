@@ -11,6 +11,7 @@ import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
 import { upsertDeportesEnRevision } from './_deportes-revision.js'
 import { enviarEmailPendientes } from './_email.js'
 import { registrarIngesta } from './_ingesta-log.js'
+import { archivarTalleresDeCursosPasados } from './_talleres-archivado.js'
 import programaFiestas from './_datos/programa-fiestas-2026.js'
 import redTeatrosData from './_datos/red-teatros.js'
 
@@ -765,7 +766,23 @@ export default async function handler(req, res) {
     agregados: 0,
     actualizados: 0,
     eliminados: 0,
+    talleresArchivados: 0,
     errores: [],
+  }
+
+  // Paso 0: archivar los talleres cuyo curso ya terminó. Va ANTES de la
+  // ingesta y en su propio try porque no depende de ella: si el RSS del
+  // ayuntamiento falla, el archivado no debe caerse con él. Es un solo UPDATE
+  // e idempotente, así que correrlo cada día no cuesta ni reprocesa nada.
+  try {
+    const { archivados, talleres } = await archivarTalleresDeCursosPasados(obtenerSql())
+    resultado.talleresArchivados = archivados
+    if (archivados > 0) {
+      console.log(`Talleres archivados por fin de curso: ${talleres.map((t) => `${t.nombre} (${t.curso})`).join(', ')}`)
+    }
+  } catch (error) {
+    console.error('No se pudieron archivar los talleres de cursos pasados:', error)
+    resultado.errores.push(`Archivado de talleres: ${error.message}`)
   }
 
   try {
