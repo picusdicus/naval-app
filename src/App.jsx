@@ -10,6 +10,8 @@ import Inicio from './pages/Inicio.jsx'
 import Eventos from './pages/Eventos.jsx'
 import EventoDetalle from './pages/EventoDetalle.jsx'
 import ProgramaDelDia from './pages/ProgramaDelDia.jsx'
+import Talleres from './pages/Talleres.jsx'
+import TallerDetalle from './pages/TallerDetalle.jsx'
 import Mapa from './pages/Mapa.jsx'
 import Noticias from './pages/Noticias.jsx'
 import NoticiaDetalle from './pages/NoticiaDetalle.jsx'
@@ -99,6 +101,8 @@ export default function App() {
             <Route path="/eventos" element={<Eventos />} />
             {/* Un solo route: fecha 'YYYY-MM-DD' → programa del día; id → ficha. */}
             <Route path="/eventos/:id" element={<EventoODiaCompleto />} />
+            <Route path="/talleres" element={<Talleres />} />
+            <Route path="/talleres/:id" element={<TallerDetalle />} />
             <Route path="/comercios/*" element={<ComerciosRuta />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NoticiaDetalle />} />

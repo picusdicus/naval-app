@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 
 const tabs = [
   { to: '/eventos', label: 'Eventos', flex: true },
+  { to: '/talleres', label: 'Talleres', flex: true },
   { to: '/comercios', label: 'Comercios', flex: true },
   { to: '/noticias', label: 'Noticias', flex: true },
 ]
@@ -11,7 +12,7 @@ const tabs = [
 // activa en tinta con subrayado terracota, el resto en mono apagado.
 export default function NavBar() {
   return (
-    <nav className="fixed bottom-0 z-40 flex w-full items-center justify-between border-t-2 border-tinta bg-papel px-6 pb-6 pt-3 font-mono-ibm text-[9.5px] uppercase tracking-etiqueta lg:hidden">
+    <nav className="fixed bottom-0 z-40 flex w-full items-center justify-between border-t-2 border-tinta bg-papel px-4 pb-6 pt-3 font-mono-ibm text-[9px] uppercase tracking-etiqueta lg:hidden">
       {tabs.map(({ to, label, end, ml, flex }) => (
         <NavLink
           key={to}

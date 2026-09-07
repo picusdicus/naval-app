@@ -10,7 +10,7 @@ import { json, leerJson, queryDe, csrfInvalido, rechazoCsrf } from '../_http.js'
 export const config = { runtime: 'edge' }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const TIPOS = ['evento', 'comercio']
+const TIPOS = ['evento', 'comercio', 'taller']
 const ESTADOS = ['pendiente', 'activo', 'cancelado']
 
 // Las fechas se formatean en SQL: el driver de Neon convierte `date` en Date
@@ -35,7 +35,7 @@ function aRespuesta(fila) {
 
 /** Valida el cuerpo común de POST/PUT. Devuelve un mensaje de error o null. */
 function validar({ tipo, referenciaId, organizacionId, imagenUrl, fechaInicio, fechaFin, estado }) {
-  if (!TIPOS.includes(tipo)) return 'El tipo debe ser "evento" o "comercio".'
+  if (!TIPOS.includes(tipo)) return 'El tipo debe ser "evento", "comercio" o "taller".'
   if (!referenciaId || typeof referenciaId !== 'string' || !referenciaId.trim()) {
     return 'Falta la referencia del evento o comercio.'
   }

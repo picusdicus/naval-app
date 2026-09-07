@@ -32,29 +32,37 @@ function ChipTipo({ activo, onClick, color, etiqueta, contador, ariaLabel }) {
 /**
  * Fila de filtros por tipo: una sola fila con scroll horizontal (como la tira
  * de días), nunca envuelve a varias líneas. Contadores sobre el conjunto pasado.
+ *
+ * `catalogo` permite reutilizarla con otro vocabulario que no sea el de las
+ * categorías de evento (la página de Talleres pasa LISTA_CATEGORIAS_TALLER).
+ * Solo hace falta que los items tengan {id, nombre, color} y que la lista a
+ * filtrar traiga `categoria` — por defecto, el comportamiento de siempre.
  */
 export default function FiltrosEventos({
   eventos = [],
+  catalogo = LISTA_CATEGORIAS_EVENTO,
+  etiqueta = 'Tipo',
+  etiquetaTodos = 'Todos',
   categoriasActivas = [],
   onCategoriaToggle = () => {},
   onLimpiar = () => {},
 }) {
   const contadores = useMemo(() => {
     const counts = {}
-    LISTA_CATEGORIAS_EVENTO.forEach((cat) => {
+    catalogo.forEach((cat) => {
       counts[cat.id] = eventos.filter((e) => e.categoria === cat.id).length
     })
     return counts
-  }, [eventos])
+  }, [eventos, catalogo])
 
-  const categoriasDisponibles = LISTA_CATEGORIAS_EVENTO.filter((cat) => contadores[cat.id] > 0)
+  const categoriasDisponibles = catalogo.filter((cat) => contadores[cat.id] > 0)
 
   return (
     <div className="mb-6 w-full">
       {/* Cabecera: etiqueta TIPO + Limpiar */}
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="font-mono-ibm text-[11px] uppercase font-semibold tracking-etiqueta text-pardo">
-          Tipo
+          {etiqueta}
         </span>
         {categoriasActivas.length > 0 && (
           <button
@@ -74,7 +82,7 @@ export default function FiltrosEventos({
           <ChipTipo
             activo={categoriasActivas.length === 0}
             onClick={onLimpiar}
-            etiqueta="Todos"
+            etiqueta={etiquetaTodos}
             contador={eventos.length}
             ariaLabel="Todos los tipos"
           />

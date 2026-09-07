@@ -10,6 +10,7 @@ import { hayPromptDeInstalacion, pedirInstalacionNativa } from '../../lib/instal
 const rutas = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/eventos', label: 'Eventos' },
+  { to: '/talleres', label: 'Talleres' },
   { to: '/comercios', label: 'Comercios' },
   { to: '/noticias', label: 'Noticias' },
   { to: '/ayuda', label: 'Preguntas frecuentes' },
