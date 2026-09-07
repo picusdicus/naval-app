@@ -13,6 +13,28 @@
       "destination": "/api/og-evento?id=:id"
     },
     {
+      "source": "/talleres",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|facebookexternalhit|facebookcatalog|twitterbot|slackbot|slack-imgproxy|telegrambot|linkedinbot|discordbot|applebot|googlebot|bingbot|embedly|redditbot|pinterest|vkshare|skypeuripreview|whatsdog|mastodon|bluesky|signal).*"
+        }
+      ],
+      "destination": "/api/og-talleres"
+    },
+    {
+      "source": "/talleres/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|facebookexternalhit|facebookcatalog|twitterbot|slackbot|slack-imgproxy|telegrambot|linkedinbot|discordbot|applebot|googlebot|bingbot|embedly|redditbot|pinterest|vkshare|skypeuripreview|whatsdog|mastodon|bluesky|signal).*"
+        }
+      ],
+      "destination": "/api/og-talleres?id=:id"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

@@ -17,11 +17,15 @@ import { tallerATarjeta } from '../lib/destacados.js'
 import { GenericasEventoContext } from '../lib/GenericasEventoContext.jsx'
 import { creditosDe, genericasParaEvento } from '../lib/imagenesEvento.js'
 import MIcon from '../components/MIcon.jsx'
+import BotonCompartir from '../components/BotonCompartir.jsx'
 
 // Mínimo de items del carrusel, igual que en Eventos: sin destacados
 // contratados se rellena con los primeros talleres para que la franja no
 // quede coja ni desaparezca.
 const MIN_CARRUSEL = 6
+
+// Separador de líneas del texto que se comparte (título / resumen / enlace).
+const BR = String.fromCharCode(10)
 
 /**
  * Catálogo de talleres municipales.
@@ -89,6 +93,19 @@ export default function Talleres() {
     return porFamilia
   }, [visibles])
 
+  // Se comparte SIEMPRE el catálogo entero, sin los filtros que tenga puestos
+  // quien comparte: el enlace es para que el otro mire, no para reproducir su
+  // pantalla.
+  const urlDeLaSeccion =
+    typeof window !== 'undefined' ? `${window.location.origin}/talleres` : '/talleres'
+  const textoCompartir = [
+    'Talleres municipales de Navalcarnero',
+    talleres.length > 0
+      ? `${talleres.length} talleres este curso · ${TEXTO_MATRICULA.toLowerCase()}`
+      : 'Consulta el catálogo del curso',
+    urlDeLaSeccion,
+  ].join(BR)
+
   const conCarrusel = categoriasActivas.length === 0 && itemsCarrusel.length > 0
   const hayDestacadosReales = destacadosTaller.length > 0
 
@@ -106,9 +123,19 @@ export default function Talleres() {
   return (
     <div className="flex flex-col">
       <header className="mb-6">
-        <div className="gz-filete-doble pb-3">
-          <div className="gz-label text-mudo">Aprender en</div>
-          <h1 className="font-serif-dm text-seccion leading-none text-tinta">Los talleres</h1>
+        <div className="gz-filete-doble flex items-start justify-between gap-4 pb-3">
+          <div className="flex-1">
+            <div className="gz-label text-mudo">Aprender en</div>
+            <h1 className="font-serif-dm text-seccion leading-none text-tinta">Los talleres</h1>
+          </div>
+          {/* El catálogo es lo que la gente pasa por WhatsApp ("mira, hay
+              yoga"), así que compartir vive aquí y no solo en cada ficha. */}
+          <BotonCompartir
+            titulo="Talleres municipales de Navalcarnero"
+            url={urlDeLaSeccion}
+            textoCompartir={textoCompartir}
+            conEmail
+          />
         </div>
         {/* La matrícula se avisa aquí y en cada ficha: el precio que se ve en
             la tarjeta es solo la cuota mensual, y enterarse del pago único al
