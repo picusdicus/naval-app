@@ -5,6 +5,7 @@ import {
   nombreCategoriaTaller,
   tallerComoEvento,
   textoDias,
+  CUOTA_MATRICULA,
 } from '../lib/talleres.js'
 import { useImagenEvento } from '../lib/useImagenEvento.js'
 import { cartelDe } from '../lib/gaceta.js'
@@ -182,6 +183,17 @@ export default function TallerDetalle() {
               <dd className="text-tinta">{taller.precio}</dd>
             </div>
           )}
+          {/* Va SIEMPRE, tenga precio el taller o no: es la misma para todos y
+              quien se apunta debe contar con ella antes de decidirse. */}
+          <div className="flex justify-between border-b border-filete py-2">
+            <dt className="shrink-0 text-pardo">Matrícula</dt>
+            <dd className="text-right text-tinta">
+              {CUOTA_MATRICULA}
+              <span className="ml-1.5 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+                pago único
+              </span>
+            </dd>
+          </div>
           {taller.edades && (
             <div className="flex justify-between border-b border-filete py-2">
               <dt className="shrink-0 text-pardo">Edades</dt>

@@ -1,7 +1,10 @@
 // Carga inicial del catálogo de talleres municipales 2026/2027.
 //
 // SCRIPT DE UN SOLO USO, no un importador reutilizable: los datos van
-// transcritos aquí a mano desde el folleto municipal. La importación por PDF
+// transcritos aquí a mano desde el PDF municipal
+// (HORARIOS-TALLERES-MUNICIPALES-CURSO-2026-20271.pdf), que es la fuente de
+// verdad — la primera carga se hizo desde capturas y coló un día erróneo en
+// Bailes de salón (ver git log de este fichero). La importación por PDF
 // es la fase 2 y no tiene nada que ver con esto — no construir sobre este
 // fichero, borrarlo cuando el importador exista.
 //
@@ -165,11 +168,8 @@ const CATALOGO = [
     lugar: 'Casa de la Cultura',
     precio: '17 €/mes',
     turnos: [
-      // El folleto da la MISMA franja para iniciación-medio y medio-avanzado
-      // (jueves 18:30-19:45). Se transcribe tal cual: corregirlo sería
-      // inventar un dato que el ayuntamiento no ha dado.
       { etiqueta: 'Nivel iniciación-medio', dias: ['jueves'], horaInicio: '18:30', horaFin: '19:45' },
-      { etiqueta: 'Nivel medio-avanzado', dias: ['jueves'], horaInicio: '18:30', horaFin: '19:45' },
+      { etiqueta: 'Nivel medio-avanzado', dias: ['viernes'], horaInicio: '18:30', horaFin: '19:45' },
       { etiqueta: 'Nivel avanzado', dias: ['viernes'], horaInicio: '19:45', horaFin: '21:00' },
     ],
   },
