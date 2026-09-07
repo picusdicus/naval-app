@@ -170,8 +170,10 @@ export default function TablesTalleres() {
           <h2 className="font-serif-dm text-xl text-tinta">Talleres</h2>
           {resumen && (
             <p className="font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
-              {resumen.total} en total · {resumen.publicados} publicados · {resumen.borradores}{' '}
-              borradores
+              {resumen.total} en total · {resumen.publicados} publicados ·{' '}
+              {resumen.borradores} borradores
+              {resumen.archivados > 0 &&
+                ` · ${resumen.archivados} ${resumen.archivados === 1 ? 'archivado' : 'archivados'}`}
             </p>
           )}
         </div>

@@ -70,6 +70,67 @@ export const CUOTA_MATRICULA = '10 €'
 
 export const TEXTO_MATRICULA = `Matrícula de ${CUOTA_MATRICULA} (pago único, aparte de la cuota mensual del taller)`
 
+// ---------------------------------------------------------------------------
+// Curso escolar: qué catálogo está vigente y cuál ya pasó
+// ---------------------------------------------------------------------------
+
+/**
+ * Día en que termina el curso, como 'MM-DD' e INCLUSIVE: el 31 de julio el
+ * curso que acaba sigue siendo el vigente, y el 1 de agosto ya no.
+ *
+ * Constante y no un número suelto por el mismo motivo que CUOTA_MATRICULA: es
+ * una decisión del ayuntamiento que puede cambiar de un año a otro, y quien la
+ * cambie debe encontrarla en un sitio, no repartida por el código.
+ */
+export const FIN_CURSO_MES_DIA = '07-31'
+
+/**
+ * Año de inicio de un curso con formato 'YYYY/YYYY' ('2026/2027' → 2026), o
+ * null si el texto no tiene esa forma.
+ *
+ * Devolver null y no lanzar es deliberado: `talleres.curso` es texto libre sin
+ * CHECK, y lo que no se entiende NO debe archivarse (ver esCursoAnterior).
+ */
+export function anioInicioDeCurso(curso) {
+  const m = /^\s*(\d{4})\s*\/\s*(\d{4})\s*$/.exec(String(curso ?? ''))
+  return m ? Number(m[1]) : null
+}
+
+/**
+ * Curso vigente en una fecha dada ('2026/2027'). `hoy` es inyectable para poder
+ * verificar los límites sin tocar el reloj del sistema.
+ *
+ * Usa la fecha LOCAL del proceso. El cron corre a las 07:00 UTC, lejos de
+ * medianoche, así que el desfase de zona no puede cambiar el día — y aunque lo
+ * hiciera, adelantaría o retrasaría el archivado unas horas, nunca un curso.
+ */
+export function cursoVigente(hoy = new Date()) {
+  const anio = hoy.getFullYear()
+  const mesDia = `${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+  // Pasado el corte empieza el curso siguiente; hasta él (incluido), el que acaba.
+  return mesDia > FIN_CURSO_MES_DIA ? `${anio}/${anio + 1}` : `${anio - 1}/${anio}`
+}
+
+/**
+ * ¿El curso de un taller es ANTERIOR al vigente? (el criterio del archivado
+ * automático).
+ *
+ * Estrictamente anterior, NO "distinto del vigente": el ayuntamiento publica el
+ * folleto del curso siguiente en junio, con el actual todavía en marcha, y un
+ * catálogo cargado por adelantado ('2027/2028' mientras rige '2026/2027') es
+ * futuro, no caducado — con "distinto" el cron lo habría archivado a la mañana
+ * siguiente de cargarlo.
+ *
+ * Un curso vacío, nulo o con formato desconocido devuelve false: no se archiva
+ * lo que no se sabe a qué curso pertenece.
+ */
+export function esCursoAnterior(curso, hoy = new Date()) {
+  const inicio = anioInicioDeCurso(curso)
+  if (inicio === null) return false
+  const inicioVigente = anioInicioDeCurso(cursoVigente(hoy))
+  return inicio < inicioVigente
+}
+
 export const DIAS_SEMANA = [
   { id: 'lunes', nombre: 'Lunes', corto: 'L' },
   { id: 'martes', nombre: 'Martes', corto: 'M' },

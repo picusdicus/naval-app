@@ -78,6 +78,9 @@ async function listar(sql) {
       total: talleres.length,
       publicados: talleres.filter((t) => t.estado === 'publicado').length,
       borradores: talleres.filter((t) => t.estado === 'borrador').length,
+      // Los archiva el cron al terminar el curso: sin este contador, el
+      // superadmin vería bajar "publicados" sin explicación.
+      archivados: talleres.filter((t) => t.estado === 'archivado').length,
     },
   })
 }
