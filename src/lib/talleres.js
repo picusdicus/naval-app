@@ -59,6 +59,17 @@ export function colorCategoriaTaller(id) {
   return CATEGORIAS_TALLER[id]?.color || '#b0472f'
 }
 
+// Cuota de matrícula: se paga UNA VEZ y es la misma para todos los talleres,
+// aparte del precio mensual de cada uno. Por eso es una constante del módulo y
+// no una columna de `talleres`: repetir el mismo importe en 14 filas invita a
+// que se desincronicen, y no hay tabla de configuración en el proyecto donde
+// vivir (mismo patrón que TARIFAS_DESTACADO en tarifasDestacados.js).
+// Si algún curso dejara de ser única para todos, ENTONCES es cuando toca
+// columna propia — no antes.
+export const CUOTA_MATRICULA = '10 €'
+
+export const TEXTO_MATRICULA = `Matrícula de ${CUOTA_MATRICULA} (pago único, aparte de la cuota mensual del taller)`
+
 export const DIAS_SEMANA = [
   { id: 'lunes', nombre: 'Lunes', corto: 'L' },
   { id: 'martes', nombre: 'Martes', corto: 'M' },
