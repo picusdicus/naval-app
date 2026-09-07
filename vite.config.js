@@ -96,6 +96,20 @@ function devApiPlugin(env) {
         return next()
       })
 
+      // Espejo de los rewrites de /talleres y /talleres/:id (api/og-talleres.js).
+      // Mismo motivo que el de arriba: vercel.json no se aplica en `npm run dev`.
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url) return next()
+        const m = /^\/talleres(?:\/([^/?]+))?\/?$/.exec(req.url.split('?')[0])
+        if (!m) return next()
+        const { esCrawler } = await server.ssrLoadModule('/api/_crawlers.js')
+        if (!esCrawler(req.headers['user-agent'])) return next()
+        req.url = m[1]
+          ? `/api/og-talleres?id=${encodeURIComponent(decodeURIComponent(m[1]))}`
+          : '/api/og-talleres'
+        return next()
+      })
+
       server.middlewares.use(async (req, res, next) => {
         if (!req.url) return next()
 
