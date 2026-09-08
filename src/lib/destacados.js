@@ -12,7 +12,7 @@
 
 import comerciosData from '../data/comercios.json'
 import serviciosLocales from '../data/servicios-locales.json'
-import { diasHasta, UMBRAL_AVISO_CADUCIDAD } from './fechas.js'
+import { diasHasta, duracionDe, UMBRAL_AVISO_CADUCIDAD } from './fechas.js'
 import { CATEGORIAS_EVENTO, formatearFechaCorta } from './eventos.js'
 import { colorCategoriaTaller, nombreCategoriaTaller, tallerComoEvento, textoTurno } from './talleres.js'
 import { imagenEvento } from './imagenesEvento.js'
@@ -51,6 +51,22 @@ export function campanaFinalizada(destacado) {
     Boolean(destacado.fechaFin) &&
     diasHasta(destacado.fechaFin) < 0
   )
+}
+
+/**
+ * Porcentaje de campaña ya consumido, 0..100, para la barra de vigencia.
+ * La comparten los dos sitios donde el superadmin ve una campaña correr: los
+ * "Destacados en curso" del Resumen y las tarjetas del tab Destacados. Vive
+ * aquí para que ambas barras midan lo mismo — dos copias con criterios de
+ * redondeo distintos darían porcentajes que no cuadran entre pantallas.
+ */
+export function porcentajeTranscurrido(fechaInicio, fechaFin) {
+  const total = duracionDe(fechaInicio, fechaFin)
+  if (!(total > 0)) return 100
+  // duracionDe cuenta los dos extremos: el primer día de una campaña ya lleva
+  // 1 día consumido, no 0.
+  const transcurridos = total - diasHasta(fechaFin)
+  return Math.max(0, Math.min(100, Math.round((transcurridos / total) * 100)))
 }
 
 /**
