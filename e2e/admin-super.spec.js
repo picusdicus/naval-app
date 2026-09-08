@@ -51,8 +51,21 @@ test.describe('Admin Superadmin Panel', () => {
     const codigosTab = page.locator('button:has-text("Códigos de invitación")')
     await codigosTab.click()
 
-    const createBtn = page.locator('button:has-text("Nuevo código")')
+    // Mismo motivo que en Organizaciones: el alta se ofrece en la cabecera y
+    // como tarjeta al final de la rejilla, así que se localiza por nombre
+    // accesible exacto (la tarjeta lleva aria-label propio).
+    const createBtn = page.getByRole('button', { name: 'Nuevo código', exact: true })
     await expect(createBtn).toBeVisible()
+
+    // La lista es una rejilla de tarjetas, no una tabla. Hasta ahora nada
+    // comprobaba su contenido: se afirma que carga y que cada tarjeta trae la
+    // organización, los usos y la acción de copiar.
+    const tarjetas = page.getByTestId('tarjeta-codigo')
+    await expect(tarjetas.first()).toBeVisible()
+
+    const primera = tarjetas.first()
+    await expect(primera).toContainText('Usos')
+    await expect(primera.getByRole('button', { name: /^Copiar código / })).toBeVisible()
   })
 
   test('analytics tab should show metrics', async ({ page }) => {
