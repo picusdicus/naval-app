@@ -326,203 +326,203 @@ export default function TablesDestacados() {
               {editandoId ? 'Editar destacado' : 'Nuevo destacado'}
             </h2>
 
-          <form onSubmit={manejarEnvio} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className={CLASES_ETIQUETA}>Tipo</label>
-                <select
-                  value={formularioData.tipo}
-                  onChange={(e) =>
-                    setFormularioData({ ...formularioData, tipo: e.target.value, referenciaId: '' })
-                  }
-                  className={CLASES_CAMPO}
-                  disabled={enviando || Boolean(editandoId)}
-                >
-                  <option value="evento">Evento</option>
-                  <option value="taller">Taller</option>
-                  <option value="comercio">Comercio</option>
-                </select>
-              </div>
-              <div>
-                <label className={CLASES_ETIQUETA}>Organización contratante</label>
-                <select
-                  value={formularioData.organizacionId}
-                  onChange={(e) =>
-                    setFormularioData({ ...formularioData, organizacionId: e.target.value })
-                  }
-                  className={CLASES_CAMPO}
-                  disabled={enviando}
-                >
-                  <option value="">— Sin asignar —</option>
-                  {organizaciones.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Buscador del item a destacar (bloqueado al editar: la referencia
-                es inmutable; para cambiar de item, eliminar y crear). */}
-            <div>
-              <label className={CLASES_ETIQUETA}>
-                {`${ETIQUETA_TIPO[formularioData.tipo] || 'Comercio'} a destacar`}
-              </label>
-              {formularioData.referenciaId ? (
-                <div className="flex items-center justify-between border border-nocturno-outline bg-nocturno-sidebar px-4 py-2">
-                  <span className="font-serif-spectral text-sm font-medium text-nocturno-texto">
-                    {itemElegido ?? (
-                      <span className="text-terracota-legible" title={formularioData.referenciaId}>
-                        Referencia no encontrada
-                      </span>
-                    )}
-                  </span>
-                  {!editandoId && (
-                    <button
-                      type="button"
-                      onClick={() => setFormularioData({ ...formularioData, referenciaId: '' })}
-                      className="text-nocturno-terciario hover:text-terracota-legible"
-                      title="Quitar"
-                    >
-                      <MIcon name="close" className="text-[18px]" />
-                    </button>
-                  )}
+            <form onSubmit={manejarEnvio} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={CLASES_ETIQUETA}>Tipo</label>
+                  <select
+                    value={formularioData.tipo}
+                    onChange={(e) =>
+                      setFormularioData({ ...formularioData, tipo: e.target.value, referenciaId: '' })
+                    }
+                    className={CLASES_CAMPO}
+                    disabled={enviando || Boolean(editandoId)}
+                  >
+                    <option value="evento">Evento</option>
+                    <option value="taller">Taller</option>
+                    <option value="comercio">Comercio</option>
+                  </select>
                 </div>
-              ) : (
-                <>
+                <div>
+                  <label className={CLASES_ETIQUETA}>Organización contratante</label>
+                  <select
+                    value={formularioData.organizacionId}
+                    onChange={(e) =>
+                      setFormularioData({ ...formularioData, organizacionId: e.target.value })
+                    }
+                    className={CLASES_CAMPO}
+                    disabled={enviando}
+                  >
+                    <option value="">— Sin asignar —</option>
+                    {organizaciones.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Buscador del item a destacar (bloqueado al editar: la referencia
+                  es inmutable; para cambiar de item, eliminar y crear). */}
+              <div>
+                <label className={CLASES_ETIQUETA}>
+                  {`${ETIQUETA_TIPO[formularioData.tipo] || 'Comercio'} a destacar`}
+                </label>
+                {formularioData.referenciaId ? (
+                  <div className="flex items-center justify-between border border-nocturno-outline bg-nocturno-sidebar px-4 py-2">
+                    <span className="font-serif-spectral text-sm font-medium text-nocturno-texto">
+                      {itemElegido ?? (
+                        <span className="text-terracota-legible" title={formularioData.referenciaId}>
+                          Referencia no encontrada
+                        </span>
+                      )}
+                    </span>
+                    {!editandoId && (
+                      <button
+                        type="button"
+                        onClick={() => setFormularioData({ ...formularioData, referenciaId: '' })}
+                        className="text-nocturno-terciario hover:text-terracota-legible"
+                        title="Quitar"
+                      >
+                        <MIcon name="close" className="text-[18px]" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={busquedaItem}
+                      onChange={(e) => setBusquedaItem(e.target.value)}
+                      placeholder={
+                        formularioData.tipo === 'taller'
+                          ? 'Escribe para buscar entre los talleres publicados y elige uno…'
+                          : formularioData.tipo === 'evento'
+                          ? 'Escribe para buscar entre los próximos eventos y elige uno…'
+                          : 'Escribe para buscar en el directorio y elige uno…'
+                      }
+                      className={CLASES_CAMPO}
+                      disabled={enviando}
+                    />
+                    {candidatos.length > 0 && (
+                      <ul className="mt-1 divide-y divide-nocturno-borde overflow-hidden border border-nocturno-outline bg-nocturno-superficie">
+                        {candidatos.map((c) => (
+                          <li key={c.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormularioData({ ...formularioData, referenciaId: c.id })
+                                setBusquedaItem('')
+                              }}
+                              className="flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left font-serif-spectral text-sm text-nocturno-texto hover:bg-nocturno-sidebar"
+                            >
+                              <span className="font-medium">{c.nombre}</span>
+                              <span className="shrink-0 font-mono-ibm text-[10px] text-nocturno-terciario">{c.detalle}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label className={CLASES_ETIQUETA}>Orden</label>
                   <input
-                    type="text"
-                    value={busquedaItem}
-                    onChange={(e) => setBusquedaItem(e.target.value)}
-                    placeholder={
-                      formularioData.tipo === 'taller'
-                        ? 'Escribe para buscar entre los talleres publicados y elige uno…'
-                        : formularioData.tipo === 'evento'
-                        ? 'Escribe para buscar entre los próximos eventos y elige uno…'
-                        : 'Escribe para buscar en el directorio y elige uno…'
+                    type="number"
+                    min="0"
+                    value={formularioData.orden}
+                    onChange={(e) => setFormularioData({ ...formularioData, orden: e.target.value })}
+                    className={CLASES_CAMPO}
+                    disabled={enviando}
+                  />
+                </div>
+                <div>
+                  <label className={CLASES_ETIQUETA}>Inicio</label>
+                  <input
+                    type="date"
+                    value={formularioData.fechaInicio}
+                    onChange={(e) =>
+                      setFormularioData({ ...formularioData, fechaInicio: e.target.value })
                     }
                     className={CLASES_CAMPO}
                     disabled={enviando}
                   />
-                  {candidatos.length > 0 && (
-                    <ul className="mt-1 divide-y divide-nocturno-borde overflow-hidden border border-nocturno-outline bg-nocturno-superficie">
-                      {candidatos.map((c) => (
-                        <li key={c.id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormularioData({ ...formularioData, referenciaId: c.id })
-                              setBusquedaItem('')
-                            }}
-                            className="flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left font-serif-spectral text-sm text-nocturno-texto hover:bg-nocturno-sidebar"
-                          >
-                            <span className="font-medium">{c.nombre}</span>
-                            <span className="shrink-0 font-mono-ibm text-[10px] text-nocturno-terciario">{c.detalle}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <label className={CLASES_ETIQUETA}>Orden</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formularioData.orden}
-                  onChange={(e) => setFormularioData({ ...formularioData, orden: e.target.value })}
-                  className={CLASES_CAMPO}
-                  disabled={enviando}
-                />
-              </div>
-              <div>
-                <label className={CLASES_ETIQUETA}>Inicio</label>
-                <input
-                  type="date"
-                  value={formularioData.fechaInicio}
-                  onChange={(e) =>
-                    setFormularioData({ ...formularioData, fechaInicio: e.target.value })
-                  }
-                  className={CLASES_CAMPO}
-                  disabled={enviando}
-                />
-              </div>
-              <div>
-                <label className={CLASES_ETIQUETA}>Duración</label>
-                <select
-                  value={formularioData.duracionDias}
-                  onChange={(e) =>
-                    setFormularioData({ ...formularioData, duracionDias: e.target.value })
-                  }
-                  className={CLASES_CAMPO}
-                  disabled={enviando}
-                >
-                  {formularioData.duracionDias === '' && (
-                    <option value="" disabled>
-                      Selecciona duración…
-                    </option>
-                  )}
-                  {/* Campañas con duración no estándar: se puede reguardar sin alterarla. */}
-                  {formularioData.duracionDias !== '' &&
-                    !PRESETS_DURACION.includes(Number(formularioData.duracionDias)) && (
-                      <option value={formularioData.duracionDias}>
-                        Personalizada ({formularioData.duracionDias} días)
+                </div>
+                <div>
+                  <label className={CLASES_ETIQUETA}>Duración</label>
+                  <select
+                    value={formularioData.duracionDias}
+                    onChange={(e) =>
+                      setFormularioData({ ...formularioData, duracionDias: e.target.value })
+                    }
+                    className={CLASES_CAMPO}
+                    disabled={enviando}
+                  >
+                    {formularioData.duracionDias === '' && (
+                      <option value="" disabled>
+                        Selecciona duración…
                       </option>
                     )}
-                  {PRESETS_DURACION.map((n) => (
-                    <option key={n} value={String(n)}>
-                      {n} días
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 font-mono-ibm text-[10px] text-nocturno-terciario">
-                  Fin:{' '}
-                  {formularioData.duracionDias
-                    ? sumarDias(
-                        formularioData.fechaInicio || hoyISO(),
-                        Number(formularioData.duracionDias) - 1,
-                      )
-                    : '—'}
-                </p>
+                    {/* Campañas con duración no estándar: se puede reguardar sin alterarla. */}
+                    {formularioData.duracionDias !== '' &&
+                      !PRESETS_DURACION.includes(Number(formularioData.duracionDias)) && (
+                        <option value={formularioData.duracionDias}>
+                          Personalizada ({formularioData.duracionDias} días)
+                        </option>
+                      )}
+                    {PRESETS_DURACION.map((n) => (
+                      <option key={n} value={String(n)}>
+                        {n} días
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 font-mono-ibm text-[10px] text-nocturno-terciario">
+                    Fin:{' '}
+                    {formularioData.duracionDias
+                      ? sumarDias(
+                          formularioData.fechaInicio || hoyISO(),
+                          Number(formularioData.duracionDias) - 1,
+                        )
+                      : '—'}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* SelectorImagen se comparte con /panel, que se queda en claro:
-                no se le puede tocar una clase. En vez de dejarlo como un trozo
-                del formulario que se olvidó de oscurecer, se envuelve en una
-                pieza clara delimitada, que se lee como deliberada. */}
-            <div className="rounded-xl border border-nocturno-outline bg-papel p-4">
-              <SelectorImagen
-                valor={formularioData.imagenUrl}
-                onChange={(url) => setFormularioData({ ...formularioData, imagenUrl: url })}
-                etiqueta="Imagen del destacado"
-                opcional={formularioData.tipo === 'evento'}
-              />
-            </div>
+              {/* SelectorImagen se comparte con /panel, que se queda en claro:
+                  no se le puede tocar una clase. En vez de dejarlo como un trozo
+                  del formulario que se olvidó de oscurecer, se envuelve en una
+                  pieza clara delimitada, que se lee como deliberada. */}
+              <div className="rounded-xl border border-nocturno-outline bg-papel p-4">
+                <SelectorImagen
+                  valor={formularioData.imagenUrl}
+                  onChange={(url) => setFormularioData({ ...formularioData, imagenUrl: url })}
+                  etiqueta="Imagen del destacado"
+                  opcional={formularioData.tipo === 'evento'}
+                />
+              </div>
 
-            <div className="flex gap-2 pt-4">
-              <button
-                type="submit"
-                disabled={enviando || !formularioData.referenciaId}
-                className="bg-terracota px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-              >
-                {enviando ? 'Guardando…' : 'Guardar'}
-              </button>
-              <button
-                type="button"
-                onClick={cancelar}
-                disabled={enviando}
-                className={CLASES_BOTON_SECUNDARIO}
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
+              <div className="flex gap-2 pt-4">
+                <button
+                  type="submit"
+                  disabled={enviando || !formularioData.referenciaId}
+                  className="bg-terracota px-4 py-2 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-papel hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {enviando ? 'Guardando…' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelar}
+                  disabled={enviando}
+                  className={CLASES_BOTON_SECUNDARIO}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
