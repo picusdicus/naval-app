@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import MIcon from '../../MIcon.jsx'
 import DialogoConfirmacion from '../DialogoConfirmacion.jsx'
+import FiltroEstado from './FiltroEstado.jsx'
 import { LISTA_CATEGORIAS } from '../../../lib/categorias.js'
 import { SUBTIPO_INFO } from '../../../lib/subtipos.js'
 
@@ -16,6 +17,8 @@ const CAMPOS_LABEL = 'mb-1 block font-mono-ibm text-[10px] uppercase tracking-et
 
 export default function TableAltasComercio() {
   const [altas, setAltas] = useState([])
+  // null hasta la primera respuesta: los botones no inventan un «(0)» al cargar.
+  const [conteos, setConteos] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [estadoFiltro, setEstadoFiltro] = useState('pendiente')
@@ -32,6 +35,7 @@ export default function TableAltasComercio() {
 
       const datos = await respuesta.json()
       setAltas(datos.altas || [])
+      setConteos(datos.conteos || null)
       setError('')
     } catch (err) {
       setError(err.message)
@@ -118,12 +122,6 @@ export default function TableAltasComercio() {
     }
   }
 
-  const FILTROS = [
-    { valor: 'pendiente', label: 'Pendientes' },
-    { valor: 'aprobada', label: 'Aprobadas' },
-    { valor: 'rechazada', label: 'Rechazadas' },
-  ]
-
   const nombreCategoria = (id) => LISTA_CATEGORIAS.find((c) => c.id === id)?.nombre || id
 
   if (cargando) {
@@ -133,21 +131,11 @@ export default function TableAltasComercio() {
   return (
     <div className="space-y-4">
       {/* Filtros */}
-      <div className="flex flex-wrap gap-2">
-        {FILTROS.map((filtro) => (
-          <button
-            key={filtro.valor}
-            onClick={() => setEstadoFiltro(filtro.valor)}
-            className={`px-3 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta transition-colors ${
-              estadoFiltro === filtro.valor
-                ? 'bg-tinta text-papel'
-                : 'border border-filete text-pardo hover:text-tinta'
-            }`}
-          >
-            {filtro.label}
-          </button>
-        ))}
-      </div>
+      <FiltroEstado
+        estadoFiltro={estadoFiltro}
+        onCambiar={setEstadoFiltro}
+        conteos={conteos}
+      />
 
       {/* Mensaje de error */}
       {error && (
