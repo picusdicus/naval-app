@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { abrirNavegacion, irASeccion } from './_panel.js'
 import { BASE_URL, SESION_SUPER } from './entorno.js'
 
 // Pestaña Destacados del superadmin: la duración es obligatoria al crear y el
@@ -85,17 +86,24 @@ test('una solicitud pendiente cuenta en el tab y su vigencia se marca como propu
 
   await page.goto('/admin')
 
-  // El tab Destacados muestra el nº de pendientes (al menos el recién creado).
-  // El contador llega en un fetch propio del panel: el filtro numérico hace
-  // que toBeVisible espere a que se pinte (el otro span del botón es el icono).
-  const tabDestacados = page.locator('button').filter({ hasText: 'Destacados' })
-  const contador = tabDestacados.locator('span').filter({ hasText: /^\d+$/ })
+  // La navegación muestra junto a Destacados el nº de pendientes (al menos el
+  // recién creado). Se mira DENTRO de ella —la sidebar en escritorio, el
+  // drawer en móvil— porque la barra inferior del móvil solo marca que hay
+  // cola con un punto, sin cifra. El contador llega en un fetch propio del
+  // panel: el filtro numérico hace que toBeVisible espere a que se pinte (el
+  // otro span del botón es el icono).
+  const nav = await abrirNavegacion(page)
+  const contador = nav
+    .locator('button')
+    .filter({ hasText: 'Destacados' })
+    .locator('span')
+    .filter({ hasText: /^\d+$/ })
   await expect(contador).toBeVisible()
   expect(Number(await contador.textContent())).toBeGreaterThanOrEqual(1)
 
   // En la tarjeta, las fechas de un pendiente se marcan como propuesta de la
   // org y no se pinta la barra de vigencia (no es un plazo decidido).
-  await tabDestacados.click()
+  await irASeccion(page, 'Destacados')
   const tarjeta = tarjetaDe(page, referenciaId)
   await expect(tarjeta.getByText('Propuesta')).toBeVisible()
   await expect(tarjeta.locator('[role="img"]')).toHaveCount(0)
@@ -121,7 +129,7 @@ test('un activo próximo a caducar muestra el aviso en su tarjeta', async ({ pag
   expect(destacado.vigente).toBe(true)
 
   await page.goto('/admin')
-  await page.locator('button:has-text("Destacados")').click()
+  await irASeccion(page, 'Destacados')
 
   // La tarjeta sintética muestra la vigencia y el aviso aunque la referencia
   // no resuelva a ningún evento real.

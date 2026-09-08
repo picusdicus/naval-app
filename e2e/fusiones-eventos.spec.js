@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { neon } from '@neondatabase/serverless'
 import { test, expect } from '@playwright/test'
+import { irASeccion } from './_panel.js'
 import { RAIZ, SESION_SUPER, exigir } from './entorno.js'
 
 // Fusión manual de eventos (issue #27): el superadmin une dos entradas que el
@@ -104,7 +105,7 @@ test.describe('Fusiones manuales de eventos', () => {
 
     // — Panel del superadmin (sesión del proyecto `setup`) y tab Eventos.
     await page.goto('/admin')
-    await page.getByRole('button', { name: 'Eventos', exact: true }).click()
+    await irASeccion(page, 'Eventos')
 
     const buscador = page.getByPlaceholder('Busca por título o lugar…')
     const filas = page.locator('div.divide-y > div')
@@ -153,7 +154,7 @@ test.describe('Fusiones manuales de eventos', () => {
 
     // — Deshacer desde el detalle desplegable del panel.
     await page.goto('/admin')
-    await page.getByRole('button', { name: 'Eventos', exact: true }).click()
+    await irASeccion(page, 'Eventos')
     await buscador.fill(principal.titulo)
     await expect(filas).toHaveCount(1)
     await filas.first().locator('button[aria-expanded]').click()
@@ -182,7 +183,7 @@ test.describe('Fusiones manuales de eventos', () => {
     await expect(page.getByText(principal.titulo).filter({ visible: true }).first()).toBeVisible() // agenda intacta
 
     await page.goto('/admin')
-    await page.getByRole('button', { name: 'Eventos', exact: true }).click()
+    await irASeccion(page, 'Eventos')
     await buscador.fill(principal.titulo)
     await expect(filas).toHaveCount(1)
     await expect(filas.first().getByText('· fusión sin efecto')).toBeVisible()
