@@ -26,20 +26,25 @@ test.describe('Admin Superadmin Panel', () => {
     const orgTab = page.locator('button:has-text("Organizaciones")')
     await expect(orgTab).toBeVisible()
 
-    // Should show "Nueva organización" button
-    const createBtn = page.locator('button:has-text("Nueva organización")')
+    // El alta se ofrece en dos sitios (cabecera y tarjeta al final de la
+    // rejilla), así que se localiza por nombre accesible exacto: la tarjeta
+    // lleva aria-label propio y no compite con este.
+    const createBtn = page.getByRole('button', { name: 'Nueva organización', exact: true })
     await expect(createBtn).toBeVisible()
   })
 
   test('should load organizations list', async ({ page }) => {
-    // Wait for table to be visible
-    await page.waitForSelector('table')
-    const table = page.locator('table')
-    await expect(table).toBeVisible()
+    // La lista es una rejilla de tarjetas, no una tabla: se espera a que
+    // llegue la primera y se comprueba que hay más de una.
+    const tarjetas = page.getByTestId('tarjeta-organizacion')
+    await expect(tarjetas.first()).toBeVisible()
+    expect(await tarjetas.count()).toBeGreaterThan(1)
 
-    // Check for at least the header row
-    const headers = page.locator('th')
-    await expect(headers.first()).toContainText('Nombre')
+    // Las tres cifras de la tarjeta sustituyen a las cabeceras de la tabla.
+    const primera = tarjetas.first()
+    await expect(primera).toContainText('Eventos')
+    await expect(primera).toContainText('Usuarios')
+    await expect(primera).toContainText('Códigos')
   })
 
   test('codigos tab should show list and create button', async ({ page }) => {

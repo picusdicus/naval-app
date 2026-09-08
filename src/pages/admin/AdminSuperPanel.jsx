@@ -239,8 +239,19 @@ export default function AdminSuperPanel() {
             </div>
           )}
 
-          {/* Contenido */}
-          <div className="border border-tinta bg-papel p-6">{contenido}</div>
+          {/* Contenido. Organizaciones es la primera sección cuyo contenido
+              (y no solo la sidebar) usa la paleta nocturna: el envoltorio se
+              oscurece con ella. Al migrar Códigos o Destacados, sumar su clave
+              a esta condición en vez de duplicar el envoltorio. */}
+          <div
+            className={
+              seccionActiva === 'organizaciones'
+                ? 'border border-nocturno-outline bg-nocturno-fondo p-6'
+                : 'border border-tinta bg-papel p-6'
+            }
+          >
+            {contenido}
+          </div>
 
           <DialogoInfoUsuario
             abierto={dialogoInfoAbierto}
