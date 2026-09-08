@@ -3,14 +3,12 @@
 // Rate-limited por IP + reCAPTCHA v3 validation.
 import { obtenerSql } from './_db.js'
 import { limitar, obtenerIp } from './_ratelimit.js'
+import { enviarEmailReclamacion } from './_email.js'
 
 export const config = { runtime: 'nodejs' }
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY
 const RECAPTCHA_SCORE_MIN = 0.5
-const RESEND_API_KEY = process.env.RESEND_API_KEY
-const ADMIN_EMAIL = 'danielmolino@gmail.com'
-const RESEND_FROM = 'En Navalcarnero <noreply@ennavalcarnero.es>'
 
 function respuestaJson(res, datos, status = 200) {
   res.setHeader('Content-Type', 'application/json')
@@ -58,97 +56,6 @@ async function verificarRecaptcha(token, host) {
   } catch (error) {
     console.error('Error al verificar reCAPTCHA:', error)
     return { ok: false, error: 'Error en la verificación. Intenta de nuevo.' }
-  }
-}
-
-async function enviarEmailReclamacion({ solicitudId, comercioId, nombre, email, telefono, mensaje, createdAt }) {
-  if (!RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY no configurado, email no enviado')
-    return { ok: true, skipped: true }
-  }
-
-  try {
-    const fechaFormato = new Date(createdAt).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })
-
-    // Email al admin
-    const asuntoAdmin = `Nueva solicitud de reclamación: ${comercioId} [${solicitudId.substring(0, 8)}]`
-    const contenidoAdmin = `
-      <h2>Nueva Solicitud de Reclamación de Comercio</h2>
-      <p><strong>ID de Solicitud:</strong> ${solicitudId}</p>
-      <p><strong>Comercio ID:</strong> ${comercioId}</p>
-      <p><strong>Nombre del reclamante:</strong> ${nombre}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Teléfono:</strong> ${telefono || 'No proporcionado'}</p>
-      <p><strong>Mensaje:</strong></p>
-      <p>${mensaje}</p>
-      <p><strong>Fecha de solicitud:</strong> ${fechaFormato}</p>
-    `
-
-    const responseAdmin = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM,
-        to: ADMIN_EMAIL,
-        subject: asuntoAdmin,
-        html: contenidoAdmin,
-      }),
-    })
-
-    if (!responseAdmin.ok) {
-      const error = await responseAdmin.text()
-      console.error('Error al enviar email al admin con Resend:', error)
-      return { ok: false, error: error }
-    }
-
-    // Email al solicitante
-    const asuntoSolicitante = `Tu solicitud de reclamación ha sido recibida [${solicitudId.substring(0, 8)}]`
-    const contenidoSolicitante = `
-      <h2>Confirmación de Solicitud de Reclamación</h2>
-      <p>Hola <strong>${nombre}</strong>,</p>
-      <p>Tu solicitud de reclamación para el comercio <strong>${comercioId}</strong> ha sido recibida correctamente.</p>
-      <p><strong>ID de Solicitud:</strong> <code>${solicitudId}</code></p>
-      <p>Por favor, guarda este ID para poder hacer seguimiento de tu solicitud. Te contactaremos en breve para verificar tu identidad.</p>
-      <hr style="border:none; border-top:1px solid #ddd; margin: 20px 0;">
-      <p style="color:#666; font-size:12px;">
-        Fecha de solicitud: ${fechaFormato}<br>
-        Este es un email automático, por favor no respondas.
-      </p>
-    `
-
-    // En desarrollo, enviar a danielmolino@gmail.com (único email verificado en Resend)
-    const esProduccion = process.env.NODE_ENV === 'production'
-    const emailDestino = esProduccion ? email : ADMIN_EMAIL
-    const asuntoConMarca = esProduccion ? asuntoSolicitante : `${asuntoSolicitante} [TEST: ${email}]`
-
-    const responseSolicitante = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM,
-        to: emailDestino,
-        subject: asuntoConMarca,
-        html: contenidoSolicitante,
-      }),
-    })
-
-    if (!responseSolicitante.ok) {
-      const error = await responseSolicitante.text()
-      console.error('Error al enviar email al solicitante con Resend:', error)
-      return { ok: false, error: error }
-    }
-
-    console.log(`Emails enviados exitosamente${!esProduccion ? ` (confirmación enviada a ${emailDestino}, original: ${email})` : ''}`)
-    return { ok: true }
-  } catch (error) {
-    console.error('Error al enviar emails:', error.message)
-    return { ok: false, error: error.message }
   }
 }
 
