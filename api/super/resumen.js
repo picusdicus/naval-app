@@ -3,7 +3,8 @@
 //   GET — { reclamacionesPendientes, altasPendientes, destacadosRequierenAccion,
 //           pendientesSync, propuestasTalleres, organizacionesActivas,
 //           organizacionesTotal, eventosPublicados, eventosTotal,
-//           usuariosTotal, usuariosAdmin, atencion, actividad }
+//           usuariosTotal, usuariosAdmin, atencion, actividad,
+//           destacadosEnCurso }
 //
 // Sustituye a los tres GET completos que el panel hacía solo para contar
 // (destacados, pendientes, talleres-propuestas): traían listas enteras para
@@ -56,6 +57,24 @@ function tarjetaAtencion(filas) {
   return { cantidad, masAntiguaDesde: filas[0]?.mas_antigua ?? null }
 }
 
+/** Fila de `destacados` → camelCase, mismo estilo que aRespuesta() del CRUD. */
+function aDestacado(fila) {
+  return {
+    id: fila.id,
+    tipo: fila.tipo,
+    referenciaId: fila.referencia_id,
+    organizacionNombre: fila.organizacion_nombre ?? null,
+    imagenUrl: fila.imagen_url ?? null,
+    fechaInicio: fila.fecha_inicio,
+    fechaFin: fila.fecha_fin,
+    nombreResuelto: fila.nombre_resuelto ?? null,
+    // estado y vigente viajan para que el cliente pueda usar campanaFinalizada()
+    // de src/lib/destacados.js tal cual, sin reimplementar su criterio.
+    estado: fila.estado,
+    vigente: fila.vigente,
+  }
+}
+
 export default async function handler(req) {
   const sesion = await requerirSuperAdminEdge(req)
   if (sesion instanceof Response) return sesion
@@ -84,6 +103,7 @@ export default async function handler(req) {
     usuariosTotal,
     usuariosAdmin,
     filasActividad,
+    filasDestacados,
   ] = await Promise.all([
     // Cuenta y fecha de la más antigua en la MISMA consulta: la tarjeta de
     // atención necesita las dos, y separarlas solo abriría la puerta a que una
@@ -190,6 +210,42 @@ export default async function handler(req) {
         ORDER BY fecha DESC
         LIMIT 8`,
     ),
+    // Campañas EN CURSO para la barra de vigencia del resumen. Solo `activo`:
+    // un pendiente puede no tener fechas decididas todavía, y su sitio es la
+    // cola de revisión (la tarjeta de atención de arriba), no una barra de
+    // plazo que no existe.
+    consultar(
+      'destacados en curso',
+      () => sql`
+        SELECT d.id, d.tipo, d.referencia_id, d.imagen_url, d.estado,
+               to_char(d.fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
+               to_char(d.fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
+               (d.fecha_inicio <= CURRENT_DATE
+                 AND (d.fecha_fin IS NULL OR d.fecha_fin >= CURRENT_DATE)) AS vigente,
+               o.nombre AS organizacion_nombre,
+               -- El nombre se resuelve aquí porque eventos y talleres viven en
+               -- Neon. El de un comercio NO (JSON estático del directorio), así
+               -- que para ese tipo esta columna sale null y el cliente lo
+               -- resuelve con COMERCIOS_POR_ID, que ya viaja en el bundle.
+               -- Un evento de fuente estática (ev-…, fiestas-…) tampoco está en
+               -- eventos_usuario: también sale null y el cliente cae al id.
+               COALESCE(e.titulo, t.nombre) AS nombre_resuelto
+        FROM destacados d
+        LEFT JOIN organizaciones o ON o.id = d.organizacion_id
+        -- referencia_id es TEXTO con el id público del item: los eventos de la
+        -- base van prefijados 'bd-' y hay que quitarlo; el cast a texto del
+        -- uuid evita el uuid = text que Postgres rechaza.
+        LEFT JOIN eventos_usuario e
+               ON d.tipo = 'evento' AND d.referencia_id LIKE 'bd-%'
+              AND e.id::text = substring(d.referencia_id from 4)
+        LEFT JOIN talleres t ON d.tipo = 'taller' AND t.id::text = d.referencia_id
+        WHERE d.estado = 'activo'
+        -- Orden de urgencia, el mismo criterio que las tarjetas de atención:
+        -- primero lo que ya se pasó de plazo, luego lo que menos le queda.
+        ORDER BY (d.fecha_fin IS NOT NULL AND d.fecha_fin < CURRENT_DATE) DESC,
+                 d.fecha_fin ASC NULLS LAST
+        LIMIT 3`,
+    ),
   ])
 
   // La bandeja Pendientes mezcla las dos tablas en un único contador, como el
@@ -231,5 +287,8 @@ export default async function handler(req) {
     usuariosAdmin,
     atencion,
     actividad: filasActividad,
+    // null (no []) si la consulta falló: la columna se omite entera con su
+    // estado vacío en vez de mezclar filas reales con huecos.
+    destacadosEnCurso: filasDestacados === null ? null : filasDestacados.map(aDestacado),
   })
 }

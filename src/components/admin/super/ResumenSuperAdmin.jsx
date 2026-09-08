@@ -4,17 +4,24 @@
  * despachar hoy, el estado general del municipio en cifras, y qué ha pasado
  * últimamente.
  *
- * Todo sale de GET /api/super/resumen (una sola llamada, la del paso 1). Las
- * dos piezas que faltan viven en Neon o no vienen de ahí y llegan en el paso
- * 2b: la columna "Destacados en curso" (hay que resolver los nombres en
- * cliente, como TablesDestacados) y el sparkline de visitas (es de Umami).
+ * Casi todo sale de GET /api/super/resumen (una sola llamada). La excepción es
+ * la tarjeta de visitas: esas cifras son de Umami, no de Neon, y ya tienen su
+ * propio proxy — se piden aparte para que un Umami lento o caído no retrase ni
+ * tumbe el resto del resumen, que ya está pintado.
  *
  * Regla que atraviesa todo el componente: ningún dato se inventa. Un campo que
  * la API no pudo calcular vale null y aquí se omite o se pinta "—", nunca un 0
  * que se leería como "no hay nada pendiente".
  */
+import { useEffect, useState } from 'react'
 import MIcon from '../../MIcon.jsx'
-import { StatCard } from '../UmamiStats.jsx'
+import { Sparkline, StatCard } from '../UmamiStats.jsx'
+import { COMERCIOS_POR_ID, campanaFinalizada } from '../../../lib/destacados.js'
+import { diasHasta, duracionDe } from '../../../lib/fechas.js'
+import { formatearFechaCorta } from '../../../lib/eventos.js'
+
+const ETIQUETA_TIPO_DESTACADO = { evento: 'EVENTO', comercio: 'COMERCIO', taller: 'TALLER' }
+const ICONO_TIPO_DESTACADO = { evento: 'event', comercio: 'storefront', taller: 'school' }
 
 /** Saludo por la hora local de quien mira, no la del servidor. */
 function saludoDeAhora(hora) {
@@ -82,6 +89,133 @@ function colorDeSuceso(suceso) {
   return 'bg-mudo'
 }
 
+/**
+ * Nombre a pintar de un destacado. La API resuelve los que viven en Neon
+ * (eventos de la base y talleres); un comercio sale de los JSON del directorio
+ * que el navegador ya tiene, y lo que no está en ninguno de los dos (un evento
+ * de fuente estática, un comercio retirado del directorio) se queda en su id:
+ * feo, pero identifica la fila — dejarla sin nombre la haría inservible.
+ */
+function nombreDeDestacado(destacado) {
+  if (destacado.nombreResuelto) return { texto: destacado.nombreResuelto, resuelto: true }
+  const comercio = COMERCIOS_POR_ID.get(destacado.referenciaId)
+  if (comercio?.nombre) return { texto: comercio.nombre, resuelto: true }
+  return { texto: destacado.referenciaId, resuelto: false }
+}
+
+/**
+ * Porcentaje de campaña ya consumido, 0..100. Cálculo propio y no extraído de
+ * TablesDestacados: allí la vigencia se pinta como fechas y sellos, sin barra
+ * ninguna, así que no hay nada que compartir todavía.
+ */
+function porcentajeTranscurrido(fechaInicio, fechaFin) {
+  const total = duracionDe(fechaInicio, fechaFin)
+  if (!(total > 0)) return 100
+  // duracionDe cuenta los dos extremos: el primer día de una campaña ya lleva
+  // 1 día consumido, no 0.
+  const transcurridos = total - diasHasta(fechaFin)
+  return Math.max(0, Math.min(100, Math.round((transcurridos / total) * 100)))
+}
+
+/** Una fila de "Destacados en curso": miniatura, quién lo contrató y su plazo. */
+function FilaDestacado({ destacado }) {
+  const { texto, resuelto } = nombreDeDestacado(destacado)
+  const finalizada = campanaFinalizada(destacado)
+  // Sin fecha de fin (filas antiguas que nunca se editaron) no hay plazo que
+  // pintar: se dice, en vez de inventar una barra.
+  const conPlazo = Boolean(destacado.fechaInicio && destacado.fechaFin)
+  const porcentaje = conPlazo ? porcentajeTranscurrido(destacado.fechaInicio, destacado.fechaFin) : 0
+  const dias = conPlazo ? diasHasta(destacado.fechaFin) : null
+
+  return (
+    <li className="flex items-center gap-3 py-3">
+      {destacado.imagenUrl ? (
+        <img src={destacado.imagenUrl} alt="" className="h-11 w-11 shrink-0 rounded object-cover" />
+      ) : (
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded bg-papel-calido">
+          <MIcon
+            name={ICONO_TIPO_DESTACADO[destacado.tipo] || 'storefront'}
+            className="text-[20px] text-pardo"
+          />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p
+          className={`truncate text-tinta ${resuelto ? 'font-serif-spectral text-sm' : 'font-mono-ibm text-xs text-pardo'}`}
+          title={texto}
+        >
+          {texto}
+        </p>
+        <p className="truncate font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+          {ETIQUETA_TIPO_DESTACADO[destacado.tipo] || 'DESTACADO'}
+          {' · '}
+          {destacado.organizacionNombre ? destacado.organizacionNombre.toUpperCase() : 'SIN CONTRATANTE'}
+        </p>
+        {conPlazo ? (
+          <>
+            <div className="mt-1.5 h-1.5 overflow-hidden bg-filete/60">
+              <div
+                className={`h-full ${finalizada ? 'bg-terracota' : 'bg-verde'}`}
+                style={{ width: `${finalizada ? 100 : porcentaje}%` }}
+              />
+            </div>
+            <p
+              className={`mt-1 font-mono-ibm text-[9px] uppercase tracking-etiqueta ${finalizada ? 'text-terracota' : 'text-pardo'}`}
+            >
+              {finalizada
+                ? `Fuera de plazo · ${formatearFechaCorta(destacado.fechaFin)}`
+                : `Quedan ${dias} ${dias === 1 ? 'día' : 'días'}`}
+            </p>
+          </>
+        ) : (
+          <p className="mt-1 font-mono-ibm text-[9px] uppercase tracking-etiqueta text-mudo">
+            Sin fecha de fin
+          </p>
+        )}
+      </div>
+    </li>
+  )
+}
+
+/**
+ * Visitas de los últimos 30 días. Componente aparte con su propio fetch porque
+ * es la única cifra que no viene de /api/super/resumen: así el resto se pinta
+ * sin esperar a Umami, y un Umami caído solo deja esta tarjeta en "—".
+ */
+function TarjetaVisitas() {
+  const [datos, setDatos] = useState(null)
+
+  useEffect(() => {
+    let vivo = true
+    fetch('/api/analytics/umami-stats?period=30d')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cuerpo) => vivo && setDatos(cuerpo))
+      .catch(() => vivo && setDatos(null))
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  // `visits` (sesiones) y no `pageviews`: la tarjeta se llama "Visitas", y una
+  // visita es una sesión, no cada página que esa sesión abrió.
+  const visitas = datos?.summary?.visits?.value
+  const serie = datos?.pageviews?.pageviews ?? []
+
+  return (
+    <StatCard
+      label="Visitas 30 días"
+      value={visitas === undefined || visitas === null ? '—' : visitas.toLocaleString('es-ES')}
+      sub={
+        <>
+          {serie.length > 1 && <Sparkline data={serie} height={28} />}
+          <span>sesiones · páginas vistas por día</span>
+        </>
+      }
+      icon="📈"
+    />
+  )
+}
+
 /** Una de las tarjetas de "Requiere tu atención". */
 function TarjetaAtencion({ borde, cantidad, asunto, contexto, accion, onIr }) {
   return (
@@ -113,6 +247,7 @@ export default function ResumenSuperAdmin({ resumen, usuario, onCambiarSeccion }
   const atencion = resumen.atencion || {}
   const hayAtencion = Boolean(atencion.reclamaciones || atencion.altas || atencion.destacados)
   const actividad = resumen.actividad || []
+  const destacadosEnCurso = resumen.destacadosEnCurso || []
 
   // "—" y no 0: si la consulta de ese contador falló, no sabemos cuántos hay.
   const cifra = (n) => (n === null || n === undefined ? '—' : n)
@@ -187,15 +322,12 @@ export default function ResumenSuperAdmin({ resumen, usuario, onCambiarSeccion }
         )}
       </section>
 
-      {/* Cifras. Tres tarjetas y no cuatro: "Visitas 30 días" viene de Umami
-          (paso 2b) y una tarjeta vacía reservándole el sitio se lee como un
-          dato que falló, no como uno que aún no existe. Al añadirla, el grid
-          pasa a md:grid-cols-4 y ya. */}
+      {/* Cifras */}
       <section>
         <h3 className="border-b border-filete pb-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
           El municipio en cifras
         </h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
           <StatCard
             label="Organizaciones"
             value={cifra(resumen.organizacionesActivas)}
@@ -222,11 +354,20 @@ export default function ResumenSuperAdmin({ resumen, usuario, onCambiarSeccion }
             sub={`${cifra(resumen.usuariosAdmin)} con rol admin`}
             icon="👥"
           />
+          <TarjetaVisitas />
         </div>
       </section>
 
-      {/* Última actividad */}
-      <section>
+      {/* Última actividad y destacados en curso: dos lecturas del mismo "qué
+          está pasando", una por el lado del historial y otra por el del plazo
+          que corre. Apiladas en móvil.
+
+          min-w-0 en las dos: por defecto una celda de grid no encoge por
+          debajo de su contenido, y un id largo sin resolver (el texto de
+          último recurso de una referencia que no se pudo nombrar) ensanchaba
+          la columna y sacaba scroll horizontal a la página entera. */}
+      <div className="grid gap-8 lg:grid-cols-2">
+      <section className="min-w-0">
         <h3 className="border-b border-filete pb-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
           Última actividad
         </h3>
@@ -250,6 +391,26 @@ export default function ResumenSuperAdmin({ resumen, usuario, onCambiarSeccion }
           </p>
         )}
       </section>
+
+      <section className="min-w-0">
+        <h3 className="border-b border-filete pb-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
+          Destacados en curso
+        </h3>
+        {destacadosEnCurso.length > 0 ? (
+          <ul className="mt-2 divide-y divide-filete">
+            {destacadosEnCurso.map((d) => (
+              <FilaDestacado key={d.id} destacado={d} />
+            ))}
+          </ul>
+        ) : (
+          // Vale también cuando la consulta falló (destacadosEnCurso null): sin
+          // lista no se pinta media columna con huecos, se dice que no hay.
+          <p className="mt-3 font-serif-spectral text-sm text-pardo">
+            No hay destacados activos ahora mismo.
+          </p>
+        )}
+      </section>
+      </div>
     </div>
   )
 }
