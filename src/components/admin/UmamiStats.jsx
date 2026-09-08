@@ -86,7 +86,7 @@ export function picoDe(data = []) {
 }
 
 // Colores de los segmentos del donut (y sus leyendas), en orden de serie.
-const COLORES_DONUT = ["#b0472f", "#2f6b4f", "#c68a2e", "#3a4e86", "#8a3a58"];
+export const COLORES_DONUT = ["#b0472f", "#2f6b4f", "#c68a2e", "#3a4e86", "#8a3a58"];
 
 /**
  * Donut SVG para repartos pequeños (dispositivos): segmentos sobre un anillo,
