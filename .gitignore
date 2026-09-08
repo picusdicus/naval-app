@@ -53,3 +53,6 @@ public/img/test/
 
 # Playwright MCP
 .playwright-mcp/
+
+# Cookies de sesion reutilizadas por los e2e (contienen un JWT valido 8h).
+e2e/.sesiones/

@@ -1,5 +1,13 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = 'danielmolino@gmail.com'
+
+// Interruptor para los e2e. Los tests atacan servicios reales a propósito y
+// limpian lo que crean en Neon y en Blob, pero un email enviado no se puede
+// deshacer: `validar rate-limiting en reclamaciones` manda 6 solicitudes de
+// las que 5 se aceptan, y cada una dispara DOS correos (aviso y confirmación)
+// — 20 por pasada contando los dos viewports, contra la cuota de Resend.
+// playwright.config.js lo pone en el entorno del servidor de desarrollo.
+const SIN_EMAIL = process.env.E2E_SIN_EMAIL === '1'
 const APP_URL = process.env.APP_URL || 'https://naval-app-one.vercel.app'
 
 /**
@@ -14,6 +22,10 @@ export async function enviarEmailPendientes({
   actividades = [],
   origen = 'Una sincronización automática ha dejado contenido en borrador:',
 }) {
+  if (SIN_EMAIL) {
+    console.warn('E2E_SIN_EMAIL=1: email de pendientes NO enviado')
+    return { ok: true, skipped: true }
+  }
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY no configurado, email de pendientes no enviado')
     return { ok: true, skipped: true }
@@ -63,6 +75,10 @@ export async function enviarEmailPendientes({
 }
 
 export async function enviarEmailReclamacion({ comercioId, nombre, email, telefono, mensaje }) {
+  if (SIN_EMAIL) {
+    console.warn('E2E_SIN_EMAIL=1: email de reclamación NO enviado')
+    return { ok: true, skipped: true }
+  }
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY no configurado, email no enviado')
     return { ok: true, skipped: true }

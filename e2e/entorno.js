@@ -51,3 +51,24 @@ export async function abrirCandado(page) {
 
 /** Vercel Blob sirve los ficheros desde este dominio. */
 export const DOMINIO_BLOB = /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\//
+
+// ── Sesiones reutilizadas entre tests (storageState) ──────────────────────
+//
+// Los dos logins están limitados a 5 intentos por 15 minutos y por IP (ver
+// api/login.js y api/admin/login.js). Una pasada completa hacía más de 40
+// logins —cada spec tenía su propio helper y admin-super lo llamaba en un
+// beforeEach, por cada test y por cada viewport—, así que a partir del quinto
+// todo caía con "Demasiadas peticiones" y la suite dejaba de decir nada.
+//
+// Ahora el proyecto `setup` inicia sesión UNA vez por tier y guarda la cookie
+// en estos ficheros; los specs la reciben con `test.use({ storageState })`.
+// Como la sesión dura 8 h (DURACION_SESION_S en api/_auth.js), un fichero
+// reciente se reutiliza también ENTRE pasadas: repetir la suite no gasta
+// ningún login.
+export const DIR_SESIONES = resolve(RAIZ, 'e2e/.sesiones')
+export const SESION_SUPER = resolve(DIR_SESIONES, 'superadmin.json')
+export const SESION_ORG = resolve(DIR_SESIONES, 'organizacion.json')
+
+// Sin sesión, explícito: para el test que comprueba que /admin muestra el
+// login. Sin esto heredaría la cookie del proyecto y no probaría nada.
+export const SIN_SESION = { cookies: [], origins: [] }

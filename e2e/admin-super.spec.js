@@ -1,14 +1,15 @@
 import { test, expect } from '@playwright/test'
+import { SESION_SUPER, SIN_SESION } from './entorno.js'
+
+// La sesión llega del proyecto `setup` (e2e/sesion.setup.js). Antes cada uno
+// de estos tests hacía su propio login en un beforeEach: ocho por viewport,
+// contra un límite de cinco cada quince minutos, así que la mayoría fallaba
+// con "Demasiadas peticiones" en vez de comprobar nada.
+test.use({ storageState: SESION_SUPER })
 
 test.describe('Admin Superadmin Panel', () => {
   test.beforeEach(async ({ page }) => {
-    // /admin es a la vez el login y el panel del superadmin: al enviar el
-    // formulario se aterriza directamente en el panel, sin pasar por /admin/super.
     await page.goto('/admin')
-    await page.fill('input[type="email"]', process.env.SUPER_ADMIN_EMAIL || 'superadmin@navalcarnero.es')
-    await page.fill('input[type="password"]', process.env.SUPER_ADMIN_PASSWORD || 'superadmin123456')
-    await page.click('button[type="submit"]')
-    await page.waitForURL('/admin')
   })
 
   test('should show the superadmin panel right after login', async ({ page }) => {
@@ -68,6 +69,32 @@ test.describe('Admin Superadmin Panel', () => {
     await expect(primera.getByRole('button', { name: /^Copiar código / })).toBeVisible()
   })
 
+  test('destacados tab should show cards and create button', async ({ page }) => {
+    const destacadosTab = page.locator('button:has-text("Destacados")')
+    await destacadosTab.click()
+
+    // Mismo motivo que en Organizaciones y Códigos: el alta se ofrece en la
+    // cabecera y como tarjeta al final de la rejilla, así que se localiza por
+    // nombre accesible exacto (la tarjeta lleva aria-label propio).
+    const createBtn = page.getByRole('button', { name: 'Nuevo destacado', exact: true })
+    await expect(createBtn).toBeVisible()
+
+    // La lista es una rejilla de tarjetas, no una tabla. La base real puede
+    // estar vacía, así que vale cualquiera de las dos salidas; lo que se
+    // afirma es que la pestaña resuelve y, si hay campañas, que cada tarjeta
+    // trae su vigencia y sus dos acciones rotuladas.
+    const tarjetas = page.getByTestId('tarjeta-destacado')
+    const vacio = page.locator('text=No hay destacados.')
+    await expect(tarjetas.first().or(vacio)).toBeVisible()
+
+    if ((await tarjetas.count()) > 0) {
+      const primera = tarjetas.first()
+      await expect(primera).toContainText('Orden')
+      await expect(primera.getByRole('button', { name: /^Editar el destacado / })).toBeVisible()
+      await expect(primera.getByRole('button', { name: /^Eliminar el destacado / })).toBeVisible()
+    }
+  })
+
   test('analytics tab should show metrics', async ({ page }) => {
     const analyticsTab = page.locator('button:has-text("Analytics")')
     await analyticsTab.click()
@@ -77,14 +104,19 @@ test.describe('Admin Superadmin Panel', () => {
     await expect(page.locator('text=Organizaciones activas')).toBeVisible()
   })
 
-  test('sin sesión, /admin muestra el login en vez del panel', async ({ page, context }) => {
-    // Clear cookies to logout
-    await context.clearCookies()
+  // storageState propio: sin él heredaría la cookie del fichero de sesión y
+  // este test no probaría nada. clearCookies() ya no basta, porque el contexto
+  // nace autenticado.
+  test('sin sesión, /admin muestra el login en vez del panel', async ({ browser }) => {
+    const contexto = await browser.newContext({ storageState: SIN_SESION })
+    const page = await contexto.newPage()
 
     await page.goto('/admin')
 
     // Debe verse el formulario de login, no las tabs del panel.
     await expect(page.locator('input[type="email"]')).toBeVisible()
     await expect(page.locator('button:has-text("Organizaciones")')).toHaveCount(0)
+
+    await contexto.close()
   })
 })

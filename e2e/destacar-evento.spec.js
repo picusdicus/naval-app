@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { BASE_URL, exigir } from './entorno.js'
+import { BASE_URL, SESION_ORG } from './entorno.js'
 
 // Autoservicio de destacados: la organización solicita destacar un evento
 // publicado desde /panel, proponiendo fecha de inicio y duración en un
@@ -19,20 +19,19 @@ const creados = []
 
 test.describe.configure({ mode: 'serial' })
 
-async function iniciarSesionAdmin(page) {
-  await page.goto('/login')
-  await page.locator('#email').fill(exigir('ADMIN_EMAIL'))
-  await page.locator('#password').fill(exigir('ADMIN_PASSWORD'))
-  await page.getByRole('button', { name: 'Acceder' }).click()
-  await expect(page).toHaveURL(/\/panel$/)
-}
+// La sesión de la organización llega del proyecto `setup`
+// (e2e/sesion.setup.js): el login está limitado a 5 intentos cada 15 minutos
+// y hacerlo por test agotaba el cupo a mitad de suite.
+test.use({ storageState: SESION_ORG })
+
 
 test.afterAll(async ({ playwright }) => {
   if (creados.length === 0) return
 
-  const contexto = await playwright.request.newContext({ baseURL: BASE_URL })
-  await contexto.post('/api/login', {
-    data: { email: exigir('ADMIN_EMAIL'), password: exigir('ADMIN_PASSWORD') },
+  // Reutiliza la cookie del setup en vez de gastar otro login para limpiar.
+  const contexto = await playwright.request.newContext({
+    baseURL: BASE_URL,
+    storageState: SESION_ORG,
   })
   // Si el test falló a medias puede quedar una solicitud pendiente: retirarla
   // antes de borrar el evento, para no dejar referencias muertas en Neon.
@@ -48,7 +47,7 @@ test.afterAll(async ({ playwright }) => {
 })
 
 test('solicitar y retirar el destacado de un evento desde el panel', async ({ page }, info) => {
-  await iniciarSesionAdmin(page)
+  await page.goto('/panel')
 
   const titulo = `Prueba e2e · Destacar · ${info.project.name}`
   const respuesta = await page.request.post('/api/admin/eventos', {
