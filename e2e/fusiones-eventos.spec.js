@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { neon } from '@neondatabase/serverless'
 import { test, expect } from '@playwright/test'
-import { RAIZ, exigir } from './entorno.js'
+import { RAIZ, SESION_SUPER, exigir } from './entorno.js'
 
 // Fusión manual de eventos (issue #27): el superadmin une dos entradas que el
 // matcher automático no reconoce como el mismo acto. Este spec ataca el dev
@@ -10,8 +10,10 @@ import { RAIZ, exigir } from './entorno.js'
 // eventos estáticos futuros reales, comprueba la fila en Neon, la tarjeta
 // única en la agenda pública, el deep link del id secundario, el deshacer, y
 // el caso de fusión inerte (una de las partes ya no viene de las fuentes).
-// Todo va en UN solo test por proyecto para hacer un único login (el
-// rate-limit de /api/admin/login es 5/15min por IP+email con Upstash en .env).
+// Todo va en UN solo test por proyecto: se escribió así cuando cada spec hacía
+// su propio login y el rate-limit (5/15min) obligaba a racionarlos. Hoy la
+// sesión viene del proyecto `setup` y ese motivo ya no aplica, pero el test
+// sigue de una pieza porque sus pasos encadenan estado en Neon.
 
 const REF_INEXISTENTE = 'e2e-fusion-parte-inexistente'
 
@@ -80,6 +82,9 @@ async function limpiar() {
   `
 }
 
+// La sesión de superadmin llega del proyecto `setup` (e2e/sesion.setup.js).
+test.use({ storageState: SESION_SUPER })
+
 test.describe('Fusiones manuales de eventos', () => {
   test.beforeAll(limpiar)
   test.afterAll(limpiar)
@@ -97,12 +102,8 @@ test.describe('Fusiones manuales de eventos', () => {
     await expect(page.getByText(principal.titulo).filter({ visible: true }).first()).toBeVisible()
     await expect(page.getByText(secundaria.titulo).filter({ visible: true }).first()).toBeVisible()
 
-    // — Login del superadmin y tab Eventos.
+    // — Panel del superadmin (sesión del proyecto `setup`) y tab Eventos.
     await page.goto('/admin')
-    await page.fill('input[type="email"]', exigir('SUPER_ADMIN_EMAIL'))
-    await page.fill('input[type="password"]', exigir('SUPER_ADMIN_PASSWORD'))
-    await page.click('button[type="submit"]')
-    await page.waitForURL('/admin')
     await page.getByRole('button', { name: 'Eventos', exact: true }).click()
 
     const buscador = page.getByPlaceholder('Busca por título o lugar…')

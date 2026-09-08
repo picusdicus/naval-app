@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { BASE_URL, exigir } from './entorno.js'
+import { BASE_URL, SESION_SUPER } from './entorno.js'
 
 // Pestaña Destacados del superadmin: la duración es obligatoria al crear y el
 // aviso de caducidad próxima aparece en la columna Vigencia. El destacado se
@@ -21,20 +21,18 @@ const creados = []
 
 test.describe.configure({ mode: 'serial' })
 
-async function iniciarSesionSuper(page) {
-  await page.goto('/admin')
-  await page.fill('input[type="email"]', exigir('SUPER_ADMIN_EMAIL'))
-  await page.fill('input[type="password"]', exigir('SUPER_ADMIN_PASSWORD'))
-  await page.click('button[type="submit"]')
-  await page.waitForURL('/admin')
-}
+// La sesión de superadmin llega del proyecto `setup` (e2e/sesion.setup.js):
+// el login está limitado a 5 intentos cada 15 minutos y hacerlo por test
+// agotaba el cupo a mitad de suite.
+test.use({ storageState: SESION_SUPER })
 
 test.afterAll(async ({ playwright }) => {
   if (creados.length === 0) return
 
-  const contexto = await playwright.request.newContext({ baseURL: BASE_URL })
-  await contexto.post('/api/admin/login', {
-    data: { email: exigir('SUPER_ADMIN_EMAIL'), password: exigir('SUPER_ADMIN_PASSWORD') },
+  // Reutiliza la cookie del setup en vez de gastar otro login para limpiar.
+  const contexto = await playwright.request.newContext({
+    baseURL: BASE_URL,
+    storageState: SESION_SUPER,
   })
   for (const id of creados) {
     await contexto.delete(`/api/super/destacados?id=${id}`)
@@ -44,8 +42,8 @@ test.afterAll(async ({ playwright }) => {
 })
 
 test('crear un destacado sin duración se rechaza con 400', async ({ page }) => {
-  await iniciarSesionSuper(page)
-
+  // Solo API: page.request comparte el tarro de cookies del contexto, que ya
+  // nace autenticado por el storageState.
   const respuesta = await page.request.post('/api/super/destacados', {
     data: {
       tipo: 'evento',
@@ -61,8 +59,6 @@ test('crear un destacado sin duración se rechaza con 400', async ({ page }) => 
 })
 
 test('una solicitud pendiente cuenta en el tab y su vigencia se marca como propuesta', async ({ page }, info) => {
-  await iniciarSesionSuper(page)
-
   const respuesta = await page.request.post('/api/super/destacados', {
     data: {
       tipo: 'evento',
@@ -93,8 +89,6 @@ test('una solicitud pendiente cuenta en el tab y su vigencia se marca como propu
 })
 
 test('un activo próximo a caducar muestra el aviso en la tabla', async ({ page }, info) => {
-  await iniciarSesionSuper(page)
-
   // fecha_inicio de ayer: CURRENT_DATE en Neon va en UTC y alrededor de
   // medianoche podría ir un día por detrás de la zona local; con ayer la fila
   // es vigente en ambos relojes. El aviso se calcula en cliente sobre fecha_fin.

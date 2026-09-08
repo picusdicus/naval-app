@@ -9,7 +9,7 @@
 // el Neon real (misma función que llama el cron) y valida el ciclo humano en
 // la bandeja Pendientes de /admin. Limpia su fila sintética al terminar.
 import { test, expect } from '@playwright/test'
-import { exigir } from './entorno.js'
+import { SESION_SUPER } from './entorno.js'
 import { obtenerSql } from '../api/_db.js'
 import {
   separarDeportesParaRevision,
@@ -36,13 +36,11 @@ const cartelSintetico = {
   categoria: 'deporte',
 }
 
-async function loginSuperadmin(page) {
-  await page.goto('/admin')
-  await page.fill('input[type="email"]', exigir('SUPER_ADMIN_EMAIL'))
-  await page.fill('input[type="password"]', exigir('SUPER_ADMIN_PASSWORD'))
-  await page.click('button[type="submit"]')
-  await page.waitForURL('/admin')
-}
+// La sesión de superadmin llega del proyecto `setup` (e2e/sesion.setup.js):
+// el login está limitado a 5 intentos cada 15 minutos y hacerlo por test
+// agotaba el cupo a mitad de suite.
+test.use({ storageState: SESION_SUPER })
+
 
 async function filaSintetica(sql) {
   return sql`
@@ -112,7 +110,7 @@ test.describe.serial('Deportes: carteles nuevos a revisión', () => {
   })
 
   test('aparece en Pendientes, descartarlo archiva y el re-run no lo resucita', async ({ page }) => {
-    await loginSuperadmin(page)
+    await page.goto('/admin')
     await page.click('button:has-text("Pendientes")')
 
     const titulo = page.getByText(`${TITULO} v2`)
