@@ -2,11 +2,21 @@ import { test, expect } from '@playwright/test'
 import { BASE_URL, exigir } from './entorno.js'
 
 // Pestaña Destacados del superadmin: la duración es obligatoria al crear y el
-// aviso de caducidad próxima aparece en la columna Vigencia. El destacado se
-// crea por API con una referencia sintética única por run (el UNIQUE
-// (tipo, referencia_id) hace upsert, así no se pisa ninguna fila real); la
-// tabla lo lista igualmente («Referencia no encontrada») y aunque el GET
+// aviso de caducidad próxima aparece en el bloque de vigencia de la tarjeta.
+// El destacado se crea por API con una referencia sintética única por run (el
+// UNIQUE (tipo, referencia_id) hace upsert, así no se pisa ninguna fila real);
+// la rejilla lo lista igualmente («Referencia no encontrada») y aunque el GET
 // público lo sirva, useDestacados lo filtra en silencio en las páginas.
+
+// La tarjeta identifica su fila por el aria-label de sus acciones, que lleva
+// el nombre del item o —cuando la referencia no resuelve, que es el caso de
+// estas filas sintéticas— su referencia_id. Es lo único único: las fechas se
+// pintan formateadas ("8 OCT"), no en ISO, y varias tarjetas pueden compartir
+// el aviso de caducidad.
+const tarjetaDe = (page, referenciaId) =>
+  page
+    .getByTestId('tarjeta-destacado')
+    .filter({ has: page.getByRole('button', { name: `Editar el destacado ${referenciaId}` }) })
 
 // ISO en zona local, como calculan las superficies el aviso (src/lib/fechas.js).
 const isoLocal = (desplazamientoDias) => {
@@ -63,10 +73,11 @@ test('crear un destacado sin duración se rechaza con 400', async ({ page }) => 
 test('una solicitud pendiente cuenta en el tab y su vigencia se marca como propuesta', async ({ page }, info) => {
   await iniciarSesionSuper(page)
 
+  const referenciaId = `bd-e2e-propuesta-${info.project.name}-${Date.now()}`
   const respuesta = await page.request.post('/api/super/destacados', {
     data: {
       tipo: 'evento',
-      referenciaId: `bd-e2e-propuesta-${info.project.name}-${Date.now()}`,
+      referenciaId,
       estado: 'pendiente',
       fechaInicio: isoLocal(1),
       fechaFin: isoLocal(30),
@@ -86,22 +97,25 @@ test('una solicitud pendiente cuenta en el tab y su vigencia se marca como propu
   await expect(contador).toBeVisible()
   expect(Number(await contador.textContent())).toBeGreaterThanOrEqual(1)
 
-  // En la tabla, las fechas de un pendiente se marcan como propuesta de la org.
+  // En la tarjeta, las fechas de un pendiente se marcan como propuesta de la
+  // org y no se pinta la barra de vigencia (no es un plazo decidido).
   await tabDestacados.click()
-  const fila = page.locator('tr').filter({ hasText: isoLocal(30) })
-  await expect(fila.first().getByText('propuesta')).toBeVisible()
+  const tarjeta = tarjetaDe(page, referenciaId)
+  await expect(tarjeta.getByText('Propuesta')).toBeVisible()
+  await expect(tarjeta.locator('[role="img"]')).toHaveCount(0)
 })
 
-test('un activo próximo a caducar muestra el aviso en la tabla', async ({ page }, info) => {
+test('un activo próximo a caducar muestra el aviso en su tarjeta', async ({ page }, info) => {
   await iniciarSesionSuper(page)
 
   // fecha_inicio de ayer: CURRENT_DATE en Neon va en UTC y alrededor de
   // medianoche podría ir un día por detrás de la zona local; con ayer la fila
   // es vigente en ambos relojes. El aviso se calcula en cliente sobre fecha_fin.
+  const referenciaId = `bd-e2e-caducidad-${info.project.name}-${Date.now()}`
   const respuesta = await page.request.post('/api/super/destacados', {
     data: {
       tipo: 'evento',
-      referenciaId: `bd-e2e-caducidad-${info.project.name}-${Date.now()}`,
+      referenciaId,
       estado: 'activo',
       fechaInicio: isoLocal(-1),
       fechaFin: isoLocal(3),
@@ -115,8 +129,9 @@ test('un activo próximo a caducar muestra el aviso en la tabla', async ({ page 
   await page.goto('/admin')
   await page.locator('button:has-text("Destacados")').click()
 
-  // La fila sintética muestra la vigencia y el aviso aunque la referencia
+  // La tarjeta sintética muestra la vigencia y el aviso aunque la referencia
   // no resuelva a ningún evento real.
-  const fila = page.locator('tr').filter({ hasText: isoLocal(3) })
-  await expect(fila.first().getByText('caduca en 3 días')).toBeVisible()
+  const tarjeta = tarjetaDe(page, referenciaId)
+  await expect(tarjeta.getByText('Referencia no encontrada')).toBeVisible()
+  await expect(tarjeta.getByText('caduca en 3 días')).toBeVisible()
 })

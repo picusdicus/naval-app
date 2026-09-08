@@ -16,8 +16,8 @@
 import { useEffect, useState } from 'react'
 import MIcon from '../../MIcon.jsx'
 import { Sparkline, StatCard } from '../UmamiStats.jsx'
-import { COMERCIOS_POR_ID, campanaFinalizada } from '../../../lib/destacados.js'
-import { diasHasta, duracionDe } from '../../../lib/fechas.js'
+import { COMERCIOS_POR_ID, campanaFinalizada, porcentajeTranscurrido } from '../../../lib/destacados.js'
+import { diasHasta } from '../../../lib/fechas.js'
 import { formatearFechaCorta } from '../../../lib/eventos.js'
 
 const ETIQUETA_TIPO_DESTACADO = { evento: 'EVENTO', comercio: 'COMERCIO', taller: 'TALLER' }
@@ -101,20 +101,6 @@ function nombreDeDestacado(destacado) {
   const comercio = COMERCIOS_POR_ID.get(destacado.referenciaId)
   if (comercio?.nombre) return { texto: comercio.nombre, resuelto: true }
   return { texto: destacado.referenciaId, resuelto: false }
-}
-
-/**
- * Porcentaje de campaña ya consumido, 0..100. Cálculo propio y no extraído de
- * TablesDestacados: allí la vigencia se pinta como fechas y sellos, sin barra
- * ninguna, así que no hay nada que compartir todavía.
- */
-function porcentajeTranscurrido(fechaInicio, fechaFin) {
-  const total = duracionDe(fechaInicio, fechaFin)
-  if (!(total > 0)) return 100
-  // duracionDe cuenta los dos extremos: el primer día de una campaña ya lleva
-  // 1 día consumido, no 0.
-  const transcurridos = total - diasHasta(fechaFin)
-  return Math.max(0, Math.min(100, Math.round((transcurridos / total) * 100)))
 }
 
 /** Una fila de "Destacados en curso": miniatura, quién lo contrató y su plazo. */

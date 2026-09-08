@@ -68,6 +68,32 @@ test.describe('Admin Superadmin Panel', () => {
     await expect(primera.getByRole('button', { name: /^Copiar código / })).toBeVisible()
   })
 
+  test('destacados tab should show cards and create button', async ({ page }) => {
+    const destacadosTab = page.locator('button:has-text("Destacados")')
+    await destacadosTab.click()
+
+    // Mismo motivo que en Organizaciones y Códigos: el alta se ofrece en la
+    // cabecera y como tarjeta al final de la rejilla, así que se localiza por
+    // nombre accesible exacto (la tarjeta lleva aria-label propio).
+    const createBtn = page.getByRole('button', { name: 'Nuevo destacado', exact: true })
+    await expect(createBtn).toBeVisible()
+
+    // La lista es una rejilla de tarjetas, no una tabla. La base real puede
+    // estar vacía, así que vale cualquiera de las dos salidas; lo que se
+    // afirma es que la pestaña resuelve y, si hay campañas, que cada tarjeta
+    // trae su vigencia y sus dos acciones rotuladas.
+    const tarjetas = page.getByTestId('tarjeta-destacado')
+    const vacio = page.locator('text=No hay destacados.')
+    await expect(tarjetas.first().or(vacio)).toBeVisible()
+
+    if ((await tarjetas.count()) > 0) {
+      const primera = tarjetas.first()
+      await expect(primera).toContainText('Orden')
+      await expect(primera.getByRole('button', { name: /^Editar el destacado / })).toBeVisible()
+      await expect(primera.getByRole('button', { name: /^Eliminar el destacado / })).toBeVisible()
+    }
+  })
+
   test('analytics tab should show metrics', async ({ page }) => {
     const analyticsTab = page.locator('button:has-text("Analytics")')
     await analyticsTab.click()
