@@ -36,9 +36,17 @@ const CLASES_BOTON_SECUNDARIO =
 /**
  * Color del cuadrado de la inicial. Depende solo del id, así que una misma
  * organización conserva su color entre recargas y reordenaciones de la lista.
+ *
+ * Suma el id ENTERO: con solo el primer carácter, que en un uuid es casi
+ * siempre un dígito hexadecimal, 6 de las 9 organizaciones reales caían en el
+ * mismo color. No busca un reparto perfecto —para eso haría falta un hash de
+ * verdad—, solo romper esa concentración sin dejar de ser determinista.
  */
 function colorDeOrganizacion(id) {
-  return COLORES_DONUT[(id || ' ').charCodeAt(0) % COLORES_DONUT.length]
+  const texto = id || ''
+  let suma = 0
+  for (let i = 0; i < texto.length; i++) suma += texto.charCodeAt(i)
+  return COLORES_DONUT[suma % COLORES_DONUT.length]
 }
 
 /**
@@ -268,9 +276,14 @@ export default function TablesOrganizaciones() {
               ))}
 
               {/* El alta cierra la rejilla como una celda más: queda donde
-                  termina la lista, sin sacar al superadmin del recorrido. */}
+                  termina la lista, sin sacar al superadmin del recorrido.
+                  El aria-label la distingue del botón de la cabecera, que
+                  rotula igual: quien navega con lector de pantalla oía dos
+                  "Nueva organización" seguidos sin saber que uno es una
+                  tarjeta al final de la rejilla. */}
               <button
                 type="button"
+                aria-label="Añadir una organización nueva"
                 onClick={() => setMostrarFormulario(true)}
                 className="flex min-h-[9rem] items-center justify-center gap-2 rounded-2xl border border-dashed border-nocturno-outline p-5 font-mono-ibm text-[11px] uppercase tracking-etiqueta text-nocturno-secundario transition-colors hover:border-terracota hover:text-terracota-legible"
               >
@@ -623,7 +636,10 @@ function TarjetaOrganizacion({ org, onCambiarEstado, onEditar }) {
   return (
     // min-w-0: sin él, la celda de la rejilla se ensancha hasta caber el slug
     // más largo (los `gpl_…` del directorio) y desborda la página en móvil.
-    <div className="min-w-0 rounded-2xl border border-nocturno-borde bg-nocturno-superficie p-5">
+    <div
+      data-testid="tarjeta-organizacion"
+      className="min-w-0 rounded-2xl border border-nocturno-borde bg-nocturno-superficie p-5"
+    >
       <div className="flex items-start gap-3">
         <div
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-serif-dm text-xl"
