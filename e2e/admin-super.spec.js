@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { SESION_SUPER, SIN_SESION } from './entorno.js'
+import { irASeccion } from './_panel.js'
 
 // La sesión llega del proyecto `setup` (e2e/sesion.setup.js). Antes cada uno
 // de estos tests hacía su propio login en un beforeEach: ocho por viewport,
@@ -17,15 +18,20 @@ test.describe('Admin Superadmin Panel', () => {
   })
 
   test('superadmin panel should have four tabs', async ({ page }) => {
-    const tabs = page.locator('button').filter({ hasText: /Organizaciones|Códigos de invitación|Destacados|Analytics/ })
-    const count = await tabs.count()
-    expect(count).toBe(4)
+    // Se cuenta DENTRO de la navegación (sidebar en escritorio, drawer en
+    // móvil): la barra inferior repite algunos destinos y contarla también
+    // haría que el número dependiera del viewport.
+    const nav = page.getByTestId('nav-superadmin')
+    const menu = page.getByRole('button', { name: 'Más secciones' })
+    await nav.or(menu).first().waitFor()
+    if (!(await nav.isVisible().catch(() => false))) await menu.click()
+
+    const tabs = nav.locator('button').filter({ hasText: /Organizaciones|Códigos de invitación|Destacados|Analytics/ })
+    expect(await tabs.count()).toBe(4)
   })
 
   test('organizaciones tab should show list and create button', async ({ page }) => {
-    // Check organizations tab
-    const orgTab = page.locator('button:has-text("Organizaciones")')
-    await expect(orgTab).toBeVisible()
+    await irASeccion(page, 'Organizaciones')
 
     // El alta se ofrece en dos sitios (cabecera y tarjeta al final de la
     // rejilla), así que se localiza por nombre accesible exacto: la tarjeta
@@ -49,8 +55,7 @@ test.describe('Admin Superadmin Panel', () => {
   })
 
   test('codigos tab should show list and create button', async ({ page }) => {
-    const codigosTab = page.locator('button:has-text("Códigos de invitación")')
-    await codigosTab.click()
+    await irASeccion(page, 'Códigos de invitación')
 
     // Mismo motivo que en Organizaciones: el alta se ofrece en la cabecera y
     // como tarjeta al final de la rejilla, así que se localiza por nombre
@@ -70,8 +75,7 @@ test.describe('Admin Superadmin Panel', () => {
   })
 
   test('destacados tab should show cards and create button', async ({ page }) => {
-    const destacadosTab = page.locator('button:has-text("Destacados")')
-    await destacadosTab.click()
+    await irASeccion(page, 'Destacados')
 
     // Mismo motivo que en Organizaciones y Códigos: el alta se ofrece en la
     // cabecera y como tarjeta al final de la rejilla, así que se localiza por
@@ -96,8 +100,7 @@ test.describe('Admin Superadmin Panel', () => {
   })
 
   test('analytics tab should show metrics', async ({ page }) => {
-    const analyticsTab = page.locator('button:has-text("Analytics")')
-    await analyticsTab.click()
+    await irASeccion(page, 'Analytics')
 
     // Check for summary metrics
     await expect(page.locator('body')).toContainText('Resumen general')
@@ -115,7 +118,7 @@ test.describe('Admin Superadmin Panel', () => {
 
     // Debe verse el formulario de login, no las tabs del panel.
     await expect(page.locator('input[type="email"]')).toBeVisible()
-    await expect(page.locator('button:has-text("Organizaciones")')).toHaveCount(0)
+    await expect(page.getByTestId('nav-superadmin')).toHaveCount(0)
 
     await contexto.close()
   })
