@@ -70,6 +70,14 @@ export default defineConfig({
 
   webServer: {
     command: `npm run dev -- --port ${PUERTO} --strictPort`,
+    // Los tests atacan servicios reales y limpian lo que crean en Neon y en
+    // Blob, pero un email enviado no se deshace: `validar rate-limiting en
+    // reclamaciones` acepta 5 solicitudes y cada una dispara DOS correos por
+    // Resend (20 por pasada con los dos viewports). Este interruptor los
+    // desactiva en el servidor de desarrollo que arranca la suite.
+    // ⚠️ Con `reuseExistingServer`, un `npm run dev` ya levantado A MANO no
+    // lo lleva: para correr la suite, deja que la levante ella.
+    env: { ...process.env, E2E_SIN_EMAIL: '1' },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
