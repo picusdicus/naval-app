@@ -9,6 +9,7 @@
 // el Neon real (misma función que llama el cron) y valida el ciclo humano en
 // la bandeja Pendientes de /admin. Limpia su fila sintética al terminar.
 import { test, expect } from '@playwright/test'
+import { irASeccion } from './_panel.js'
 import { SESION_SUPER } from './entorno.js'
 import { obtenerSql } from '../api/_db.js'
 import {
@@ -111,7 +112,7 @@ test.describe.serial('Deportes: carteles nuevos a revisión', () => {
 
   test('aparece en Pendientes, descartarlo archiva y el re-run no lo resucita', async ({ page }) => {
     await page.goto('/admin')
-    await page.click('button:has-text("Pendientes")')
+    await irASeccion(page, 'Pendientes')
 
     const titulo = page.getByText(`${TITULO} v2`)
     await expect(titulo).toBeVisible()
