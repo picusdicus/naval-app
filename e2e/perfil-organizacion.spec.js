@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { BASE_URL, exigir, abrirCandado } from './entorno.js'
+import { BASE_URL, SESION_ORG, abrirCandado } from './entorno.js'
 
 // La categoría y el lugar de un evento salen del perfil de la organización
 // (organizaciones.categoria_defecto / lugar_defecto): el gestor los ve, no los
@@ -15,20 +15,18 @@ const creados = []
 
 test.describe.configure({ mode: 'serial' })
 
-async function iniciarSesionAdmin(page) {
-  await page.goto('/login')
-  await page.locator('#email').fill(exigir('ADMIN_EMAIL'))
-  await page.locator('#password').fill(exigir('ADMIN_PASSWORD'))
-  await page.getByRole('button', { name: 'Acceder' }).click()
-  await expect(page).toHaveURL(/\/panel$/)
-}
+// La sesión de la organización llega del proyecto `setup`
+// (e2e/sesion.setup.js): el login está limitado a 5 intentos cada 15 minutos
+// y hacerlo por test agotaba el cupo a mitad de suite.
+test.use({ storageState: SESION_ORG })
 
 test.afterAll(async ({ playwright }) => {
   if (creados.length === 0) return
 
-  const contexto = await playwright.request.newContext({ baseURL: BASE_URL })
-  await contexto.post('/api/login', {
-    data: { email: exigir('ADMIN_EMAIL'), password: exigir('ADMIN_PASSWORD') },
+  // Reutiliza la cookie del setup en vez de gastar otro login para limpiar.
+  const contexto = await playwright.request.newContext({
+    baseURL: BASE_URL,
+    storageState: SESION_ORG,
   })
   for (const id of creados) await contexto.delete(`/api/admin/eventos?id=${id}`)
   await contexto.dispose()
@@ -38,7 +36,7 @@ test.afterAll(async ({ playwright }) => {
 test('el formulario muestra categoría y lugar del perfil, y no deja modificarlos', async ({
   page,
 }) => {
-  await iniciarSesionAdmin(page)
+  await page.goto('/panel')
   await page.goto('/panel/eventos/nuevo')
 
   const categoria = page.locator('#categoria')
@@ -60,7 +58,7 @@ test('el formulario muestra categoría y lugar del perfil, y no deja modificarlo
 })
 
 test('el servidor ignora la categoría y el lugar que mande el cliente', async ({ page }, info) => {
-  await iniciarSesionAdmin(page)
+  await page.goto('/panel')
 
   const titulo = `Prueba e2e · Perfil · ${info.project.name}`
   const respuesta = await page.request.post('/api/admin/eventos', {

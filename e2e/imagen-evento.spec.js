@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { test, expect } from '@playwright/test'
 import { del } from '@vercel/blob'
-import { RAIZ, BASE_URL, DOMINIO_BLOB, exigir, abrirCandado } from './entorno.js'
+import { RAIZ, BASE_URL, DOMINIO_BLOB, SESION_ORG, abrirCandado } from './entorno.js'
 
 // Recorrido completo del cartel de un evento: se elige en el formulario, sube a
 // Vercel Blob, su URL queda en eventos_usuario y la imagen se ve en el panel de
@@ -30,13 +30,10 @@ const creados = { eventos: [], blobs: [] }
 
 test.describe.configure({ mode: 'serial' })
 
-async function iniciarSesionAdmin(page) {
-  await page.goto('/login')
-  await page.locator('#email').fill(exigir('ADMIN_EMAIL'))
-  await page.locator('#password').fill(exigir('ADMIN_PASSWORD'))
-  await page.getByRole('button', { name: 'Acceder' }).click()
-  await expect(page).toHaveURL(/\/panel$/)
-}
+// La sesión de la organización llega del proyecto `setup`
+// (e2e/sesion.setup.js): el login está limitado a 5 intentos cada 15 minutos
+// y hacerlo por test agotaba el cupo a mitad de suite.
+test.use({ storageState: SESION_ORG })
 
 /** Sube public/poster.jpg y devuelve la URL que ha devuelto Vercel Blob. */
 async function subirCartel(page) {
@@ -68,9 +65,10 @@ async function eventoEnLaBaseDeDatos(page, titulo) {
 
 test.afterAll(async ({ playwright }) => {
   if (creados.eventos.length > 0) {
-    const contexto = await playwright.request.newContext({ baseURL: BASE_URL })
-    await contexto.post('/api/login', {
-      data: { email: exigir('ADMIN_EMAIL'), password: exigir('ADMIN_PASSWORD') },
+    // Reutiliza la cookie del setup en vez de gastar otro login para limpiar.
+    const contexto = await playwright.request.newContext({
+      baseURL: BASE_URL,
+      storageState: SESION_ORG,
     })
     for (const id of creados.eventos) await contexto.delete(`/api/admin/eventos?id=${id}`)
     await contexto.dispose()
@@ -91,7 +89,7 @@ test('el cartel subido al crear un evento llega a la base de datos, al panel y a
 }, info) => {
   const titulo = tituloDe(info)
 
-  await iniciarSesionAdmin(page)
+  await page.goto('/panel')
   await page.goto('/panel/eventos/nuevo')
 
   await page.locator('#titulo').fill(titulo)
@@ -135,7 +133,7 @@ test('al editar un evento se puede reemplazar el cartel y el cambio se propaga',
 }, info) => {
   const titulo = tituloDe(info)
 
-  await iniciarSesionAdmin(page)
+  await page.goto('/panel')
 
   const antes = await eventoEnLaBaseDeDatos(page, titulo)
   expect(antes, 'el test anterior debe haber creado el evento').toBeTruthy()
