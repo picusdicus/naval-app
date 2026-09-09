@@ -36,16 +36,32 @@ function idUnico(categoria, nombre, existentes) {
   return `${base}-${n}`
 }
 
+// La query solo devuelve los estados con filas; los tres se rellenan a mano
+// para que el cliente no reciba `undefined` en el que hoy esté vacío.
+function conteosDe(filas) {
+  const conteos = { pendiente: 0, aprobada: 0, rechazada: 0 }
+  for (const f of filas) {
+    if (f.estado in conteos) conteos[f.estado] = f.n
+  }
+  return conteos
+}
+
 async function listar(sql, estado) {
-  const filas = await sql`
-    SELECT id, nombre, categoria, direccion, telefono, notas, estado,
-           to_char(creado_en, 'YYYY-MM-DD HH24:MI') AS creado_en
-    FROM solicitudes_alta_comercio
-    ${estado ? sql`WHERE estado = ${estado}` : sql``}
-    ORDER BY creado_en DESC
-  `
+  // El recuento va sobre la tabla entera (sin el WHERE de la lista) para que las
+  // tres pestañas muestren su total sin obligar a visitarlas una a una.
+  const [filas, totales] = await Promise.all([
+    sql`
+      SELECT id, nombre, categoria, direccion, telefono, notas, estado,
+             to_char(creado_en, 'YYYY-MM-DD HH24:MI') AS creado_en
+      FROM solicitudes_alta_comercio
+      ${estado ? sql`WHERE estado = ${estado}` : sql``}
+      ORDER BY creado_en DESC
+    `,
+    sql`SELECT estado, count(*)::int AS n FROM solicitudes_alta_comercio GROUP BY estado`,
+  ])
 
   return json({
+    conteos: conteosDe(totales),
     altas: filas.map((r) => ({
       id: r.id,
       nombre: r.nombre,

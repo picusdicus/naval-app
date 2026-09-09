@@ -3,6 +3,7 @@ import { CATEGORIAS_EVENTO, formatearFechaCorta, formatearFechaLarga } from '../
 import { ETIQUETAS_ACTIVIDAD } from '../../../lib/useNoticiasPublicas.js'
 import MIcon from '../../MIcon.jsx'
 import { MiniaturaEvento } from './TablesEventos.jsx'
+import ComoFunciona from './ComoFunciona.jsx'
 
 // Tab "Pendientes" del panel superadmin: valida lo que la sincronización de
 // Instagram extrajo de programaciones enlazadas (PDF de agenda, galerías) y
@@ -203,12 +204,14 @@ export default function TablesPendientes() {
     <div className="space-y-6">
       <div>
         <h2 className="font-serif-dm text-xl text-tinta">Pendientes de validar</h2>
-        <p className="mt-1 font-serif-spectral text-sm text-pardo">
-          Eventos y actividades extraídos automáticamente de programaciones enlazadas en
-          Instagram (agendas en PDF, galerías). Nada es visible en la app hasta que lo
-          publiques; al publicar un evento, el aviso push sale con el próximo digest diario.
-          Descartar lo archiva y no volverá a aparecer aunque se repita la sincronización.
-        </p>
+        <ComoFunciona seccion="pendientes">
+          <p className="font-serif-spectral text-sm text-pardo">
+            Eventos y actividades extraídos automáticamente de programaciones enlazadas en
+            Instagram (agendas en PDF, galerías). Nada es visible en la app hasta que lo
+            publiques; al publicar un evento, el aviso push sale con el próximo digest diario.
+            Descartar lo archiva y no volverá a aparecer aunque se repita la sincronización.
+          </p>
+        </ComoFunciona>
       </div>
 
       {mensaje && (
