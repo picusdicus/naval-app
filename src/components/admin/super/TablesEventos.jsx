@@ -437,6 +437,10 @@ export default function TablesEventos() {
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [incluirPasados, setIncluirPasados] = useState(false)
+  // Los editables son un puñado entre cientos de filas de ingesta, y sin este
+  // filtro el botón "Editar" no se encuentra: la primera pantalla del listado
+  // es siempre programa de fiestas, que no se edita por diseño.
+  const [soloEditables, setSoloEditables] = useState(false)
   const [ocupadoId, setOcupadoId] = useState(null) // id del evento con acción en curso
   const [abiertoId, setAbiertoId] = useState(null) // id del evento con el detalle desplegado
   const [mensaje, setMensaje] = useState(null) // { tipo: 'error', texto }
@@ -541,6 +545,7 @@ export default function TablesEventos() {
     const texto = busqueda.trim().toLowerCase()
     return eventos
       .filter((e) => incluirPasados || diasHasta(e.fecha) >= 0)
+      .filter((e) => !soloEditables || editableEnLaBase(e))
       .filter(
         (e) =>
           !texto ||
@@ -548,7 +553,7 @@ export default function TablesEventos() {
           (e.lugar || '').toLowerCase().includes(texto),
       )
       .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))
-  }, [eventos, busqueda, incluirPasados])
+  }, [eventos, busqueda, incluirPasados, soloEditables])
 
   const visibles = filtrados.slice(0, cuantas)
   const hayMas = filtrados.length > visibles.length
@@ -557,7 +562,7 @@ export default function TablesEventos() {
   // desplegado 400 filas seguiría pintando 400 de la nueva lista.
   useEffect(() => {
     setCuantas(LOTE_FILAS)
-  }, [busqueda, incluirPasados])
+  }, [busqueda, incluirPasados, soloEditables])
 
   // Al asomar el centinela, revelar otro lote. Se re-observa cuando cambia
   // `hayMas` para desconectar al llegar al final.
@@ -766,6 +771,13 @@ export default function TablesEventos() {
               une, fusiónalas: «Fusionar» en la que debe sobrevivir y «Fusionar aquí» en la
               duplicada — la fusión persiste entre sincronizaciones y se deshace desde el detalle.
             </p>
+            <p className="mt-2 font-serif-spectral text-sm text-pardo">
+              El botón «Editar» solo aparece en los eventos <strong>creados a mano</strong> (los que
+              el detalle etiqueta como «Organización»): son los únicos que son una fila que
+              actualizar. Los sincronizados los reescribiría la próxima pasada del cron y los
+              curados viven en los ficheros de datos, así que ahí no se ofrece. Marca «Solo
+              editables» para quedarte con los que sí puedes tocar.
+            </p>
           </ComoFunciona>
         </div>
         {!creando && !editando && (
@@ -864,6 +876,18 @@ export default function TablesEventos() {
             className="accent-terracota"
           />
           Incluir pasados
+        </label>
+        <label
+          className="flex shrink-0 cursor-pointer items-center gap-2 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta text-tinta"
+          title="Los eventos creados a mano desde este panel o desde /panel. Son los únicos que se pueden editar aquí: los sincronizados los reescribiría el cron."
+        >
+          <input
+            type="checkbox"
+            checked={soloEditables}
+            onChange={(e) => setSoloEditables(e.target.checked)}
+            className="accent-terracota"
+          />
+          Solo editables
         </label>
       </div>
 
@@ -1090,7 +1114,9 @@ export default function TablesEventos() {
 
         {!cargando && visibles.length === 0 && (
           <p className="border border-dashed border-filete-punteado p-8 text-center font-serif-spectral text-sm text-pardo">
-            No hay eventos que coincidan con el filtro.
+            {soloEditables
+              ? 'Ningún evento creado a mano coincide con el filtro. Los sincronizados y los curados no se editan aquí.'
+              : 'No hay eventos que coincidan con el filtro.'}
           </p>
         )}
 
