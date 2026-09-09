@@ -16,6 +16,10 @@ async function test() {
   console.log('📧 Enviando email de prueba...\n')
 
   const resultado = await enviarEmailReclamacion({
+    // solicitudId y createdAt los exige la función desde que dejó de estar
+    // duplicada en api/solicitar-reclamacion.js: son los que rotula el asunto.
+    solicitudId: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
     comercioId: 'gpl_test_' + Date.now(),
     nombre: 'Usuario Test',
     email: 'test@example.com',
