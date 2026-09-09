@@ -4,10 +4,19 @@
 //   GET  — { organizaciones: [{id, nombre, slug}], lugares: [...] } para rellenar
 //          los desplegables del formulario: todas las organizaciones activas y
 //          los lugares ya usados en eventos_usuario (+ lugar_defecto de las orgs).
+//   GET  ?id= — un evento suelto (crudo, tal cual está en la base) para
+//          prerrellenar el formulario en modo edición. Se lee de la base y no
+//          del listado ya fusionado del tab: la agenda aplica fusiones y
+//          propagación de carteles entre hermanos, y guardar eso volvería a
+//          escribir en la fila datos que no son suyos.
 //   POST — crea una fila en eventos_usuario. El organizador llega como
 //          `organizacionId` (una existente) o como `organizacionNombre` (se crea
 //          una organización nueva con slug derivado del nombre; si ese slug ya
 //          existe se reutiliza esa organización en vez de duplicarla).
+//   PUT  ?id= — edita un evento ya creado a mano. Sin filtro por
+//          `organizacion_id` (esa es la diferencia con /api/admin/eventos: el
+//          superadmin edita eventos de cualquier organización), pero solo de
+//          filas con `origen_externo_id IS NULL` — ver `editar`.
 //
 // Mismas reglas de validación que el panel de las organizaciones
 // (validarEvento en src/lib/eventoForm.js); aquí no manda ningún perfil de
@@ -122,16 +131,125 @@ async function crear(sql, cuerpo) {
   )
 }
 
+const aFormulario = (f) => ({
+  id: f.id,
+  titulo: f.titulo,
+  descripcion: f.descripcion ?? '',
+  categoria: f.categoria ?? '',
+  lugar: f.lugar ?? '',
+  fecha: f.fecha,
+  hora: f.hora ?? '',
+  horaFin: f.hora_fin ?? '',
+  imagen: f.imagen_url ?? '',
+  estado: f.estado,
+  organizacionId: f.organizacion_id,
+  organizacionNombre: f.organizacion,
+})
+
+// La fila cruda que el formulario de edición necesita. `fecha_inicio` se
+// formatea en SQL: el driver devuelve las columnas `date` como Date y
+// convertirlas en JS arrastra la zona horaria.
+const leerFila = (sql, id) => sql`
+  SELECT e.id, e.titulo, e.descripcion, e.categoria, e.lugar,
+         to_char(e.fecha_inicio, 'YYYY-MM-DD') AS fecha,
+         e.hora, e.hora_fin, e.imagen_url, e.estado,
+         e.origen_externo_id, e.organizacion_id, o.nombre AS organizacion
+  FROM eventos_usuario e
+  JOIN organizaciones o ON o.id = e.organizacion_id
+  WHERE e.id = ${id}
+`
+
+/**
+ * Un evento sincronizado (`origen_externo_id` no nulo: ig-…, deportes-…) no se
+ * edita por aquí aunque viva en la misma tabla: el upsert del webhook o del
+ * cron reescribe título, descripción e imagen en la siguiente pasada y el
+ * cambio se perdería en silencio. Editarlos es otra tarea (habría que decidir
+ * qué campos quedan fijados frente a la ingesta), no un UPDATE más.
+ */
+function rechazoSincronizado() {
+  return json(
+    {
+      error:
+        'Este evento viene de una sincronización automática y no se edita aquí: la próxima pasada del cron sobrescribiría los cambios.',
+    },
+    400,
+  )
+}
+
+async function obtenerUno(sql, id) {
+  const [fila] = await leerFila(sql, id)
+  if (!fila) return json({ error: 'Ese evento no existe.' }, 404)
+  if (fila.origen_externo_id) return rechazoSincronizado()
+  return json({ evento: aFormulario(fila) })
+}
+
+async function editar(sql, id, cuerpo) {
+  const [fila] = await leerFila(sql, id)
+  if (!fila) return json({ error: 'Ese evento no existe.' }, 404)
+  if (fila.origen_externo_id) return rechazoSincronizado()
+
+  // Editar toca UNA fila y solo esa. A diferencia de /api/admin/eventos, aquí
+  // una fecha de fin no convierte el evento en ciclo ni crea copias: esta vía
+  // no sabe crear series (el POST tampoco acepta `fechaFin`), así que hacerlo
+  // solo al editar dejaría la única forma de generar copias escondida detrás
+  // de una edición, y repetirla las multiplicaría sin deduplicar. El estado y
+  // el organizador tampoco se tocan: se conservan los de la fila.
+  const evento = {
+    ...cuerpo,
+    ambito: 'navalcarnero',
+    provincia: '',
+    poblacion: '',
+    fechaFin: '',
+    estado: fila.estado,
+  }
+  const errores = validarEvento(evento)
+  if (Object.keys(errores).length > 0) {
+    return json({ error: 'Revisa los campos del formulario.', errores }, 422)
+  }
+
+  const e = normalizarEvento(evento)
+  const [actualizado] = await sql`
+    UPDATE eventos_usuario SET
+      titulo = ${e.titulo}, descripcion = ${e.descripcion}, categoria = ${e.categoria},
+      lugar = ${e.lugar}, fecha_inicio = ${e.fecha}, hora = ${e.hora},
+      hora_fin = ${e.horaFin}, imagen_url = ${e.imagen}, actualizado_en = now()
+    WHERE id = ${id}
+    RETURNING id, titulo, estado
+  `
+
+  return json({
+    evento: {
+      id: actualizado.id,
+      referenciaId: `bd-${actualizado.id}`,
+      titulo: actualizado.titulo,
+      estado: actualizado.estado,
+      fecha: e.fecha,
+    },
+  })
+}
+
 export default async function handler(req) {
   if (csrfInvalido(req)) return rechazoCsrf()
 
   const sesion = await requerirSuperAdminEdge(req)
   if (sesion instanceof Response) return sesion
 
+  const id = new URL(req.url).searchParams.get('id')
+  // Un id con otra forma nunca existirá: cortamos antes de tocar la base, que
+  // rechazaría el uuid inválido con un error de tipo. El cliente manda el uuid
+  // pelado (sin el prefijo `bd-` de la agenda), pero no nos fiamos de eso.
+  if (id != null && !UUID.test(id)) {
+    return json({ error: 'Ese evento no existe.' }, req.method === 'PUT' ? 400 : 404)
+  }
+
   try {
     const sql = obtenerSql()
-    if (req.method === 'GET') return await listarOpciones(sql)
+    if (req.method === 'GET') return id ? await obtenerUno(sql, id) : await listarOpciones(sql)
     if (req.method === 'POST') return await crear(sql, await leerJson(req))
+    if (req.method === 'PUT') {
+      if (!id) return json({ error: 'Falta el id del evento a editar.' }, 400)
+      return await editar(sql, id, await leerJson(req))
+    }
     return json({ error: 'Método no permitido' }, 405)
   } catch (error) {
     console.error('Error en /api/super/eventos-manuales:', error)

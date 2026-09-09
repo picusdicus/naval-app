@@ -56,6 +56,25 @@ const DIAS_DESTACADO = 30 // duración por defecto al destacar con un clic
 
 const ETIQUETA_ORIGEN = { municipal: 'Ayuntamiento', vecinal: 'Vecinal', cultural: 'Cultural' }
 
+/**
+ * ¿Se puede editar este evento desde aquí? Solo las filas de `eventos_usuario`
+ * creadas a mano: id público con prefijo `bd-` (las demás vienen de los JSON
+ * curados o generados, que no son una fila que actualizar) y sin
+ * `origenExternoId` (las sincronizadas sí son filas de la tabla, pero el
+ * upsert del webhook o del cron reescribiría los cambios en la pasada
+ * siguiente). El servidor comprueba lo mismo: esto solo decide qué se pinta.
+ *
+ * Un evento de Neon fusionado dentro de uno curado pierde su `bd-…` como id
+ * principal (queda en idsSecundarios) y aquí no sale editable: lo que la fila
+ * muestra ya no es el contenido de una sola fila de la base.
+ */
+function editableEnLaBase(evento) {
+  return String(evento.id || '').startsWith('bd-') && !evento.origenExternoId
+}
+
+/** El uuid de la fila, sin el prefijo `bd-` que le pone la agenda pública. */
+const uuidDe = (evento) => String(evento.id).slice(3)
+
 function fuenteDe(evento) {
   return evento.fuente || ETIQUETA_ORIGEN[evento.origen] || 'Evento'
 }
@@ -426,6 +445,7 @@ export default function TablesEventos() {
   const [fusiones, setFusiones] = useState([]) // fusiones manuales [{principal, secundaria}]
   const [origenFusionId, setOrigenFusionId] = useState(null) // id del principal elegido en el modo fusión
   const [creando, setCreando] = useState(false) // formulario "Nuevo evento" desplegado
+  const [editando, setEditando] = useState(null) // { id (uuid), titulo } del evento en edición
   const [aviso, setAviso] = useState(null) // { texto } — confirmación tras crear un evento
 
   // Recarga solo los eventos de Neon (los estáticos no cambian en sesión):
@@ -711,6 +731,15 @@ export default function TablesEventos() {
     return [...vistos]
   }, [eventos])
 
+  // Tras editar se recarga /api/eventos: la fila del listado se repinta con lo
+  // guardado sin que el superadmin tenga que recargar la página.
+  async function eventoEditado({ evento }) {
+    setEditando(null)
+    setMensaje(null)
+    await recargarDeLaBase()
+    setAviso({ texto: `Evento «${evento.titulo}» actualizado.` })
+  }
+
   async function eventoCreado({ evento, organizacion }) {
     setCreando(false)
     setMensaje(null)
@@ -739,7 +768,7 @@ export default function TablesEventos() {
             </p>
           </ComoFunciona>
         </div>
-        {!creando && (
+        {!creando && !editando && (
           <button
             type="button"
             onClick={() => {
@@ -759,6 +788,16 @@ export default function TablesEventos() {
           lugaresDeLaAgenda={lugaresDeLaAgenda}
           onCreado={eventoCreado}
           onCancelar={() => setCreando(false)}
+        />
+      )}
+
+      {editando && (
+        <FormularioEventoManual
+          key={editando.id}
+          lugaresDeLaAgenda={lugaresDeLaAgenda}
+          eventoAEditar={editando}
+          onCreado={eventoEditado}
+          onCancelar={() => setEditando(null)}
         />
       )}
 
@@ -975,6 +1014,27 @@ export default function TablesEventos() {
                   <MIcon name={oculto ? 'visibility' : 'visibility_off'} className="text-[14px]" />
                   {oculto ? 'Oculto' : 'Ocultar'}
                 </button>
+
+                {/* Editar solo donde hay una fila de la base que actualizar.
+                    Los eventos curados y los sincronizados no llevan botón: no
+                    es que esté deshabilitado, es que esa edición no existe por
+                    esta vía (el detalle desplegable explica su vía de ingesta). */}
+                {editableEnLaBase(evento) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAviso(null)
+                      setCreando(false)
+                      setEditando({ id: uuidDe(evento), titulo: evento.titulo })
+                    }}
+                    disabled={ocupado}
+                    className="inline-flex items-center gap-1 border border-filete px-2.5 py-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo transition-colors hover:border-terracota hover:text-terracota disabled:opacity-40"
+                    title="Editar este evento (categoría, descripción, hora, lugar, imagen)"
+                  >
+                    <MIcon name="edit" className="text-[14px]" />
+                    Editar
+                  </button>
+                )}
 
                 {origenFusionId === null ? (
                   <button

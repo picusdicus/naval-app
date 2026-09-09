@@ -11,6 +11,12 @@ import SelectorImagen from '../SelectorImagen.jsx'
 // admiten "Otro…" para escribir uno nuevo: un organizador nuevo se crea como
 // organización (sin usuarios, solo para atribuir el evento) al guardar.
 // Escribe en POST /api/super/eventos-manuales.
+//
+// Con `eventoAEditar` pasa a modo edición: prerrellena los campos con esa fila
+// y guarda con PUT ?id= (mismo patrón `editando ? 'PUT' : 'POST'` que
+// AdminEventoForm.jsx en /panel). Editar no cambia ni el organizador ni el
+// estado del evento — el UPDATE del servidor no toca esas columnas —, así
+// que esos dos controles no se muestran.
 
 export const OPCION_NUEVO = '__nuevo__'
 
@@ -95,12 +101,39 @@ function Campo({ id, etiqueta, error, opcional, children }) {
 }
 
 /**
+ * Fila que devuelve `GET ?id=` → valores del formulario. Un campo vacío en la
+ * base llega como '' y se trata como un campo vacío más: no se inventa nada.
+ */
+function aValoresDeEdicion(evento) {
+  return {
+    ...VALORES_INICIALES,
+    titulo: evento.titulo ?? '',
+    descripcion: evento.descripcion ?? '',
+    categoria: evento.categoria ?? '',
+    fecha: evento.fecha ?? '',
+    hora: evento.hora ?? '',
+    horaFin: evento.horaFin ?? '',
+    imagen: evento.imagen ?? '',
+    estado: evento.estado ?? 'publicado',
+    organizacionId: evento.organizacionId ?? '',
+    lugarElegido: evento.lugar ?? '',
+  }
+}
+
+/**
  * @param {object} props
  * @param {string[]} props.lugaresDeLaAgenda — lugares de los eventos ya cargados en el tab (se suman a los del servidor)
+ * @param {{id: string, titulo: string} | null} props.eventoAEditar — con valor, el formulario edita esa fila en vez de crear una nueva
  * @param {(resultado: {evento, organizacion}) => void} props.onCreado
  * @param {() => void} props.onCancelar
  */
-export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCreado, onCancelar }) {
+export default function FormularioEventoManual({
+  lugaresDeLaAgenda = [],
+  eventoAEditar = null,
+  onCreado,
+  onCancelar,
+}) {
+  const editando = Boolean(eventoAEditar)
   const [valores, setValores] = useState(VALORES_INICIALES)
   const [errores, setErrores] = useState({})
   const [organizaciones, setOrganizaciones] = useState([])
@@ -108,6 +141,11 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
   const [cargandoOpciones, setCargandoOpciones] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [fallo, setFallo] = useState('')
+  // Los valores de la edición salen de la BASE, no de la fila del listado: la
+  // agenda del tab ya viene fusionada y con carteles propagados entre hermanos
+  // de la misma serie, y guardar eso escribiría en la fila datos ajenos.
+  const [cargandoEvento, setCargandoEvento] = useState(editando)
+  const [organizador, setOrganizador] = useState(null) // solo informativo al editar
 
   useEffect(() => {
     let vigente = true
@@ -127,6 +165,32 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
     }
   }, [])
 
+  useEffect(() => {
+    if (!eventoAEditar?.id) return undefined
+    let vigente = true
+    setCargandoEvento(true)
+    fetch(`/api/super/eventos-manuales?id=${encodeURIComponent(eventoAEditar.id)}`)
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}))
+        if (!r.ok) throw new Error(d.error || 'No se pudo cargar el evento.')
+        return d
+      })
+      .then((d) => {
+        if (!vigente) return
+        setValores(aValoresDeEdicion(d.evento))
+        setOrganizador(d.evento.organizacionNombre ?? null)
+      })
+      .catch((err) => {
+        if (vigente) setFallo(err.message)
+      })
+      .finally(() => {
+        if (vigente) setCargandoEvento(false)
+      })
+    return () => {
+      vigente = false
+    }
+  }, [eventoAEditar?.id])
+
   // Lugares fijos primero (plazas y espacios públicos), después el resto sin
   // duplicados, ordenado. El programa de fiestas trae el mismo sitio con
   // variantes ("plaza de Segovia." / "Plaza de Segovia"): se colapsan por
@@ -144,8 +208,15 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
       resto.push(nombre)
     }
     resto.sort((a, b) => a.localeCompare(b, 'es'))
+    // El lugar del evento que se edita puede no estar en ninguna de las dos
+    // listas (se escribió con «Otro…» y el evento aún no está en la agenda
+    // cargada): se añade para que el desplegable no lo pierda al guardar.
+    const guardado = String(valores.lugarElegido || '').trim()
+    if (guardado && guardado !== OPCION_NUEVO && !vistos.has(claveLugar(guardado))) {
+      resto.unshift(guardado)
+    }
     return [...fijos, ...resto].map((n) => ({ valor: n, texto: n }))
-  }, [lugaresServidor, lugaresDeLaAgenda])
+  }, [lugaresServidor, lugaresDeLaAgenda, valores.lugarElegido])
 
   const opcionesOrganizador = useMemo(
     () => organizaciones.map((o) => ({ valor: o.id, texto: o.nombre })),
@@ -167,7 +238,7 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
 
   function cuerpoParaEnviar() {
     const organizadorNuevo = valores.organizacionId === OPCION_NUEVO
-    return {
+    const comun = {
       titulo: valores.titulo,
       descripcion: valores.descripcion,
       categoria: valores.categoria,
@@ -178,6 +249,12 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
       imagen: valores.imagen,
       estado: valores.estado,
       ambito: 'navalcarnero',
+    }
+    // El PUT no cambia el organizador (ni el estado): mandarlos solo daría a
+    // entender que se pueden tocar desde aquí.
+    if (editando) return comun
+    return {
+      ...comun,
       ...(organizadorNuevo
         ? { organizacionNombre: valores.organizacionNombre.trim() }
         : { organizacionId: valores.organizacionId }),
@@ -186,7 +263,7 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
 
   function validar(cuerpo) {
     const errs = validarEvento(cuerpo)
-    if (!cuerpo.organizacionId && !cuerpo.organizacionNombre) {
+    if (!editando && !cuerpo.organizacionId && !cuerpo.organizacionNombre) {
       errs.organizador = 'Elige el organizador o escribe uno nuevo.'
     }
     return errs
@@ -203,15 +280,20 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
     }
     setGuardando(true)
     try {
-      const res = await fetch('/api/super/eventos-manuales', {
-        method: 'POST',
+      const url = editando
+        ? `/api/super/eventos-manuales?id=${encodeURIComponent(eventoAEditar.id)}`
+        : '/api/super/eventos-manuales'
+      const res = await fetch(url, {
+        method: editando ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cuerpo),
       })
       const datos = await res.json().catch(() => ({}))
       if (!res.ok) {
         if (datos.errores) setErrores(datos.errores)
-        throw new Error(datos.error || 'No se pudo crear el evento.')
+        throw new Error(
+          datos.error || (editando ? 'No se pudo guardar el evento.' : 'No se pudo crear el evento.'),
+        )
       }
       onCreado?.(datos)
     } catch (err) {
@@ -230,10 +312,21 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-serif-dm text-lg text-tinta">Nuevo evento</h3>
+          <h3 className="font-serif-dm text-lg text-tinta">
+            {editando ? 'Editar evento' : 'Nuevo evento'}
+          </h3>
           <p className="mt-1 font-serif-spectral text-sm text-pardo">
-            Crea un evento en nombre de cualquier organizador. Si el organizador o el lugar no
-            están en la lista, elige «Otro…» y escríbelo.
+            {editando ? (
+              <>
+                Cambia los datos de «{eventoAEditar.titulo}». El organizador y el estado de
+                publicación no se editan aquí.
+              </>
+            ) : (
+              <>
+                Crea un evento en nombre de cualquier organizador. Si el organizador o el lugar no
+                están en la lista, elige «Otro…» y escríbelo.
+              </>
+            )}
           </p>
         </div>
         <button
@@ -245,6 +338,10 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
           <MIcon name="close" className="text-[18px]" />
         </button>
       </div>
+
+      {cargandoEvento && (
+        <p className="font-serif-spectral text-sm text-pardo">Cargando el evento…</p>
+      )}
 
       {fallo && (
         <p className="flex items-start gap-2 border border-terracota bg-terracota-fondo px-4 py-3 font-serif-spectral text-sm text-terracota">
@@ -325,18 +422,30 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
         </div>
 
         <div className="space-y-5">
-          <CampoConOtro
-            id="em-organizador"
-            etiqueta={cargandoOpciones ? 'Organizador (cargando…)' : 'Organizador'}
-            valor={valores.organizacionId}
-            onChange={cambiar('organizacionId')}
-            opciones={opcionesOrganizador}
-            valorNuevo={valores.organizacionNombre}
-            onChangeNuevo={cambiar('organizacionNombre')}
-            placeholderNuevo="Nombre del nuevo organizador"
-            maxLength={120}
-            error={errores.organizador}
-          />
+          {editando ? (
+            <div>
+              <p className="gz-label mb-1.5 block text-pardo">Organizador</p>
+              <p className="font-serif-spectral text-sm text-tinta">
+                {organizador || '—'}
+                <span className="ml-2 font-mono-ibm text-[10px] uppercase tracking-etiqueta text-mudo">
+                  · no se cambia aquí
+                </span>
+              </p>
+            </div>
+          ) : (
+            <CampoConOtro
+              id="em-organizador"
+              etiqueta={cargandoOpciones ? 'Organizador (cargando…)' : 'Organizador'}
+              valor={valores.organizacionId}
+              onChange={cambiar('organizacionId')}
+              opciones={opcionesOrganizador}
+              valorNuevo={valores.organizacionNombre}
+              onChangeNuevo={cambiar('organizacionNombre')}
+              placeholderNuevo="Nombre del nuevo organizador"
+              maxLength={120}
+              error={errores.organizador}
+            />
+          )}
 
           <CampoConOtro
             id="em-lugar"
@@ -359,15 +468,20 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
             carpeta="eventos"
           />
 
-          <label className="flex cursor-pointer items-center gap-2 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta text-tinta">
-            <input
-              type="checkbox"
-              checked={valores.estado === 'publicado'}
-              onChange={(e) => cambiar('estado')(e.target.checked ? 'publicado' : 'borrador')}
-              className="accent-terracota"
-            />
-            Publicar en la agenda al guardar
-          </label>
+          {/* Publicar o no es una decisión del alta. Editando, el evento ya
+              está en la agenda: para sacarlo de ella está «Ocultar» en la
+              fila, que es la vía reversible del panel. */}
+          {!editando && (
+            <label className="flex cursor-pointer items-center gap-2 font-mono-ibm text-[10.5px] uppercase tracking-etiqueta text-tinta">
+              <input
+                type="checkbox"
+                checked={valores.estado === 'publicado'}
+                onChange={(e) => cambiar('estado')(e.target.checked ? 'publicado' : 'borrador')}
+                className="accent-terracota"
+              />
+              Publicar en la agenda al guardar
+            </label>
+          )}
         </div>
       </div>
 
@@ -375,9 +489,12 @@ export default function FormularioEventoManual({ lugaresDeLaAgenda = [], onCread
         <button type="button" onClick={onCancelar} disabled={guardando} className="gz-boton-borde">
           Cancelar
         </button>
-        <button type="submit" disabled={guardando} className="gz-boton-tinta">
-          <MIcon name={guardando ? 'progress_activity' : 'add'} className="mr-1 text-[16px]" />
-          {guardando ? 'Guardando…' : 'Crear evento'}
+        <button type="submit" disabled={guardando || cargandoEvento} className="gz-boton-tinta">
+          <MIcon
+            name={guardando ? 'progress_activity' : editando ? 'save' : 'add'}
+            className="mr-1 text-[16px]"
+          />
+          {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear evento'}
         </button>
       </div>
     </form>
