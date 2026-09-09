@@ -17,6 +17,7 @@ import MIcon from '../../MIcon.jsx'
 import { IconoCategoriaTabler } from '../../eventos/iconosEvento.jsx'
 import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
 import FormularioEventoManual from './FormularioEventoManual.jsx'
+import ComoFunciona from './ComoFunciona.jsx'
 
 // Tab "Eventos" del panel superadmin: lista todos los eventos publicados de la
 // agenda (los tres orígenes ya fusionados con combinarEventos, como la vista
@@ -727,14 +728,16 @@ export default function TablesEventos() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="font-serif-dm text-xl text-tinta">Eventos publicados</h2>
-          <p className="mt-1 font-serif-spectral text-sm text-pardo">
-            Todos los eventos de la agenda (curados, sincronizados y de las organizaciones).
-            Destaca cualquiera con un clic (dura {DIAS_DESTACADO} días; afina su orden y vigencia
-            en el tab Destacados) u ocúltalo de la agenda pública. Ocultar es reversible y no
-            borra el evento. Si dos entradas son el mismo acto y el matcher automático no las
-            une, fusiónalas: «Fusionar» en la que debe sobrevivir y «Fusionar aquí» en la
-            duplicada — la fusión persiste entre sincronizaciones y se deshace desde el detalle.
-          </p>
+          <ComoFunciona seccion="eventos">
+            <p className="font-serif-spectral text-sm text-pardo">
+              Todos los eventos de la agenda (curados, sincronizados y de las organizaciones).
+              Destaca cualquiera con un clic (dura {DIAS_DESTACADO} días; afina su orden y vigencia
+              en el tab Destacados) u ocúltalo de la agenda pública. Ocultar es reversible y no
+              borra el evento. Si dos entradas son el mismo acto y el matcher automático no las
+              une, fusiónalas: «Fusionar» en la que debe sobrevivir y «Fusionar aquí» en la
+              duplicada — la fusión persiste entre sincronizaciones y se deshace desde el detalle.
+            </p>
+          </ComoFunciona>
         </div>
         {!creando && (
           <button

@@ -5,6 +5,7 @@ import overridesActuales from '../../../data/comercios-overrides.json'
 import { LISTA_CATEGORIAS } from '../../../lib/categorias.js'
 import { SUBTIPO_INFO, infoSubtipo } from '../../../lib/subtipos.js'
 import MIcon from '../../MIcon.jsx'
+import ComoFunciona from './ComoFunciona.jsx'
 
 // Tab "Comercios" del panel superadmin: recategorizar (o excluir) entradas del
 // directorio que Google trae mal clasificadas, y crear categorías o
@@ -249,12 +250,14 @@ export default function TablesComercios() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="font-serif-dm text-xl text-tinta">Categorización de comercios</h2>
-          <p className="mt-1 font-serif-spectral text-sm text-pardo">
-            Corrige la categoría y subcategoría de las entradas que Google clasifica mal,
-            edita su dirección, teléfono, web y coordenadas, créalas si no existen, o excluye
-            locales del directorio. Al guardar se hace un commit y los cambios se publican con
-            el redeploy (~2 min). Se conservan aunque se regenere el directorio.
-          </p>
+          <ComoFunciona seccion="comercios">
+            <p className="font-serif-spectral text-sm text-pardo">
+              Corrige la categoría y subcategoría de las entradas que Google clasifica mal,
+              edita su dirección, teléfono, web y coordenadas, créalas si no existen, o excluye
+              locales del directorio. Al guardar se hace un commit y los cambios se publican con
+              el redeploy (~2 min). Se conservan aunque se regenere el directorio.
+            </p>
+          </ComoFunciona>
         </div>
         <button
           type="button"

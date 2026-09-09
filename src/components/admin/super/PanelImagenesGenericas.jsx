@@ -4,6 +4,7 @@ import { CATEGORIAS_EVENTO, SUBTIPOS_CULTURALES } from '../../../lib/eventos.js'
 import { IDS_CATEGORIAS_TALLER } from '../../../lib/talleres.js'
 import { RecargarGenericasContext } from '../../../lib/GenericasEventoContext.jsx'
 import FormularioImagenGenerica from './FormularioImagenGenerica.jsx'
+import ComoFunciona from './ComoFunciona.jsx'
 
 const CATEGORIAS = Object.keys(CATEGORIAS_EVENTO).sort()
 // Debe coincidir con lo que devuelve disciplinaDeEvento() (src/lib/eventos.js).
@@ -109,18 +110,20 @@ export default function PanelImagenesGenericas() {
 
   return (
     <div className="space-y-6">
-      <div className="text-sm text-pardo">
-        <p>Gestiona imágenes genéricas por categoría y subtipo.</p>
-        <p className="mt-2">
-          Un evento sin cartel propio muestra una de estas (elegida de forma estable por evento):
-          las de su subtipo si el título, la subcategoría o la descripción lo dejan reconocer, o
-          las generales de su categoría si no. Con varias imágenes en un subtipo, los eventos se
-          reparten entre ellas. Una categoría sin imágenes activas se pinta con el degradado de
-          siempre. En la pestaña Eventos, cada fila indica qué subtipo le toca, permite subir una
-          imagen para él sin venir aquí y elegir una concreta para ese evento; las marcadas
-          «★ solo a mano» quedan fuera del reparto y solo salen donde se asignen.
-        </p>
-      </div>
+      <ComoFunciona seccion="imagenes-genericas">
+        <div className="text-sm text-pardo">
+          <p>Gestiona imágenes genéricas por categoría y subtipo.</p>
+          <p className="mt-2">
+            Un evento sin cartel propio muestra una de estas (elegida de forma estable por evento):
+            las de su subtipo si el título, la subcategoría o la descripción lo dejan reconocer, o
+            las generales de su categoría si no. Con varias imágenes en un subtipo, los eventos se
+            reparten entre ellas. Una categoría sin imágenes activas se pinta con el degradado de
+            siempre. En la pestaña Eventos, cada fila indica qué subtipo le toca, permite subir una
+            imagen para él sin venir aquí y elegir una concreta para ese evento; las marcadas
+            «★ solo a mano» quedan fuera del reparto y solo salen donde se asignen.
+          </p>
+        </div>
+      </ComoFunciona>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Navegación izquierda */}
