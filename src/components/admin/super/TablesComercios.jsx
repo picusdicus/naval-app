@@ -6,6 +6,7 @@ import { LISTA_CATEGORIAS } from '../../../lib/categorias.js'
 import { SUBTIPO_INFO, infoSubtipo } from '../../../lib/subtipos.js'
 import MIcon from '../../MIcon.jsx'
 import ComoFunciona from './ComoFunciona.jsx'
+import FormularioComercioManual from './FormularioComercioManual.jsx'
 
 // Tab "Comercios" del panel superadmin: recategorizar (o excluir) entradas del
 // directorio que Google trae mal clasificadas, y crear categorías o
@@ -66,6 +67,10 @@ export default function TablesComercios() {
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState(null) // { tipo: 'ok'|'error', texto }
   const [expandido, setExpandido] = useState(() => new Set()) // ids con el panel de datos abierto
+  // Alta manual: formulario abierto y fichas creadas en esta sesión (el JSON
+  // importado no las trae hasta el redeploy; se muestran mientras tanto).
+  const [creandoComercio, setCreandoComercio] = useState(false)
+  const [altasRecientes, setAltasRecientes] = useState([])
 
   function alternarExpandido(id) {
     setExpandido((previo) => {
@@ -79,8 +84,8 @@ export default function TablesComercios() {
   // filtro "solo sin subtipo claro" (ya vienen categorizados), pero aparecen al
   // buscar por texto o si tienen un cambio pendiente.
   const base = useMemo(
-    () => [...comerciosData.filter((c) => c.id.startsWith('gpl_')), ...serviciosLocales],
-    [],
+    () => [...altasRecientes, ...comerciosData.filter((c) => c.id.startsWith('gpl_')), ...serviciosLocales],
+    [altasRecientes],
   )
 
   const filtrados = useMemo(() => {
@@ -245,6 +250,16 @@ export default function TablesComercios() {
 
   const totalPendiente = totalCambios + totalNuevas
 
+  function alCrearComercio({ comercio }) {
+    setCreandoComercio(false)
+    setAltasRecientes((previas) => [comercio, ...previas])
+    setBusqueda(comercio.nombre)
+    setMensaje({
+      tipo: 'ok',
+      texto: `«${comercio.nombre}» dado de alta (${comercio.id}). Commit hecho; se publicará con el redeploy, en un par de minutos.`,
+    })
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -254,21 +269,41 @@ export default function TablesComercios() {
             <p className="font-serif-spectral text-sm text-pardo">
               Corrige la categoría y subcategoría de las entradas que Google clasifica mal,
               edita su dirección, teléfono, web y coordenadas, créalas si no existen, o excluye
-              locales del directorio. Al guardar se hace un commit y los cambios se publican con
-              el redeploy (~2 min). Se conservan aunque se regenere el directorio.
+              locales del directorio. Con «Añadir comercio» das de alta a mano un negocio que
+              Google no trae, con la misma ficha completa que una entrada de Places. Al guardar se
+              hace un commit y los cambios se publican con el redeploy (~2 min). Se conservan
+              aunque se regenere el directorio.
             </p>
           </ComoFunciona>
         </div>
-        <button
-          type="button"
-          onClick={guardar}
-          disabled={totalPendiente === 0 || enviando}
-          className="gz-boton-tinta inline-flex shrink-0 items-center gap-2 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <MIcon name="save" className="text-[16px]" />
-          {enviando ? 'Guardando…' : `Guardar ${totalPendiente || ''} ${totalPendiente === 1 ? 'cambio' : 'cambios'}`}
-        </button>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setMensaje(null)
+              setCreandoComercio((abierto) => !abierto)
+            }}
+            aria-expanded={creandoComercio}
+            className="gz-boton-borde inline-flex items-center gap-2"
+          >
+            <MIcon name={creandoComercio ? 'close' : 'add_business'} className="text-[16px]" />
+            {creandoComercio ? 'Cerrar alta' : 'Añadir comercio'}
+          </button>
+          <button
+            type="button"
+            onClick={guardar}
+            disabled={totalPendiente === 0 || enviando}
+            className="gz-boton-tinta inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <MIcon name="save" className="text-[16px]" />
+            {enviando ? 'Guardando…' : `Guardar ${totalPendiente || ''} ${totalPendiente === 1 ? 'cambio' : 'cambios'}`}
+          </button>
+        </div>
       </div>
+
+      {creandoComercio && (
+        <FormularioComercioManual onCreado={alCrearComercio} onCancelar={() => setCreandoComercio(false)} />
+      )}
 
       {mensaje && (
         <p
@@ -422,7 +457,11 @@ export default function TablesComercios() {
                 <p className="mt-0.5 truncate font-mono-ibm text-[10px] uppercase tracking-etiqueta text-pardo">
                   {c.tipoDisplay || (esCurado ? 'Servicio curado' : 'Sin tipo de Google')} ·{' '}
                   {c.direccion || 'sin dirección'}
-                  {esCurado && <span className="ml-2 text-verde">· curado</span>}
+                  {esCurado && (
+                    <span className="ml-2 text-verde">
+                      {c.fuente === 'alta-manual' ? '· alta manual' : c.fuente === 'alta-vecinal' ? '· alta vecinal' : '· curado'}
+                    </span>
+                  )}
                   {conOverride && <span className="ml-2 text-ocre-profundo">· corregido antes</span>}
                 </p>
               </div>

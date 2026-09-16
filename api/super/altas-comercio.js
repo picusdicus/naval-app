@@ -12,29 +12,14 @@ import { json, leerJson, csrfInvalido, rechazoCsrf } from '../_http.js'
 import { leerArchivoRepo, commitArchivosConDetalle } from '../_github.js'
 import { CATEGORIAS } from '../../src/lib/categorias.js'
 import { SUBTIPO_INFO } from '../../src/lib/subtipos.js'
+// Mismo generador de id `local/<categoria>-<slug>` que el alta manual
+// (api/super/comercios-alta.js): los dos caminos producen ids homogéneos.
+import { idLocalUnico } from '../../src/lib/comercioForm.js'
 
 export const config = { runtime: 'edge' }
 
 const RUTA_SERVICIOS = 'src/data/servicios-locales.json'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function slug(texto) {
-  return (texto || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-')
-}
-
-function idUnico(categoria, nombre, existentes) {
-  const base = `local/${categoria}-${slug(nombre)}`
-  if (!existentes.has(base)) return base
-  let n = 2
-  while (existentes.has(`${base}-${n}`)) n++
-  return `${base}-${n}`
-}
 
 // La query solo devuelve los estados con filas; los tres se rellenan a mano
 // para que el cliente no reciba `undefined` en el que hoy esté vacío.
@@ -136,7 +121,7 @@ async function aprobar(sql, solicitudId, ficha) {
     const servicios = textoServicios ? JSON.parse(textoServicios) : []
     const idsExistentes = new Set(servicios.map((s) => s.id))
 
-    const id = idUnico(categoria, nombre, idsExistentes)
+    const id = idLocalUnico(categoria, nombre, idsExistentes)
 
     const nuevaFicha = {
       id,

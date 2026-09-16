@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIAS } from '../../lib/categorias.js'
 import { etiquetasCocina } from '../../lib/cocinas.js'
+import { ATRIBUTOS_COMERCIO } from '../../lib/comercioForm.js'
 import { cartelDe } from '../../lib/gaceta.js'
 import MIcon from '../MIcon.jsx'
 import DialogoReclamarComercio from './DialogoReclamarComercio.jsx'
@@ -12,16 +13,21 @@ function normalizarWeb(web) {
 }
 
 // Atributos prácticos que trae Google Places (solo se guardan los afirmativos).
-const ETIQUETA_ATRIBUTO = {
-  terraza: { icono: 'deck', texto: 'Terraza' },
-  paraLlevar: { icono: 'takeout_dining', texto: 'Para llevar' },
-  aDomicilio: { icono: 'delivery_dining', texto: 'A domicilio' },
-  reservas: { icono: 'event_available', texto: 'Reservas' },
-  vegetariano: { icono: 'eco', texto: 'Opción vegetariana' },
-  accesible: { icono: 'accessible', texto: 'Accesible' },
-  tarjeta: { icono: 'credit_card', texto: 'Acepta tarjeta' },
-  soloEfectivo: { icono: 'payments', texto: 'Solo efectivo' },
+// Los textos viven en ATRIBUTOS_COMERCIO (src/lib/comercioForm.js), que es
+// también la lista blanca del alta manual; aquí solo se les asigna icono.
+const ICONO_ATRIBUTO = {
+  terraza: 'deck',
+  paraLlevar: 'takeout_dining',
+  aDomicilio: 'delivery_dining',
+  reservas: 'event_available',
+  vegetariano: 'eco',
+  accesible: 'accessible',
+  tarjeta: 'credit_card',
+  soloEfectivo: 'payments',
 }
+const ETIQUETA_ATRIBUTO = Object.fromEntries(
+  Object.entries(ATRIBUTOS_COMERCIO).map(([clave, texto]) => [clave, { icono: ICONO_ATRIBUTO[clave], texto }]),
+)
 
 // Pastillas de acción de la ficha (mismas proporciones que las de la ficha
 // pública del comercio): la principal en tinta, las demás con filete.
