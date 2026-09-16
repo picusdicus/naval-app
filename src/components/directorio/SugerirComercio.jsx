@@ -61,7 +61,11 @@ export default function SugerirComercio({ onCerrar }) {
       } else {
         // 409: nombre parecido a uno ya existente (ver solicitar-alta-comercio.js) —
         // el mensaje del servidor ya explica qué hacer, se muestra tal cual.
-        setMensajeError(cuerpo.error || 'No se pudo enviar. Inténtalo de nuevo.')
+        // Solo si es texto: cuando la función revienta antes de responder, Vercel
+        // devuelve {error: {code, message}} y pintar ese objeto rompía el render
+        // (React #31) además del propio fallo.
+        const mensaje = typeof cuerpo.error === 'string' ? cuerpo.error : ''
+        setMensajeError(mensaje || 'No se pudo enviar. Inténtalo de nuevo.')
         setEstado('error')
       }
     } catch {
