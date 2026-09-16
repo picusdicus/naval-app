@@ -42,4 +42,5 @@ export const TABLAS = [
   'talleres',
   'talleres_horarios',
   'talleres_propuestas',
+  'solicitudes_alta_comercio',
 ]

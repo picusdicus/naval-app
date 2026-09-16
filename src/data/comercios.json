@@ -7574,31 +7574,6 @@
     }
   },
   {
-    "id": "gpl_ChIJj0S1SGeUQQ0RYy002iBTkdg",
-    "nombre": "Piensos Alonso",
-    "categoria": "restauracion",
-    "subtipo": "restaurant",
-    "cocina": [],
-    "lat": 40.2861804,
-    "lng": -4.007217799999999,
-    "direccion": "C. de San Cosme, 3, Navalcarnero",
-    "telefono": "918 11 02 03",
-    "web": "",
-    "mapsUrl": "https://maps.google.com/?cid=15605345584380390755&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 9:00–13:30, 17:30–19:30 | martes: 9:00–13:30, 17:30–19:30 | miércoles: 9:00–13:30, 17:30–19:30 | jueves: 9:00–13:30, 17:30–19:30 | viernes: 9:00–13:30, 17:30–19:30 | sábado: 9:00–13:30 | domingo: Cerrado",
-    "rating": 4.3,
-    "totalReviews": 245,
-    "precioNivel": "",
-    "tipoDisplay": "Comercio",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "aDomicilio": true,
-      "accesible": true,
-      "tarjeta": true
-    }
-  },
-  {
     "id": "gpl_ChIJn_S162eUQQ0RMVKNBI2o8wY",
     "nombre": "Pintxaki Navalcarnero",
     "categoria": "restauracion",
@@ -14170,6 +14145,31 @@
     "descripcion": "",
     "cerradoTemporal": false,
     "atributos": {}
+  },
+  {
+    "id": "gpl_ChIJj0S1SGeUQQ0RYy002iBTkdg",
+    "nombre": "Piensos Alonso",
+    "categoria": "servicios_prof",
+    "subtipo": "piensos",
+    "cocina": [],
+    "lat": 40.2861804,
+    "lng": -4.007217799999999,
+    "direccion": "C. de San Cosme, 3, Navalcarnero",
+    "telefono": "918 11 02 03",
+    "web": "",
+    "mapsUrl": "https://maps.google.com/?cid=15605345584380390755&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "horario": "lunes: 9:00–13:30, 17:30–19:30 | martes: 9:00–13:30, 17:30–19:30 | miércoles: 9:00–13:30, 17:30–19:30 | jueves: 9:00–13:30, 17:30–19:30 | viernes: 9:00–13:30, 17:30–19:30 | sábado: 9:00–13:30 | domingo: Cerrado",
+    "rating": 4.3,
+    "totalReviews": 245,
+    "precioNivel": "",
+    "tipoDisplay": "Comercio",
+    "descripcion": "",
+    "cerradoTemporal": false,
+    "atributos": {
+      "aDomicilio": true,
+      "accesible": true,
+      "tarjeta": true
+    }
   },
   {
     "id": "gpl_ChIJz-gBuF2UQQ0RgTH0yHJwAgw",
