@@ -6036,30 +6036,6 @@
     }
   },
   {
-    "id": "gpl_ChIJk__J-_2VQQ0RLvAcNV7t4ao",
-    "nombre": "Tipi Kids Moda Infantil",
-    "categoria": "moda",
-    "subtipo": "clothes",
-    "cocina": [],
-    "lat": 40.2878064,
-    "lng": -4.012955799999999,
-    "direccion": "Plazuela del Mercado, 1, Navalcarnero",
-    "telefono": "919 12 28 02",
-    "web": "",
-    "mapsUrl": "https://maps.google.com/?cid=12313383845081444398&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: 10:00–14:00, 17:30–20:00 | martes: 9:30–13:30, 17:30–20:00 | miércoles: 9:30–13:30, 17:30–20:00 | jueves: 9:30–13:30, 17:30–20:00 | viernes: 9:30–13:30, 17:30–20:00 | sábado: 10:00–14:00 | domingo: Cerrado",
-    "rating": 4.9,
-    "totalReviews": 13,
-    "precioNivel": "",
-    "tipoDisplay": "Tienda de ropa",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "aDomicilio": true,
-      "tarjeta": true
-    }
-  },
-  {
     "id": "gpl_ChIJ8QkgkVyUQQ0RAdIQdUzcPcs",
     "nombre": "Venta Menor Confección la Fábrica",
     "categoria": "moda",
@@ -7780,31 +7756,6 @@
       "paraLlevar": true,
       "reservas": true,
       "accesible": true,
-      "tarjeta": true
-    }
-  },
-  {
-    "id": "gpl_ChIJ813wOgCVQQ0R3EQ2B_3knOc",
-    "nombre": "Restaurante De Tres",
-    "categoria": "restauracion",
-    "subtipo": "restaurant",
-    "cocina": [],
-    "lat": 40.2875557,
-    "lng": -4.0139828,
-    "direccion": "Pl. de Segovia, Navalcarnero",
-    "telefono": "686 82 24 66",
-    "web": "https://restaurantedetres.es/",
-    "mapsUrl": "https://maps.google.com/?cid=16689466094527071452&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "horario": "lunes: Cerrado | martes: Cerrado | miércoles: 9:00–18:00 | jueves: 9:00–18:00 | viernes: 10:00–24:00 | sábado: 10:00–1:00 | domingo: 10:00–19:00",
-    "rating": 3.9,
-    "totalReviews": 52,
-    "precioNivel": "MODERATE",
-    "tipoDisplay": "Restaurante",
-    "descripcion": "",
-    "cerradoTemporal": false,
-    "atributos": {
-      "paraLlevar": true,
-      "reservas": true,
       "tarjeta": true
     }
   },
