@@ -590,7 +590,8 @@ function formatPriceLevel(priceLevel) {
 }
 
 // ---------------------------------------------------------------------------
-// Search queries — 11 queries covering all 10 categories
+// Search queries — 26 queries covering all 10 categories (cada una se lanza
+// dos veces: por relevancia y por distancia)
 // ---------------------------------------------------------------------------
 
 const SEARCH_QUERIES = [
@@ -609,8 +610,17 @@ const SEARCH_QUERIES = [
   // New: Ocio y cultura
   "teatro cine museo parque infantil centro cultural ocio Navalcarnero Madrid",
 
-  // New: Educacion
-  "colegio academia escuela danza autoescuela idiomas guarderia Navalcarnero Madrid",
+  // New: Educacion — en DOS consultas a propósito. La antigua juntaba los siete
+  // gremios en un texto ("colegio academia escuela danza autoescuela idiomas
+  // guarderia") y Google la leía como una sola intención mezclada: devolvía
+  // ~19 resultados (lejos del tope de 60) sesgados a academias y danza, y
+  // NINGÚN centro público — el directorio salió sin un solo CEIP ni la Escuela
+  // Infantil Trébole (2026-09-16). Separando reglados de academias, cada
+  // consulta trae lo suyo: la primera saca los 3 CEIP, los 2 IES y Trébole
+  // (sin "público" se quedaba fuera el CEIP Felipe IV; verificado contra la
+  // API con las dos pasadas).
+  "colegio público escuela infantil instituto Navalcarnero Madrid",
+  "academia autoescuela idiomas danza Navalcarnero Madrid",
 
   // Verticales de nicho: las queries genéricas de arriba saturan el cupo de
   // ~60 resultados por búsqueda y estos gremios nunca aparecían.
