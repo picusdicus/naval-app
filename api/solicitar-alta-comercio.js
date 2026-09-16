@@ -6,8 +6,8 @@
 import { obtenerSql } from './_db.js'
 import { limitar, obtenerIp } from './_ratelimit.js'
 import { LISTA_CATEGORIAS } from '../src/lib/categorias.js'
-import comercios from '../src/data/comercios.json'
-import servicios from '../src/data/servicios-locales.json'
+import comercios from '../src/data/comercios.json' with { type: 'json' }
+import servicios from '../src/data/servicios-locales.json' with { type: 'json' }
 
 export const config = { runtime: 'nodejs' }
 
