@@ -17,9 +17,12 @@
 //   filas publicadas futuras con notificado_en NULL.
 // - El upsert usa eventos_usuario.origen_externo_id (índice único parcial):
 //   'ig-<shortCode>' para el caso normal de un evento por post, e
-//   'ig-<shortCode>-<slug>' para cada evento extra de un carrusel multi-evento
-//   (esos nacen 'borrador' y se validan en /admin → Pendientes — ver
-//   asignarIdentidades). Re-ejecutar el webhook actualiza en vez de duplicar,
+//   'ig-<shortCode>-<slug>' para cada evento extra de un post multi-evento:
+//   un carrusel con un cartel por acto, o un CARTEL-PROGRAMA (una sola foto
+//   con varias funciones fechadas, como el certamen de teatro con una obra
+//   cada sábado — el prompt pide un evento por función, nunca un paraguas con
+//   la fecha de inicio). Esos nacen 'borrador' y se validan en /admin →
+//   Pendientes — ver asignarIdentidades. Re-ejecutar el webhook actualiza en vez de duplicar,
 //   y una edición no re-notifica (notificado_en no se toca en el UPDATE). El
 //   estado tampoco: un evento archivado a mano por el superadmin no resucita,
 //   y un borrador ya publicado no vuelve a borrador.
@@ -139,6 +142,8 @@ Para cada evento devuelve:
 - indiceCartel: null normalmente. SOLO si los datos del evento (fecha, hora, lugar, descripción) provienen explícitamente del alt de un cartel específico marcado como "[Imagen N]" (donde N es 1, 2, 3…), devuelve N-1 (es decir, el índice: 0 para [Imagen 1], 1 para [Imagen 2], etc.). Si provienen del caption general del post o es ambiguo, deja null.
 
 Si el post incluye imágenes numeradas [Imagen 1], [Imagen 2], etc., cada una es una foto del carrusel con su propio cartel. Usa el contenido de las imágenes (no solo el alt, que puede ser genérico) para extraer datos cuando sea necesario. Los carteles suelen llevar el título, fecha, hora y lugar rotulados en la foto.
+
+CARTEL-PROGRAMA: un solo cartel puede ser la PROGRAMACIÓN de un certamen, ciclo o festival con varias funciones, cada una con su propia fecha y su propio título (un certamen de teatro con una obra cada sábado, un ciclo de conciertos con un grupo por fecha). Ahí cada función es un acto distinto al que el vecino va en un día concreto, así que devuelve UN evento por función, con la fecha de cada una, y NO un único evento paraguas con la fecha de inicio. En cada uno: titulo = el título de la obra o actuación tal como está rotulado (sin el nombre del certamen); descripcion = el nombre del certamen o ciclo, el género y la compañía o artista si aparecen, y lo relevante del caption (abonos, entradas); hora y lugar = los comunes del programa si el cartel no los da por función; misma categoria/subcategoria para todas. Extrae TODAS las funciones legibles en el cartel, sin saltarte ninguna. Esto aplica solo a programas con fechas concretas listadas: una exposición, feria o mercado de varios días seguidos sigue siendo un solo evento con su día de inicio.
 
 Devuelve solo los posts que son eventos; si ninguno lo es, devuelve la lista vacía.`
 
@@ -667,7 +672,23 @@ async function procesar(posts, resumen, noNormalizables = 0) {
       postsNoEvaluados,
       fallosPorCausa,
     } = await extraerEventos(
-      posts.map(({ shortCode, caption, alt, publicado, carrusel }) => ({ shortCode, caption, alt, publicado, carrusel }))
+      // `imagen`/`lado` son la PORTADA que extraerEventos manda por visión
+      // cuando el alt es genérico. Esta proyección es anterior a la visión y
+      // no los incluía, así que un post de foto única (la inmensa mayoría de
+      // los municipales) llegaba al modelo solo con el caption y el alt
+      // genérico de Instagram: el cartel nunca se leía y solo los carruseles
+      // (cuyas fotos viajan en `carrusel`) se beneficiaban de la visión.
+      // Detectado el 2026-09-17 con el cartel-programa del CETAN: 8 funciones
+      // en la prueba con el post entero, 0 desde el webhook.
+      posts.map(({ shortCode, caption, alt, publicado, carrusel, imagen, lado }) => ({
+        shortCode,
+        caption,
+        alt,
+        publicado,
+        carrusel,
+        imagen,
+        lado,
+      }))
     )
     resumen.errores.push(...erroresTriaje)
     resumen.postsNoEvaluados = postsNoEvaluados
