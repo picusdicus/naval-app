@@ -9,7 +9,7 @@ import { BASE_URL, PUERTO } from './e2e/entorno.js'
 // credenciales de la organización, sus tres specs se quedan sin correr y los
 // del superadmin siguen dando señal (con un único setup para los dos tiers, un
 // login roto dejaba la suite entera sin ejecutar).
-const SPECS_SUPER = ['admin-super', 'destacados-super', 'deportes-revision', 'fusiones-eventos']
+const SPECS_SUPER = ['admin-super', 'destacados-super', 'deportes-revision', 'fusiones-eventos', 'alta-comercio-manual']
 const SPECS_ORG = ['destacar-evento', 'imagen-evento', 'perfil-organizacion']
 
 const soloEstos = (nombres) => new RegExp(`(${nombres.join('|')})\\.spec\\.js$`)
