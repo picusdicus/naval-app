@@ -56,3 +56,7 @@ public/img/test/
 
 # Cookies de sesion reutilizadas por los e2e (contienen un JWT valido 8h).
 e2e/.sesiones/
+
+# Resultados del arnés de comparación de modelos (npm run bench:modelos).
+# Los que se quieran conservar como evidencia se añaden con `git add -f`.
+scripts/bench/resultados/

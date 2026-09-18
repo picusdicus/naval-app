@@ -1,0 +1,1322 @@
+{
+  "feature": "eventos",
+  "fecha": "2026-09-18T09:49:37.451Z",
+  "commit": "71c2f65",
+  "ejecuciones": 2,
+  "datasets": [
+    {
+      "nombre": "2026-09-03-ayuntamiento",
+      "posts": 15,
+      "fotosInestables": 38
+    }
+  ],
+  "precios": {
+    "actualizado": "2026-09-17"
+  },
+  "modelos": {
+    "anthropic/claude-opus-5": {
+      "modeloReal": "claude-opus-5",
+      "ejecuciones": [
+        {
+          "ejecucion": 1,
+          "latenciaMs": 24074,
+          "uso": {
+            "entrada": 42238,
+            "salida": 2943,
+            "cacheEscrito": 4760,
+            "cacheLeido": 0
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "Dc0jAjhCME9|2026-09-05|matine musical la pop band",
+            "Dc0jAjhCME9|2026-09-06|matine musical grupo linea 12 y dj maru",
+            "Dc0jAjhCME9|2026-09-07|matine musical letymore",
+            "Dc0jAjhCME9|2026-09-08|matine musical flamenco pop los bomberay",
+            "Dc0jAjhCME9|2026-09-09|matine musical dj victor mouse dj ricky",
+            "Dc0jAjhCME9|2026-09-10|matine musical veronica sen con fusion a cuatro cuerdas",
+            "Dc0jAjhCME9|2026-09-11|matine musical sesion remember con dj peloti y dj javi",
+            "Dc0jAjhCME9|2026-09-12|matine musical sintrastes y dj maru",
+            "Dc0jAjhCME9|2026-09-13|matine musical la charangada",
+            "Dcx-NBOjdkH|2026-09-02|gala de la danza",
+            "Dcx-NBOjdkH|2026-09-03|gala de la danza",
+            "Dcy1Jn6j_I2|2026-09-05|feria de atracciones infantiles"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 12,
+            "falsosPositivos": [],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 14,
+              "emparejados": 12,
+              "titulo": 6,
+              "fecha": 12,
+              "hora": 12,
+              "lugar": 11,
+              "sobrantes": 0
+            },
+            "noticia": {
+              "comparados": 0,
+              "tipo": 0,
+              "urgente": 0,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 9,
+                "emparejados": 9
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 1,
+                "emparejados": 1
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 2,
+                "emparejados": 2
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 0
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 12,
+              "falsosPositivos": [],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 14,
+                "emparejados": 12,
+                "titulo": 6,
+                "fecha": 12,
+                "hora": 12,
+                "lugar": 11,
+                "sobrantes": 0
+              },
+              "noticia": {
+                "comparados": 0,
+                "tipo": 0,
+                "urgente": 0,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 9,
+                  "emparejados": 9
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 1,
+                  "emparejados": 1
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 2,
+                  "emparejados": 2
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 0
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: La Pop Band",
+                  "fecha": "2026-09-05",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: grupo Línea 12 y DJ Maru",
+                  "fecha": "2026-09-06",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: Letymore",
+                  "fecha": "2026-09-07",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: Flamenco-Pop Los Bomberay",
+                  "fecha": "2026-09-08",
+                  "hora": "14:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: DJ Víctor Mouse + DJ Ricky",
+                  "fecha": "2026-09-09",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: Verónica Sen con fusión a cuatro cuerdas",
+                  "fecha": "2026-09-10",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: sesión remember con DJ Peloti y DJ Javi",
+                  "fecha": "2026-09-11",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: Sintrastes y DJ Maru",
+                  "fecha": "2026-09-12",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical: La Charangada",
+                  "fecha": "2026-09-13",
+                  "hora": "14:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dcy1Jn6j_I2",
+                  "titulo": "Feria de atracciones infantiles",
+                  "fecha": "2026-09-05",
+                  "hora": null,
+                  "lugar": "Recinto ferial",
+                  "categoria": "fiestas"
+                },
+                {
+                  "shortCode": "Dcx-NBOjdkH",
+                  "titulo": "Gala de la Danza",
+                  "fecha": "2026-09-02",
+                  "hora": "21:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dcx-NBOjdkH",
+                  "titulo": "Gala de la Danza",
+                  "fecha": "2026-09-03",
+                  "hora": "21:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.314515
+        },
+        {
+          "ejecucion": 2,
+          "latenciaMs": 42740,
+          "uso": {
+            "entrada": 42238,
+            "salida": 4472,
+            "cacheEscrito": 0,
+            "cacheLeido": 4760
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "Dc0jAjhCME9|2026-09-05|matine musical la pop band",
+            "Dc0jAjhCME9|2026-09-06|matine musical dj maru musica anos 80 y 90",
+            "Dc0jAjhCME9|2026-09-06|matine musical grupo linea 12",
+            "Dc0jAjhCME9|2026-09-07|matine musical letymore",
+            "Dc0jAjhCME9|2026-09-08|matine musical flamenco pop los bomberay",
+            "Dc0jAjhCME9|2026-09-09|matine musical dj victor mouse dj ricky",
+            "Dc0jAjhCME9|2026-09-10|matine musical veronica sen con fusion a cuatro cuerdas",
+            "Dc0jAjhCME9|2026-09-11|matine musical sesion remember dj peloti dj javi",
+            "Dc0jAjhCME9|2026-09-12|matine musical dj maru techno flamenco",
+            "Dc0jAjhCME9|2026-09-12|matine musical sintrastes",
+            "Dc0jAjhCME9|2026-09-13|matine musical la charangada",
+            "Dcx-NBOjdkH|2026-09-02|gala de la danza",
+            "Dcx-NBOjdkH|2026-09-03|gala de la danza",
+            "Dcy1Jn6j_I2|2026-09-05|feria de atracciones de las fiestas patronales"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 12,
+            "falsosPositivos": [],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 14,
+              "emparejados": 13,
+              "titulo": 10,
+              "fecha": 13,
+              "hora": 13,
+              "lugar": 12,
+              "sobrantes": 1
+            },
+            "noticia": {
+              "comparados": 0,
+              "tipo": 0,
+              "urgente": 0,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 11,
+                "emparejados": 10
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 1,
+                "emparejados": 1
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 2,
+                "emparejados": 2
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 0
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 12,
+              "falsosPositivos": [],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 14,
+                "emparejados": 13,
+                "titulo": 10,
+                "fecha": 13,
+                "hora": 13,
+                "lugar": 12,
+                "sobrantes": 1
+              },
+              "noticia": {
+                "comparados": 0,
+                "tipo": 0,
+                "urgente": 0,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 11,
+                  "emparejados": 10
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 1,
+                  "emparejados": 1
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 2,
+                  "emparejados": 2
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 0
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: La Pop Band",
+                  "fecha": "2026-09-05",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: Grupo Línea 12",
+                  "fecha": "2026-09-06",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: DJ Maru, música años 80 y 90",
+                  "fecha": "2026-09-06",
+                  "hora": "14:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: Letymore",
+                  "fecha": "2026-09-07",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: Flamenco-Pop Los Bomberay",
+                  "fecha": "2026-09-08",
+                  "hora": "14:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: DJ Víctor Mouse + DJ Ricky",
+                  "fecha": "2026-09-09",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: Verónica Sen con fusión a cuatro cuerdas",
+                  "fecha": "2026-09-10",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: Sesión Remember, DJ Peloti + DJ Javi",
+                  "fecha": "2026-09-11",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: Sintrastes",
+                  "fecha": "2026-09-12",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: DJ Maru, techno-flamenco",
+                  "fecha": "2026-09-12",
+                  "hora": "15:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné Musical: La Charangada",
+                  "fecha": "2026-09-13",
+                  "hora": "14:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dcy1Jn6j_I2",
+                  "titulo": "Feria de atracciones de las Fiestas Patronales",
+                  "fecha": "2026-09-05",
+                  "hora": null,
+                  "lugar": "Recinto Ferial",
+                  "categoria": "fiestas"
+                },
+                {
+                  "shortCode": "Dcx-NBOjdkH",
+                  "titulo": "Gala de la Danza",
+                  "fecha": "2026-09-02",
+                  "hora": "21:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dcx-NBOjdkH",
+                  "titulo": "Gala de la Danza",
+                  "fecha": "2026-09-03",
+                  "hora": "21:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.32537
+        }
+      ],
+      "estabilidad": {
+        "ejecucionesValidas": 2,
+        "identicas": false,
+        "itemsComunes": 8,
+        "itemsUnion": 18,
+        "jaccard": 0.4444444444444444,
+        "postsQueCambianDeClasificacion": [],
+        "itemsQueDifieren": [
+          ".X Dc0jAjhCME9|2026-09-06|matine musical dj maru musica anos 80 y 90",
+          ".X Dc0jAjhCME9|2026-09-06|matine musical grupo linea 12",
+          ".X Dc0jAjhCME9|2026-09-11|matine musical sesion remember dj peloti dj javi",
+          ".X Dc0jAjhCME9|2026-09-12|matine musical dj maru techno flamenco",
+          ".X Dc0jAjhCME9|2026-09-12|matine musical sintrastes",
+          ".X Dcy1Jn6j_I2|2026-09-05|feria de atracciones de las fiestas patronales",
+          "X. Dc0jAjhCME9|2026-09-06|matine musical grupo linea 12 y dj maru",
+          "X. Dc0jAjhCME9|2026-09-11|matine musical sesion remember con dj peloti y dj javi",
+          "X. Dc0jAjhCME9|2026-09-12|matine musical sintrastes y dj maru",
+          "X. Dcy1Jn6j_I2|2026-09-05|feria de atracciones infantiles"
+        ]
+      }
+    },
+    "anthropic/claude-haiku-4-5": {
+      "modeloReal": "claude-haiku-4-5",
+      "ejecuciones": [
+        {
+          "ejecucion": 1,
+          "latenciaMs": 13091,
+          "uso": {
+            "entrada": 41499,
+            "salida": 1539,
+            "cacheEscrito": 0,
+            "cacheLeido": 0
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "Dc0cKywjDue|2026-09-02|presentacion de la feria taurina de navalcarnero 2026",
+            "Dc0jAjhCME9|2026-09-05|matine musical plaza de segovia",
+            "Dc0jAjhCME9|2026-09-06|matine musical plaza de segovia",
+            "Dc0jAjhCME9|2026-09-07|matine musical plaza de segovia",
+            "Dc0jAjhCME9|2026-09-08|flamenco pop los romberay",
+            "Dc0jAjhCME9|2026-09-09|dj victor mouse dj ricky",
+            "Dc0jAjhCME9|2026-09-10|veronica sen con fusion a cuatro cuerdas",
+            "Dc0jAjhCME9|2026-09-11|sesion remember dj feloti dj javy",
+            "Dc0jAjhCME9|2026-09-12|actuacion de sintastes",
+            "Dc0jAjhCME9|2026-09-13|la cuarangada la picara sublime y los sanetos",
+            "Dcx-NBOjdkH|2026-09-02|gala de la danza",
+            "Dcx-NBOjdkH|2026-09-03|gala de la danza",
+            "Dcy1Jn6j_I2|2026-09-05|feria"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 11,
+            "falsosPositivos": [
+              "Dc0cKywjDue"
+            ],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 14,
+              "emparejados": 12,
+              "titulo": 4,
+              "fecha": 12,
+              "hora": 9,
+              "lugar": 11,
+              "sobrantes": 0
+            },
+            "noticia": {
+              "comparados": 0,
+              "tipo": 0,
+              "urgente": 0,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 9,
+                "emparejados": 9
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 1,
+                "emparejados": 1
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 2,
+                "emparejados": 2
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 0
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 11,
+              "falsosPositivos": [
+                "Dc0cKywjDue"
+              ],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 14,
+                "emparejados": 12,
+                "titulo": 4,
+                "fecha": 12,
+                "hora": 9,
+                "lugar": 11,
+                "sobrantes": 0
+              },
+              "noticia": {
+                "comparados": 0,
+                "tipo": 0,
+                "urgente": 0,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 9,
+                  "emparejados": 9
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 1,
+                  "emparejados": 1
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 2,
+                  "emparejados": 2
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 0
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical - Plaza de Segovia",
+                  "fecha": "2026-09-05",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical - Plaza de Segovia",
+                  "fecha": "2026-09-06",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Matiné musical - Plaza de Segovia",
+                  "fecha": "2026-09-07",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Flamenco-Pop Los Romberay",
+                  "fecha": "2026-09-08",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "DJ Víctor Mouse + DJ Ricky",
+                  "fecha": "2026-09-09",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Verónica Sen con fusión a cuatro cuerdas",
+                  "fecha": "2026-09-10",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Sesión Remember. DJ Feloti + DJ Javy",
+                  "fecha": "2026-09-11",
+                  "hora": "13:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Actuación de sintastes",
+                  "fecha": "2026-09-12",
+                  "hora": "13:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "La Cuarangada: La Pícara, Sublime y los Sañetos",
+                  "fecha": "2026-09-13",
+                  "hora": "14:00",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dcy1Jn6j_I2",
+                  "titulo": "Feria",
+                  "fecha": "2026-09-05",
+                  "hora": null,
+                  "lugar": "Navalcarnero",
+                  "categoria": "infantil"
+                },
+                {
+                  "shortCode": "Dc0cKywjDue",
+                  "titulo": "Presentación de la Feria Taurina de Navalcarnero 2026",
+                  "fecha": "2026-09-02",
+                  "hora": null,
+                  "lugar": "Casa de la Cultura",
+                  "categoria": "fiestas"
+                },
+                {
+                  "shortCode": "Dcx-NBOjdkH",
+                  "titulo": "Gala de la danza",
+                  "fecha": "2026-09-02",
+                  "hora": "21:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "Dcx-NBOjdkH",
+                  "titulo": "Gala de la danza",
+                  "fecha": "2026-09-03",
+                  "hora": "21:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.049194
+        },
+        {
+          "ejecucion": 2,
+          "latenciaMs": 9471,
+          "uso": {
+            "entrada": 41499,
+            "salida": 699,
+            "cacheEscrito": 0,
+            "cacheLeido": 0
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "Dc0WIVqFUNv|2026-09-03|programacion de las fiestas patronales actividades infantiles y gala de la danza",
+            "Dc0jAjhCME9|2026-09-04|mananas de las fiestas patronales en la plaza de segovia",
+            "Dcx-NBOjdkH|2026-09-02|gala de la danza",
+            "Dcy1Jn6j_I2|2026-09-05|feria de navalcarnero 2026",
+            "DcyL-v_jaIu|2026-09-02|jornada de puertas abiertas de patinaje"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 11,
+            "falsosPositivos": [
+              "DcyL-v_jaIu"
+            ],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 14,
+              "emparejados": 2,
+              "titulo": 1,
+              "fecha": 2,
+              "hora": 1,
+              "lugar": 1,
+              "sobrantes": 1
+            },
+            "noticia": {
+              "comparados": 0,
+              "tipo": 0,
+              "urgente": 0,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 1,
+                "emparejados": 0
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 1,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 1,
+                "emparejados": 1
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 0
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 1,
+                "emparejados": 1
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 1
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 11,
+              "falsosPositivos": [
+                "DcyL-v_jaIu"
+              ],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 14,
+                "emparejados": 2,
+                "titulo": 1,
+                "fecha": 2,
+                "hora": 1,
+                "lugar": 1,
+                "sobrantes": 1
+              },
+              "noticia": {
+                "comparados": 0,
+                "tipo": 0,
+                "urgente": 0,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 1,
+                  "emparejados": 0
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 1,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 1,
+                  "emparejados": 1
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 0
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 1,
+                  "emparejados": 1
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 1
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "Dc0jAjhCME9",
+                  "titulo": "Mañanas de las Fiestas Patronales en la Plaza de Segovia",
+                  "fecha": "2026-09-04",
+                  "hora": null,
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "fiestas"
+                },
+                {
+                  "shortCode": "Dcy1Jn6j_I2",
+                  "titulo": "Feria de Navalcarnero 2026",
+                  "fecha": "2026-09-05",
+                  "hora": "19:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "fiestas"
+                },
+                {
+                  "shortCode": "Dc0WIVqFUNv",
+                  "titulo": "Programación de las Fiestas Patronales: Actividades infantiles y Gala de la Danza",
+                  "fecha": "2026-09-03",
+                  "hora": null,
+                  "lugar": "Navalcarnero",
+                  "categoria": "infantil"
+                },
+                {
+                  "shortCode": "Dcx-NBOjdkH",
+                  "titulo": "Gala de la danza",
+                  "fecha": "2026-09-02",
+                  "hora": "21:30",
+                  "lugar": "Plaza de Segovia",
+                  "categoria": "cultura"
+                },
+                {
+                  "shortCode": "DcyL-v_jaIu",
+                  "titulo": "Jornada de puertas abiertas de patinaje",
+                  "fecha": "2026-09-02",
+                  "hora": null,
+                  "lugar": "CEIP Felipe IV",
+                  "categoria": "deporte"
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.044994
+        }
+      ],
+      "estabilidad": {
+        "ejecucionesValidas": 2,
+        "identicas": false,
+        "itemsComunes": 1,
+        "itemsUnion": 17,
+        "jaccard": 0.058823529411764705,
+        "postsQueCambianDeClasificacion": [
+          "Dc0cKywjDue",
+          "Dc0WIVqFUNv",
+          "DcyL-v_jaIu"
+        ],
+        "itemsQueDifieren": [
+          ".X Dc0WIVqFUNv|2026-09-03|programacion de las fiestas patronales actividades infantiles y gala de la danza",
+          ".X Dc0jAjhCME9|2026-09-04|mananas de las fiestas patronales en la plaza de segovia",
+          ".X Dcy1Jn6j_I2|2026-09-05|feria de navalcarnero 2026",
+          ".X DcyL-v_jaIu|2026-09-02|jornada de puertas abiertas de patinaje",
+          "X. Dc0cKywjDue|2026-09-02|presentacion de la feria taurina de navalcarnero 2026",
+          "X. Dc0jAjhCME9|2026-09-05|matine musical plaza de segovia",
+          "X. Dc0jAjhCME9|2026-09-06|matine musical plaza de segovia",
+          "X. Dc0jAjhCME9|2026-09-07|matine musical plaza de segovia",
+          "X. Dc0jAjhCME9|2026-09-08|flamenco pop los romberay",
+          "X. Dc0jAjhCME9|2026-09-09|dj victor mouse dj ricky",
+          "X. Dc0jAjhCME9|2026-09-10|veronica sen con fusion a cuatro cuerdas",
+          "X. Dc0jAjhCME9|2026-09-11|sesion remember dj feloti dj javy",
+          "X. Dc0jAjhCME9|2026-09-12|actuacion de sintastes",
+          "X. Dc0jAjhCME9|2026-09-13|la cuarangada la picara sublime y los sanetos",
+          "X. Dcx-NBOjdkH|2026-09-03|gala de la danza",
+          "X. Dcy1Jn6j_I2|2026-09-05|feria"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "_comentario": "Precios de lista en USD por MILLÓN de tokens, mantenidos a mano. Fuente: tarifas públicas de cada proveedor en la fecha indicada (Anthropic: caché de prompt = escritura ×1,25 y lectura ×0,1 del precio de entrada). Un modelo ausente de esta tabla hace que el bench muestre el coste como desconocido, nunca 0. Clave = proveedor/modelo, el mismo formato que --modelos.",
+  "actualizado": "2026-09-17",
+  "modelos": {
+    "anthropic/claude-opus-5": { "entrada": 5, "salida": 25, "cacheEscritura": 6.25, "cacheLectura": 0.5 },
+    "anthropic/claude-opus-4-8": { "entrada": 5, "salida": 25, "cacheEscritura": 6.25, "cacheLectura": 0.5 },
+    "anthropic/claude-sonnet-5": { "entrada": 2, "salida": 10, "cacheEscritura": 2.5, "cacheLectura": 0.2 },
+    "anthropic/claude-haiku-4-5": { "entrada": 1, "salida": 5, "cacheEscritura": 1.25, "cacheLectura": 0.1 }
+  }
+}

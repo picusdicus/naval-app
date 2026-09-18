@@ -1,0 +1,162 @@
+[
+  {
+    "shortCode": "Dc0jAjhCME9",
+    "publicado": "2026-09-03T10:00:09.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "👉Desliza para consultar las actuaciones de cada día y vive en la Plaza de Segovia las mañanas de las Fiestas Patronales.",
+    "_nota": "Carrusel de 2 fotos; la 2ª es el cartel 'Matiné musical' (en Blob, leído con la imagen delante) con una actuación por día — un cartel-programa: 11 funciones. Es el 'Matiné' de cdcb163, que con el prompt de entonces salía como 1 evento; las 9 filas 'Matinés musical' de Neon vinieron de una lectura intermedia. La portada (foto 1) está perdida. Letymore (día 7), DJ Víctor Mouse + DJ Ricky (día 9) y Sesión Remember (día 11) no llevan hora propia en el cartel: se acepta la hora de apertura de la matiné de ese día.",
+    "esperado": "evento",
+    "eventos": [
+      { "titulo": "La Pop Band", "fecha": "2026-09-05", "hora": "13:30", "lugar": "Plaza de Segovia" },
+      { "titulo": "Grupo Línea 12", "fecha": "2026-09-06", "hora": "13:30", "lugar": "Plaza de Segovia" },
+      { "titulo": "DJ Maru: música años 80 y 90", "fecha": "2026-09-06", "hora": "14:30", "lugar": "Plaza de Segovia" },
+      { "titulo": "Letymore", "fecha": "2026-09-07", "hora": "13:00", "lugar": "Plaza de Segovia" },
+      { "titulo": "Flamenco-Pop Los Bomberay", "fecha": "2026-09-08", "hora": "14:00", "lugar": "Plaza de Segovia" },
+      { "titulo": "DJ Víctor Mouse + DJ Ricky", "fecha": "2026-09-09", "hora": "13:00", "lugar": "Plaza de Segovia" },
+      { "titulo": "Verónica Sen con fusión a cuatro cuerdas", "fecha": "2026-09-10", "hora": "13:30", "lugar": "Plaza de Segovia" },
+      { "titulo": "Sesión Remember: DJ Peloti + DJ Javi", "fecha": "2026-09-11", "hora": "13:00", "lugar": "Plaza de Segovia" },
+      { "titulo": "Sintrastes", "fecha": "2026-09-12", "hora": "13:30", "lugar": "Plaza de Segovia" },
+      { "titulo": "DJ Maru: techno-flamenco", "fecha": "2026-09-12", "hora": "15:00", "lugar": "Plaza de Segovia" },
+      { "titulo": "La Charangada: La Pícara, Sublime y Los Sapitos", "fecha": "2026-09-13", "hora": "14:00", "lugar": "Plaza de Segovia" }
+    ]
+  },
+  {
+    "shortCode": "DcyZszKDSoP",
+    "publicado": "2026-09-02T14:00:20.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Más de 200 jugadores tanto locales como procedentes de otros municipios se dieron cita ayer en el Pabellón Polideportivo Municipal La Estación para disputar el IV Torneo Voleibol…",
+    "_nota": "Crónica de un torneo ya celebrado (ayer); las 7 fotos (perdidas) son del torneo. No es evento. Para noticias: balance sin dato práctico ⇒ nada (el triaje de producción también lo rechazó).",
+    "esperado": "nada",
+    "eventos": []
+  },
+  {
+    "shortCode": "Dc0cKywjDue",
+    "publicado": "2026-09-03T09:00:23.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Ayer se presentó la Feria Taurina de Navalcarnero 2026, en un acto presentado por Aránzazu Santos López, actriz, periodista y locutora…",
+    "_nota": "Crónica del acto de ayer con 10 fotos del acto (perdidas; la de 2016 px tumbaba el lote antes de cdcb163). No es evento. Para noticias: crónica institucional sin dato práctico ⇒ nada (producción lo rechazó).",
+    "esperado": "nada",
+    "eventos": []
+  },
+  {
+    "shortCode": "DcwQWrKCbBa",
+    "publicado": "2026-09-01T18:00:11.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "⚠️ATENCIÓN⚠️ Modificaciones en las líneas de autobús durante las Fiestas Patronales 2026…",
+    "_nota": "Cambios de autobús con fechas y líneas (4 fotos, todas en Blob): noticia. En producción quedó urgente=false y así se fija aquí; el prompt reserva urgente a un corte concreto de calle/servicio que cambie lo que el vecino puede hacer hoy. REVISAR si se prefiere urgente + tipoAlerta trafico.",
+    "esperado": "noticia",
+    "noticia": { "tipo": "noticia", "urgente": false },
+    "eventos": []
+  },
+  {
+    "shortCode": "Dc0WIVqFUNv",
+    "publicado": "2026-09-03T08:07:37.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "El jueves, 3 de septiembre, las Fiestas Patronales siguen llenando Navalcarnero de actividades para todos los públicos…",
+    "_nota": "Resumen del día sin lugar ni hora en el caption. El cartel (perdido) probablemente lleva el programa del día con horas y lugares, y decidiría si es un cartel-programa. NO EVALUABLE hasta recuperar la foto (re-scrape del post): se ignora.",
+    "ignorar": "cartel decisivo perdido (URL del CDN caducada)",
+    "esperado": "nada",
+    "eventos": []
+  },
+  {
+    "shortCode": "DcwCm3DlLXr",
+    "publicado": "2026-09-01T16:00:04.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Durante las Fiestas Patronales estará disponible el Punto Violeta, un espacio de información y atención para la ciudadanía.",
+    "_nota": "Servicio municipal durante las fiestas (foto en Blob): noticia, así quedó en producción. No es evento.",
+    "esperado": "noticia",
+    "noticia": { "tipo": "noticia", "urgente": false },
+    "eventos": []
+  },
+  {
+    "shortCode": "Dcy1Jn6j_I2",
+    "publicado": "2026-09-02T18:00:12.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Del 5 al 13 de septiembre, no te pierdas la Feria. 🎡 Y atención: el domingo, 6 de septiembre, celebramos el Día de la Infancia…",
+    "_nota": "La 'Feria' de cdcb163. Cartel (en Blob): 'Atracciones infantiles, del 5 al 13 de septiembre' + Día de la Infancia + feria sin ruido. Varios días seguidos ⇒ UN evento con el día de inicio y sin hora. El cartel NO dice el lugar: el modelo lo infiere ('Recinto ferial'), así que el lugar no se puntúa.",
+    "esperado": "evento",
+    "eventos": [
+      { "titulo": "Feria de atracciones de las Fiestas Patronales", "fecha": "2026-09-05", "hora": null }
+    ]
+  },
+  {
+    "shortCode": "Dcyna9yjnGm",
+    "publicado": "2026-09-02T16:00:14.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Ayer por la tarde, la Plaza de Francisco Sandoval se llenó de energía, música y diversión con una exhibición de Jumping Fitness…",
+    "_nota": "Crónica (ayer), 4 fotos del acto (perdidas). Nada en ambas features.",
+    "esperado": "nada",
+    "eventos": []
+  },
+  {
+    "shortCode": "DcyG0xcjTg7",
+    "publicado": "2026-09-02T11:15:23.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "⚠️ATENCIÓN⚠️ Se recomienda extremar las precauciones ante el episodio de calor previsto para los próximos días.",
+    "_nota": "Recomendaciones ante el calor (4 fotos en Blob): noticia no urgente — el prompt lo lista explícitamente como NO urgente y producción coincide. No es evento.",
+    "esperado": "noticia",
+    "noticia": { "tipo": "noticia", "urgente": false },
+    "eventos": []
+  },
+  {
+    "shortCode": "DcxppU9jXrU",
+    "publicado": "2026-09-02T07:00:26.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "El miércoles, 2 de septiembre, las Fiestas Patronales continúan con una jornada para disfrutar de distintas propuestas…",
+    "_nota": "Resumen del día (presentación taurina en la Casa de la Cultura y Gala de la Danza) sin horas en el caption; el cartel (perdido) decide. NO EVALUABLE hasta recuperar la foto: se ignora.",
+    "ignorar": "cartel decisivo perdido (URL del CDN caducada)",
+    "esperado": "nada",
+    "eventos": []
+  },
+  {
+    "shortCode": "DcvZaG-j_Zo",
+    "publicado": "2026-09-01T10:00:04.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "La presentación de la Feria Taurina 2026 dará a conocer el cartel de esta edición en un acto ambientado en la evolución del mundo taurino de Navalcarnero…",
+    "_nota": "Anuncio de un acto FUTURO (presentación de la Feria Taurina, 2-sep, Casa de la Cultura según los otros posts) cuyos datos prácticos van solo en el cartel, perdido. En cdcb163 Opus no lo extrajo, pero entonces la portada de un post de foto única NUNCA llegaba al modelo (arreglado en 106392b). Con la foto delante sería un evento de agenda; sin ella el modelo no puede verlo. NO EVALUABLE hasta recuperar la foto: se ignora.",
+    "ignorar": "cartel decisivo perdido (URL del CDN caducada)",
+    "esperado": "evento",
+    "eventos": [
+      { "titulo": "Presentación de la Feria Taurina 2026", "fecha": "2026-09-02", "lugar": "Casa de la Cultura" }
+    ]
+  },
+  {
+    "shortCode": "Dcx-NBOjdkH",
+    "publicado": "2026-09-02T10:00:04.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Los alumnos de las Escuelas de Danza de Navalcarnero subirán al escenario para ofrecer un espectáculo cargado de ritmo, talento y emoción…",
+    "_nota": "Cartel (en Blob, leído): 'Gala de la Danza, los días 2 y 3 de septiembre, 21.30h, Plaza de Segovia', con escuelas distintas cada día. Dos funciones fechadas ⇒ se esperan 2 eventos (criterio cartel-programa). Un modelo que devuelva solo el día 2 (lo que hizo Opus el 17-sep y lo que hay en Neon) empareja 1 de 2 sin falso positivo. REVISAR si se prefiere exigir 1 solo.",
+    "esperado": "evento",
+    "eventos": [
+      { "titulo": "Gala de la Danza", "fecha": "2026-09-02", "hora": "21:30", "lugar": "Plaza de Segovia" },
+      { "titulo": "Gala de la Danza", "fecha": "2026-09-03", "hora": "21:30", "lugar": "Plaza de Segovia" }
+    ]
+  },
+  {
+    "shortCode": "DcvgXC5jggc",
+    "publicado": "2026-09-01T11:00:48.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Ayer tuvo lugar la segunda jornada de juegos populares en la Plaza de Segovia… Os dejamos fotos de los ganadores.",
+    "_nota": "Crónica (ayer): fotos de los ganadores (portada en Blob, 4 perdidas). Uno de los dos falsos positivos de Haiku que llegaron a producción como evento (cdcb163). Nada en ambas features.",
+    "esperado": "nada",
+    "eventos": []
+  },
+  {
+    "shortCode": "DcvidwWm7e7",
+    "publicado": "2026-09-01T11:19:12.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "El Ayuntamiento de Navalcarnero quiere expresar su apoyo firme y sincero al pueblo ceutí en estos momentos de especial dificultad…",
+    "_nota": "Comunicado institucional sin ningún dato práctico (2 fotos del balcón, perdidas). Nada en ambas features.",
+    "esperado": "nada",
+    "eventos": []
+  },
+  {
+    "shortCode": "DcyL-v_jaIu",
+    "publicado": "2026-09-02T12:00:27.000Z",
+    "usuario": "ayuntamientonavalcarnero",
+    "_caption": "Ayer las pistas exteriores del CEIP Felipe IV acogieron una animada jornada de puertas abiertas de patinaje…",
+    "_nota": "Crónica (ayer), 8 fotos de la jornada (portada en Blob, 7 perdidas). El otro falso positivo de Haiku en producción (cdcb163). Nada en ambas features.",
+    "esperado": "nada",
+    "eventos": []
+  }
+]

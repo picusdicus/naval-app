@@ -260,13 +260,84 @@ modelo al verificar en local, no solo la credencial.
 
 | Fase | Rama | Estado | Fecha | Notas |
 | --- | --- | --- | --- | --- |
-| 1 Arnés | `feat/bench-modelos` | pendiente | | |
+| 1 Arnés | `feat/bench-modelos` | **construido; aceptación a medias** | 2026-09-18 | Bench, preparación de datasets, precios y línea base sobre el dataset del 3-sep hechos. Pendiente para cerrar: (a) revisar juntos `2026-09-03-ayuntamiento.verdad.json` (las decisiones marcadas REVISAR, sobre todo si una crónica es "noticia" o "nada"); (b) el dataset del 13/16-sep (CETAN) y uno de Cultura — hacen falta los JSON de esos runs, y **prepararlos el mismo día del run**: las URLs del CDN caducan a los ~4 días; (c) re-scrape de los 15 posts del 3-sep (task de Apify con sus URLs) para recuperar las 38 fotos perdidas y levantar los 3 `ignorar`. |
 | 2 Migración | `feat/ai-sdk-proveedores` | pendiente | | |
 | 3 Comparativa | `feat/comparativa-modelos` | pendiente | | |
 
-### Línea base (rellenar en la fase 1)
+### Línea base (fase 1, 2026-09-18)
 
-_(tablas del bench con Opus 5 y Haiku 4.5)_
+Dataset `2026-09-03-ayuntamiento` (los 15 posts de `cdcb163`), commit
+`71c2f65` + los cambios de esta rama, dos ejecuciones por modelo, precios de
+`scripts/bench/precios.json` (2026-09-17). JSON de evidencia:
+`scripts/bench/resultados/2026-09-18-{eventos,noticias}.json`.
+
+**Limitación que condiciona toda la tabla de eventos**: de las 52 fotos del
+run solo 14 sobreviven (las que algún webhook subió a Blob); las 38 restantes
+caducaron en el CDN de Instagram el 7-sep. Los 3 posts cuyo cartel decisivo se
+perdió (`Dc0WIVqFUNv`, `DcxppU9jXrU`, `DcvZaG-j_Zo`) van marcados `ignorar` y
+no puntúan, así que las cuentas son sobre 12 posts. Los 3 carteles que sí
+llegan al modelo (matinés, Gala de la Danza, feria) se leyeron a ojo para
+fijar la verdad: son 14 funciones esperadas, no los "2 eventos" de `cdcb163`,
+porque desde `106392b` el prompt pide un evento por función del cartel-programa
+(11 actuaciones de las matinés + 2 días de Gala + la feria).
+
+**Eventos** (`--feature=eventos`):
+
+| modelo | ejecuciones | aciertos | FP | FN | estable | latencia | tokens | coste/run | campos |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| anthropic/claude-opus-5 | 2/2 | 12/12 | 0 | 0 | no (44 %) | 33.4 s | 46998 / 3708 | $0.3199 | emparejados 12–13/14 · título 6–10 · fecha 12–13 · hora 12–13 · lugar 11–12 · sobrantes 0–1 |
+| anthropic/claude-haiku-4-5 | 2/2 | 11/12 | 1 | 0 | no (6 %) | 11.3 s | 41499 / 1119 | $0.0471 | emparejados 2–12/14 · título 1–4 · fecha 2–12 · hora 1–9 · lugar 1–11 · sobrantes 0–1 |
+
+Lectura:
+
+- **Reproduce lo conocido de `cdcb163`**: Opus 5 acierta la clasificación de
+  los 12 posts en las dos ejecuciones con 0 falsos positivos; Haiku 4.5 mete
+  un falso positivo en cada ejecución (una crónica distinta cada vez:
+  `Dc0cKywjDue` la presentación taurina de ayer, `DcyL-v_jaIu` el patinaje
+  de ayer — exactamente el modo de fallo que llegó a producción) y en una
+  ejecución saca 13 items y en la otra 5, con títulos corrompidos
+  ("la cuarangada", "dj feloti").
+- **La estabilidad "no (44 %)" de Opus no es de clasificación sino de
+  redacción/granularidad**: en las dos ejecuciones detecta los mismos 3 posts
+  y las mismas fechas, pero una vez separa "Grupo Línea 12" y "DJ Maru" como
+  dos funciones del día 6 y otra los junta en una, y a veces antepone "Matiné
+  musical:" al título. La firma de estabilidad es estricta a propósito
+  (`shortCode|fecha|título normalizado`); el JSON lista los items que
+  difieren. Para el criterio 7 del plan, lo que hay que mirar es FP y
+  clasificación por post (idénticas), no esa cifra sola.
+- Coste medido por run: $0.32 (Opus) frente a $0.047 (Haiku), con solo 14
+  de 52 imágenes; el run completo real ronda los $0.33 de `cdcb163`.
+
+**Noticias** (`--feature=noticias`, solo texto):
+
+| modelo | aciertos | FP | FN | estable | latencia | tokens | coste/run | campos |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| anthropic/claude-opus-5 | 6–8/12 | 4–6 | 0 | no (78 %) | 37.2 s | 10061 / 4837 | $0.1712 | tipo 3/3 · urgente 2 · categoría 0 · plazo 0 |
+| anthropic/claude-haiku-4-5 | 10–12/12 | 0–2 | 0 | no (60 %) | 6.3 s | 7872 / 1152 | $0.0136 | tipo 3/3 · urgente 3 · categoría 0 · plazo 0 |
+
+Lectura:
+
+- Las 3 noticias reales (autobuses, Punto Violeta, calor) las sacan los dos
+  modelos siempre, con el tipo correcto; los 2 posts de evento los rechazan
+  los dos. Toda la diferencia está en las **crónicas** de actos ya celebrados
+  (voleibol, presentación taurina, jumping, juegos populares, patinaje) y en
+  el comunicado sobre Ceuta: Opus 5 los publica como noticia (4–6 de 6),
+  Haiku 4.5 casi nunca (0–2). La verdad los fija como "nada" (así se comportó
+  producción con Haiku y así se documentó el criterio editorial de
+  ago-2026: balances sin dato práctico se descartan) — **es la primera
+  decisión de la revisión conjunta**: si se decidiera que una crónica es
+  noticia, la tabla se invierte.
+- Ninguno de los dos es estable en esa frontera: cada uno cambia de opinión
+  entre ejecuciones sobre 2 crónicas. En `urgente`, Opus marcó una vez los
+  cambios de autobús como alerta (la verdad dice no urgente; también
+  marcado REVISAR).
+- Sin actividades ni plazos en este dataset: `categoría` y `plazo` quedan a
+  0/0 hasta tener un run con inscripciones.
+
+**Qué falta para dar la fase por aceptada** (ver Estado de las fases): el
+dataset del 13/16-sep con el cartel-programa del CETAN (8 funciones, 4/4) y
+uno de Cultura, la revisión conjunta de la verdad y, si se quiere una tabla
+de eventos con todas las imágenes, el re-scrape del run del 3-sep.
 
 ### Resultados de la comparativa (rellenar en la fase 3)
 

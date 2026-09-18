@@ -15,6 +15,7 @@
     "optimizar:imagenes": "node scripts/optimizar-imagenes.mjs",
     "optimizar:eventos": "node scripts/optimizar-imagenes.mjs --dir=eventos",
     "rellenar:imagenes": "node scripts/rellenar-imagenes.mjs",
+    "bench:modelos": "node scripts/bench/bench-modelos.mjs",
     "test:e2e": "playwright test",
     "build": "vite build",
     "preview": "vite preview",

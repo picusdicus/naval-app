@@ -152,7 +152,11 @@ Devuelve solo los posts que son noticias, alertas o actividades; si ninguno lo e
 // Con lotes la salida queda acotada, y un lote fallido no arrastra al resto.
 const LOTE_TRIAJE = 10
 
-async function extraerNoticias(posts) {
+/** Triaje completo de un run. Exportada SOLO para el arnés de comparación
+ *  (scripts/bench/bench-modelos.mjs), que es también el único que pasa
+ *  `modelo`; el handler sigue con MODEL. Devuelve además `uso` (tokens
+ *  sumados de todos los lotes), que el handler no consume. */
+export async function extraerNoticias(posts, { modelo = MODEL } = {}) {
   const client = new Anthropic()
   const lotes = []
   for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
@@ -164,7 +168,7 @@ async function extraerNoticias(posts) {
     lotes.map(async (lote, idx) => {
       try {
         const respuesta = await client.messages.create({
-          model: MODEL,
+          model: modelo,
           max_tokens: 8192,
           system: INSTRUCCIONES,
           output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
@@ -177,7 +181,7 @@ async function extraerNoticias(posts) {
           throw new Error(`respuesta truncada por max_tokens (${lote.length} posts en el lote)`)
         }
         const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"noticias":[]}'
-        return { items: JSON.parse(texto).noticias || [] }
+        return { items: JSON.parse(texto).noticias || [], uso: respuesta.usage }
       } catch (err) {
         return { error: `Triaje lote ${idx + 1}: ${err.message}` }
       }
@@ -185,12 +189,20 @@ async function extraerNoticias(posts) {
   )
   const noticias = []
   const errores = []
+  const uso = { entrada: 0, salida: 0, cacheEscrito: 0, cacheLeido: 0 }
   for (const r of resultados) {
-    if (r.error) errores.push(r.error)
-    else noticias.push(...r.items)
+    if (r.error) {
+      errores.push(r.error)
+      continue
+    }
+    noticias.push(...r.items)
+    uso.entrada += r.uso?.input_tokens || 0
+    uso.salida += r.uso?.output_tokens || 0
+    uso.cacheEscrito += r.uso?.cache_creation_input_tokens || 0
+    uso.cacheLeido += r.uso?.cache_read_input_tokens || 0
   }
   console.log('[webhook] Triaje: noticias=', noticias.map(n => ({ shortCode: n.shortCode, tipo: n.tipo, titulo: n.titulo })))
-  return { noticias, errores }
+  return { noticias, errores, uso }
 }
 
 /** Fecha de publicación de la fila: el timestamp del post si es parseable. */
@@ -207,7 +219,7 @@ function fechaPublicacion(post) {
  * sin offset y Postgres la lee como UTC, así que una alerta puede vivir 1-2 h
  * de más — fail-safe (nunca desaparece antes de tiempo).
  */
-function validarExtraccion(noticias, postsPorShortCode) {
+export function validarExtraccion(noticias, postsPorShortCode) {
   const validas = []
   const descartadas = []
   const vistos = new Set()

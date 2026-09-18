@@ -1,0 +1,1142 @@
+{
+  "feature": "noticias",
+  "fecha": "2026-09-18T09:48:24.253Z",
+  "commit": "71c2f65",
+  "ejecuciones": 2,
+  "datasets": [
+    {
+      "nombre": "2026-09-03-ayuntamiento",
+      "posts": 15,
+      "fotosInestables": 38
+    }
+  ],
+  "precios": {
+    "actualizado": "2026-09-17"
+  },
+  "modelos": {
+    "anthropic/claude-opus-5": {
+      "modeloReal": "claude-opus-5",
+      "ejecuciones": [
+        {
+          "ejecucion": 1,
+          "latenciaMs": 38576,
+          "uso": {
+            "entrada": 10061,
+            "salida": 5281,
+            "cacheEscrito": 0,
+            "cacheLeido": 0
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "Dc0cKywjDue|noticia|",
+            "DcvgXC5jggc|noticia|",
+            "DcvidwWm7e7|noticia|",
+            "DcwCm3DlLXr|noticia|",
+            "DcwQWrKCbBa|noticia|urgente",
+            "DcyG0xcjTg7|noticia|",
+            "DcyL-v_jaIu|noticia|",
+            "DcyZszKDSoP|noticia|",
+            "Dcyna9yjnGm|noticia|"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 6,
+            "falsosPositivos": [
+              "DcyZszKDSoP",
+              "Dc0cKywjDue",
+              "Dcyna9yjnGm",
+              "DcvgXC5jggc",
+              "DcvidwWm7e7",
+              "DcyL-v_jaIu"
+            ],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 0,
+              "emparejados": 0,
+              "titulo": 0,
+              "fecha": 0,
+              "hora": 0,
+              "lugar": 0,
+              "sobrantes": 0
+            },
+            "noticia": {
+              "comparados": 3,
+              "tipo": 3,
+              "urgente": 2,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 1
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 6,
+              "falsosPositivos": [
+                "DcyZszKDSoP",
+                "Dc0cKywjDue",
+                "Dcyna9yjnGm",
+                "DcvgXC5jggc",
+                "DcvidwWm7e7",
+                "DcyL-v_jaIu"
+              ],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 0,
+                "emparejados": 0,
+                "titulo": 0,
+                "fecha": 0,
+                "hora": 0,
+                "lugar": 0,
+                "sobrantes": 0
+              },
+              "noticia": {
+                "comparados": 3,
+                "tipo": 3,
+                "urgente": 2,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 1
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "DcwQWrKCbBa",
+                  "tipo": "noticia",
+                  "titulo": "Cambios en las líneas de autobús por las Fiestas Patronales",
+                  "urgente": true,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcwCm3DlLXr",
+                  "tipo": "noticia",
+                  "titulo": "Punto Violeta durante las Fiestas Patronales",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcyG0xcjTg7",
+                  "tipo": "noticia",
+                  "titulo": "Recomendaciones ante el episodio de calor",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "Dc0cKywjDue",
+                  "tipo": "noticia",
+                  "titulo": "Presentada la Feria Taurina de Navalcarnero 2026",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcyZszKDSoP",
+                  "tipo": "noticia",
+                  "titulo": "Más de 200 jugadores en el IV Torneo de Voleibol Villa de Navalcarnero",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "Dcyna9yjnGm",
+                  "tipo": "noticia",
+                  "titulo": "Exhibición de Jumping Fitness en la Plaza de Francisco Sandoval",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcvgXC5jggc",
+                  "tipo": "noticia",
+                  "titulo": "Segunda jornada de juegos populares en la Plaza de Segovia",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcvidwWm7e7",
+                  "tipo": "noticia",
+                  "titulo": "Navalcarnero muestra su apoyo institucional al pueblo de Ceuta",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcyL-v_jaIu",
+                  "tipo": "noticia",
+                  "titulo": "Jornada de puertas abiertas de patinaje en el CEIP Felipe IV",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.18233
+        },
+        {
+          "ejecucion": 2,
+          "latenciaMs": 35771,
+          "uso": {
+            "entrada": 10061,
+            "salida": 4393,
+            "cacheEscrito": 0,
+            "cacheLeido": 0
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "Dc0cKywjDue|noticia|",
+            "DcvidwWm7e7|noticia|",
+            "DcwCm3DlLXr|noticia|",
+            "DcwQWrKCbBa|noticia|urgente",
+            "DcyG0xcjTg7|noticia|",
+            "DcyZszKDSoP|noticia|",
+            "Dcyna9yjnGm|noticia|"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 8,
+            "falsosPositivos": [
+              "DcyZszKDSoP",
+              "Dc0cKywjDue",
+              "Dcyna9yjnGm",
+              "DcvidwWm7e7"
+            ],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 0,
+              "emparejados": 0,
+              "titulo": 0,
+              "fecha": 0,
+              "hora": 0,
+              "lugar": 0,
+              "sobrantes": 0
+            },
+            "noticia": {
+              "comparados": 3,
+              "tipo": 3,
+              "urgente": 2,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 0
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 8,
+              "falsosPositivos": [
+                "DcyZszKDSoP",
+                "Dc0cKywjDue",
+                "Dcyna9yjnGm",
+                "DcvidwWm7e7"
+              ],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 0,
+                "emparejados": 0,
+                "titulo": 0,
+                "fecha": 0,
+                "hora": 0,
+                "lugar": 0,
+                "sobrantes": 0
+              },
+              "noticia": {
+                "comparados": 3,
+                "tipo": 3,
+                "urgente": 2,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 0
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "DcwQWrKCbBa",
+                  "tipo": "noticia",
+                  "titulo": "Cambios en las líneas de autobús por las Fiestas Patronales",
+                  "urgente": true,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcwCm3DlLXr",
+                  "tipo": "noticia",
+                  "titulo": "Punto Violeta durante las Fiestas Patronales",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcyG0xcjTg7",
+                  "tipo": "noticia",
+                  "titulo": "Recomendación de precaución ante el episodio de calor",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcyZszKDSoP",
+                  "tipo": "noticia",
+                  "titulo": "Más de 200 jugadores en el IV Torneo de Voleibol Villa de Navalcarnero",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "Dc0cKywjDue",
+                  "tipo": "noticia",
+                  "titulo": "Presentada la Feria Taurina de Navalcarnero 2026",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "Dcyna9yjnGm",
+                  "tipo": "noticia",
+                  "titulo": "Exhibición de Jumping Fitness en la Plaza de Francisco Sandoval",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcvidwWm7e7",
+                  "tipo": "noticia",
+                  "titulo": "El Ayuntamiento muestra su apoyo institucional al pueblo de Ceuta",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.16013
+        }
+      ],
+      "estabilidad": {
+        "identicas": false,
+        "itemsComunes": 7,
+        "itemsUnion": 9,
+        "jaccard": 0.7777777777777778,
+        "postsQueCambianDeClasificacion": [
+          "DcvgXC5jggc",
+          "DcyL-v_jaIu"
+        ],
+        "itemsQueDifieren": [
+          "X. DcvgXC5jggc|noticia|",
+          "X. DcyL-v_jaIu|noticia|"
+        ]
+      }
+    },
+    "anthropic/claude-haiku-4-5": {
+      "modeloReal": "claude-haiku-4-5",
+      "ejecuciones": [
+        {
+          "ejecucion": 1,
+          "latenciaMs": 6441,
+          "uso": {
+            "entrada": 7872,
+            "salida": 1546,
+            "cacheEscrito": 0,
+            "cacheLeido": 0
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "DcvgXC5jggc|noticia|",
+            "DcvidwWm7e7|noticia|",
+            "DcwCm3DlLXr|noticia|",
+            "DcwQWrKCbBa|noticia|",
+            "DcyG0xcjTg7|noticia|"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 10,
+            "falsosPositivos": [
+              "DcvgXC5jggc",
+              "DcvidwWm7e7"
+            ],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 0,
+              "emparejados": 0,
+              "titulo": 0,
+              "fecha": 0,
+              "hora": 0,
+              "lugar": 0,
+              "sobrantes": 0
+            },
+            "noticia": {
+              "comparados": 3,
+              "tipo": 3,
+              "urgente": 3,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 1
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 0
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 10,
+              "falsosPositivos": [
+                "DcvgXC5jggc",
+                "DcvidwWm7e7"
+              ],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 0,
+                "emparejados": 0,
+                "titulo": 0,
+                "fecha": 0,
+                "hora": 0,
+                "lugar": 0,
+                "sobrantes": 0
+              },
+              "noticia": {
+                "comparados": 3,
+                "tipo": 3,
+                "urgente": 3,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 1
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 0
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "DcwQWrKCbBa",
+                  "tipo": "noticia",
+                  "titulo": "Modificaciones en las líneas de autobús durante las Fiestas Patronales 2026",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcyG0xcjTg7",
+                  "tipo": "noticia",
+                  "titulo": "Recomendación de precauciones ante episodio de calor",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcwCm3DlLXr",
+                  "tipo": "noticia",
+                  "titulo": "Punto Violeta disponible durante las Fiestas Patronales",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcvgXC5jggc",
+                  "tipo": "noticia",
+                  "titulo": "Segunda jornada de juegos populares en la Plaza de Segovia",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcvidwWm7e7",
+                  "tipo": "noticia",
+                  "titulo": "Apoyo institucional al pueblo ceutí",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.015602000000000001
+        },
+        {
+          "ejecucion": 2,
+          "latenciaMs": 6176,
+          "uso": {
+            "entrada": 7872,
+            "salida": 758,
+            "cacheEscrito": 0,
+            "cacheLeido": 0
+          },
+          "errores": [],
+          "postsNoEvaluados": 0,
+          "firmas": [
+            "DcwCm3DlLXr|noticia|",
+            "DcwQWrKCbBa|noticia|",
+            "DcyG0xcjTg7|noticia|"
+          ],
+          "metricas": {
+            "posts": 12,
+            "ignorados": [
+              "Dc0WIVqFUNv",
+              "DcxppU9jXrU",
+              "DcvZaG-j_Zo"
+            ],
+            "aciertos": 12,
+            "falsosPositivos": [],
+            "falsosNegativos": [],
+            "campos": {
+              "esperados": 0,
+              "emparejados": 0,
+              "titulo": 0,
+              "fecha": 0,
+              "hora": 0,
+              "lugar": 0,
+              "sobrantes": 0
+            },
+            "noticia": {
+              "comparados": 3,
+              "tipo": 3,
+              "urgente": 3,
+              "categoria": 0,
+              "fechaLimite": 0
+            },
+            "porPost": {
+              "Dc0jAjhCME9": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcyZszKDSoP": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "Dc0cKywjDue": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcwQWrKCbBa": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dc0WIVqFUNv": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcwCm3DlLXr": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "Dcy1Jn6j_I2": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "Dcyna9yjnGm": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyG0xcjTg7": {
+                "esperado": "noticia",
+                "items": 1,
+                "tipo": "noticia"
+              },
+              "DcxppU9jXrU": {
+                "esperado": "nada",
+                "items": 0,
+                "ignorado": true
+              },
+              "DcvZaG-j_Zo": {
+                "esperado": "evento",
+                "items": 0,
+                "ignorado": true
+              },
+              "Dcx-NBOjdkH": {
+                "esperado": "evento",
+                "items": 0
+              },
+              "DcvgXC5jggc": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcvidwWm7e7": {
+                "esperado": "nada",
+                "items": 0
+              },
+              "DcyL-v_jaIu": {
+                "esperado": "nada",
+                "items": 0
+              }
+            }
+          },
+          "porDataset": {
+            "2026-09-03-ayuntamiento": {
+              "posts": 12,
+              "ignorados": [
+                "Dc0WIVqFUNv",
+                "DcxppU9jXrU",
+                "DcvZaG-j_Zo"
+              ],
+              "aciertos": 12,
+              "falsosPositivos": [],
+              "falsosNegativos": [],
+              "campos": {
+                "esperados": 0,
+                "emparejados": 0,
+                "titulo": 0,
+                "fecha": 0,
+                "hora": 0,
+                "lugar": 0,
+                "sobrantes": 0
+              },
+              "noticia": {
+                "comparados": 3,
+                "tipo": 3,
+                "urgente": 3,
+                "categoria": 0,
+                "fechaLimite": 0
+              },
+              "porPost": {
+                "Dc0jAjhCME9": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcyZszKDSoP": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "Dc0cKywjDue": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcwQWrKCbBa": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dc0WIVqFUNv": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcwCm3DlLXr": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "Dcy1Jn6j_I2": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "Dcyna9yjnGm": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyG0xcjTg7": {
+                  "esperado": "noticia",
+                  "items": 1,
+                  "tipo": "noticia"
+                },
+                "DcxppU9jXrU": {
+                  "esperado": "nada",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "DcvZaG-j_Zo": {
+                  "esperado": "evento",
+                  "items": 0,
+                  "ignorado": true
+                },
+                "Dcx-NBOjdkH": {
+                  "esperado": "evento",
+                  "items": 0
+                },
+                "DcvgXC5jggc": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcvidwWm7e7": {
+                  "esperado": "nada",
+                  "items": 0
+                },
+                "DcyL-v_jaIu": {
+                  "esperado": "nada",
+                  "items": 0
+                }
+              },
+              "descartadosPorValidacion": 0,
+              "extraidos": [
+                {
+                  "shortCode": "DcwQWrKCbBa",
+                  "tipo": "noticia",
+                  "titulo": "Modificaciones en las líneas de autobús durante las Fiestas Patronales 2026",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcwCm3DlLXr",
+                  "tipo": "noticia",
+                  "titulo": "Punto Violeta disponible durante las Fiestas Patronales",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                },
+                {
+                  "shortCode": "DcyG0xcjTg7",
+                  "tipo": "noticia",
+                  "titulo": "Recomendación de precauciones ante episodio de calor",
+                  "urgente": false,
+                  "categoria": null,
+                  "fechaLimite": null
+                }
+              ]
+            }
+          },
+          "costeUSD": 0.011662
+        }
+      ],
+      "estabilidad": {
+        "identicas": false,
+        "itemsComunes": 3,
+        "itemsUnion": 5,
+        "jaccard": 0.6,
+        "postsQueCambianDeClasificacion": [
+          "DcvgXC5jggc",
+          "DcvidwWm7e7"
+        ],
+        "itemsQueDifieren": [
+          "X. DcvgXC5jggc|noticia|",
+          "X. DcvidwWm7e7|noticia|"
+        ]
+      }
+    }
+  }
+}

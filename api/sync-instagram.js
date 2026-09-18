@@ -250,10 +250,12 @@ async function enTandas(items, limite, fn) {
   return salida
 }
 
-export /** Una petición de extracción: valida el motivo de parada y parsea la salida. */
-async function pedirExtraccion(client, contenido, postsEnLote) {
+/** Una petición de extracción: valida el motivo de parada y parsea la salida.
+ *  `modelo` solo lo cambia el arnés de comparación (scripts/bench): el
+ *  handler usa siempre MODEL. */
+export async function pedirExtraccion(client, contenido, postsEnLote, modelo = MODEL) {
   const respuesta = await client.messages.create({
-    model: MODEL,
+    model: modelo,
     max_tokens: 8192,
     system: [{ type: 'text', text: INSTRUCCIONES, cache_control: { type: 'ephemeral' } }],
     output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
@@ -269,7 +271,11 @@ async function pedirExtraccion(client, contenido, postsEnLote) {
   return { eventos: JSON.parse(texto).eventos || [], uso: respuesta.usage }
 }
 
-export async function extraerEventos(posts) {
+/** Extracción completa de un run (lotes, visión, reintento sin imágenes).
+ *  La opción `modelo` existe SOLO para el arnés de comparación
+ *  (scripts/bench/bench-modelos.mjs), que mide varios modelos sobre el mismo
+ *  dataset; el handler no la pasa y sigue con MODEL. */
+export async function extraerEventos(posts, { modelo = MODEL } = {}) {
   const client = new Anthropic()
   const lotes = []
   for (let i = 0; i < posts.length; i += LOTE_TRIAJE) {
@@ -316,7 +322,7 @@ export async function extraerEventos(posts) {
         contenido.push(...imagenes.filter(Boolean))
 
         try {
-          const { eventos: items, uso } = await pedirExtraccion(client, contenido, lote.length)
+          const { eventos: items, uso } = await pedirExtraccion(client, contenido, lote.length, modelo)
           return { items, uso }
         } catch (err) {
           // Red de seguridad: cualquier fallo atribuible a las imágenes (un
@@ -327,7 +333,7 @@ export async function extraerEventos(posts) {
           const soloTexto = contenido.filter((b) => b.type !== 'image')
           if (soloTexto.length === contenido.length) throw err
           console.warn(`Lote ${idx + 1}: reintento sin imágenes tras "${err.message}"`)
-          const { eventos: items, uso } = await pedirExtraccion(client, soloTexto, lote.length)
+          const { eventos: items, uso } = await pedirExtraccion(client, soloTexto, lote.length, modelo)
           return { items, uso, degradados: lote.length, causaDegradado: err.message }
         }
       } catch (err) {
