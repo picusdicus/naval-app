@@ -16,6 +16,7 @@
     "optimizar:eventos": "node scripts/optimizar-imagenes.mjs --dir=eventos",
     "rellenar:imagenes": "node scripts/rellenar-imagenes.mjs",
     "test:e2e": "playwright test",
+    "test:unit": "node --test \"tests/**/*.test.mjs\"",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint ."
