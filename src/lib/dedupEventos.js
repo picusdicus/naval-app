@@ -286,6 +286,7 @@ const ETIQUETAS_FUENTE = [
   ['tyltyl-', 'Teatro TYL TYL'],
   ['aytocult-', 'Web municipal (cultura)'],
   ['ig-', 'Instagram'],
+  ['ste-', 'Taquilla Teatro Centro'],
 ]
 
 function etiquetaDePrefijo(id) {
