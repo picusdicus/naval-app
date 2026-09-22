@@ -9,6 +9,7 @@ import { fechasDelCiclo, MAX_DIAS_CICLO } from '../src/lib/eventoForm.js'
 import { duracionDe } from '../src/lib/fechas.js'
 import { obtenerActividadesDeportivas } from './_actividades-deportes-feed.js'
 import { upsertDeportesEnRevision } from './_deportes-revision.js'
+import { sincronizarSacatuentrada } from './_sacatuentrada-revision.js'
 import { enviarEmailPendientes } from './_email.js'
 import { registrarIngesta } from './_ingesta-log.js'
 import { archivarTalleresDeCursosPasados } from './_talleres-archivado.js'
@@ -884,6 +885,42 @@ export default async function handler(req, res) {
       } catch (err) {
         resultado.errores.push(`Deportes a revisión: ${err.message}`)
       }
+    }
+
+    // Taquilla online del Teatro Municipal Centro (teatrocentro.sacatuentrada.es):
+    // escribe SOLO en Neon (nunca en el JSON) — sustituye el cartel y rellena
+    // las entradas de las funciones que ya existen (hoy, las del CETAN que
+    // creó el webhook de Instagram) y deja en borrador las que no. En try
+    // propio: un fallo de la taquilla o de Neon no rompe la sincronización.
+    // Ver api/_sacatuentrada-revision.js.
+    try {
+      const taquilla = await sincronizarSacatuentrada(obtenerSql())
+      resultado.estadisticas = {
+        ...resultado.estadisticas,
+        sacatuentradaObras: taquilla.obras,
+        sacatuentradaEmparejadas: taquilla.emparejadas,
+        sacatuentradaCartelesSustituidos: taquilla.imagenesSustituidas,
+        sacatuentradaEntradasRellenadas: taquilla.entradasRellenadas,
+        sacatuentradaCreadas: taquilla.creadas,
+      }
+      taquilla.errores.forEach((e) => resultado.errores.push(e))
+      // Un solo email por run: los borradores nuevos y, si los hay, los
+      // emparejamientos decididos solo por fecha y lugar (sin coincidencia de
+      // título), que conviene revisar. Fail-soft.
+      if (taquilla.filasCreadas.length || taquilla.revisar.length) {
+        try {
+          await enviarEmailPendientes({
+            eventos: [...taquilla.filasCreadas, ...taquilla.revisar],
+            origen: taquilla.revisar.length
+              ? 'La taquilla del Teatro Municipal Centro ha traído funciones nuevas en borrador y/o ha enriquecido eventos emparejados solo por fecha y lugar (los marcados con "←", revisa que sean la misma función):'
+              : 'La taquilla del Teatro Municipal Centro ha traído funciones que no estaban en la agenda y las ha dejado en borrador:',
+          })
+        } catch (err) {
+          resultado.errores.push(`Email de pendientes (taquilla): ${err.message}`)
+        }
+      }
+    } catch (err) {
+      resultado.errores.push(`Taquilla Teatro Centro: ${err.message}`)
     }
 
     let fiestas = []
