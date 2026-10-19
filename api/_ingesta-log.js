@@ -26,6 +26,10 @@ async function asegurarTabla(sql) {
   )`
   await sql`CREATE INDEX IF NOT EXISTS idx_ingesta_log_fuente_fecha
             ON ingesta_log (fuente, ejecutado_en DESC)`
+  // Estadísticas que no son descartes (posts saltados por el pre-filtro de
+  // Instagram, tokens gastados…): no caben en descartados_por_motivo, que es
+  // un desglose que suma `descartados`.
+  await sql`ALTER TABLE ingesta_log ADD COLUMN IF NOT EXISTS estadisticas jsonb`
   asegurada = true
 }
 
@@ -39,7 +43,8 @@ export function motivosNoVacios(motivos) {
 /**
  * Inserta la fila de log de una ejecución de ingesta.
  * `motivos` es un objeto {"motivo textual": cuenta}; si no se pasa
- * `descartados`, se calcula como la suma de los motivos.
+ * `descartados`, se calcula como la suma de los motivos. `estadisticas` es
+ * opcional y libre: va tal cual a su columna jsonb.
  */
 export async function registrarIngesta({
   fuente,
@@ -48,6 +53,7 @@ export async function registrarIngesta({
   nuevos = 0,
   descartados = null,
   motivos = {},
+  estadisticas = null,
 }) {
   try {
     const limpios = motivosNoVacios(motivos)
@@ -57,10 +63,10 @@ export async function registrarIngesta({
     await asegurarTabla(sql)
     await sql`
       INSERT INTO ingesta_log
-        (fuente, candidatos, emparejados, nuevos, descartados, descartados_por_motivo)
+        (fuente, candidatos, emparejados, nuevos, descartados, descartados_por_motivo, estadisticas)
       VALUES
         (${fuente}, ${candidatos}, ${emparejados}, ${nuevos}, ${totalDescartados},
-         ${JSON.stringify(limpios)}::jsonb)
+         ${JSON.stringify(limpios)}::jsonb, ${estadisticas ? JSON.stringify(estadisticas) : null}::jsonb)
     `
   } catch (err) {
     console.error(`[ingesta_log] No se pudo registrar la ejecución de ${fuente}:`, err.message)

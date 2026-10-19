@@ -44,8 +44,18 @@ import { descargarDocumento, detectarUrl } from './_descargar-documento.js'
 import { enviarEmailPendientes } from './_email.js'
 import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 import { registrarIngesta } from './_ingesta-log.js'
+import {
+  estadisticasDe,
+  filtrarYaEvaluados,
+  marcarEvaluados,
+  nuevoUso,
+  sumarUso,
+} from './_posts-evaluados.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
+
+// Clave de este webhook en posts_instagram_evaluados (y su fuente en ingesta_log).
+const WEBHOOK = 'sync-instagram-noticias'
 
 // Misma whitelist que el CHECK de noticias_instagram en db/schema.sql.
 const TIPOS_ALERTA = ['incendio', 'corte_agua', 'corte_luz', 'trafico', 'emergencia', 'general']
@@ -160,9 +170,13 @@ async function extraerNoticias(posts) {
   }
   // Lotes en paralelo: el tiempo total del triaje pasa a ser ~el de un lote
   // (5 llamadas concurrentes están muy lejos de los límites de la API).
+  // Tokens y llamadas del triaje (las extracciones posteriores de documento y
+  // carrusel se suman aparte, en procesar).
+  const uso = nuevoUso()
   const resultados = await Promise.all(
     lotes.map(async (lote, idx) => {
       try {
+        uso.llamadas++
         const respuesta = await client.messages.create({
           model: MODEL,
           max_tokens: 8192,
@@ -170,6 +184,7 @@ async function extraerNoticias(posts) {
           output_config: { format: { type: 'json_schema', schema: ESQUEMA_EXTRACCION } },
           messages: [{ role: 'user', content: JSON.stringify(lote) }],
         })
+        sumarUso(uso, respuesta.usage)
         if (respuesta.stop_reason === 'refusal') {
           throw new Error('el modelo rechazó la petición de extracción')
         }
@@ -179,18 +194,26 @@ async function extraerNoticias(posts) {
         const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"noticias":[]}'
         return { items: JSON.parse(texto).noticias || [] }
       } catch (err) {
-        return { error: `Triaje lote ${idx + 1}: ${err.message}` }
+        return {
+          error: `Triaje lote ${idx + 1}: ${err.message}`,
+          shortCodesFallidos: lote.map((p) => p.shortCode),
+        }
       }
     })
   )
   const noticias = []
   const errores = []
+  // Posts de un lote que falló: el modelo no los vio, así que el pre-filtro
+  // no puede darlos por evaluados.
+  const shortCodesNoEvaluados = []
   for (const r of resultados) {
-    if (r.error) errores.push(r.error)
-    else noticias.push(...r.items)
+    if (r.error) {
+      errores.push(r.error)
+      shortCodesNoEvaluados.push(...r.shortCodesFallidos)
+    } else noticias.push(...r.items)
   }
   console.log('[webhook] Triaje: noticias=', noticias.map(n => ({ shortCode: n.shortCode, tipo: n.tipo, titulo: n.titulo })))
-  return { noticias, errores }
+  return { noticias, errores, uso, shortCodesNoEvaluados }
 }
 
 /** Fecha de publicación de la fila: el timestamp del post si es parseable. */
@@ -211,6 +234,10 @@ function validarExtraccion(noticias, postsPorShortCode) {
   const validas = []
   const descartadas = []
   const vistos = new Set()
+  // Posts cuyo item no validó (sin título): extracción fallida, no un rechazo
+  // — el pre-filtro no los da por evaluados. La repetición del mismo post sí
+  // es inocua y no entra aquí.
+  const invalidas = new Set()
   for (const n of Array.isArray(noticias) ? noticias : []) {
     const post = postsPorShortCode.get(n.shortCode)
     // Un triaje por post ES la semántica correcta aquí (a diferencia del
@@ -222,6 +249,7 @@ function validarExtraccion(noticias, postsPorShortCode) {
       post && !vistos.has(n.shortCode) && typeof n.titulo === 'string' && n.titulo.trim()
     if (!valida) {
       descartadas.push(n.shortCode || '(sin shortCode)')
+      if (post && !vistos.has(n.shortCode)) invalidas.add(n.shortCode)
       continue
     }
     vistos.add(n.shortCode)
@@ -269,7 +297,7 @@ function validarExtraccion(noticias, postsPorShortCode) {
       usuario: post.usuario,
     })
   }
-  return { validas, descartadas }
+  return { validas, descartadas, invalidas: [...invalidas] }
 }
 
 /** Tablas e índices del upsert, idempotentes (también están en db/schema.sql). */
@@ -368,6 +396,8 @@ export default async function handler(req, res) {
     recibidos: 0,
     analizados: 0,
     descartadosPorAntiguedad: 0,
+    saltadosYaVistos: 0,
+    reevaluadosPorEdicion: 0,
     noticias: 0,
     actividades: 0,
     creadas: 0,
@@ -383,18 +413,33 @@ export default async function handler(req, res) {
     resumen.recibidos = crudos.length
 
     const normalizados = crudos.map(normalizarPost).filter(Boolean)
-    const posts = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
-    resumen.descartadosPorAntiguedad = normalizados.length - posts.length
-    resumen.analizados = posts.length
+    const recientes = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
+    resumen.descartadosPorAntiguedad = normalizados.length - recientes.length
     const noNormalizables = crudos.length - normalizados.length
+
+    // Pre-filtro: los posts ya evaluados en runs anteriores (mismo caption)
+    // no vuelven al modelo — ni al triaje ni a las extracciones de documento
+    // y carrusel que cuelgan de él. Antes del ACK, como en sync-instagram.js.
+    // Fail-open: si falla, se evalúa todo.
+    const filtro = await filtrarYaEvaluados(WEBHOOK, recientes)
+    const posts = filtro.pendientes
+    resumen.saltadosYaVistos = filtro.saltados.length
+    resumen.reevaluadosPorEdicion = filtro.reevaluadosPorEdicion
+    if (filtro.error) resumen.errores.push(`Pre-filtro desactivado: ${filtro.error}`)
+    // `analizados` son los posts que van al modelo (no los recientes): es lo
+    // que resta el motivo de rechazo del triaje en ingesta_log.
+    resumen.analizados = posts.length
+
     if (posts.length === 0) {
+      resumen.estadisticas = estadisticasDe(resumen, { recientes: recientes.length, uso: nuevoUso() })
       await registrarIngesta({
-        fuente: 'sync-instagram-noticias',
+        fuente: WEBHOOK,
         candidatos: resumen.recibidos,
         motivos: {
           'post no normalizable': noNormalizables,
           'antigüedad (>30 días) o tope de posts': resumen.descartadosPorAntiguedad,
         },
+        estadisticas: resumen.estadisticas,
       })
       res.status(200).json(resumen)
       return
@@ -404,13 +449,14 @@ export default async function handler(req, res) {
     // lo REINTENTA entero — el triaje con Opus más los documentos enlazados
     // superan ese margen de sobra, y cada reintento duplicaba el trabajo. El
     // procesado sigue en segundo plano (waitUntil, Fluid) y el resumen final
-    // queda en los logs de la función.
+    // queda en los logs de la función y en ingesta_log.
     res.status(202).json({
       aceptado: true,
       recibidos: resumen.recibidos,
       analizados: resumen.analizados,
+      saltadosYaVistos: resumen.saltadosYaVistos,
     })
-    const tarea = procesar(posts, resumen, noNormalizables)
+    const tarea = procesar(posts, resumen, noNormalizables, recientes.length)
     try {
       waitUntil(tarea)
     } catch {
@@ -425,21 +471,44 @@ export default async function handler(req, res) {
 }
 
 /** Todo el trabajo pesado, ya sin una respuesta HTTP que mantener abierta. */
-async function procesar(posts, resumen, noNormalizables = 0) {
+async function procesar(posts, resumen, noNormalizables = 0, recientes = posts.length) {
   // Cuántos items devolvió el triaje: lo que falte hasta `analizados` son
   // posts que el modelo consideró irrelevantes (eventos de agenda,
   // felicitaciones, teasers…). Los eventos duplicados de un documento
   // enlazado se cuentan aparte (el `continue` del gemelo no dejaba rastro).
   let extraidasTotal = 0
   let eventosDocDuplicados = 0
+  // Pre-filtro (posts_instagram_evaluados): tokens de TODAS las llamadas del
+  // run (triaje + documentos + carruseles) y qué posts no pueden darse por
+  // evaluados — lote del triaje fallido, item inválido, extracción posterior
+  // fallida o un upsert que falló. Si el run entero cae al catch de fondo no
+  // se marca ninguno.
+  const usoRun = nuevoUso()
+  const conFallo = new Set()
+  let completado = false
+  const sumarAlRun = (uso) => {
+    usoRun.llamadas += uso.llamadas
+    usoRun.entrada += uso.entrada
+    usoRun.salida += uso.salida
+    usoRun.cacheEscrito += uso.cacheEscrito
+    usoRun.cacheLeido += uso.cacheLeido
+  }
   try {
     const postsPorShortCode = new Map(posts.map((p) => [p.shortCode, p]))
-    const { noticias: extraidas, errores: erroresTriaje } = await extraerNoticias(
+    const {
+      noticias: extraidas,
+      errores: erroresTriaje,
+      uso: usoTriaje,
+      shortCodesNoEvaluados,
+    } = await extraerNoticias(
       posts.map(({ shortCode, caption, alt, publicado }) => ({ shortCode, caption, alt, publicado }))
     )
+    sumarAlRun(usoTriaje)
+    for (const sc of shortCodesNoEvaluados) conFallo.add(sc)
     resumen.errores.push(...erroresTriaje)
     extraidasTotal = extraidas.length
-    const { validas, descartadas } = validarExtraccion(extraidas, postsPorShortCode)
+    const { validas, descartadas, invalidas } = validarExtraccion(extraidas, postsPorShortCode)
+    for (const sc of invalidas) conFallo.add(sc)
     resumen.noticias = validas.filter(v => v.tipo === 'noticia').length
     resumen.actividades = validas.filter(v => v.tipo === 'actividad').length
     resumen.descartadasPorValidacion = descartadas.length
@@ -519,6 +588,7 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         else resumen.actualizadas++
       } catch (err) {
         resumen.errores.push(`Noticia ${n.shortCode}: ${err.message}`)
+        conFallo.add(n.shortCode)
       }
     }
 
@@ -589,6 +659,9 @@ async function procesar(posts, resumen, noNormalizables = 0) {
 
     for (const item of procesables) {
       const post = postsPorShortCode.get(item.shortCode)
+      // Llamadas, tokens y fallos de las extracciones de ESTE post (documento
+      // enlazado, carrusel): ver `traza` en api/_actividades-parser.js.
+      const traza = { ...nuevoUso(), fallos: 0 }
       try {
         const prefijoPropio = `ig-${item.shortCode}`
         // Filas ya en Neon de ESTE post: la propia (fila única) y sus hijas.
@@ -617,7 +690,7 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         let extraccion = { eventos: [], actividades: [] }
         if (url && (item.programaEnlazada || item.tipo === 'actividad')) {
           const doc = await descargarDocumento(url)
-          extraccion = await extraerDeDocumento(doc, url, imagenPost, item.shortCode)
+          extraccion = await extraerDeDocumento(doc, url, imagenPost, item.shortCode, traza)
         }
 
         // Sin documento (o sin resultados) y con carrusel de carteles: una
@@ -633,7 +706,8 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         ) {
           hijasCarrusel = await extraerDeCarrusel(
             post.carrusel.slice(0, MAX_IMAGENES_POST),
-            item.publicadoEn
+            item.publicadoEn,
+            traza
           )
           // La foto del cartel correspondiente, a Blob con sufijo por índice
           // — salvo que ya exista una hermana con esa misma foto y con
@@ -782,6 +856,7 @@ async function procesar(posts, resumen, noNormalizables = 0) {
             }
           } catch (err) {
             resumen.errores.push(`Actividad ${fila.origenId}: ${err.message}`)
+            conFallo.add(item.shortCode)
           }
         }
 
@@ -844,12 +919,16 @@ async function procesar(posts, resumen, noNormalizables = 0) {
               }
             } catch (err) {
               resumen.errores.push(`Evento ${origenId}: ${err.message}`)
+              conFallo.add(item.shortCode)
             }
           }
         }
       } catch (err) {
         resumen.errores.push(`Scraping ${item.shortCode}: ${err.message}`)
+        conFallo.add(item.shortCode)
       }
+      sumarAlRun(traza)
+      if (traza.fallos) conFallo.add(item.shortCode)
     }
 
     // Aviso por email al superadmin si el run dejó borradores por validar.
@@ -868,19 +947,31 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         resumen.errores.push(`Email de pendientes: ${err.message}`)
       }
     }
-
-    console.log(JSON.stringify(resumen))
+    completado = true
   } catch (err) {
     console.error('Error en sync-instagram-noticias (fondo):', err)
     resumen.errores.push(err.message)
-    console.log(JSON.stringify(resumen))
   }
+
+  // Marca de evaluados: aceptados Y rechazados (un rechazo no deja fila en
+  // Neon), menos los que fallaron en algún punto. Después del email a
+  // propósito: el email no es del post, y que falle no debe repetir el post.
+  const evaluados = completado ? posts.filter((p) => !conFallo.has(p.shortCode)) : []
+  const marcados = await marcarEvaluados(WEBHOOK, evaluados)
+  resumen.estadisticas = estadisticasDe(resumen, {
+    recientes,
+    uso: usoRun,
+    evaluados: evaluados.length,
+    marcados,
+  })
+  console.log(JSON.stringify(resumen))
 
   // Log de la ejecución (tabla ingesta_log, solo observabilidad — nunca
   // lanza). candidatos son POSTS y nuevos/emparejados son FILAS (noticias,
   // actividades y eventos de documento sumados): no tienen por qué cuadrar.
   await registrarIngesta({
-    fuente: 'sync-instagram-noticias',
+    fuente: WEBHOOK,
+    estadisticas: resumen.estadisticas,
     candidatos: resumen.recibidos,
     emparejados: resumen.actualizadas,
     nuevos: resumen.creadas,
