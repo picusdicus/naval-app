@@ -11,8 +11,21 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { JSDOM } from 'jsdom'
 import { MAX_IMAGEN_BYTES, TIPOS_IMAGEN } from './_instagram.js'
+import { sumarUso } from './_posts-evaluados.js'
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8'
+
+// `traza` (opcional, la pasa el webhook de noticias): acumulador de nuevoUso()
+// con un `fallos` añadido. Las extracciones de aquí se tragan sus errores y
+// devuelven listas vacías, así que sin esa cuenta un fallo sería
+// indistinguible de "no había nada" — y el pre-filtro de posts evaluados daría
+// por visto un post cuya programación nunca se leyó.
+function anotarLlamada(traza) {
+  if (traza) traza.llamadas++
+}
+function anotarFallo(traza) {
+  if (traza) traza.fallos = (traza.fallos || 0) + 1
+}
 
 // Misma taxonomía de eventos que api/sync-instagram.js / la agenda.
 const CATEGORIAS_EVENTO = ['cultura', 'deporte', 'fiestas', 'gastronomia', 'infantil', 'mercado']
@@ -63,7 +76,7 @@ const ESQUEMA_ACTIVIDADES = {
  * cada imagen tiene un título informativo en alt text.
  * Retorna candidatos con: titulo, imagenUrl.
  */
-function parseHtmlInteligente(html) {
+function parseHtmlInteligente(html, traza) {
   try {
     const dom = new JSDOM(html)
     const doc = dom.window.document
@@ -118,6 +131,7 @@ function parseHtmlInteligente(html) {
     return actividades.slice(0, 50) // Limitar a 50 para no saturar Claude
   } catch (err) {
     console.error('[parseHtmlInteligente] Error:', err.message)
+    anotarFallo(traza)
     return []
   }
 }
@@ -126,7 +140,7 @@ function parseHtmlInteligente(html) {
  * Usa Claude para validar, estandarizar y enriquecer actividades.
  * Retorna array de actividades con: titulo, categoria, fechaLimite, horario, lugar, imagenUrl.
  */
-async function validarConClaude(candidatos) {
+async function validarConClaude(candidatos, traza) {
   if (candidatos.length === 0) return []
 
   const client = new Anthropic()
@@ -154,6 +168,7 @@ Para cada candidato devuelve, en el mismo orden en que se recibe:
 - lugar: la instalación o ubicación si el título la indica; "" si no.`
 
   try {
+    anotarLlamada(traza)
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 8192,
@@ -166,12 +181,15 @@ Para cada candidato devuelve, en el mismo orden en que se recibe:
         },
       ],
     })
+    sumarUso(traza, response.usage)
     if (response.stop_reason === 'refusal') {
       console.warn('[validarConClaude] El modelo rechazó la petición')
+      anotarFallo(traza)
       return []
     }
     if (response.stop_reason === 'max_tokens') {
       console.warn('[validarConClaude] Respuesta truncada por max_tokens')
+      anotarFallo(traza)
       return []
     }
 
@@ -211,6 +229,7 @@ Para cada candidato devuelve, en el mismo orden en que se recibe:
       })
   } catch (err) {
     console.error('[validarConClaude] Error:', err.message)
+    anotarFallo(traza)
     return []
   }
 }
@@ -220,9 +239,9 @@ Para cada candidato devuelve, en el mismo orden en que se recibe:
  * `imagenFallback` debe ser una URL durable (el blob ya subido de la foto del
  * post, no la URL cruda del CDN de Instagram, que caduca en días).
  */
-export async function extraerActividadesDeHTML(html, urlFuente, imagenFallback, shortCode) {
+export async function extraerActividadesDeHTML(html, urlFuente, imagenFallback, shortCode, traza) {
   // Paso 1: parsing inteligente
-  const candidatos = parseHtmlInteligente(html)
+  const candidatos = parseHtmlInteligente(html, traza)
   if (candidatos.length === 0) {
     console.log('[extraerActividadesDeHTML] No candidatos encontrados en HTML')
     return []
@@ -231,7 +250,7 @@ export async function extraerActividadesDeHTML(html, urlFuente, imagenFallback, 
   console.log(`[extraerActividadesDeHTML] ${candidatos.length} candidatos extraídos de ${shortCode} (${urlFuente})`)
 
   // Paso 2: validar + enriquecer con Claude
-  const validadas = await validarConClaude(candidatos)
+  const validadas = await validarConClaude(candidatos, traza)
   if (validadas.length === 0) {
     console.log('[extraerActividadesDeHTML] Claude no validó ninguna actividad')
     return []
@@ -332,7 +351,7 @@ const ESQUEMA_DOCUMENTO = {
  * Devuelve `{eventos: [], actividades: []}` ya re-validados; ante cualquier
  * fallo devuelve listas vacías (el post sigue su curso sin programación).
  */
-async function extraerDePdf(buffer, shortCode) {
+async function extraerDePdf(buffer, shortCode, traza) {
   const client = new Anthropic()
   const hoy = new Date().toISOString().slice(0, 10)
 
@@ -349,6 +368,7 @@ Un mismo elemento va en UNA de las dos listas, no en ambas. Si el año no aparec
 IMPORTANTE: Distingue SIEMPRE fechaEvento (cuándo ocurre) de fechaLimite (cuándo cierra el plazo). No inventes, completes ni deduzcas actos, fechas u horas que no estén escritos. Ante la duda, omite el elemento entero. Omite también las actividades cuya celebración o plazo ya hayan pasado respecto a hoy.`
 
   try {
+    anotarLlamada(traza)
     const respuesta = await client.messages.create({
       model: MODEL,
       max_tokens: 16384,
@@ -371,8 +391,10 @@ IMPORTANTE: Distingue SIEMPRE fechaEvento (cuándo ocurre) de fechaLimite (cuán
         },
       ],
     })
+    sumarUso(traza, respuesta.usage)
     if (respuesta.stop_reason === 'refusal') {
       console.warn(`[extraerDePdf] ${shortCode}: el modelo rechazó la petición`)
+      anotarFallo(traza)
       return { eventos: [], actividades: [] }
     }
 
@@ -420,6 +442,7 @@ IMPORTANTE: Distingue SIEMPRE fechaEvento (cuándo ocurre) de fechaLimite (cuán
     return { eventos, actividades }
   } catch (err) {
     console.error(`[extraerDePdf] ${shortCode}:`, err.message)
+    anotarFallo(traza)
     return { eventos: [], actividades: [] }
   }
 }
@@ -483,7 +506,7 @@ async function bloqueImagen(url) {
  * carruselDe(): [{alt, imagen}]. Devuelve la lista validada, cada item con su
  * `indice` original para emparejar la foto.
  */
-export async function extraerDeCarrusel(carrusel, publicado) {
+export async function extraerDeCarrusel(carrusel, publicado, traza) {
   if (!carrusel.length) return []
   const client = new Anthropic()
   const hoy = new Date().toISOString().slice(0, 10)
@@ -526,6 +549,7 @@ Para cada cartel devuelve:
     })
     contenido.push({ type: 'text', text: 'Extrae las actividades de estos carteles.' })
 
+    anotarLlamada(traza)
     const respuesta = await client.messages.create({
       model: MODEL,
       max_tokens: 8192,
@@ -533,8 +557,10 @@ Para cada cartel devuelve:
       output_config: { format: { type: 'json_schema', schema: ESQUEMA_CARRUSEL } },
       messages: [{ role: 'user', content: contenido }],
     })
+    sumarUso(traza, respuesta.usage)
     if (respuesta.stop_reason === 'refusal' || respuesta.stop_reason === 'max_tokens') {
       console.warn(`[extraerDeCarrusel] Respuesta no utilizable (${respuesta.stop_reason})`)
+      anotarFallo(traza)
       return []
     }
     const texto = respuesta.content.find((b) => b.type === 'text')?.text || '{"actividades":[]}'
@@ -571,6 +597,7 @@ Para cada cartel devuelve:
       })
   } catch (err) {
     console.error('[extraerDeCarrusel] Error:', err.message)
+    anotarFallo(traza)
     return []
   }
 }
@@ -580,14 +607,14 @@ Para cada cartel devuelve:
  * solo actividades) o PDF (agenda completa, eventos + actividades).
  * `doc` viene de descargarDocumento() en el webhook: {tipo, html|buffer}.
  */
-export async function extraerDeDocumento(doc, urlFuente, imagenFallback, shortCode) {
+export async function extraerDeDocumento(doc, urlFuente, imagenFallback, shortCode, traza) {
   if (doc.tipo === 'pdf') {
-    const resultado = await extraerDePdf(doc.buffer, shortCode)
+    const resultado = await extraerDePdf(doc.buffer, shortCode, traza)
     for (const act of resultado.actividades) {
       if (!act.imagen_url) act.imagen_url = imagenFallback || null
     }
     return resultado
   }
-  const actividades = await extraerActividadesDeHTML(doc.html, urlFuente, imagenFallback, shortCode)
+  const actividades = await extraerActividadesDeHTML(doc.html, urlFuente, imagenFallback, shortCode, traza)
   return { eventos: [], actividades }
 }

@@ -633,3 +633,26 @@ ALTER TABLE solicitudes_alta_comercio ADD COLUMN IF NOT EXISTS resuelto_en times
 -- un código, pero no cuándo fue la última — sin esto, un registro reciente es
 -- invisible en la actividad del panel.
 ALTER TABLE codigos_invitacion ADD COLUMN IF NOT EXISTS ultimo_uso_en timestamptz;
+
+-- Pre-filtro de los webhooks de Instagram (api/_posts-evaluados.js): qué posts
+-- ya evaluó el modelo, por webhook. Cada run de Apify reenvía sus ~15 posts
+-- más recientes, casi todos vistos el día anterior, y sin esta tabla se volvían
+-- a mandar a Claude (con visión) solo para que el upsert los encontrara ya
+-- hechos. Un post en la tabla con el mismo hash del caption se salta ANTES de
+-- la extracción; si el caption cambió, se reevalúa. Solo se inserta un post que
+-- el modelo evaluó con éxito (aceptado O rechazado), nunca uno de un lote que
+-- falló. `hash_caption` NULL = fila de la siembra inicial (shortCodes que ya
+-- tenían fila en Neon): vale como "visto" y se rellena en el primer salto.
+-- Forzar una reevaluación = borrar su fila (ver CLAUDE.md).
+CREATE TABLE IF NOT EXISTS posts_instagram_evaluados (
+  shortcode     text NOT NULL,
+  webhook       text NOT NULL CHECK (webhook IN ('sync-instagram', 'sync-instagram-noticias')),
+  hash_caption  text,
+  evaluado_en   timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (shortcode, webhook)
+);
+
+-- Estadísticas de un run que no son descartes (posts saltados por el
+-- pre-filtro, tokens gastados en la extracción…): van aparte de
+-- descartados_por_motivo, que es un desglose que suma `descartados`.
+ALTER TABLE ingesta_log ADD COLUMN IF NOT EXISTS estadisticas jsonb;
