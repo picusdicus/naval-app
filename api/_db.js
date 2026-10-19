@@ -43,4 +43,5 @@ export const TABLAS = [
   'talleres_horarios',
   'talleres_propuestas',
   'solicitudes_alta_comercio',
+  'posts_instagram_evaluados',
 ]

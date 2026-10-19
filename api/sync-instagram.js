@@ -48,6 +48,16 @@ import { SUBCATEGORIAS_CULTURA } from '../src/lib/eventos.js'
 import { claveTitulo, titulosEquivalentes } from '../src/lib/dedupEventos.js'
 import { registrarIngesta } from './_ingesta-log.js'
 import { enviarEmailPendientes } from './_email.js'
+import {
+  estadisticasDe,
+  filtrarYaEvaluados,
+  marcarEvaluados,
+  nuevoUso,
+  sumarUso,
+} from './_posts-evaluados.js'
+
+// Clave de este webhook en posts_instagram_evaluados (y su fuente en ingesta_log).
+const WEBHOOK = 'sync-instagram'
 
 // Modelo AISLADO de ANTHROPIC_MODEL a propósito, igual que
 // ANTHROPIC_MODEL_DEPORTES_VISION. Esta extracción lee carteles rotulados —
@@ -315,9 +325,12 @@ export async function extraerEventos(posts) {
         )
         contenido.push(...imagenes.filter(Boolean))
 
+        // shortCodes del lote: el pre-filtro necesita saber QUÉ posts no se
+        // evaluaron (o se evaluaron sin sus carteles), no solo cuántos.
+        const shortCodes = lote.map((p) => p.shortCode)
         try {
           const { eventos: items, uso } = await pedirExtraccion(client, contenido, lote.length)
-          return { items, uso }
+          return { items, uso, llamadas: 1 }
         } catch (err) {
           // Red de seguridad: cualquier fallo atribuible a las imágenes (un
           // tamaño que no veníamos venir, un formato raro) tumbaría los 10
@@ -325,17 +338,37 @@ export async function extraerEventos(posts) {
           // el texto, que es como funcionaba esto antes de la visión: se pierde
           // la lectura de los carteles del lote, no los posts.
           const soloTexto = contenido.filter((b) => b.type !== 'image')
-          if (soloTexto.length === contenido.length) throw err
+          if (soloTexto.length === contenido.length) {
+            err.llamadas = 1
+            throw err
+          }
           console.warn(`Lote ${idx + 1}: reintento sin imágenes tras "${err.message}"`)
-          const { eventos: items, uso } = await pedirExtraccion(client, soloTexto, lote.length)
-          return { items, uso, degradados: lote.length, causaDegradado: err.message }
+          try {
+            const { eventos: items, uso } = await pedirExtraccion(client, soloTexto, lote.length)
+            return {
+              items,
+              uso,
+              llamadas: 2,
+              degradados: lote.length,
+              causaDegradado: err.message,
+              shortCodesDegradados: shortCodes,
+            }
+          } catch (err2) {
+            err2.llamadas = 2
+            throw err2
+          }
         }
       } catch (err) {
         // `fallidos` = posts que el modelo NUNCA llegó a evaluar. Sin este
         // dato sus posts se contaban como "no es evento (rechazo del triaje)",
         // que es justo lo contrario de lo que pasó y manda la investigación en
         // la dirección equivocada.
-        return { error: `Extracción lote ${idx + 1}: ${err.message}`, fallidos: lote.length }
+        return {
+          error: `Extracción lote ${idx + 1}: ${err.message}`,
+          fallidos: lote.length,
+          shortCodesFallidos: lote.map((p) => p.shortCode),
+          llamadas: err.llamadas || 0,
+        }
       }
     })
   )
@@ -345,21 +378,24 @@ export async function extraerEventos(posts) {
   // Motivos para ingesta_log: la CAUSA como clave y los POSTS afectados como
   // valor (misma unidad que el resto de motivos del log, que cuentan posts).
   const fallosPorCausa = {}
-  // Tokens de todas las peticiones del run: lo consume el script de
-  // diagnóstico para medir el coste real por modelo.
-  const uso = { entrada: 0, salida: 0, cacheEscrito: 0, cacheLeido: 0 }
+  // Tokens y llamadas de todas las peticiones del run: los consumen el script
+  // de diagnóstico (coste real por modelo) y las estadísticas del webhook.
+  const uso = nuevoUso()
   for (const r of resultados) {
-    if (r.uso) {
-      uso.entrada += r.uso.input_tokens || 0
-      uso.salida += r.uso.output_tokens || 0
-      uso.cacheEscrito += r.uso.cache_creation_input_tokens || 0
-      uso.cacheLeido += r.uso.cache_read_input_tokens || 0
-    }
+    uso.llamadas += r.llamadas || 0
+    sumarUso(uso, r.uso)
   }
+  // Posts que NO pueden marcarse como evaluados en posts_instagram_evaluados:
+  // los de un lote que falló (el modelo no los vio) y los de un lote
+  // degradado (los vio sin sus carteles). El siguiente run los reintenta,
+  // exactamente como antes del pre-filtro.
+  const shortCodesNoEvaluados = []
+  const shortCodesDegradados = []
   for (const r of resultados) {
     if (r.error) {
       errores.push(r.error)
       postsNoEvaluados += r.fallidos || 0
+      shortCodesNoEvaluados.push(...(r.shortCodesFallidos || []))
       const causa = r.error.replace(/^Extracción lote \d+: /, '').slice(0, 80)
       const clave = `lote de extracción con error: ${causa}`
       fallosPorCausa[clave] = (fallosPorCausa[clave] || 0) + (r.fallidos || 0)
@@ -371,9 +407,18 @@ export async function extraerEventos(posts) {
       // es una pérdida de calidad que conviene ver en el log para arreglarla.
       const clave = `lote reintentado SIN imágenes: ${String(r.causaDegradado).slice(0, 80)}`
       fallosPorCausa[clave] = (fallosPorCausa[clave] || 0) + r.degradados
+      shortCodesDegradados.push(...(r.shortCodesDegradados || []))
     }
   }
-  return { eventos, errores, postsNoEvaluados, fallosPorCausa, uso }
+  return {
+    eventos,
+    errores,
+    postsNoEvaluados,
+    fallosPorCausa,
+    uso,
+    shortCodesNoEvaluados,
+    shortCodesDegradados,
+  }
 }
 
 /** Exportada, como validarExtraccion, SOLO para verificación/diagnóstico.
@@ -389,6 +434,10 @@ export function validarExtraccion(eventos, postsPorShortCode) {
   // cuántas filas emite un post y con qué id/estado se decide después, en
   // asignarIdentidades().
   const vistos = new Set()
+  // Posts con algún item que no validó (fecha o lugar mal formados…): a
+  // diferencia de la repetición literal, es una extracción fallida, y el
+  // pre-filtro no debe dar el post por evaluado — el siguiente run lo repite.
+  const invalidos = new Set()
   for (const ev of Array.isArray(eventos) ? eventos : []) {
     const post = postsPorShortCode.get(ev.shortCode)
     const valido =
@@ -402,6 +451,7 @@ export function validarExtraccion(eventos, postsPorShortCode) {
       CATEGORIAS.includes(ev.categoria)
     if (!valido) {
       descartados.push(ev.shortCode || '(sin shortCode)')
+      if (post) invalidos.add(ev.shortCode)
       continue
     }
     const clave = `${ev.shortCode}|${ev.fecha}|${claveTitulo(ev.titulo)}`
@@ -435,7 +485,7 @@ export function validarExtraccion(eventos, postsPorShortCode) {
       carrusel: post.carrusel || [],
     })
   }
-  return { validos, descartados }
+  return { validos, descartados, invalidos: [...invalidos] }
 }
 
 /** Sufijo estable por título para ids de hijas, mismo patrón que el webhook
@@ -561,6 +611,8 @@ export default async function handler(req, res) {
     recibidos: 0,
     analizados: 0,
     descartadosPorAntiguedad: 0,
+    saltadosYaVistos: 0,
+    reevaluadosPorEdicion: 0,
     eventos: 0,
     creados: 0,
     creadosEnBorrador: 0,
@@ -581,18 +633,33 @@ export default async function handler(req, res) {
     resumen.recibidos = crudos.length
 
     const normalizados = crudos.map(normalizarPost).filter(Boolean)
-    const posts = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
-    resumen.descartadosPorAntiguedad = normalizados.length - posts.length
-    resumen.analizados = posts.length
+    const recientes = normalizados.filter((p) => esPostReciente(p)).slice(0, MAX_POSTS)
+    resumen.descartadosPorAntiguedad = normalizados.length - recientes.length
     const noNormalizables = crudos.length - normalizados.length
+
+    // Pre-filtro: los posts ya evaluados en runs anteriores (mismo caption)
+    // no vuelven al modelo. Va ANTES del ACK para que la respuesta a Apify ya
+    // diga cuántos se saltaron, y porque sin pendientes el run termina aquí
+    // mismo sin llamar a Claude. Fail-open: si falla, se evalúa todo.
+    const filtro = await filtrarYaEvaluados(WEBHOOK, recientes)
+    const posts = filtro.pendientes
+    resumen.saltadosYaVistos = filtro.saltados.length
+    resumen.reevaluadosPorEdicion = filtro.reevaluadosPorEdicion
+    if (filtro.error) resumen.errores.push(`Pre-filtro desactivado: ${filtro.error}`)
+    // `analizados` son los posts que van al modelo (no los recientes): es lo
+    // que resta el motivo de rechazo del triaje en ingesta_log.
+    resumen.analizados = posts.length
+
     if (posts.length === 0) {
+      resumen.estadisticas = estadisticasDe(resumen, { recientes: recientes.length, uso: nuevoUso() })
       await registrarIngesta({
-        fuente: 'sync-instagram',
+        fuente: WEBHOOK,
         candidatos: resumen.recibidos,
         motivos: {
           'post no normalizable': noNormalizables,
           'antigüedad (>30 días) o tope de posts': resumen.descartadosPorAntiguedad,
         },
+        estadisticas: resumen.estadisticas,
       })
       res.status(200).json(resumen)
       return
@@ -601,13 +668,14 @@ export default async function handler(req, res) {
     // ACK inmediato (202): Apify corta el dispatch a los ~120 s y lo
     // reintenta entero — el triaje con Opus supera ese margen en runs densos.
     // El procesado sigue en segundo plano (waitUntil, Fluid); el resumen
-    // final queda en los logs de la función.
+    // final queda en los logs de la función y en ingesta_log.
     res.status(202).json({
       aceptado: true,
       recibidos: resumen.recibidos,
       analizados: resumen.analizados,
+      saltadosYaVistos: resumen.saltadosYaVistos,
     })
-    const tarea = procesar(posts, resumen, noNormalizables)
+    const tarea = procesar(posts, resumen, noNormalizables, recientes.length)
     try {
       waitUntil(tarea)
     } catch {
@@ -622,10 +690,17 @@ export default async function handler(req, res) {
 }
 
 /** Todo el trabajo pesado, ya sin una respuesta HTTP que mantener abierta. */
-async function procesar(posts, resumen, noNormalizables = 0) {
+async function procesar(posts, resumen, noNormalizables = 0, recientes = posts.length) {
   // Cuántas extracciones devolvió el modelo: lo que falte hasta `analizados`
   // son posts que el triaje consideró que no anuncian un evento.
   let extraidosTotal = 0
+  // Pre-filtro (posts_instagram_evaluados): tokens del run, y qué posts NO
+  // pueden darse por evaluados — lote fallido o degradado, item inválido, o
+  // un upsert que falló. Si el run entero cae al catch de fondo no se marca
+  // ninguno: el siguiente run los repite todos, como antes del pre-filtro.
+  let usoRun = nuevoUso()
+  const conFallo = new Set()
+  let completado = false
   // Borradores REALMENTE insertados este run (no actualizados): son los que
   // avisan por email al superadmin, mismo patrón que el webhook de noticias.
   const pendientesEventos = []
@@ -671,6 +746,9 @@ async function procesar(posts, resumen, noNormalizables = 0) {
       errores: erroresTriaje,
       postsNoEvaluados,
       fallosPorCausa,
+      uso,
+      shortCodesNoEvaluados,
+      shortCodesDegradados,
     } = await extraerEventos(
       // `imagen`/`lado` son la PORTADA que extraerEventos manda por visión
       // cuando el alt es genérico. Esta proyección es anterior a la visión y
@@ -690,11 +768,14 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         lado,
       }))
     )
+    usoRun = uso
+    for (const sc of [...shortCodesNoEvaluados, ...shortCodesDegradados]) conFallo.add(sc)
     resumen.errores.push(...erroresTriaje)
     resumen.postsNoEvaluados = postsNoEvaluados
     Object.assign(motivosLote, fallosPorCausa)
     extraidosTotal = extraidos.length
-    const { validos, descartados } = validarExtraccion(extraidos, postsPorShortCode)
+    const { validos, descartados, invalidos } = validarExtraccion(extraidos, postsPorShortCode)
+    for (const sc of invalidos) conFallo.add(sc)
     resumen.eventos = validos.length
     resumen.descartadosPorValidacion = descartados.length
     if (descartados.length) {
@@ -859,6 +940,7 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         }
       } catch (err) {
         resumen.errores.push(`Evento ${ev.shortCode}: ${err.message}`)
+        conFallo.add(ev.shortCode)
       }
     }
 
@@ -876,19 +958,31 @@ async function procesar(posts, resumen, noNormalizables = 0) {
         resumen.errores.push(`Email de pendientes: ${err.message}`)
       }
     }
-
-    console.log(JSON.stringify(resumen))
+    completado = true
   } catch (err) {
     console.error('Error en sync-instagram (fondo):', err)
     resumen.errores.push(err.message)
-    console.log(JSON.stringify(resumen))
   }
+
+  // Marca de evaluados: aceptados Y rechazados (un rechazo no deja fila en
+  // Neon), menos los que fallaron en algún punto. Después del email a
+  // propósito: el email no es del post, y que falle no debe repetir el post.
+  const evaluados = completado ? posts.filter((p) => !conFallo.has(p.shortCode)) : []
+  const marcados = await marcarEvaluados(WEBHOOK, evaluados)
+  resumen.estadisticas = estadisticasDe(resumen, {
+    recientes,
+    uso: usoRun,
+    evaluados: evaluados.length,
+    marcados,
+  })
+  console.log(JSON.stringify(resumen))
 
   // Log de la ejecución (tabla ingesta_log, solo observabilidad — nunca
   // lanza). candidatos son POSTS y nuevos/emparejados son FILAS de
   // eventos_usuario (creados/actualizados): no tienen por qué cuadrar entre sí.
   await registrarIngesta({
-    fuente: 'sync-instagram',
+    fuente: WEBHOOK,
+    estadisticas: resumen.estadisticas,
     candidatos: resumen.recibidos,
     emparejados: resumen.actualizados,
     nuevos: resumen.creados,
