@@ -1,5 +1,14 @@
 [
   {
+    "id": "noticias-viernes 27 de noviembre tea",
+    "titulo": "Viernes, 27 de noviembre – Teatro: El buen hijo",
+    "fecha": "2026-10-30",
+    "resumen": "Lugar: Teatro Municipal. Hora: 20.00h. Duración: 90 minutos. Edad recomendada: NR menores de 16 años.",
+    "contenido": "Lugar: Teatro Municipal. Hora: 20.00h. Duración: 90 minutos. Edad recomendada: NR menores de 16 años.",
+    "url": "https://navalcarnero.es/navalcarnero/prensa/viernes-27-de-noviembre-teatro-el-buen-hijo/",
+    "autor": "Dpto.Comunicacion"
+  },
+  {
     "id": "noticias-domingo 29 de noviembre la",
     "titulo": "Domingo, 29 de noviembre – La magia del cine. Concierto de Santa Cecilia. Orquesta Sinfónica de Navalcarnero.",
     "fecha": "2026-09-22",
@@ -99,15 +108,6 @@
     "autor": "hhmg"
   },
   {
-    "id": "noticias-9 y 10 de octubre entre vino",
-    "titulo": "9 y 10 de octubre – Entre vinos",
-    "fecha": "2026-09-22",
-    "resumen": "Viernes, 9 de octubre 19.00h. Visita a la Bodega Muñoz Martín, en la que se hará un recorrido por sus instalaciones incluida su cueva, durante el cual se explicarán todas las fases del proceso de elaboración del vino. Se finalizará con la cata de una selección de sus vinos. Grupo: hasta 16 personas Precio: actividad > Continuar leyendo ...",
-    "contenido": "Viernes, 9 de octubre 19.00h. Visita a la Bodega Muñoz Martín, en la que se hará un recorrido por sus instalaciones incluida su cueva, durante el cual se explicarán todas las fases del proceso de elaboración del vino. Se finalizará con la cata de una selección de sus vinos. Grupo: hasta 16 personas Precio: actividad > Continuar leyendo ...",
-    "url": "https://navalcarnero.es/navalcarnero/prensa/9-y-10-de-octubre-entre-vinos/",
-    "autor": "hhmg"
-  },
-  {
     "id": "noticias-sabado 14 de noviembre tall",
     "titulo": "Sábado, 14 de noviembre – Taller: Acrobacia en pareja.",
     "fecha": "2026-09-22",
@@ -126,30 +126,12 @@
     "autor": "hhmg"
   },
   {
-    "id": "noticias-jueves 29 de octubre charla",
-    "titulo": "Jueves, 29 de octubre – Charla-conferencia Entrenamiento Positivo",
-    "fecha": "2026-09-22",
-    "resumen": "Jueves, 29 de octubre – 09.00h. ¿Cansado de estar cansado? Charla-conferencia Entrenamiento Positivo. Lugar: Espacio joven (presencial). También se puede seguir en directo a través del Facebook del Ayuntamiento de Navalcarnero. Comentaremos que nos ocurre, porque nos cansamos tanto, y explicaremos las formas de cómo elegir intensidad, frecuencia, tipo de ejercicio y momento del día > Continuar leyendo ...",
-    "contenido": "Jueves, 29 de octubre – 09.00h. ¿Cansado de estar cansado? Charla-conferencia Entrenamiento Positivo. Lugar: Espacio joven (presencial). También se puede seguir en directo a través del Facebook del Ayuntamiento de Navalcarnero. Comentaremos que nos ocurre, porque nos cansamos tanto, y explicaremos las formas de cómo elegir intensidad, frecuencia, tipo de ejercicio y momento del día > Continuar leyendo ...",
-    "url": "https://navalcarnero.es/navalcarnero/prensa/jueves-29-de-octubre-charla-conferencia-entrenamiento-positivo/",
-    "autor": "hhmg"
-  },
-  {
     "id": "noticias-en noviembre espacio joven",
     "titulo": "En noviembre – Espacio Joven",
     "fecha": "2026-09-22",
     "resumen": "Un espacio pensado por y para los jóvenes donde podrás: escuchar música, jugar al futbolín y al ping-pong, retarte en juegos de mesa, serie fórum, ensayar con tu grupo de música, intercambio de idiomas, intercambio de libros, espacio para trabajos en grupo y programación mensuales de talleres y juegos dirigidos por monitores. Programación octubre: Viernes, > Continuar leyendo ...",
     "contenido": "Un espacio pensado por y para los jóvenes donde podrás: escuchar música, jugar al futbolín y al ping-pong, retarte en juegos de mesa, serie fórum, ensayar con tu grupo de música, intercambio de idiomas, intercambio de libros, espacio para trabajos en grupo y programación mensuales de talleres y juegos dirigidos por monitores. Programación octubre: Viernes, > Continuar leyendo ...",
     "url": "https://navalcarnero.es/navalcarnero/prensa/en-noviembre-espacio-joven/",
-    "autor": "hhmg"
-  },
-  {
-    "id": "noticias-en octubre espacio joven",
-    "titulo": "En octubre – Espacio Joven",
-    "fecha": "2026-09-22",
-    "resumen": "Un espacio pensado por y para los jóvenes donde podrás: escuchar música, jugar al futbolín y al ping-pong, retarte en juegos de mesa, serie fórum, ensayar con tu grupo de música, intercambio de idiomas, intercambio de libros, espacio para trabajos en grupo y programación mensuales de talleres y juegos dirigidos por monitores. Programación octubre: Viernes, > Continuar leyendo ...",
-    "contenido": "Un espacio pensado por y para los jóvenes donde podrás: escuchar música, jugar al futbolín y al ping-pong, retarte en juegos de mesa, serie fórum, ensayar con tu grupo de música, intercambio de idiomas, intercambio de libros, espacio para trabajos en grupo y programación mensuales de talleres y juegos dirigidos por monitores. Programación octubre: Viernes, > Continuar leyendo ...",
-    "url": "https://navalcarnero.es/navalcarnero/prensa/en-octubre-espacio-joven/",
     "autor": "hhmg"
   },
   {
@@ -216,15 +198,6 @@
     "autor": "hhmg"
   },
   {
-    "id": "noticias-del 8 de octubre al 11 de novi",
-    "titulo": "Del 8 de octubre al 11 de noviembre – Curso: Atención sociosanitaria a personas dependientes en instituciones sociales.",
-    "fecha": "2026-09-22",
-    "resumen": "PROGAMA DE APOYO AL EMPLEO EN IGUALDAD Estas actuaciones tienen por objeto promover la igualdad de oportunidades entre mujeres y hombres en el mercado laboral y apoyar el autoempleo y el emprendimiento femenino. Dirigido a: mujeres desempleadas, en mejora de empleo, búsqueda activa y con interés en la materia, que hayan realizado los módulos > Continuar leyendo ...",
-    "contenido": "PROGAMA DE APOYO AL EMPLEO EN IGUALDAD Estas actuaciones tienen por objeto promover la igualdad de oportunidades entre mujeres y hombres en el mercado laboral y apoyar el autoempleo y el emprendimiento femenino. Dirigido a: mujeres desempleadas, en mejora de empleo, búsqueda activa y con interés en la materia, que hayan realizado los módulos > Continuar leyendo ...",
-    "url": "https://navalcarnero.es/navalcarnero/prensa/del-8-de-octubre-al-11-de-noviembre-curso-atencion-sociosanitaria-a-personas-dependientes-en-instituciones-sociales/",
-    "autor": "hhmg"
-  },
-  {
     "id": "noticias-8 22 de octubre 5 19 de novi",
     "titulo": "8, 22 de octubre, 5,19 de noviembre y 3 y 17 de diciembre – Taller: Caminando juntas.",
     "fecha": "2026-09-22",
@@ -267,6 +240,33 @@
     "resumen": "Una mirada al comercio de Navalcarnero de ayer y a los recuerdos que permanecen. Esta exposición reúne fotografías y testimonios que recuperan la historia de antiguos comercios, talleres y establecimientos que durante años formaron parte de la vida cotidiana del municipio. Fachadas, mostradores, escaparates y escenas de otros tiempos que nos permiten recordar cómo era > Continuar leyendo ...",
     "contenido": "Una mirada al comercio de Navalcarnero de ayer y a los recuerdos que permanecen. Esta exposición reúne fotografías y testimonios que recuperan la historia de antiguos comercios, talleres y establecimientos que durante años formaron parte de la vida cotidiana del municipio. Fachadas, mostradores, escaparates y escenas de otros tiempos que nos permiten recordar cómo era > Continuar leyendo ...",
     "url": "https://navalcarnero.es/navalcarnero/prensa/del-19-al-30-de-octubre-comercios-antiguos-de-navalcarnero-exposicion-de-fotografias/",
+    "autor": "hhmg"
+  },
+  {
+    "id": "noticias-sabado 21 de noviembre bien",
+    "titulo": "Sábado, 21 de noviembre – Bienvenida a las nuevas incorporaciones con motivo de la celebración de Santa Cecilia",
+    "fecha": "2026-09-22",
+    "resumen": "Horario: Por la mañana. Salida: EMMD Actividad: Pasacalles y recogida de los nuevos músicos en sus domicilios. Dentro de la celebración que conmemorará el 20º aniversario de la Banda Municipal tendrá lugar uno de los momentos más especiales para la formación: la bienvenida a los nuevos músicos que se incorporan a la Banda Municipal > Continuar leyendo ...",
+    "contenido": "Horario: Por la mañana. Salida: EMMD Actividad: Pasacalles y recogida de los nuevos músicos en sus domicilios. Dentro de la celebración que conmemorará el 20º aniversario de la Banda Municipal tendrá lugar uno de los momentos más especiales para la formación: la bienvenida a los nuevos músicos que se incorporan a la Banda Municipal > Continuar leyendo ...",
+    "url": "https://navalcarnero.es/navalcarnero/prensa/sabado-21-de-noviembre-bienvenida-a-las-nuevas-incorporaciones-con-motivo-de-la-celebracion-de-santa-cecilia/",
+    "autor": "hhmg"
+  },
+  {
+    "id": "noticias-teledeporte emitira en directo",
+    "titulo": "Teledeporte emitirá en directo la semifinal del Futsi Atlético Navalcarnero, gran cita deportiva del mes de junio en Navalcarnero",
+    "fecha": "2026-06-04",
+    "resumen": "El deporte, la cultura y el talento local protagonizan la llegada del verano en Navalcarnero. La eliminatoria por un puesto en la final de la Primera FS Iberdrola podrá seguirse en directo a través de Teledeporte y RTVE Play. El deporte será uno de los grandes protagonistas de la programación con las jornadas de fin > Continuar leyendo ...",
+    "contenido": "El deporte, la cultura y el talento local protagonizan la llegada del verano en Navalcarnero. La eliminatoria por un puesto en la final de la Primera FS Iberdrola podrá seguirse en directo a través de Teledeporte y RTVE Play. El deporte será uno de los grandes protagonistas de la programación con las jornadas de fin > Continuar leyendo ...",
+    "url": "https://navalcarnero.es/navalcarnero/prensa/teledeporte-emitira-en-directo-la-semifinal-del-futsi-atletico-navalcarnero-gran-cita-deportiva-del-mes-de-junio-en-navalcarnero/",
+    "autor": "hhmg"
+  },
+  {
+    "id": "noticias-jesucristo superstar vuelve a",
+    "titulo": "Jesucristo Superstar vuelve a Navalcarnero este fin de semana",
+    "fecha": "2026-05-21",
+    "resumen": "Música, teatro, arte y actividades juveniles protagonizan una agenda que se desarrollará entre los días 22 y 24 de mayo en diferentes espacios municipales. La programación comienza el viernes, 22 de mayo, con el Concierto de Música Española, a cargo del pianista Daniel Sánchez Pollo, una actuación que tendrá lugar en el Centro de Artes > Continuar leyendo ...",
+    "contenido": "Música, teatro, arte y actividades juveniles protagonizan una agenda que se desarrollará entre los días 22 y 24 de mayo en diferentes espacios municipales. La programación comienza el viernes, 22 de mayo, con el Concierto de Música Española, a cargo del pianista Daniel Sánchez Pollo, una actuación que tendrá lugar en el Centro de Artes > Continuar leyendo ...",
+    "url": "https://navalcarnero.es/navalcarnero/prensa/jesucristo-superstar-vuelve-a-navalcarnero-este-fin-de-semana/",
     "autor": "hhmg"
   }
 ]
